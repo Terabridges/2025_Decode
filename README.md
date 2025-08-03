@@ -1,4 +1,4 @@
-## Welcome to the Offical Pedro Pathing Quickstart!  
+## Terabridges 18603 DECODE 2025
 
-Follow the steps on our [website](https://pedropathing.com/) to tune and setup!  
-Feel Free to reach out on the [Offical Pedro Pathing Discord Server](https://discord.gg/2GfC4qBP5s)!
+Here is our [website](https://www.ftc18603.org/)
+
