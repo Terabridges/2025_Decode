@@ -2,8 +2,9 @@ repositories {
     mavenCentral()
     google() // Needed for androidx
 
-    maven { url= "https://maven.pedropathing.com/" }
+    maven { url = "https://maven.pedropathing.com/" }
     maven { url = "https://mymaven.bylazar.com/releases" }
+    maven { url = "https://jitpack.io" }
 }
 
 dependencies {
@@ -21,5 +22,7 @@ dependencies {
 
     implementation 'com.bylazar:fullpanels:1.0.2'
     implementation 'androidx.appcompat:appcompat:1.2.0'
+
+    implementation 'com.github.StateFactory-Dev:StateFactory:0.3.9'
 }
 
