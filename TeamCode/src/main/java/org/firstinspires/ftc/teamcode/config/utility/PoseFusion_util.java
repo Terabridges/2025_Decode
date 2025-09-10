@@ -1,9 +1,8 @@
-package org.firstinspires.ftc.teamcode.config.subsystems;
+package org.firstinspires.ftc.teamcode.config.utility;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.robotcore.internal.system.Deadline;
 
 /**
  * PoseFusion_Subsystem
@@ -15,7 +14,10 @@ import org.firstinspires.ftc.robotcore.internal.system.Deadline;
  *   - Positions in METERS (field frame).
  *   - Heading in RADIANS, wrapped to (-pi, pi].
  */
-public class PoseFusion_subsystem {
+
+//Note: Code from CHATGPT. Untested.
+
+public class PoseFusion_util {
 
     // ---- Tunables ----
     private double alphaVision = 0.20;     // 0..1 — how strongly to trust fresh vision
@@ -32,7 +34,7 @@ public class PoseFusion_subsystem {
 
     private final ElapsedTime loopTimer = new ElapsedTime();
 
-    public PoseFusion_subsystem() {}
+    public PoseFusion_util() {}
 
     // ---- Config setters ----
     public void setAlphaVision(double a) { alphaVision = clamp(a, 0, 1); }

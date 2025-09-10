@@ -5,6 +5,7 @@ repositories {
     maven { url = "https://maven.pedropathing.com/" }
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://jitpack.io" }
+    maven { url = "https://maven.rowanmcalpin.com/" }
 }
 
 dependencies {
@@ -24,5 +25,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
 
     implementation 'com.github.StateFactory-Dev:StateFactory:0.3.9'
+
+    implementation 'com.rowanmcalpin.nextftc:core:0.6.2'
+    implementation 'com.rowanmcalpin.nextftc:ftc:0.6.2'
+    implementation 'com.rowanmcalpin.nextftc:pedro:0.6.2' // Remove if you don't intend to use PedroPathing
 }
 
