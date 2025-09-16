@@ -5,17 +5,13 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
-import com.rowanmcalpin.nextftc.core.Subsystem;
-import com.rowanmcalpin.nextftc.core.command.Command;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-public class Limelight extends Subsystem {
-    public static final Limelight INSTANCE = new Limelight();
-    private Limelight() {}
+public class Limelight implements Subsystem {
 
     /** Config names */
     public String limelightName = "limelight";
@@ -32,14 +28,14 @@ public class Limelight extends Subsystem {
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
 
-    public void bind(HardwareMap hw, Telemetry tele) {
+    public Limelight(HardwareMap hw, Telemetry tele) {
         this.hw = hw;
         this.tele = tele;
     }
 
     // ------------ Subsystem lifecycle ------------
     @Override
-    public void initialize() {
+    public void toInit() {
         camera = hw.get(Limelight3A.class, limelightName);
 
         if (imuName != null && !imuName.isEmpty()) {
@@ -51,7 +47,7 @@ public class Limelight extends Subsystem {
     }
 
     @Override
-    public void periodic() {
+    public void update() {
 
         if (imu != null) {
             double yawDeg = imu.getAngularOrientation().firstAngle; // FTC default yaw (Z)
