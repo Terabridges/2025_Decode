@@ -5,21 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 
-/**
- * Shooter Tester OpMode
- *
- * Uses your custom Robot + Subsystem framework.
- * Controls (during RUN):
- *  - RT: analog RPM (0..6000)
- *  - LB/RB: -100 / +100 RPM nudge
- *  - A/B: 3000 / 4500 RPM presets
- *  - X: stop
- *  - Y: reverse shooter direction (multiplier flip)
- *  - D-pad Up/Down: hood +0.01 / -0.01
- *
- * Pre-start (INIT-loop) options:
- *  - Left stick click: toggle encoder side (LEFT/RIGHT)
- */
 @TeleOp(name = "ShooterTester", group = "Test")
 public class ShooterTester extends LinearOpMode {
 

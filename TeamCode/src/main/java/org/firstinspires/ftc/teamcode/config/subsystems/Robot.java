@@ -19,6 +19,7 @@ public class Robot {
     private final Telemetry tele;
     public Gamepad gp1;
     public Gamepad gp2;
+
     //public static VoltageSensor voltageSensor;
 
     //Subsystems
@@ -47,7 +48,18 @@ public class Robot {
         //voltageSensor = hw.voltageSensor.iterator().next();
     }
 
-    public Robot(HardwareMap hw, Telemetry tele){this(hw, tele, null, null);}
+    //For Auto
+    public Robot(HardwareMap hw, Telemetry tele){
+        this.hw = hw;
+        this.tele = tele;
+
+        shooter = new Shooter(hw, tele);
+        limelight = new Limelight(hw, tele);
+
+        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
+
+        //voltageSensor = hw.voltageSensor.iterator().next();
+    }
 
     //Interface Methods
     public void update() {

@@ -10,10 +10,6 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-/**
- * Shooter subsystem (dual flywheel on the same side + adjustable hood),
- * structured like your Limelight class: singleton + bind/init/periodic.
- */
 public class Shooter implements Subsystem {
 
     /** Config names (override from Robot if you rename in RC config) */
