@@ -7,6 +7,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
+import com.bylazar.graph.PanelsGraph;
+import com.bylazar.telemetry.PanelsTelemetry;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -20,7 +23,7 @@ public class Shooter implements Subsystem {
     /** Hardware */
     public DcMotorEx leftMotor;
     public DcMotorEx rightMotor;
-    public Servo hood;
+    //public Servo hood;
 
     /** Cached context */
     private HardwareMap hw;
@@ -54,7 +57,7 @@ public class Shooter implements Subsystem {
     public void toInit() {
         leftMotor  = hw.get(DcMotorEx.class, leftName);
         rightMotor = hw.get(DcMotorEx.class, rightName);
-        hood  = hw.get(Servo.class,      hoodName);
+        //hood  = hw.get(Servo.class,      hoodName);
 
         leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         rightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -73,7 +76,7 @@ public class Shooter implements Subsystem {
             leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
-        setHoodPos(hoodPos);
+        //setHoodPos(hoodPos);
         setRpm(0);
 
         rpmTimer.reset();
@@ -108,12 +111,13 @@ public class Shooter implements Subsystem {
             double rps = (tps / TICKS_PER_REV) / GEAR_RATIO;
             double rpm = rps * 60.0;
 
-            tele.addData("Shooter tgtRPM", "%.0f", desiredRpm);
+            tele.addData("Shooter tgtRPM", desiredRpm);
             tele.addData("Running", isRunning);
             tele.addData("EncSide", encoderOnLeft ? "LEFT" : "RIGHT");
             tele.addData("Direction", directionMultiplier == 1 ? "FWD" : "REV");
-            tele.addData("HoodPos", "%.2f", hoodPos);
-            tele.addData("RPM(est)", "%.0f", rpm);
+            tele.addData("HoodPos", hoodPos);
+            tele.addData("RPM(est)", rpm);
+            tele.update();
         }
     }
 
@@ -139,11 +143,11 @@ public class Shooter implements Subsystem {
     public void toggle(double rpm) { if (isSpinning()) stop(); else setRpm(rpm); }
 
     /** Hood helpers */
-    public void setHoodPos(double pos) {
-        hoodPos = Range.clip(pos, 0.0, 1.0);
-        if (hood != null) hood.setPosition(hoodPos);
-    }
-    public void nudgeHood(double delta) { setHoodPos(hoodPos + delta); }
+//    public void setHoodPos(double pos) {
+//        hoodPos = Range.clip(pos, 0.0, 1.0);
+//        if (hood != null) hood.setPosition(hoodPos);
+//    }
+    //public void nudgeHood(double delta) { setHoodPos(hoodPos + delta); }
 
     /** RPM nudge useful during on-field tuning. */
     public void nudgeRpm(double delta) { setRpm(desiredRpm + delta); }

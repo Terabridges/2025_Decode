@@ -25,7 +25,7 @@ public class Robot {
     //Subsystems
 
     public Shooter shooter;
-    public Limelight limelight;
+    //public Limelight limelight;
 
     //Other
     public String currentState = "none";
@@ -38,9 +38,10 @@ public class Robot {
         this.tele = tele;
 
         shooter = new Shooter(hw, tele);
-        limelight = new Limelight(hw, tele);
+        //limelight = new Limelight(hw, tele);
 
-        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
+//        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
+        subsystems = new ArrayList<>(Arrays.asList(shooter));
 
         this.gp1 = gp1;
         this.gp2 = gp2;
@@ -54,9 +55,10 @@ public class Robot {
         this.tele = tele;
 
         shooter = new Shooter(hw, tele);
-        limelight = new Limelight(hw, tele);
+        //limelight = new Limelight(hw, tele);
 
-        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
+//        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
+        subsystems = new ArrayList<>(Arrays.asList(shooter));
 
         //voltageSensor = hw.voltageSensor.iterator().next();
     }

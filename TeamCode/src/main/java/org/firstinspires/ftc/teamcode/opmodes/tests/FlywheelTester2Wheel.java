@@ -22,7 +22,7 @@ public class FlywheelTester2Wheel extends LinearOpMode {
     private boolean lastA = false;
     private boolean lastDpadUp = false;
     private boolean lastDpadDown = false;
-    public static double invert = -1;
+    public static double invert = 1;
 
     @Override
     public void runOpMode() {
