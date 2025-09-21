@@ -18,19 +18,19 @@ public class ShooterTester extends LinearOpMode {
     private boolean lastDpadRight = false;
     private boolean lastDpadLeft = false;
 
+    ShooterOld shooter;
+
     @Override
     public void runOpMode() {
-        Robot bot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-
-        bot.toInit();
-
         waitForStart();
+
+        shooter = new ShooterOld(hardwareMap, telemetry);
 
         while (opModeIsActive()) {
             // --- RPM control ---
             double rTrig = gamepad1.right_trigger; // 0..1
             if (rTrig > 0.02) {
-                bot.shooter.setRpm(rTrig * MAX_RPM);
+                shooter.setRpm(rTrig * MAX_RPM);
             }
 
             fineMode = gamepad1.left_bumper;
@@ -41,29 +41,29 @@ public class ShooterTester extends LinearOpMode {
             double stepHood = fineMode ? 0.1 : 0.01;
 
             // Presets
-            if (gamepad1.a) bot.shooter.setRpm(2500);
-            if (gamepad1.b) bot.shooter.setRpm(4000);
+            if (gamepad1.a) shooter.setRpm(2500);
+            if (gamepad1.b) shooter.setRpm(4000);
 
             // Nudges
             boolean currentUp = gamepad1.dpad_up;
             if (currentUp && !lastDpadUp) {
-                if (gamepad1.dpad_up) bot.shooter.nudgeRpm(stepRPM);
+                if (gamepad1.dpad_up) shooter.nudgeRpm(stepRPM);
             }
             lastDpadUp = currentUp;
 
             boolean currentDown = gamepad1.dpad_down;
             if (currentDown && !lastDpadDown) {
-                if (gamepad1.dpad_down) bot.shooter.nudgeRpm(-stepRPM);
+                if (gamepad1.dpad_down) shooter.nudgeRpm(-stepRPM);
             }
             lastDpadDown = currentDown;
 
 
             // Stop
-            if (gamepad1.x) bot.shooter.stop();
+            if (gamepad1.x) shooter.stop();
 
             // Reverse direction (unjam/backspin)
             if (gamepad1.y) {
-                bot.shooter.reverseDirection();
+                shooter.reverseDirection();
                 sleep(150); // debounce
             }
 
@@ -82,7 +82,7 @@ public class ShooterTester extends LinearOpMode {
 //            lastDpadLeft = currentLeft;
 
             // Update subsystems + telemetry (Shooter + Limelight)
-            bot.update();
+            shooter.update();
         }
     }
 }

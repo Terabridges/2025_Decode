@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Limelight;
+import org.firstinspires.ftc.teamcode.opmodes.tests.ShooterOld;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,8 +22,12 @@ public class Robot {
     public static VoltageSensor voltageSensor;
 
     //---------------- Subsystems ----------------
+    public Drive drive;
+    public Intake intake;
     public Shooter shooter;
-    //public Limelight limelight;
+    public Transfer transfer;
+    public Vision vision;
+
     public List<Subsystem> subsystems;
 
     //---------------- Constructors ----------------
@@ -31,10 +35,9 @@ public class Robot {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
 
-        shooter = new Shooter(hardwareMap, telemetry);
-        //limelight = new Limelight(hw, tele);
+        shooter = new Shooter(hardwareMap);
 
-        subsystems = new ArrayList<>(Arrays.asList(shooter));
+        subsystems = new ArrayList<>(Arrays.asList(drive, intake, shooter, transfer, vision));
 
         this.gp1 = gp1;
         this.gp2 = gp2;
