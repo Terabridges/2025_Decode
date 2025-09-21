@@ -14,56 +14,38 @@ import java.util.List;
 
 public class Robot {
 
-    //Objects
-    private final HardwareMap hw;
-    private final Telemetry tele;
+    //---------------- Objects ----------------
+    private final HardwareMap hardwareMap;
+    private final Telemetry telemetry;
     public Gamepad gp1;
     public Gamepad gp2;
+    public static VoltageSensor voltageSensor;
 
-    //public static VoltageSensor voltageSensor;
-
-    //Subsystems
-
+    //---------------- Subsystems ----------------
     public Shooter shooter;
     //public Limelight limelight;
-
-    //Other
-    public String currentState = "none";
-
-    //Subsystem List
     public List<Subsystem> subsystems;
 
-    public Robot(HardwareMap hw, Telemetry tele, Gamepad gp1, Gamepad gp2){
-        this.hw = hw;
-        this.tele = tele;
+    //---------------- Constructors ----------------
+    public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2){
+        this.hardwareMap = hardwareMap;
+        this.telemetry = telemetry;
 
-        shooter = new Shooter(hw, tele);
+        shooter = new Shooter(hardwareMap, telemetry);
         //limelight = new Limelight(hw, tele);
 
-//        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
         subsystems = new ArrayList<>(Arrays.asList(shooter));
 
         this.gp1 = gp1;
         this.gp2 = gp2;
 
-        //voltageSensor = hw.voltageSensor.iterator().next();
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+    }
+    public Robot(HardwareMap hardwareMap, Telemetry telemetry){
+        this(hardwareMap, telemetry, null, null);
     }
 
-    //For Auto
-    public Robot(HardwareMap hw, Telemetry tele){
-        this.hw = hw;
-        this.tele = tele;
-
-        shooter = new Shooter(hw, tele);
-        //limelight = new Limelight(hw, tele);
-
-//        subsystems = new ArrayList<>(Arrays.asList(shooter, limelight));
-        subsystems = new ArrayList<>(Arrays.asList(shooter));
-
-        //voltageSensor = hw.voltageSensor.iterator().next();
-    }
-
-    //Interface Methods
+    //---------------- Interface Methods ----------------
     public void update() {
         for (Subsystem s : subsystems) {
             s.update();
