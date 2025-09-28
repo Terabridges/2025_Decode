@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -8,6 +9,8 @@ import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
 public class Vision implements Subsystem{
@@ -15,6 +18,7 @@ public class Vision implements Subsystem{
     //---------------- Hardware ----------------
     public NormalizedColorSensor ballInspector;
     public Limelight3A limelight;
+    public GoBildaPinpointDriver pinpoint;
 
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
@@ -24,6 +28,7 @@ public class Vision implements Subsystem{
     public Vision(HardwareMap map) {
         ballInspector = map.get(NormalizedColorSensor.class, "ball_inspector");
         limelight = map.get(Limelight3A.class, "limelight");
+        pinpoint =  map.get(GoBildaPinpointDriver.class, "pinpoint");
     }
 
     //---------------- Methods ----------------
@@ -34,10 +39,10 @@ public class Vision implements Subsystem{
     }
 
     private void limelightUpdate(){
-//        if (imu != null) {
-//            double yawDeg = imu.getAngularOrientation().firstAngle; // FTC default yaw (Z)
-//            limelight.updateRobotOrientation(yawDeg);
-//        }
+        if (pinpoint != null) {
+            double yawDeg = (pinpoint.getHeading(AngleUnit.DEGREES)-90);
+            limelight.updateRobotOrientation(yawDeg);
+        }
 
         latest = limelight.getLatestResult();
 
@@ -81,15 +86,28 @@ public class Vision implements Subsystem{
         return null;
     }
 
+    public void pinpointInit(){
+        pinpoint.setOffsets(0, 0, DistanceUnit.INCH);
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        pinpoint.resetPosAndIMU();
+    }
+
+    public void pinpointUpdate(){
+        pinpoint.update();
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
         limelightInit();
+        pinpointInit();
     }
 
     @Override
     public void update(){
         limelightUpdate();
+        pinpointUpdate();
     }
 
 }

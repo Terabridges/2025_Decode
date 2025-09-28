@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.config.subsystems;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
@@ -14,21 +15,25 @@ public class Shooter implements Subsystem{
     public CRServo turret;
     public AnalogInput turretAnalog;
     public AbsoluteAnalogEncoder turretEnc;
-    public DcMotor flyLeft;
-    public DcMotor flyRight;
+    public DcMotorEx flyLeft;
+    public DcMotorEx flyRight;
     public CRServo hood;
     public AnalogInput hoodAnalog;
     public AbsoluteAnalogEncoder hoodEnc;
     public TouchSensor hoodSwitch;
 
     //---------------- Software ----------------
+    private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
+    double velocity = 0.0;
+    private double desiredRpm = 0.0;
+    boolean flyRun = false;
 
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
         turret = map.get(CRServo.class, "turret");
-        flyLeft = map.get(DcMotor.class, "fly_left");
-        flyRight = map.get(DcMotor.class, "fly_right");
+        flyLeft = map.get(DcMotorEx.class, "fly_left");
+        flyRight = map.get(DcMotorEx.class, "fly_right");
         hood = map.get(CRServo.class, "hood");
         hoodSwitch = map.get(TouchSensor.class, "hood_switch");
         turretAnalog = map.get(AnalogInput.class, "turret_analog");
@@ -39,6 +44,21 @@ public class Shooter implements Subsystem{
 
     //---------------- Methods ----------------
 
+    public void updateVelocity(){
+        velocity = (desiredRpm * TICKS_PER_REV) / 60.0;
+        if (flyRun){
+            flyLeft.setVelocity(velocity);
+            flyRight.setVelocity(velocity);
+        }
+    }
+
+    public void setFlyRun(boolean state){
+        flyRun = state;
+    }
+
+    public void setRpm(double rpm) {
+        desiredRpm = rpm;
+    }
 
     //---------------- Interface Methods ----------------
     @Override
@@ -48,7 +68,7 @@ public class Shooter implements Subsystem{
 
     @Override
     public void update(){
-
+        updateVelocity();
     }
 
 }
