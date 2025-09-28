@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
@@ -34,12 +35,18 @@ public class Shooter implements Subsystem{
         turret = map.get(CRServo.class, "turret");
         flyLeft = map.get(DcMotorEx.class, "fly_left");
         flyRight = map.get(DcMotorEx.class, "fly_right");
+        flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
         hood = map.get(CRServo.class, "hood");
         hoodSwitch = map.get(TouchSensor.class, "hood_switch");
         turretAnalog = map.get(AnalogInput.class, "turret_analog");
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
         hoodAnalog = map.get(AnalogInput.class, "hood_analog");
         hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
+
+        flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        flyLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        flyRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     //---------------- Methods ----------------
