@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.oldTests;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -10,7 +10,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 
-public class Limelight implements Subsystem {
+public class LimelightSubsystemOld implements Subsystem {
 
     /** Config names */
     public String limelightName = "limelight";
@@ -27,7 +27,7 @@ public class Limelight implements Subsystem {
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
 
-    public Limelight(HardwareMap hw, Telemetry tele) {
+    public LimelightSubsystemOld(HardwareMap hw, Telemetry tele) {
         this.hw = hw;
         this.tele = tele;
     }

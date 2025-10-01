@@ -6,8 +6,6 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-import org.firstinspires.ftc.teamcode.opmodes.tests.ShooterOld;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

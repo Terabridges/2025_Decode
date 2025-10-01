@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.oldTests;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-public class ShooterOld implements Subsystem {
+public class ShooterSubsystemOld implements Subsystem {
 
     /** Config names (override from Robot if you rename in RC config) */
     public String leftName = "fly_left";
@@ -45,7 +45,7 @@ public class ShooterOld implements Subsystem {
 
     // ---------------- Lifecycle ----------------
 
-    public ShooterOld(HardwareMap hw, Telemetry tele) {
+    public ShooterSubsystemOld(HardwareMap hw, Telemetry tele) {
         this.hw = hw;
         this.tele = tele;
     }

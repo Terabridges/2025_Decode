@@ -5,9 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
-import org.firstinspires.ftc.teamcode.opmodes.tests.oldTests.ShooterOld;
 
 @Disabled
 @TeleOp(name="VisionTester", group="Test")
@@ -19,6 +17,7 @@ public class VisionTester extends LinearOpMode {
     public void runOpMode(){
 
         vision = new Vision(hardwareMap);
+        vision.toInit();
 
         waitForStart();
         while (opModeIsActive()){

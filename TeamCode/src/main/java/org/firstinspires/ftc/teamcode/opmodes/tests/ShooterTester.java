@@ -1,88 +1,96 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 
-@TeleOp(name = "ShooterTester", group = "Test")
+@Configurable
+@TeleOp(name="ShooterTester", group="Test")
 public class ShooterTester extends LinearOpMode {
 
-    // Match the clamp used in your Shooter subsystem
-    private static final double MAX_RPM = 6000.0;
+    public Shooter shooter;
+    public Gamepad currentGamepad1 = new Gamepad();
+    public Gamepad previousGamepad1 = new Gamepad();
+    public DcMotor encoderFly;
 
-    private boolean fineMode = false;
+    public double TICKS_PER_REV = 28.0; // goBILDA 5000-0002-0001
+    public boolean flyRun = true;
 
-    private boolean lastDpadUp = false;
-    private boolean lastDpadDown = false;
-    private boolean lastDpadRight = false;
-    private boolean lastDpadLeft = false;
+    public ElapsedTime rpmTimer  = new ElapsedTime();
+    public int lastTicks = 0;
 
-    ShooterOld shooter;
+    public PIDController shooterController;
+    public static double p = 0.0, i = 0.0, d = 0.0;
+    public static int shooterTarget;
+    double pid, shooterPower;
+
+    double dtRPM, tps, rps, rpm;
+    int curPos, difTicks;
 
     @Override
-    public void runOpMode() {
+    public void runOpMode(){
+
+        shooter = new Shooter(hardwareMap);
+        rpmTimer.reset();
+        lastTicks = shooter.flyLeft.getCurrentPosition();
+        shooterController = new PIDController(p, i, d);
+        encoderFly = shooter.flyLeft;
+
+        shooterController.setPID(p, i, d);
+        //shooterController.setIntegrationBounds(-0.2, 0.2);
+        //shooterController.setTolerance(100);
+
         waitForStart();
+        while (opModeIsActive()){
+            previousGamepad1.copy(currentGamepad1);
+            currentGamepad1.copy(gamepad1);
 
-        shooter = new ShooterOld(hardwareMap, telemetry);
+            updateShooterRPM();
 
-        while (opModeIsActive()) {
-            // --- RPM control ---
-            double rTrig = gamepad1.right_trigger; // 0..1
-            if (rTrig > 0.02) {
-                shooter.setRpm(rTrig * MAX_RPM);
+            if (flyRun){
+                shooterSetPower(setShooterPID(shooterTarget));
+            } else {
+                shooterSetPower(0);
             }
 
-            fineMode = gamepad1.left_bumper;
-
-            // RPM adjustments with dpad up/down
-            double stepRPM = fineMode ? 1000.0 : 100.0;
-
-            double stepHood = fineMode ? 0.1 : 0.01;
-
-            // Presets
-            if (gamepad1.a) shooter.setRpm(2500);
-            if (gamepad1.b) shooter.setRpm(4000);
-
-            // Nudges
-            boolean currentUp = gamepad1.dpad_up;
-            if (currentUp && !lastDpadUp) {
-                if (gamepad1.dpad_up) shooter.nudgeRpm(stepRPM);
-            }
-            lastDpadUp = currentUp;
-
-            boolean currentDown = gamepad1.dpad_down;
-            if (currentDown && !lastDpadDown) {
-                if (gamepad1.dpad_down) shooter.nudgeRpm(-stepRPM);
-            }
-            lastDpadDown = currentDown;
-
-
-            // Stop
-            if (gamepad1.x) shooter.stop();
-
-            // Reverse direction (unjam/backspin)
-            if (gamepad1.y) {
-                shooter.reverseDirection();
-                sleep(150); // debounce
-            }
-
-            //Hood control
-
-//            boolean currentRight = gamepad1.dpad_right;
-//            if (currentRight && !lastDpadRight) {
-//                if (gamepad1.dpad_right) bot.shooter.nudgeHood(stepHood);
-//            }
-//            lastDpadRight = currentRight;
-
-//            boolean currentLeft = gamepad1.dpad_left;
-//            if (currentLeft && !lastDpadLeft) {
-//                if (gamepad1.dpad_left) bot.shooter.nudgeHood(-stepHood);
-//            }
-//            lastDpadLeft = currentLeft;
-
-            // Update subsystems + telemetry (Shooter + Limelight)
-            shooter.update();
+            updateTelem();
         }
+    }
+
+    public double setShooterPID(double targetRPM) {
+
+
+        pid = shooterController.calculate(rpm, targetRPM);
+
+        shooterPower = pid;
+        shooterPower = Math.max(-1, Math.min(1, shooterPower));
+
+        return shooterPower;
+    }
+
+    public void shooterSetPower(double pow){
+        shooter.flyLeft.setPower(pow);
+        shooter.flyRight.setPower(pow);
+    }
+
+    public void updateShooterRPM(){
+        dtRPM = Math.max(1e-3, rpmTimer.seconds());
+        rpmTimer.reset();
+        curPos = encoderFly.getCurrentPosition();
+        difTicks = curPos - lastTicks;
+        lastTicks = curPos;
+        tps = difTicks / dtRPM;
+        rps = tps / TICKS_PER_REV;
+        rpm = rps * 60.0;
+    }
+
+    public void updateTelem(){
+        
     }
 }
