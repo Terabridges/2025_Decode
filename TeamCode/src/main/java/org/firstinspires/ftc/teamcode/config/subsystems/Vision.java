@@ -23,6 +23,7 @@ public class Vision implements Subsystem{
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
+    private double robotYawDeg = 0.0;        // Chassis yaw from pinpoint
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
@@ -40,15 +41,12 @@ public class Vision implements Subsystem{
 
     private void limelightUpdate(){
         if (pinpoint != null) {
-            double yawDeg = (pinpoint.getHeading(AngleUnit.DEGREES)-90);
-            limelight.updateRobotOrientation(yawDeg);
+            robotYawDeg = pinpoint.getHeading(AngleUnit.DEGREES);
         }
+
+        limelight.updateRobotOrientation(robotYawDeg);
 
         latest = limelight.getLatestResult();
-
-        if (latest != null && latest.isValid()) {
-            Pose3D botpose = latest.getBotpose_MT2();
-        }
     }
 
     public void pipeline(int index) {
@@ -58,18 +56,12 @@ public class Vision implements Subsystem{
 
     public boolean hasTarget() { return latest != null && latest.isValid(); }
 
-    public double getTx(double def) {
-        if (hasTarget()) {
-            try { return latest.getTx(); } catch (Throwable ignored) {}
-        }
-        return def;
+    public double getTx() {
+        return latest.getTx();
     }
 
-    public double getTy(double def) {
-        if (hasTarget()) {
-            try { return latest.getTy(); } catch (Throwable ignored) {}
-        }
-        return def;
+    public double getTy() {
+        return latest.getTy();
     }
 
     public Pose3D getBotPoseMT2() {
@@ -97,6 +89,51 @@ public class Vision implements Subsystem{
         pinpoint.update();
     }
 
+    public double getDistanceInches()
+    {
+        LLResultTypes.FiducialResult f0   = latest.getFiducialResults().get(0);
+        Pose3D p = f0.getTargetPoseCameraSpace();   // meters
+        double z = p.getPosition().z;               // forward distance (meters)
+        return z * 39.3701;
+    }
+
+    public double getPlanarDistanceInches()
+    {
+        LLResultTypes.FiducialResult f0   = latest.getFiducialResults().get(0);
+        Pose3D p = f0.getTargetPoseCameraSpace();   // AprilTag pose in the CAMERA frame (meters)
+        double x = p.getPosition().x;               // +X = right (meters)
+        double z = p.getPosition().z;               // +Z = forward (meters)
+        return Math.hypot(x, z) * 39.3701;
+    }
+
+    public double getCameraBearingDeg()
+    {
+        LLResultTypes.FiducialResult f0   = latest.getFiducialResults().get(0);
+        Pose3D p = f0.getTargetPoseCameraSpace();   // meters
+        double x = p.getPosition().x;
+        double z = p.getPosition().z;
+        return Math.toDegrees(Math.atan2(x, z));
+    }
+
+    public double getDistanceUsingTan(){
+        double targetOffsetAngle_Vertical = latest.getTy();
+
+        // how many degrees back is your limelight rotated from perfectly vertical?
+        double limelightMountAngleDegrees = 25.0;
+
+        // distance from the center of the Limelight lens to the floor
+        double limelightLensHeightInches = 20.0;
+
+        // distance from the target to the floor
+        double goalHeightInches = 60.0;
+
+        double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
+        double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
+
+        //calculate distance
+        return (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
@@ -109,5 +146,4 @@ public class Vision implements Subsystem{
         limelightUpdate();
         pinpointUpdate();
     }
-
 }
