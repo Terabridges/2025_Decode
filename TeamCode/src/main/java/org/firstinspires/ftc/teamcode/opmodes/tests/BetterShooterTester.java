@@ -1,26 +1,38 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 
+@Configurable
 @TeleOp(name="BetterShooterTester", group="Test")
 public class BetterShooterTester extends LinearOpMode {
 
     public Shooter shooter;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
+    public DcMotor encoderFly;
 
-    private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
-    double velocity = 0.0;
-    private int desiredRpm = 0;
-    boolean flyRun = false;
+    public double TICKS_PER_REV = 28.0; // goBILDA 5000-0002-0001
+    public boolean flyRun = true;
 
-    private ElapsedTime rpmTimer  = new ElapsedTime();
-    private int lastTicks = 0;
+    public ElapsedTime rpmTimer  = new ElapsedTime();
+    public int lastTicks = 0;
+
+    public PIDController shooterController;
+    public static double p = 0.0, i = 0.0, d = 0.0;
+    public static int shooterTarget;
+    double pid, shooterPower;
+
+    double dtRPM, tps, rps, rpm;
+    int curPos, difTicks;
 
     @Override
     public void runOpMode(){
@@ -28,57 +40,58 @@ public class BetterShooterTester extends LinearOpMode {
         shooter = new Shooter(hardwareMap);
         rpmTimer.reset();
         lastTicks = shooter.flyLeft.getCurrentPosition();
+        shooterController = new PIDController(p, i, d);
+        encoderFly = shooter.flyLeft;
+
+        shooterController.setPID(p, i, d);
+        //shooterController.setIntegrationBounds(-0.2, 0.2);
+        //shooterController.setTolerance(100);
 
         waitForStart();
         while (opModeIsActive()){
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);
 
-            velocity = (desiredRpm * TICKS_PER_REV) / 60.0;
-
-            if (currentGamepad1.a && !previousGamepad1.a){
-                flyRun = !flyRun;
-            }
-
-            if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up){
-                desiredRpm += 1000;
-                if (desiredRpm == 7000){
-                    desiredRpm = 0;
-                }
-            }
-
-            if (currentGamepad1.dpad_down && !previousGamepad1.dpad_down){
-                desiredRpm -= 1000;
-                if (desiredRpm == -1000){
-                    desiredRpm = 6000;
-                }
-            }
+            updateShooterRPM();
 
             if (flyRun){
-                shooter.flyLeft.setVelocity(velocity);
-                shooter.flyRight.setVelocity(velocity);
+                shooterSetPower(setShooterPID(shooterTarget));
             } else {
-                shooter.flyLeft.setVelocity(0);
-                shooter.flyRight.setVelocity(0);
+                shooterSetPower(0);
             }
 
-            double dtRpm = rpmTimer.seconds();
-            rpmTimer.reset();
-            int cur = shooter.flyLeft.getCurrentPosition();
-            int d = cur - lastTicks;
-            lastTicks = cur;
-            //Encoder is on left
-            double tps = d / dtRpm; // ticks/sec
-            double rps = tps / TICKS_PER_REV;
-            double rpm = rps * 60.0;
-
-            telemetry.addData("Desired RPM", desiredRpm);
-            telemetry.addData("Left RPM", rpm);
-            telemetry.addData("Left Power", shooter.flyLeft.getPower());
-            telemetry.addData("Left Velocity", shooter.flyLeft.getVelocity());
-            telemetry.addData("Right Power", shooter.flyRight.getPower());
-            telemetry.addData("Right Velocity", shooter.flyRight.getVelocity());
-            telemetry.update();
+            updateTelem();
         }
+    }
+
+    public double setShooterPID(double targetRPM) {
+
+
+        pid = shooterController.calculate(rpm, targetRPM);
+
+        shooterPower = pid;
+        shooterPower = Math.max(-1, Math.min(1, shooterPower));
+
+        return shooterPower;
+    }
+
+    public void shooterSetPower(double pow){
+        shooter.flyLeft.setPower(pow);
+        shooter.flyRight.setPower(pow);
+    }
+
+    public void updateShooterRPM(){
+        dtRPM = Math.max(1e-3, rpmTimer.seconds());
+        rpmTimer.reset();
+        curPos = encoderFly.getCurrentPosition();
+        difTicks = curPos - lastTicks;
+        lastTicks = curPos;
+        tps = difTicks / dtRPM;
+        rps = tps / TICKS_PER_REV;
+        rpm = rps * 60.0;
+    }
+
+    public void updateTelem(){
+        
     }
 }

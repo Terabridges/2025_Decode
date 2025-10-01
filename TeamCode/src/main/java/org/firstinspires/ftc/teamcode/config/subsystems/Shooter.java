@@ -16,8 +16,8 @@ public class Shooter implements Subsystem{
     public CRServo turret;
     public AnalogInput turretAnalog;
     public AbsoluteAnalogEncoder turretEnc;
-    public DcMotorEx flyLeft;
-    public DcMotorEx flyRight;
+    public DcMotor flyLeft;
+    public DcMotor flyRight;
     public CRServo hood;
     public AnalogInput hoodAnalog;
     public AbsoluteAnalogEncoder hoodEnc;
@@ -32,16 +32,16 @@ public class Shooter implements Subsystem{
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
-        turret = map.get(CRServo.class, "turret");
-        flyLeft = map.get(DcMotorEx.class, "fly_left");
-        flyRight = map.get(DcMotorEx.class, "fly_right");
+//        turret = map.get(CRServo.class, "turret");
+        flyLeft = map.get(DcMotor.class, "fly_left");
+        flyRight = map.get(DcMotor.class, "fly_right");
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        hood = map.get(CRServo.class, "hood");
-        hoodSwitch = map.get(TouchSensor.class, "hood_switch");
-        turretAnalog = map.get(AnalogInput.class, "turret_analog");
-        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
-        hoodAnalog = map.get(AnalogInput.class, "hood_analog");
-        hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
+//        hood = map.get(CRServo.class, "hood");
+//        hoodSwitch = map.get(TouchSensor.class, "hood_switch");
+//        turretAnalog = map.get(AnalogInput.class, "turret_analog");
+//        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
+//        hoodAnalog = map.get(AnalogInput.class, "hood_analog");
+//        hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
 
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -51,21 +51,6 @@ public class Shooter implements Subsystem{
 
     //---------------- Methods ----------------
 
-    public void updateVelocity(){
-        velocity = (desiredRpm * TICKS_PER_REV) / 60.0;
-        if (flyRun){
-            flyLeft.setVelocity(velocity);
-            flyRight.setVelocity(velocity);
-        }
-    }
-
-    public void setFlyRun(boolean state){
-        flyRun = state;
-    }
-
-    public void setRpm(double rpm) {
-        desiredRpm = rpm;
-    }
 
     //---------------- Interface Methods ----------------
     @Override
@@ -75,7 +60,7 @@ public class Shooter implements Subsystem{
 
     @Override
     public void update(){
-        updateVelocity();
+
     }
 
 }

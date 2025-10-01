@@ -13,8 +13,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class ShooterOld implements Subsystem {
 
     /** Config names (override from Robot if you rename in RC config) */
-    public String leftName = "shooterL";
-    public String rightName = "shooterR";
+    public String leftName = "fly_left";
+    public String rightName = "fly_right";
     public String hoodName = "hood";
 
     /** Hardware */
