@@ -37,7 +37,7 @@ public class Shooter implements Subsystem{
         flyRight = map.get(DcMotor.class, "fly_right");
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
 //        hood = map.get(CRServo.class, "hood");
-//        hoodSwitch = map.get(TouchSensor.class, "hood_switch");
+        hoodSwitch = map.get(TouchSensor.class, "hood_switch");
 //        turretAnalog = map.get(AnalogInput.class, "turret_analog");
 //        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
 //        hoodAnalog = map.get(AnalogInput.class, "hood_analog");

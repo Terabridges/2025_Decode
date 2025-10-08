@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
-@Disabled
 @TeleOp(name="VisionTester", group="Test")
 public class VisionTester extends LinearOpMode {
 
@@ -29,8 +28,8 @@ public class VisionTester extends LinearOpMode {
             telemetry.addData("Distance (inches)", vision.getDistanceInches());
             telemetry.addData("Planar Distance (inches)", vision.getPlanarDistanceInches());
             telemetry.addData("Distance using tan (inches)", vision.getDistanceUsingTan());
-            telemetry.addData("Bot pose MT1", vision.getBotPoseMT1());
-            telemetry.addData("Bot pose MT2", vision.getBotPoseMT2());
+//            telemetry.addData("Bot pose MT1", vision.getBotPoseMT1());
+//            telemetry.addData("Bot pose MT2", vision.getBotPoseMT2());
             telemetry.update();
         }
     }
