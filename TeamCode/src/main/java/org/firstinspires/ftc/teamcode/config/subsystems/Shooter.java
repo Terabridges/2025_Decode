@@ -29,6 +29,14 @@ public class Shooter implements Subsystem{
     private double desiredRpm = 0.0;
     boolean flyRun = false;
 
+    //Auto Lock Stuff --------------------
+    private double kP = 0.020;       // tune on-bot
+    private double kD = 0.001;       // damp overshoot
+    private double maxTurretPower = 0.50;  // cap CR servo power
+    private double deadbandDeg = 0.30;     // don't buzz near zero
+    private double prevErrDeg = 0.0;
+    // ------------------------------------
+
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
@@ -50,7 +58,32 @@ public class Shooter implements Subsystem{
     }
 
     //---------------- Methods ----------------
+    public void turretLockUpdate(double txDeg)
+    {
+        double err = txDeg;                  // goal: tx -> 0
+        double dErr = err - prevErrDeg;      // discrete derivative
+        prevErrDeg = err;
 
+        // small deadband to stop jitter at center
+        if (Math.abs(err) < deadbandDeg)
+        {
+            setTurretPower(0.0);
+            return;
+        }
+
+        double out = kP * err + kD * dErr;
+
+        // clamp to safe CR servo range
+        if (out >  maxTurretPower) out =  maxTurretPower;
+        if (out < -maxTurretPower) out = -maxTurretPower;
+
+        setTurretPower(out);
+    }
+
+    private void setTurretPower(double pwr)
+    {
+        turret.setPower(pwr);
+    }
 
     //---------------- Interface Methods ----------------
     @Override
