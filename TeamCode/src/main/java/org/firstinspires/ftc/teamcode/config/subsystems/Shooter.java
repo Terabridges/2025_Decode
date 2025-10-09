@@ -30,7 +30,6 @@ public class Shooter implements Subsystem{
     boolean flyRun = false;
 
     //Auto Lock Stuff --------------------
-    boolean turretLock = false;
     private double kP = 0.020;       // tune on-bot
     private double kD = 0.001;       // damp overshoot
     private double maxTurretPower = 0.50;  // cap CR servo power
@@ -41,16 +40,16 @@ public class Shooter implements Subsystem{
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
-//        turret = map.get(CRServo.class, "turret");
+        turret = map.get(CRServo.class, "turret");
         flyLeft = map.get(DcMotor.class, "fly_left");
         flyRight = map.get(DcMotor.class, "fly_right");
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
-//        hood = map.get(CRServo.class, "hood");
+        hood = map.get(CRServo.class, "hood");
         hoodSwitch = map.get(TouchSensor.class, "hood_switch");
-//        turretAnalog = map.get(AnalogInput.class, "turret_analog");
-//        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
-//        hoodAnalog = map.get(AnalogInput.class, "hood_analog");
-//        hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
+        turretAnalog = map.get(AnalogInput.class, "turret_analog");
+        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
+        hoodAnalog = map.get(AnalogInput.class, "hood_analog");
+        hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
 
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -59,38 +58,35 @@ public class Shooter implements Subsystem{
     }
 
     //---------------- Methods ----------------
-    public void turretLockUpdate(double txDeg)
+    public void turretLockUpdate(double txDeg) //pos tx turret too left, neg tx turret too right
     {
-        if (turretLock)
+        double err = txDeg;                  // goal: tx -> 0
+        double dErr = err - prevErrDeg;      // discrete derivative
+        prevErrDeg = err;
+
+        // small deadband to stop jitter at center
+        if (Math.abs(err) < deadbandDeg)
         {
-            double err = txDeg;                  // goal: tx -> 0
-            double dErr = err - prevErrDeg;      // discrete derivative
-            prevErrDeg = err;
-
-            // small deadband to stop jitter at center
-            if (Math.abs(err) < deadbandDeg) {
-                setTurretPower(0.0);
-                return;
-            }
-
-            double out = kP * err + kD * dErr;
-
-            // clamp to safe CR servo range
-            if (out > maxTurretPower) out = maxTurretPower;
-            if (out < -maxTurretPower) out = -maxTurretPower;
-
-            setTurretPower(out);
+            setTurretPower(0.0);
+            return;
         }
+
+        double out = kP * err + kD * dErr;
+
+        // clamp to safe CR servo range
+        if (out >  maxTurretPower) out =  maxTurretPower;
+        if (out < -maxTurretPower) out = -maxTurretPower;
+
+        setTurretPower(out);
     }
 
-    public void setTurretPower(double pwr)
+    private void setTurretPower(double pwr)
     {
         turret.setPower(pwr);
     }
 
-    public void toggleTurretLock()
-    {
-        turretLock = !turretLock;
+    private double getTurretPos(){
+        return turretEnc.getCurrentPosition();
     }
 
     //---------------- Interface Methods ----------------

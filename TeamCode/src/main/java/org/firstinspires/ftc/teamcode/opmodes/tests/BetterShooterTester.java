@@ -36,6 +36,8 @@ public class BetterShooterTester extends LinearOpMode {
 
     boolean isTouching = false;
 
+    public static double manualPow = 0.0;
+
     @Override
     public void runOpMode(){
 
@@ -46,7 +48,6 @@ public class BetterShooterTester extends LinearOpMode {
         shooterController = new PIDController(p, i, d);
         encoderFly = shooter.flyLeft;
 
-        shooterController.setPID(p, i, d);
         //shooterController.setIntegrationBounds(-0.2, 0.2);
         //shooterController.setTolerance(100);
 
@@ -54,9 +55,20 @@ public class BetterShooterTester extends LinearOpMode {
         while (opModeIsActive()){
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);
-            shooterController.setPID(p, i, d);
 
             updateShooterRPM();
+
+            if (currentGamepad1.a && !previousGamepad1.a){
+                flyRun = !flyRun;
+            }
+
+            if (currentGamepad1.b && !previousGamepad1.b){
+                shooterSetPower(manualPow);
+            }
+
+            if (currentGamepad1.y && !previousGamepad1.y){
+                shooterSetPower(0);
+            }
 
             if (flyRun){
                 shooterSetPower(setShooterPID(shooterTarget));
@@ -72,15 +84,16 @@ public class BetterShooterTester extends LinearOpMode {
 
     public double setShooterPID(double targetRPM) {
 
-
+        shooterController.setPID(p, i, d);
         pid = shooterController.calculate(rpm, targetRPM);
-
         shooterPower = pid;
-
         return shooterPower;
+
     }
 
     public void shooterSetPower(double pow){
+        pow = Math.max(pow, 0.9);
+        pow = Math.min(pow, -0.9);
         shooter.flyLeft.setPower(pow);
         shooter.flyRight.setPower(pow);
     }
@@ -101,6 +114,8 @@ public class BetterShooterTester extends LinearOpMode {
         telemetry.addData("Current RPM", rpm);
         telemetry.addData("Error", shooterTarget - rpm);
         telemetry.addData("Switch Activated?", isTouching);
+        telemetry.addData("Left Power", shooter.flyLeft.getPower());
+        telemetry.addData("Right Power", shooter.flyRight.getPower());
         telemetry.update();
     }
 }
