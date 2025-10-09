@@ -40,16 +40,16 @@ public class Shooter implements Subsystem{
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
-//        turret = map.get(CRServo.class, "turret");
+        turret = map.get(CRServo.class, "turret");
         flyLeft = map.get(DcMotor.class, "fly_left");
         flyRight = map.get(DcMotor.class, "fly_right");
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
-//        hood = map.get(CRServo.class, "hood");
+        hood = map.get(CRServo.class, "hood");
         hoodSwitch = map.get(TouchSensor.class, "hood_switch");
-//        turretAnalog = map.get(AnalogInput.class, "turret_analog");
-//        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
-//        hoodAnalog = map.get(AnalogInput.class, "hood_analog");
-//        hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
+        turretAnalog = map.get(AnalogInput.class, "turret_analog");
+        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
+        hoodAnalog = map.get(AnalogInput.class, "hood_analog");
+        hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
 
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -58,7 +58,7 @@ public class Shooter implements Subsystem{
     }
 
     //---------------- Methods ----------------
-    public void turretLockUpdate(double txDeg)
+    public void turretLockUpdate(double txDeg) //pos tx turret too left, neg tx turret too right
     {
         double err = txDeg;                  // goal: tx -> 0
         double dErr = err - prevErrDeg;      // discrete derivative
@@ -83,6 +83,10 @@ public class Shooter implements Subsystem{
     private void setTurretPower(double pwr)
     {
         turret.setPower(pwr);
+    }
+
+    private double getTurretPos(){
+        return turretEnc.getCurrentPosition();
     }
 
     //---------------- Interface Methods ----------------
