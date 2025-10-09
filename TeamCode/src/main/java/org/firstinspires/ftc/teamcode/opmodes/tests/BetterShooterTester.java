@@ -40,6 +40,7 @@ public class BetterShooterTester extends LinearOpMode {
     public void runOpMode(){
 
         shooter = new Shooter(hardwareMap);
+
         rpmTimer.reset();
         lastTicks = shooter.flyLeft.getCurrentPosition();
         shooterController = new PIDController(p, i, d);

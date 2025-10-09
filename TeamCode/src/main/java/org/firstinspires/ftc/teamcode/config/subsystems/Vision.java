@@ -13,6 +13,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
+//LL mount measurements:
+
 public class Vision implements Subsystem{
 
     //---------------- Hardware ----------------
@@ -56,25 +58,29 @@ public class Vision implements Subsystem{
 
     public boolean hasTarget() { return latest != null && latest.isValid(); }
 
+    /*
+    Note: Limelight is mounted 90 degrees counterclockwise, therefore
+    get tx returns ty
+    get ty returns -tx
+    */
+
     public double getTx() {
-        return latest.getTx();
+        if (hasTarget()) { return latest.getTy(); }
+        return 0.0;
     }
 
     public double getTy() {
-        return latest.getTy();
+        if (hasTarget()) { return -latest.getTx(); }
+        return 0.0;
     }
 
     public Pose3D getBotPoseMT2() {
-        if (hasTarget()) {
-            try { return latest.getBotpose_MT2(); } catch (Throwable ignored) {}
-        }
+        if (hasTarget()) { return latest.getBotpose_MT2(); }
         return null;
     }
 
     public Pose3D getBotPoseMT1() {
-        if (hasTarget()) {
-            try { return latest.getBotpose(); } catch (Throwable ignored) {}
-        }
+        if (hasTarget()) { return latest.getBotpose(); }
         return null;
     }
 
@@ -91,47 +97,92 @@ public class Vision implements Subsystem{
 
     public double getDistanceInches()
     {
-        LLResultTypes.FiducialResult f0   = latest.getFiducialResults().get(0);
-        Pose3D p = f0.getTargetPoseCameraSpace();   // meters
-        double z = p.getPosition().z;               // forward distance (meters)
-        return z * 39.3701;
+        if (hasTarget())
+        {
+            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+            Pose3D p = f0.getTargetPoseCameraSpace();   // meters
+            double z = p.getPosition().z;               // forward distance (meters)
+            return z * 39.3701;
+        }
+        return 0.0;
     }
 
     public double getPlanarDistanceInches()
     {
-        LLResultTypes.FiducialResult f0   = latest.getFiducialResults().get(0);
-        Pose3D p = f0.getTargetPoseCameraSpace();   // AprilTag pose in the CAMERA frame (meters)
-        double x = p.getPosition().x;               // +X = right (meters)
-        double z = p.getPosition().z;               // +Z = forward (meters)
-        return Math.hypot(x, z) * 39.3701;
+        if (hasTarget()) {
+            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+            Pose3D p = f0.getTargetPoseCameraSpace();   // AprilTag pose in the CAMERA frame (meters)
+            double x = p.getPosition().x;               // +X = right (meters)
+            double z = p.getPosition().z;               // +Z = forward (meters)
+            return Math.hypot(x, z) * 39.3701;
+        }
+        return 0.0;
     }
 
     public double getCameraBearingDeg()
     {
-        LLResultTypes.FiducialResult f0   = latest.getFiducialResults().get(0);
-        Pose3D p = f0.getTargetPoseCameraSpace();   // meters
-        double x = p.getPosition().x;
-        double z = p.getPosition().z;
-        return Math.toDegrees(Math.atan2(x, z));
+        if (hasTarget()) {
+            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+            Pose3D p = f0.getTargetPoseCameraSpace();   // meters
+            double x = p.getPosition().x;
+            double z = p.getPosition().z;
+            return Math.toDegrees(Math.atan2(x, z));
+        }
+        return 0.0;
     }
 
-    public double getDistanceUsingTan(){
-        double targetOffsetAngle_Vertical = latest.getTy();
+    public double getFiducialX()
+    {
+        if (hasTarget()) {
+            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+            Pose3D p = f0.getTargetPoseCameraSpace();
+            return p.getPosition().x;
+        }
+        return 0.0;
+    }
 
-        // how many degrees back is your limelight rotated from perfectly vertical?
-        double limelightMountAngleDegrees = 25.0;
+    public double getFiducialY()
+    {
+        if (hasTarget()) {
+            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+            Pose3D p = f0.getTargetPoseCameraSpace();
+            return p.getPosition().y;
+        }
+        return 0.0;
+    }
 
-        // distance from the center of the Limelight lens to the floor
-        double limelightLensHeightInches = 20.0;
+    public double getFiducialZ()
+    {
+        if (hasTarget()) {
+            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+            Pose3D p = f0.getTargetPoseCameraSpace();
+            return p.getPosition().z;
+        }
+        return 0.0;
+    }
 
-        // distance from the target to the floor
-        double goalHeightInches = 60.0;
+    public double getDistanceUsingTan()
+    {
+        //This will not work unless values are tuned
+        if (hasTarget()) {
+            double targetOffsetAngle_Vertical = latest.getTy();
 
-        double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
-        double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
+            // how many degrees back is your limelight rotated from perfectly vertical?
+            double limelightMountAngleDegrees = 25.0;
 
-        //calculate distance
-        return (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
+            // distance from the center of the Limelight lens to the floor
+            double limelightLensHeightInches = 20.0;
+
+            // distance from the target to the floor
+            double goalHeightInches = 60.0;
+
+            double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
+            double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
+
+            //calculate distance
+            return (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
+        }
+        return 0.0;
     }
 
     //---------------- Interface Methods ----------------

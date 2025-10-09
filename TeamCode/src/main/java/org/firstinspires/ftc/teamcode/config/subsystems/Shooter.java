@@ -30,6 +30,7 @@ public class Shooter implements Subsystem{
     boolean flyRun = false;
 
     //Auto Lock Stuff --------------------
+    boolean turretLock = false;
     private double kP = 0.020;       // tune on-bot
     private double kD = 0.001;       // damp overshoot
     private double maxTurretPower = 0.50;  // cap CR servo power
@@ -60,29 +61,36 @@ public class Shooter implements Subsystem{
     //---------------- Methods ----------------
     public void turretLockUpdate(double txDeg)
     {
-        double err = txDeg;                  // goal: tx -> 0
-        double dErr = err - prevErrDeg;      // discrete derivative
-        prevErrDeg = err;
-
-        // small deadband to stop jitter at center
-        if (Math.abs(err) < deadbandDeg)
+        if (turretLock)
         {
-            setTurretPower(0.0);
-            return;
+            double err = txDeg;                  // goal: tx -> 0
+            double dErr = err - prevErrDeg;      // discrete derivative
+            prevErrDeg = err;
+
+            // small deadband to stop jitter at center
+            if (Math.abs(err) < deadbandDeg) {
+                setTurretPower(0.0);
+                return;
+            }
+
+            double out = kP * err + kD * dErr;
+
+            // clamp to safe CR servo range
+            if (out > maxTurretPower) out = maxTurretPower;
+            if (out < -maxTurretPower) out = -maxTurretPower;
+
+            setTurretPower(out);
         }
-
-        double out = kP * err + kD * dErr;
-
-        // clamp to safe CR servo range
-        if (out >  maxTurretPower) out =  maxTurretPower;
-        if (out < -maxTurretPower) out = -maxTurretPower;
-
-        setTurretPower(out);
     }
 
-    private void setTurretPower(double pwr)
+    public void setTurretPower(double pwr)
     {
         turret.setPower(pwr);
+    }
+
+    public void toggleTurretLock()
+    {
+        turretLock = !turretLock;
     }
 
     //---------------- Interface Methods ----------------

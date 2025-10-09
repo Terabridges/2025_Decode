@@ -23,17 +23,25 @@ public class VisionTester extends LinearOpMode {
 
             vision.update();
 
-            telemetry.addData("X Offset", vision.getTx());
-            telemetry.addData("Y Offset", vision.getTy());
-            telemetry.addData("Distance (inches)", vision.getDistanceInches());
-            telemetry.addData("Planar Distance (inches)", vision.getPlanarDistanceInches());
-            telemetry.addData("Distance using tan (inches)", vision.getDistanceUsingTan());
-//            telemetry.addData("Bot pose MT1", vision.getBotPoseMT1());
-//            telemetry.addData("Bot pose MT2", vision.getBotPoseMT2());
-            telemetry.update();
+            updateTelem();
         }
     }
 
     //methods
 
+    private void updateTelem()
+    {
+        telemetry.addData("X Offset", vision.getTx());
+        telemetry.addData("Y Offset", vision.getTy());
+        telemetry.addData("X Fid", vision.getFiducialX());
+        telemetry.addData("Y Fid", vision.getFiducialY());
+        telemetry.addData("Z Fid", vision.getFiducialZ());
+        telemetry.addData("Distance (inches)", vision.getDistanceInches());
+        telemetry.addData("Planar Distance (inches)", vision.getPlanarDistanceInches());
+        telemetry.addData("Distance using tan (inches)", vision.getDistanceUsingTan());
+        telemetry.addData("Camera Bearing", vision.getCameraBearingDeg());
+//            telemetry.addData("Bot pose MT1", vision.getBotPoseMT1());
+//            telemetry.addData("Bot pose MT2", vision.getBotPoseMT2());
+        telemetry.update();
+    }
 }
