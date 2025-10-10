@@ -30,7 +30,7 @@ public class Shooter implements Subsystem{
     boolean flyRun = false;
 
     //Auto Lock Stuff --------------------
-    boolean turretLock = false;
+    public boolean turretLock = false;
     private double kP = 0.020;       // tune on-bot
     private double kD = 0.001;       // damp overshoot
     private double maxTurretPower = 0.50;  // cap CR servo power

@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.opmodes.tests;
 
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.JoinedTelemetry;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -29,7 +31,7 @@ public class BetterShooterTester extends LinearOpMode {
     public PIDController shooterController;
     public static double p = 0.0, i = 0.0, d = 0.0;
     public static double shooterTarget;
-    double pid, shooterPower;
+    double shooterPower;
 
     double dtRPM, tps, rps, rpm;
     int curPos, difTicks;
@@ -38,8 +40,15 @@ public class BetterShooterTester extends LinearOpMode {
 
     public static double manualPow = 0.0;
 
+    private JoinedTelemetry joinedTelemetry;
+
     @Override
     public void runOpMode(){
+
+        joinedTelemetry = new JoinedTelemetry(
+                PanelsTelemetry.INSTANCE.getFtcTelemetry(),
+                telemetry
+        );
 
         shooter = new Shooter(hardwareMap);
 
@@ -85,8 +94,7 @@ public class BetterShooterTester extends LinearOpMode {
     public double setShooterPID(double targetRPM) {
 
         shooterController.setPID(p, i, d);
-        pid = shooterController.calculate(rpm, targetRPM);
-        shooterPower = pid;
+        shooterPower = shooterController.calculate(rpm, targetRPM);
         return shooterPower;
 
     }
@@ -110,12 +118,12 @@ public class BetterShooterTester extends LinearOpMode {
     }
 
     public void updateTelem(){
-        telemetry.addData("Target RPM", shooterTarget);
-        telemetry.addData("Current RPM", rpm);
-        telemetry.addData("Error", shooterTarget - rpm);
-        telemetry.addData("Switch Activated?", isTouching);
-        telemetry.addData("Left Power", shooter.flyLeft.getPower());
-        telemetry.addData("Right Power", shooter.flyRight.getPower());
-        telemetry.update();
+        joinedTelemetry.addData("Target RPM", shooterTarget);
+        joinedTelemetry.addData("Current RPM", rpm);
+        joinedTelemetry.addData("Error", shooterTarget - rpm);
+        joinedTelemetry.addData("Switch Activated?", isTouching);
+        joinedTelemetry.addData("Left Power", shooter.flyLeft.getPower());
+        joinedTelemetry.addData("Right Power", shooter.flyRight.getPower());
+        joinedTelemetry.update();
     }
 }
