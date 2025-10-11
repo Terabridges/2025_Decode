@@ -16,8 +16,8 @@ public class Shooter implements Subsystem{
     public CRServo turret;
     public AnalogInput turretAnalog;
     public AbsoluteAnalogEncoder turretEnc;
-    public DcMotor flyLeft;
-    public DcMotor flyRight;
+    public DcMotorEx flyLeft;
+    public DcMotorEx flyRight;
     public CRServo hood;
     public AnalogInput hoodAnalog;
     public AbsoluteAnalogEncoder hoodEnc;
@@ -30,7 +30,7 @@ public class Shooter implements Subsystem{
     boolean flyRun = false;
 
     //Auto Lock Stuff --------------------
-    public boolean turretLock = false;
+    public boolean turretLock = true;
     private double kP = 0.020;       // tune on-bot
     private double kD = 0.001;       // damp overshoot
     private double maxTurretPower = 0.50;  // cap CR servo power
@@ -42,8 +42,8 @@ public class Shooter implements Subsystem{
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
         turret = map.get(CRServo.class, "turret");
-        flyLeft = map.get(DcMotor.class, "fly_left");
-        flyRight = map.get(DcMotor.class, "fly_right");
+        flyLeft = map.get(DcMotorEx.class, "fly_left");
+        flyRight = map.get(DcMotorEx.class, "fly_right");
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
         hood = map.get(CRServo.class, "hood");
         hoodSwitch = map.get(TouchSensor.class, "hood_switch");
@@ -52,6 +52,7 @@ public class Shooter implements Subsystem{
         hoodAnalog = map.get(AnalogInput.class, "hood_analog");
         hoodEnc = new AbsoluteAnalogEncoder(hoodAnalog, 3.3, 0, 1);
 
+        turret.setDirection(DcMotorSimple.Direction.REVERSE);
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);

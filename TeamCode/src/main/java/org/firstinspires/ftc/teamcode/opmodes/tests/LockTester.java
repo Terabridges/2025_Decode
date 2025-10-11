@@ -4,7 +4,6 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -23,9 +22,14 @@ public class LockTester extends LinearOpMode {
     public Gamepad previousGamepad1 = new Gamepad();
 
     public PIDController turretController;
-    public static double p = 0.0, i = 0.0, d = 0.0;
-    public static double turretTarget;
-    double turretPower, currentAngle;
+    public static double p = 0.02, i = 0.00015, d = 0.0009;
+    public static double turretTarget = 0.0;
+    double posTolerance = 1.2;
+    double velTolerance = 5.0;
+    public static double inteTolerance = 6.0;
+    public static double maxPow = 0.6;
+    public static double deadband = 0.18;
+    double turretPower, error;
 
     private JoinedTelemetry joinedTelemetry;
 
@@ -43,6 +47,8 @@ public class LockTester extends LinearOpMode {
         shooter.toInit();
 
         turretController = new PIDController(p, i, d);
+        turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
+        turretController.setTolerance(posTolerance, velTolerance);
 
         waitForStart();
         while (opModeIsActive()){
@@ -52,6 +58,10 @@ public class LockTester extends LinearOpMode {
             if (currentGamepad1.a && !previousGamepad1.a)
             {
                 shooter.toggleTurretLock();
+            }
+
+            if(currentGamepad1.b && !previousGamepad1.b){
+                turretController.reset();
             }
 
             //shooter.turretLockUpdate(vision.getTx());
@@ -77,13 +87,17 @@ public class LockTester extends LinearOpMode {
 
     public double setTurretPID(double targetAngle) {
 
-        //targetAngle is 0, if we want to minimize error
-        currentAngle = vision.getTx();
         turretController.setPID(p, i, d);
-        turretPower = turretController.calculate(currentAngle, targetAngle);
-        turretPower *= 0.1;
+        error = vision.getTx();
+        if (Math.abs(error) < deadband) error = 0.0;
+        turretPower = turretController.calculate(error, targetAngle);
+        turretPower = clamp(turretPower, -maxPow, maxPow);
         return turretPower;
-        //TODO AXON TURRET IS NOT IN CR MODE
 
     }
+
+    public double clamp(double v, double lo, double hi) {
+        return Math.max(lo, Math.min(hi, v));
+    }
 }
+//TODO: add slew for smoothness?

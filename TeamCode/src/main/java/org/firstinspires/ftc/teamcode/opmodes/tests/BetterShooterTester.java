@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -20,25 +21,31 @@ public class BetterShooterTester extends LinearOpMode {
     public Shooter shooter;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
-    public DcMotor encoderFly;
+    public DcMotorEx encoderFly;
+    private VoltageSensor battery;
 
     public double TICKS_PER_REV = 28.0; // goBILDA 5000-0002-0001
-    public boolean flyRun = true;
+    public boolean flyRun = false;
 
-    public ElapsedTime rpmTimer  = new ElapsedTime();
     public int lastTicks = 0;
 
     public PIDController shooterController;
-    public static double p = 0.0, i = 0.0, d = 0.0;
+    public static double p = 0.0005, i = 0.0, d = 0.0002;
     public static double shooterTarget;
     double shooterPower;
 
-    double dtRPM, tps, rps, rpm;
-    int curPos, difTicks;
+    public static double kS = 0.05;      // static to overcome friction
+    public static double kV = 0.00085;  // ~power per RPM (assume ~5200 RPM ~ 100% power for a 6000RPM motor; adjust)
+    public static double kA = 0.0;       // optional accel term if you want extra snap
+
+    public static double manualVel = 1000;
+    double rawPower, powerFF;
+    double tps, rps, rpm;
+
 
     boolean isTouching = false;
 
-    public static double manualPow = 0.0;
+    public static double manualPow = 0.6;
 
     private JoinedTelemetry joinedTelemetry;
 
@@ -52,13 +59,14 @@ public class BetterShooterTester extends LinearOpMode {
 
         shooter = new Shooter(hardwareMap);
 
-        rpmTimer.reset();
-        lastTicks = shooter.flyLeft.getCurrentPosition();
         shooterController = new PIDController(p, i, d);
-        encoderFly = shooter.flyLeft;
+        encoderFly = shooter.flyRight;
 
-        //shooterController.setIntegrationBounds(-0.2, 0.2);
-        //shooterController.setTolerance(100);
+        lastTicks = encoderFly.getCurrentPosition();
+        shooterController.setTolerance(50.0, 500.0);
+        shooterController.setIntegrationBounds(-150.0, 150.0);
+
+        battery = hardwareMap.voltageSensor.iterator().next();
 
         waitForStart();
         while (opModeIsActive()){
@@ -79,10 +87,12 @@ public class BetterShooterTester extends LinearOpMode {
                 shooterSetPower(0);
             }
 
+            if (currentGamepad1.x && !previousGamepad1.x){
+                encoderFly.setVelocity((manualVel*TICKS_PER_REV)/60);
+            }
+
             if (flyRun){
                 shooterSetPower(setShooterPID(shooterTarget));
-            } else {
-                shooterSetPower(0);
             }
 
             isTouching = shooter.hoodSwitch.isPressed();
@@ -93,26 +103,25 @@ public class BetterShooterTester extends LinearOpMode {
 
     public double setShooterPID(double targetRPM) {
 
+        double v = battery.getVoltage();
         shooterController.setPID(p, i, d);
+        powerFF = kS + (kV * targetRPM);
+        powerFF *= (12.0 / Math.max(8.0, v));
         shooterPower = shooterController.calculate(rpm, targetRPM);
-        return shooterPower;
+        rawPower = powerFF + shooterPower;
 
+        //return rawPower;
+        return shooterPower;
     }
 
     public void shooterSetPower(double pow){
-        pow = Math.max(pow, 0.9);
-        pow = Math.min(pow, -0.9);
+        pow = clamp(pow, -0.975, 0.975);
         shooter.flyLeft.setPower(pow);
         shooter.flyRight.setPower(pow);
     }
 
     public void updateShooterRPM(){
-        dtRPM = Math.max(1e-3, rpmTimer.seconds());
-        rpmTimer.reset();
-        curPos = encoderFly.getCurrentPosition();
-        difTicks = curPos - lastTicks;
-        lastTicks = curPos;
-        tps = difTicks / dtRPM;
+        tps = encoderFly.getVelocity();
         rps = tps / TICKS_PER_REV;
         rpm = rps * 60.0;
     }
@@ -121,9 +130,13 @@ public class BetterShooterTester extends LinearOpMode {
         joinedTelemetry.addData("Target RPM", shooterTarget);
         joinedTelemetry.addData("Current RPM", rpm);
         joinedTelemetry.addData("Error", shooterTarget - rpm);
-        joinedTelemetry.addData("Switch Activated?", isTouching);
+        //joinedTelemetry.addData("Switch Activated?", isTouching);
         joinedTelemetry.addData("Left Power", shooter.flyLeft.getPower());
         joinedTelemetry.addData("Right Power", shooter.flyRight.getPower());
         joinedTelemetry.update();
+    }
+
+    public double clamp(double v, double lo, double hi) {
+        return Math.max(lo, Math.min(hi, v));
     }
 }
