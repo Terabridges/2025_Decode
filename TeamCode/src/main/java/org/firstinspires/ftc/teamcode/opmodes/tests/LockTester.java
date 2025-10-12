@@ -65,7 +65,7 @@ public class LockTester extends LinearOpMode {
             }
 
             //shooter.turretLockUpdate(vision.getTx());
-            if (shooter.turretLock){
+            if (shooter.useTurretLock){
             shooter.turret.setPower(setTurretPID(turretTarget));
             }
 

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -10,11 +11,11 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.utility.Util;
 
 public class Shooter implements Subsystem{
 
-    //TODO merge vision subsystem with shooter subsytem for turret lock, or create seperate subsystem, or figure sum else out
-    //---------------- Hardware ----------------
+    //---------------- Hardware ----------------!
     public CRServo turret;
     public AnalogInput turretAnalog;
     public AbsoluteAnalogEncoder turretEnc;
@@ -22,17 +23,36 @@ public class Shooter implements Subsystem{
     public DcMotorEx flyRight;
     public Servo hood;
     public TouchSensor hoodSwitch;
-    public Vision vision;
 
-    //---------------- Software ----------------
+    //---------Objects------
+    public Vision vision;
+    public Util util;
+
+    //---------------- Software ----------------!
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
+    double maxPow = 0.6;
+    double deadband = 0.18;
+    double turretPower, error;
 
-    //---------TurretLock-----
-    public boolean turretLock = true;
+    //---------Targets------
+    double turretTarget = 0.0;
+    double targetRPM = 0.0;
+    double hoodTarget = 0.0;
 
+    //---------useBool------
+    boolean useTurretPID = true;
+    public boolean useTurretLock = true;
+    boolean shooterShoot = true;
 
-    //---------------- Constructor ----------------
+    //---------PID------
+    public PIDController turretController;
+    double p = 0.02, i = 0.00015, d = 0.0009;
+    double posTolerance = 1.2;
+    double velTolerance = 5.0;
+    double inteTolerance = 6.0;
+
+    //---------------- Constructor ----------------!
     public Shooter(HardwareMap map) {
         turret = map.get(CRServo.class, "turret");
         flyLeft = map.get(DcMotorEx.class, "fly_left");
@@ -47,14 +67,23 @@ public class Shooter implements Subsystem{
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         flyRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        vision = new Vision(map);
+
+        turretController = new PIDController(p, i, d);
+        turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
+        turretController.setTolerance(posTolerance, velTolerance);
     }
 
-    //---------------- Methods ----------------
+    //---------------- Methods ----------------!
 
     //---------Turret------
     private void setTurretPower(double power)
     {
         turret.setPower(power);
+    }
+
+    private void setTurret(double target){
+        turret.setPower(setTurretPID(target));
     }
 
     public double getTurretPos()
@@ -64,7 +93,16 @@ public class Shooter implements Subsystem{
 
     public void toggleTurretLock()
     {
-        turretLock = !turretLock;
+        useTurretLock = !useTurretLock;
+    }
+
+    public double setTurretPID(double targetAngle) {
+        turretController.setPID(p, i, d);
+        error = vision.getTx();
+        if (Math.abs(error) < deadband) error = 0.0;
+        turretPower = turretController.calculate(error, targetAngle);
+        turretPower = util.clamp(turretPower, -maxPow, maxPow);
+        return turretPower;
     }
 
     //---------Shooter------
@@ -106,8 +144,12 @@ public class Shooter implements Subsystem{
         return hood.getPosition();
     }
 
+    public boolean isHoodSensorOn(){
+        return hoodSwitch.isPressed();
+    }
 
-    //---------------- Interface Methods ----------------
+
+    //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
 
@@ -116,6 +158,17 @@ public class Shooter implements Subsystem{
     @Override
     public void update(){
 
-    }
+        if (useTurretLock){
+            turretTarget = 0.0;
+            hood.setPosition(hoodTarget);
+        }
 
+        if (useTurretPID){
+            setTurret(turretTarget);
+        }
+
+        if (shooterShoot){
+            setShooterRPM(targetRPM);
+        }
+    }
 }
