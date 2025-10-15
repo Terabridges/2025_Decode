@@ -7,6 +7,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -21,6 +22,7 @@ public class Vision implements Subsystem{
     //public NormalizedColorSensor ballInspector;
     public Limelight3A limelight;
     //public GoBildaPinpointDriver pinpoint;
+    public Servo light;
 
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
@@ -32,6 +34,7 @@ public class Vision implements Subsystem{
         //ballInspector = map.get(NormalizedColorSensor.class, "ball_inspector");
         limelight = map.get(Limelight3A.class, "limelight");
         //pinpoint =  map.get(GoBildaPinpointDriver.class, "pinpoint");
+        light = map.get(Servo.class, "light");
     }
 
     //---------------- Methods ----------------

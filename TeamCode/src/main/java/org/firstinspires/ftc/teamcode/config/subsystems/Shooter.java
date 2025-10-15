@@ -58,6 +58,7 @@ public class Shooter implements Subsystem{
         flyLeft = map.get(DcMotorEx.class, "fly_left");
         flyRight = map.get(DcMotorEx.class, "fly_right");
         hood = map.get(Servo.class, "hood");
+        //hoodAnalog: hood_analog
         hoodSwitch = map.get(TouchSensor.class, "hood_switch");
         turretAnalog = map.get(AnalogInput.class, "turret_analog");
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
@@ -159,12 +160,8 @@ public class Shooter implements Subsystem{
     public void update(){
 
         if (useTurretLock){
-            turretTarget = 0.0;
-            hood.setPosition(hoodTarget);
-        }
-
-        if (useTurretPID){
-            setTurret(turretTarget);
+            setTurret(0.0);
+            //hood.setPosition(hoodTarget);
         }
 
         if (shooterShoot){

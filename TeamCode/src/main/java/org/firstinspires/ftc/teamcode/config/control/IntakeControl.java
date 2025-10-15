@@ -34,6 +34,14 @@ public class IntakeControl implements Control {
     @Override
     public void update(){
 
+        if(gp1.left_trigger > 0){
+            intake.setSpinnerPower(-gp1.left_trigger);
+        } else if (gp1.right_trigger > 0){
+            intake.setSpinnerPower(gp1.right_trigger);
+        } else {
+            intake.setSpinnerPower(0);
+        }
+
     }
 
     @Override
