@@ -16,9 +16,9 @@ public class Transfer implements Subsystem{
     //---------------- Software ----------------
     boolean useSpindex = true;
     double spindexPow = 0.0;
-    double clutchDown = 0.1;
-    double clutchUp = 0.5;
     boolean isClutchDown = false;
+    double clutchUp = 0.46;
+    double clutchDown = 0.525;
 
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
@@ -34,10 +34,10 @@ public class Transfer implements Subsystem{
     }
 
     public void spindexRight(){
-        spindexPow = 0.4;
+        spindexPow = 0.3;
     }
     public void spindexLeft(){
-        spindexPow = -0.4;
+        spindexPow = -0.3;
     }
     public void spindexZero(){
         spindexPow = 0.0;
@@ -64,7 +64,7 @@ public class Transfer implements Subsystem{
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-
+        setClutchUp();
     }
 
     @Override

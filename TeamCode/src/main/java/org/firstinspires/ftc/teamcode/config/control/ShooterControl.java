@@ -16,6 +16,8 @@ public class ShooterControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector turretLockToggle = new EdgeDetector( () -> shooter.toggleTurretLock());
+    EdgeDetector RPMup = new EdgeDetector( () -> shooter.bumpShooterUp());
+    EdgeDetector RPMdown = new EdgeDetector( () -> shooter.bumpShooterDown());
 
     //---------------- Constructor ----------------
     public ShooterControl(Shooter shooter, Gamepad gp1, Gamepad gp2){
@@ -36,11 +38,17 @@ public class ShooterControl implements Control {
     @Override
     public void update(){
         turretLockToggle.update(gp1.right_bumper);
+        RPMup.update(gp1.dpad_up);
+        RPMdown.update(gp1.dpad_down);
 
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Turret Lock?", shooter.useTurretLock);
+        telemetry.addData("Turret Pow", shooter.turretPower);
+        telemetry.addData("Target RPM", shooter.getShooterRPM());
+        telemetry.addData("Current RPM", shooter.velToRPM(shooter.getShooterVel()));
+        telemetry.addData("actual vision error", shooter.vision.getTx());
     }
 }

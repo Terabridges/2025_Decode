@@ -81,21 +81,21 @@ public class transferTester extends LinearOpMode {
             }
 
             if(currentGamepad1.dpad_left && !previousGamepad1.dpad_left){
-                intake.raiserLeft.setPosition(raiserLeftPos);
+                //intake.raiserLeft.setPosition(raiserLeftPos);
             }
 
             if(currentGamepad1.dpad_right && !previousGamepad1.dpad_right){
-                intake.raiserRight.setPosition(raiserRightPos);
+                //intake.raiserRight.setPosition(raiserRightPos);
             }
 
             if(currentGamepad1.dpad_up && !previousGamepad1.dpad_up){
-                intake.raiserLeft.setPosition(0.425 + raiserUpPos);
-                intake.raiserRight.setPosition(0.425 - raiserUpPos);
+//                intake.raiserLeft.setPosition(0.425 + raiserUpPos);
+//                intake.raiserRight.setPosition(0.425 - raiserUpPos);
             }
 
             if(currentGamepad1.dpad_down && !previousGamepad1.dpad_down){
-                intake.raiserLeft.setPosition(0.425 - raiserDownPos);
-                intake.raiserRight.setPosition(0.425 + raiserDownPos);
+//                intake.raiserLeft.setPosition(0.425 - raiserDownPos);
+//                intake.raiserRight.setPosition(0.425 + raiserDownPos);
             }
 
             double max;
@@ -127,8 +127,8 @@ public class transferTester extends LinearOpMode {
 
             joinedTelemetry.addData("Spindex Pos", transfer.spindex.getCurrentPosition());
             joinedTelemetry.addData("Spindex Pow", transfer.spindex.getPower());
-            joinedTelemetry.addData("Left Pos", intake.raiserLeft.getPosition());
-            joinedTelemetry.addData("Right Pos", intake.raiserRight.getPosition());
+//            joinedTelemetry.addData("Left Pos", intake.raiserLeft.getPosition());
+//            joinedTelemetry.addData("Right Pos", intake.raiserRight.getPosition());
             joinedTelemetry.update();
 
             //left: 0.45, decreasing goes down

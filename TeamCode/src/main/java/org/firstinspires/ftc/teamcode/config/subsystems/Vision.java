@@ -16,13 +16,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
 //LL mount measurements:
 
-public class Vision implements Subsystem{
+public class Vision implements Subsystem {
 
     //---------------- Hardware ----------------
     //public NormalizedColorSensor ballInspector;
     public Limelight3A limelight;
     //public GoBildaPinpointDriver pinpoint;
-    public Servo light;
+    //public Servo light;
 
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
@@ -34,7 +34,7 @@ public class Vision implements Subsystem{
         //ballInspector = map.get(NormalizedColorSensor.class, "ball_inspector");
         limelight = map.get(Limelight3A.class, "limelight");
         //pinpoint =  map.get(GoBildaPinpointDriver.class, "pinpoint");
-        light = map.get(Servo.class, "light");
+        //light = map.get(Servo.class, "light");
     }
 
     //---------------- Methods ----------------

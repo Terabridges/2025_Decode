@@ -11,12 +11,14 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Configurable
 @TeleOp(name="VelocityTester", group="Test")
 public class VelocityShooterTester extends LinearOpMode {
 
     public Shooter shooter;
+    public Vision vision;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
     private VoltageSensor battery;
@@ -40,7 +42,8 @@ public class VelocityShooterTester extends LinearOpMode {
                 telemetry
         );
 
-        shooter = new Shooter(hardwareMap);
+        vision = new Vision(hardwareMap);
+        shooter = new Shooter(hardwareMap, vision);
         battery = hardwareMap.voltageSensor.iterator().next();
 
         waitForStart();

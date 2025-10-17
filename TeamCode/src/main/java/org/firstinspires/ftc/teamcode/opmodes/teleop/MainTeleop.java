@@ -68,6 +68,7 @@ public class MainTeleop extends LinearOpMode {
             c.update();
             c.addTelemetry(telemetry);
         }
+        telemetry.update();
     }
 
     public void gamepadUpdate(){

@@ -9,12 +9,14 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Configurable
 @TeleOp(name="ShooterTester", group="Test")
 public class ShooterTester extends LinearOpMode {
 
     public Shooter shooter;
+    public Vision vision;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
     public DcMotor encoderFly;
@@ -36,7 +38,8 @@ public class ShooterTester extends LinearOpMode {
     @Override
     public void runOpMode(){
 
-        shooter = new Shooter(hardwareMap);
+        vision = new Vision(hardwareMap);
+        shooter = new Shooter(hardwareMap, vision);
         rpmTimer.reset();
         lastTicks = shooter.flyLeft.getCurrentPosition();
         shooterController = new PIDController(p, i, d);

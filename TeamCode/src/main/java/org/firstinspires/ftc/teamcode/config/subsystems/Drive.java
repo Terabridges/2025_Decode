@@ -24,8 +24,8 @@ public class Drive implements Subsystem{
         rightBack = map.get(DcMotor.class, "right_back");
         leftFront = map.get(DcMotor.class, "left_front");
         rightFront = map.get(DcMotor.class, "right_front");
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     //---------------- Methods ----------------

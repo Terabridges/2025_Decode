@@ -11,6 +11,8 @@ Y: Shooter
 Dpad l/r: spindex
 X: slow mode
 Rbump: toggle turret lock
+Dpad u/d: change target RPM
+Lbump: intake down
 
 GAMEPAD 2:
 
