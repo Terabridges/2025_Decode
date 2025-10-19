@@ -2,25 +2,30 @@ package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Drive implements Subsystem{
 
     //---------------- Hardware ----------------
-    public DcMotor BL;
-    public DcMotor BR;
-    public DcMotor FL;
-    public DcMotor FR;
+    public DcMotor leftBack;
+    public DcMotor rightBack;
+    public DcMotor leftFront;
+    public DcMotor rightFront;
 
     //---------------- Software ----------------
+    public boolean manualDrive = true;
+    public boolean useSlowMode = false;
 
 
     //---------------- Constructor ----------------
     public Drive(HardwareMap map) {
-        BL = map.get(DcMotor.class, "BL");
-        BR = map.get(DcMotor.class, "BR");
-        FL = map.get(DcMotor.class, "FL");
-        FR = map.get(DcMotor.class, "FR");
+        leftBack = map.get(DcMotor.class, "left_back");
+        rightBack = map.get(DcMotor.class, "right_back");
+        leftFront = map.get(DcMotor.class, "left_front");
+        rightFront = map.get(DcMotor.class, "right_front");
+        rightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     //---------------- Methods ----------------

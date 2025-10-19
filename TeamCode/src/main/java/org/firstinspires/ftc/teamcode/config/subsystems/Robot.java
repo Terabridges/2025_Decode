@@ -33,11 +33,11 @@ public class Robot {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
 
+        vision = new Vision(hardwareMap);
         drive = new Drive(hardwareMap);
         intake = new Intake(hardwareMap);
-        shooter = new Shooter(hardwareMap);
+        shooter = new Shooter(hardwareMap, vision);
         transfer = new Transfer(hardwareMap);
-        vision = new Vision(hardwareMap);
 
         subsystems = new ArrayList<>(Arrays.asList(drive, intake, shooter, transfer, vision));
 

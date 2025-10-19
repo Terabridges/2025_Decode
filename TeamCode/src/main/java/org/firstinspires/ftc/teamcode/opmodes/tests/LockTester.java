@@ -30,6 +30,7 @@ public class LockTester extends LinearOpMode {
     public static double maxPow = 0.6;
     public static double deadband = 0.18;
     double turretPower, error;
+    boolean useTurretLock = true;
 
     private JoinedTelemetry joinedTelemetry;
 
@@ -42,7 +43,7 @@ public class LockTester extends LinearOpMode {
         );
 
         vision = new Vision(hardwareMap);
-        shooter = new Shooter(hardwareMap);
+        shooter = new Shooter(hardwareMap, vision);
         vision.toInit();
         shooter.toInit();
 
@@ -57,7 +58,7 @@ public class LockTester extends LinearOpMode {
 
             if (currentGamepad1.a && !previousGamepad1.a)
             {
-                shooter.toggleTurretLock();
+                useTurretLock = !useTurretLock;
             }
 
             if(currentGamepad1.b && !previousGamepad1.b){
@@ -65,7 +66,7 @@ public class LockTester extends LinearOpMode {
             }
 
             //shooter.turretLockUpdate(vision.getTx());
-            if (shooter.turretLock){
+            if (useTurretLock){
             shooter.turret.setPower(setTurretPID(turretTarget));
             }
 

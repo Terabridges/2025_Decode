@@ -13,12 +13,14 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Configurable
 @TeleOp(name="BetterShooterTester", group="Test")
 public class BetterShooterTester extends LinearOpMode {
 
     public Shooter shooter;
+    public Vision vision;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
     public DcMotorEx encoderFly;
@@ -57,7 +59,8 @@ public class BetterShooterTester extends LinearOpMode {
                 telemetry
         );
 
-        shooter = new Shooter(hardwareMap);
+        vision = new Vision(hardwareMap);
+        shooter = new Shooter(hardwareMap, vision);
 
         shooterController = new PIDController(p, i, d);
         encoderFly = shooter.flyRight;
@@ -95,7 +98,7 @@ public class BetterShooterTester extends LinearOpMode {
                 shooterSetPower(setShooterPID(shooterTarget));
             }
 
-            isTouching = shooter.hoodSwitch.isPressed();
+            //isTouching = shooter.hoodSwitch.isPressed();
 
             updateTelem();
         }
