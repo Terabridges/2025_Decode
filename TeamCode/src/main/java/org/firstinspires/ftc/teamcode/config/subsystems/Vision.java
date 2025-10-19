@@ -12,26 +12,35 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-
-//LL mount measurements:
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 public class Vision implements Subsystem{
 
     //---------------- Hardware ----------------
     //public NormalizedColorSensor ballInspector;
     public Limelight3A limelight;
-    //public GoBildaPinpointDriver pinpoint;
+    public GoBildaPinpointDriver pinpoint;
 
     //---------------- Software ----------------
+    public Shooter shooter;
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
-    private double robotYawDeg = 0.0;        // Chassis yaw from pinpoint
+    public double yawOffset = 0.0;
+
+    //LLCO Limelight Chassis Offsets
+    double LLCOx = 0;
+    double LLCOy = 0;
+    double LLCOz = 0;
+    double LLCOyaw = 0;
+    double LLCOpitch = 0;
+    double LLCOroll = 0;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
         //ballInspector = map.get(NormalizedColorSensor.class, "ball_inspector");
         limelight = map.get(Limelight3A.class, "limelight");
-        //pinpoint =  map.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint =  map.get(GoBildaPinpointDriver.class, "pinpoint");
     }
 
     //---------------- Methods ----------------
@@ -42,11 +51,24 @@ public class Vision implements Subsystem{
     }
 
     private void limelightUpdate(){
-//        if (pinpoint != null) {
-//            robotYawDeg = pinpoint.getHeading(AngleUnit.DEGREES);
-//        }
-//
-//        limelight.updateRobotOrientation(robotYawDeg);
+
+        // ////////////////
+        /*
+        TODO:
+        In order to use MegaTag2, think of the turret like a "mini robot"
+        Give mount specifications in the limelight dashboard relative to turret rotation point instead of robot center
+
+        Feed yaw as turret yaw relative to field by doing
+        [imu (chassis) yaw relative to field] + [turret (servo encoder) yaw relative to chassis]
+        OR SIMPLY: chassis yaw + turret yaw = theta (and then feed theta to updateRobotOrientation)
+
+        Then, after you find bot pose of the mini robot or turret, you can find bot pose of the chassis via an offset
+        The position of the chassis center to turret center is known and constant
+        (Make sure to switch back to chassis yaw from imu for the final bot pose of chassis)
+
+        */
+
+        //limelight.updateRobotOrientation(getJoinedYaw());
 
         latest = limelight.getLatestResult();
     }
@@ -74,25 +96,69 @@ public class Vision implements Subsystem{
         return 0.0;
     }
 
-    public Pose3D getBotPoseMT2() {
-        if (hasTarget()) { return latest.getBotpose_MT2(); }
-        return null;
-    }
-
-    public Pose3D getBotPoseMT1() {
-        if (hasTarget()) { return latest.getBotpose(); }
-        return null;
-    }
-
-//    public void pinpointInit(){
-//        pinpoint.setOffsets(0, 0, DistanceUnit.INCH);
-//        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-//        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-//        pinpoint.resetPosAndIMU();
+//    public Pose3D getBotPoseMT2() {
+//        if (hasTarget()) { return latest.getBotpose_MT2(); }
+//        return null;
 //    }
 //
-//    public void pinpointUpdate(){
-//        pinpoint.update();
+//    public Pose3D getBotPoseMT1() {
+//        if (hasTarget()) { return latest.getBotpose(); }
+//        return null;
+//    }
+
+    private void pinpointInit(){
+        pinpoint.setOffsets(5.70866, -1.527559, DistanceUnit.INCH);
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        pinpoint.resetPosAndIMU();
+    }
+
+    private void pinpointUpdate(){
+        pinpoint.update();
+    }
+
+//    public double getJoinedYaw()
+//    {
+//        double chassisYawDeg = pinpoint.getHeading(AngleUnit.DEGREES);
+//        double turretYawDeg  = Math.toDegrees(shooter.getTurretHeading());
+//        return wrapDeg( (chassisYawDeg + turretYawDeg + yawOffset) ); // offset if θ=0 isn’t aligned
+//    }
+//
+//    public Pose3D translateBotPose(Pose3D Pose)
+//    {
+//        Pose3D fieldToPivot = getBotPoseMT2();
+//        if (fieldToPivot == null) return null;
+//
+//        // 1) Pivot yaw (deg) from Pose3D (Pose3D stores radians; convert)
+//        double pivotYawDeg = Math.toDegrees(fieldToPivot.getOrientation().getYaw());
+//
+//        // 2) Rotate fixed pivot->chassis offset into FIELD by pivot yaw
+//        double c = Math.cos(Math.toRadians(pivotYawDeg));
+//        double s = Math.sin(Math.toRadians(pivotYawDeg));
+//        double dFx =  c * LLCOx - s * LLCOy;
+//        double dFy =  s * LLCOx + c * LLCOy;
+//        double dFz =  LLCOz;
+//
+//        // 3) Translate position
+//        double xR = fieldToPivot.getPosition().x + dFx;
+//        double yR = fieldToPivot.getPosition().y + dFy;
+//        double zR = fieldToPivot.getPosition().z + dFz;
+//        Position pos = new Position(DistanceUnit.METER, xR, yR, zR, 0);
+//
+//        // 4) Heading: trust Pinpoint (deg -> rad). Keep LL roll/pitch (rad).
+//        double chassisYawDeg = wrapDeg(pinpoint.getHeading(AngleUnit.DEGREES));
+//        double rollRad  = fieldToPivot.getOrientation().getRoll();
+//        double pitchRad = fieldToPivot.getOrientation().getPitch();
+//
+//        YawPitchRollAngles ypr = new YawPitchRollAngles(
+//                AngleUnit.RADIANS,
+//                rollRad,
+//                pitchRad,
+//                Math.toRadians(chassisYawDeg),
+//                0
+//        );
+//
+//        return new Pose3D(pos, ypr);
 //    }
 
     public double getDistanceInches()
@@ -161,40 +227,22 @@ public class Vision implements Subsystem{
         return 0.0;
     }
 
-    public double getDistanceUsingTan()
-    {
-        //This will not work unless values are tuned
-        if (hasTarget()) {
-            double targetOffsetAngle_Vertical = latest.getTy();
-
-            // how many degrees back is your limelight rotated from perfectly vertical?
-            double limelightMountAngleDegrees = 25.0;
-
-            // distance from the center of the Limelight lens to the floor
-            double limelightLensHeightInches = 20.0;
-
-            // distance from the target to the floor
-            double goalHeightInches = 60.0;
-
-            double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
-            double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
-
-            //calculate distance
-            return (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
-        }
-        return 0.0;
+    private double wrapDeg(double a){
+        while (a <= -180) a += 360;
+        while (a >   180) a -= 360;
+        return a;
     }
 
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
+        pinpointInit();
         limelightInit();
-        //pinpointInit();
     }
 
     @Override
     public void update(){
+        pinpointUpdate();
         limelightUpdate();
-        //pinpointUpdate();
     }
 }

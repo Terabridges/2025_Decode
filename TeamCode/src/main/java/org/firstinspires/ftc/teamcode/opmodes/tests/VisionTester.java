@@ -47,10 +47,13 @@ public class VisionTester extends LinearOpMode {
         joinedTelemetry.addData("Z Fid", vision.getFiducialZ());
         joinedTelemetry.addData("Distance (inches)", vision.getDistanceInches());
         joinedTelemetry.addData("Planar Distance (inches)", vision.getPlanarDistanceInches());
-        joinedTelemetry.addData("Distance using tan (inches)", vision.getDistanceUsingTan());
         joinedTelemetry.addData("Camera Bearing", vision.getCameraBearingDeg());
-//            telemetry.addData("Bot pose MT1", vision.getBotPoseMT1());
-//            telemetry.addData("Bot pose MT2", vision.getBotPoseMT2());
+
+//        //using field map
+//        joinedTelemetry.addData("Bot pose MT1", vision.getBotPoseMT1());
+//
+//        //using field map + pinpoint
+//        joinedTelemetry.addData("Bot pose MT2", vision.getBotPoseMT2());
 
         joinedTelemetry.update();
     }

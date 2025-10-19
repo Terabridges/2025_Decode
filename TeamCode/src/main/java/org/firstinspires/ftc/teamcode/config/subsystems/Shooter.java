@@ -62,6 +62,12 @@ public class Shooter implements Subsystem{
         return turretEnc.getCurrentPosition();
     }
 
+    public double getTurretHeading()
+    {
+        double turretHeading = 67; //TODO return actual turret heading
+        return turretHeading;
+    }
+
     public void toggleTurretLock()
     {
         turretLock = !turretLock;
