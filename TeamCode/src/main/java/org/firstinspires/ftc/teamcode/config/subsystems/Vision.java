@@ -23,10 +23,8 @@ public class Vision implements Subsystem{
     public GoBildaPinpointDriver pinpoint;
 
     //---------------- Software ----------------
-    public Shooter shooter;
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
-    public double yawOffset = 0.0;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {

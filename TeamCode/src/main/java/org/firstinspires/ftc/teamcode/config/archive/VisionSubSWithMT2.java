@@ -24,7 +24,7 @@ public class VisionSubSWithMT2 implements Subsystem {
     public GoBildaPinpointDriver pinpoint;
 
     //---------------- Software ----------------
-    public Shooter shooter;
+    public Shooter shooter; //This WONT work, must pass as a parameter
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
     public double yawOffset = 0.0;
