@@ -34,6 +34,8 @@ public class Shooter implements Subsystem{
     double maxPow = 0.6;
     double deadband = 0.18;
     public double turretPower, error;
+    public static double hoodDown = 0;
+    public static double hoodUp = 1;
 
     //---------Targets------
     double turretTarget = 0.0;
@@ -170,9 +172,13 @@ public class Shooter implements Subsystem{
         return hood.getPosition();
     }
 
-//    public boolean isHoodSensorOn(){
-//        return hoodSwitch.isPressed();
-//    }
+    public void setHoodUp(){
+        hood.setPosition(hoodUp);
+    }
+
+    public void setHoodDown(){
+        hood.setPosition(hoodDown);
+    }
 
 
     //---------------- Interface Methods ----------------!

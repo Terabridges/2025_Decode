@@ -69,7 +69,7 @@ public class VisionSubSWithMT2 implements Subsystem {
 
         */
 
-        limelight.updateRobotOrientation(getJoinedYaw());
+        //limelight.updateRobotOrientation(getJoinedYaw());
 
         latest = limelight.getLatestResult();
     }
@@ -118,12 +118,12 @@ public class VisionSubSWithMT2 implements Subsystem {
         pinpoint.update();
     }
 
-    public double getJoinedYaw()
-    {
-        double chassisYawDeg = pinpoint.getHeading(AngleUnit.DEGREES);
-        double turretYawDeg  = Math.toDegrees(shooter.getTurretHeading());
-        return wrapDeg( (chassisYawDeg + turretYawDeg + yawOffset) ); // offset if θ=0 isn’t aligned
-    }
+//    public double getJoinedYaw()
+//    {
+//        double chassisYawDeg = pinpoint.getHeading(AngleUnit.DEGREES);
+//        double turretYawDeg  = Math.toDegrees(shooter.getTurretHeading());
+//        return wrapDeg( (chassisYawDeg + turretYawDeg + yawOffset) ); // offset if θ=0 isn’t aligned
+//    }
 
     public Pose3D translateBotPose(Pose3D Pose)
     {
