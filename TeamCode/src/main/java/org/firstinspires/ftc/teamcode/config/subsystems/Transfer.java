@@ -17,7 +17,7 @@ public class Transfer implements Subsystem{
     //---------------- Software ----------------
     boolean useSpindexPID = true;
     double spindexManualPow = 0;
-    boolean isClutchDown = false;
+    public boolean isClutchDown = false;
     double clutchUp = 0.46;
     double clutchDown = 0.525;
     int ball = 175;
@@ -108,6 +108,7 @@ public class Transfer implements Subsystem{
     @Override
     public void toInit(){
         setClutchUp();
+        spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
     @Override

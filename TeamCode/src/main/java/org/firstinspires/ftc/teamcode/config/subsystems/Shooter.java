@@ -184,7 +184,7 @@ public class Shooter implements Subsystem{
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-
+        setHoodDown();
     }
 
     @Override
