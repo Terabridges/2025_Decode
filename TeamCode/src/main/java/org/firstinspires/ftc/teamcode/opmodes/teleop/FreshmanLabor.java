@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import com.bylazar.telemetry.JoinedTelemetry;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -14,8 +16,7 @@ public class FreshmanLabor extends LinearOpMode {
     public Gamepad currentGamepad1;
     public Gamepad previousGamepad1;
 
-    public Gamepad currentGamepad2;
-    public Gamepad previousGamepad2;
+    private JoinedTelemetry joinedTelemetry;
 
     double targetRPM = 0;
     double rpmIncrement = 1000;
@@ -26,13 +27,15 @@ public class FreshmanLabor extends LinearOpMode {
     @Override
     public void runOpMode(){
 
+        joinedTelemetry = new JoinedTelemetry(
+                PanelsTelemetry.INSTANCE.getFtcTelemetry(),
+                telemetry
+        );
+
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
 
         currentGamepad1 = new Gamepad();
         previousGamepad1 = new Gamepad();
-
-        currentGamepad2 = new Gamepad();
-        previousGamepad2 = new Gamepad();
 
 
         waitForStart();
@@ -40,20 +43,22 @@ public class FreshmanLabor extends LinearOpMode {
         robot.toInit();
 
         while (opModeIsActive()){
+            previousGamepad1.copy(currentGamepad1);
+            currentGamepad1.copy(gamepad1);
 
             //Left Stick X controls spindex
-            if (gamepad1.left_stick_x > 0.1){
+            if (currentGamepad1.left_stick_x > 0.1){
                 robot.transfer.spindexRight();
-            } else if (gamepad1.left_stick_x < -0.1){
+            } else if (currentGamepad1.left_stick_x < -0.1){
                 robot.transfer.spindexLeft();
             } else {
                 robot.transfer.spindexZero();
             }
 
             //Right stick Y controls spinner
-            if (gamepad1.right_stick_y < -0.1){
+            if (currentGamepad1.right_stick_y < -0.1){
                 robot.intake.spinnerIn();
-            } else if (gamepad1.right_stick_y > 0.1){
+            } else if (currentGamepad1.right_stick_y > 0.1){
                 robot.intake.spinnerOut();
             } else {
                 robot.intake.spinnerZero();
@@ -142,7 +147,11 @@ public class FreshmanLabor extends LinearOpMode {
             if(currentGamepad1.left_bumper && !previousGamepad1.left_bumper){
                 runShooter = !runShooter;
             }
-            robot.shooter.setShooterRPM(targetRPM);
+            if (runShooter){
+                robot.shooter.setShooterRPM(targetRPM);
+            } else {
+                robot.shooter.setShooterRPM(0);
+            }
 
             //right bumper sets angle
             if(currentGamepad1.right_bumper && !previousGamepad1.right_bumper){
@@ -154,17 +163,19 @@ public class FreshmanLabor extends LinearOpMode {
                 robot.shooter.toggleTurretLock();
             }
 
+            robot.update();
+
             //telemetry
-            telemetry.addData("Distance", robot.vision.getDistanceInches());
-            telemetry.addData("Current RPM", robot.shooter.getShooterRPM());
-            telemetry.addData("Current Angle", robot.shooter.getHoodPos());
-            telemetry.addData("Target RPM", targetRPM);
-            telemetry.addData("RPM Increment", rpmIncrement);
-            telemetry.addData("Target Angle", targetAngle);
-            telemetry.addData("Angle Increment", angleIncrement);
-            telemetry.addData("Turret Lock?", robot.shooter.useTurretLock);
-            telemetry.addData("Clutch engaged?", robot.transfer.isClutchDown);
-            telemetry.update();
+            joinedTelemetry.addData("Distance", robot.vision.getDistanceInches());
+            joinedTelemetry.addData("Current RPM", robot.shooter.getShooterRPM());
+            joinedTelemetry.addData("Current Angle", robot.shooter.getHoodPos());
+            joinedTelemetry.addData("Target RPM", targetRPM);
+            joinedTelemetry.addData("RPM Increment", rpmIncrement);
+            joinedTelemetry.addData("Target Angle", targetAngle);
+            joinedTelemetry.addData("Angle Increment", angleIncrement);
+            joinedTelemetry.addData("Turret Lock?", robot.shooter.useTurretLock);
+            joinedTelemetry.addData("Clutch engaged?", robot.transfer.isClutchDown);
+            joinedTelemetry.update();
         }
     }
 }

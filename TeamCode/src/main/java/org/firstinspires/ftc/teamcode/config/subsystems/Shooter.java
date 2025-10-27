@@ -66,6 +66,8 @@ public class Shooter implements Subsystem{
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
         turret.setDirection(DcMotorSimple.Direction.REVERSE);
+        
+        hood.setDirection(Servo.Direction.REVERSE);
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -195,8 +197,8 @@ public class Shooter implements Subsystem{
             turret.setPower(setTurretPID(turretTarget));
         }
 
-        if (shooterShoot){
-            setShooterRPM(targetRPM);
-        }
+//        if (shooterShoot){
+//            setShooterRPM(targetRPM);
+//        }
     }
 }

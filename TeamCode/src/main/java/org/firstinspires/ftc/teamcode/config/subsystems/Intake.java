@@ -113,11 +113,11 @@ public class Intake implements Subsystem{
             setSpinnerPower(spinnerTarget);
         }
 
-        if (useRaiser){
-            setRaiser(raiserTarget);
-        } else {
-            zeroRaiser();
-        }
+//        if (useRaiser){
+//            setRaiser(raiserTarget);
+//        } else {
+//            zeroRaiser();
+//        }
     }
 
 }

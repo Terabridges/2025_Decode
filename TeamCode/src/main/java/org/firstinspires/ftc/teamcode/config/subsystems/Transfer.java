@@ -40,6 +40,7 @@ public class Transfer implements Subsystem{
         spindexController = new PIDController(p, i, d);
         spindexController.setIntegrationBounds(-inteTolerance, inteTolerance);
         spindexController.setTolerance(posTolerance);
+        spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
     //---------------- Methods ----------------
@@ -108,17 +109,19 @@ public class Transfer implements Subsystem{
     @Override
     public void toInit(){
         setClutchUp();
-        spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     @Override
     public void update(){
 
-        if (useSpindexPID){
-            setSpindexPow(setSpindexPID(spindexTarget));
-        } else {
-            setSpindexPow(spindexManualPow);
-        }
+//        if (useSpindexPID){
+//            setSpindexPow(setSpindexPID(spindexTarget));
+//        } else {
+//            setSpindexPow(spindexManualPow);
+//        }
+
+        setSpindexPow(spindexManualPow);
     }
 
 }
