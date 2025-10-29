@@ -15,6 +15,8 @@ import org.firstinspires.ftc.teamcode.utility.Util;
 
 public class Shooter implements Subsystem{
 
+    // v = pi*diameter*rpm / 60
+
     //---------------- Hardware ----------------!
     public CRServo turret;
     public AnalogInput turretAnalog;
