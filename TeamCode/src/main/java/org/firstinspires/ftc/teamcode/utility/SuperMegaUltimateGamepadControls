@@ -10,7 +10,7 @@ X: Shoot All Macro
 //LeftBump: BallLeft
 //RightBump: BallRight
 //LeftTrig: SpinIn
-RightTrig: SpinOut
+//RightTrig: SpinOut
 //LStX: Strafe
 //LStY: Movement
 //RStX: Turning

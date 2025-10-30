@@ -169,6 +169,10 @@ public class Shooter implements Subsystem{
         shooterShoot = !shooterShoot;
     }
 
+    public boolean isAtRPM(){
+        return (Math.abs(targetRPM - getShooterRPM()) < 750);
+    }
+
     //---------Hood------
     public void setHoodPos(double pos){
         hood.setPosition(pos);

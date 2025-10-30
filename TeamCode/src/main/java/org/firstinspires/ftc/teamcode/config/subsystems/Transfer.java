@@ -76,6 +76,14 @@ public class Transfer implements Subsystem{
         spindexTarget += (num * ball);
     }
 
+    public boolean spindexAtTarget(){
+        if(!useSpindexPID){
+            return false;
+        } else {
+            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 40);
+        }
+    }
+
     public void ballLeft(){
         useSpindexPID = true;
         spindexTarget -= ball;

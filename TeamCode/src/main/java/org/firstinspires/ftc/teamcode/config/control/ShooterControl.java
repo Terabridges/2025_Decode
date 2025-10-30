@@ -45,9 +45,7 @@ public class ShooterControl implements Control {
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Turret Lock?", shooter.useTurretLock);
-        telemetry.addData("Turret Pow", shooter.turretPower);
-        telemetry.addData("Target RPM", shooter.getShooterRPM());
-        telemetry.addData("Current RPM", shooter.velToRPM(shooter.getShooterVel()));
-        telemetry.addData("actual vision error", shooter.vision.getTx());
+        telemetry.addData("Target RPM", shooter.targetRPM);
+        telemetry.addData("Current RPM", shooter.getShooterRPM());
     }
 }
