@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.utility.ShooterData;
 import org.firstinspires.ftc.teamcode.utility.Util;
 
 public class Shooter implements Subsystem{
@@ -27,6 +28,7 @@ public class Shooter implements Subsystem{
     //---------Objects------
     public Vision vision;
     public Util util;
+    public ShooterData shooterData;
 
     //---------------- Software ----------------!
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
@@ -34,18 +36,21 @@ public class Shooter implements Subsystem{
     double maxPow = 0.6;
     double deadband = 0.18;
     public double turretPower, error;
-    public static double hoodDown = 0;
-    public static double hoodUp = 1;
+    double hoodDown = 0.0;
+    double hoodUp = 1.0;
+    public boolean useData = true;
+    double maxRPM = 5500;
 
     //---------Targets------
     double turretTarget = 0.0;
-    double targetRPM = 0.0;
-    double hoodTarget = 0.0;
+    public double targetRPM = 0.0;
+    double turretManualPow = 0.0;
 
     //---------useBool------
-    boolean useTurretPID = true;
+    public boolean useTurretPID = false;
     public boolean useTurretLock = false;
-    boolean shooterShoot = true;
+    public boolean shooterShoot = true;
+    public boolean manualTurret = true;
 
     //---------PID------
     public PIDController turretController;
@@ -60,13 +65,11 @@ public class Shooter implements Subsystem{
         flyLeft = map.get(DcMotorEx.class, "fly_left");
         flyRight = map.get(DcMotorEx.class, "fly_right");
         hood = map.get(Servo.class, "hood");
-        //hoodAnalog: hood_analog
-        //hoodSwitch = map.get(TouchSensor.class, "hood_switch");
         turretAnalog = map.get(AnalogInput.class, "turret_analog");
-        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
+        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0.0, 1.0);
         flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
         turret.setDirection(DcMotorSimple.Direction.REVERSE);
-        
+
         hood.setDirection(Servo.Direction.REVERSE);
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -78,6 +81,7 @@ public class Shooter implements Subsystem{
         turretController = new PIDController(p, i, d);
         turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
         turretController.setTolerance(posTolerance, velTolerance);
+        util = new Util();
     }
 
     //---------------- Methods ----------------!
@@ -88,20 +92,10 @@ public class Shooter implements Subsystem{
         turret.setPower(power);
     }
 
-    public void setTurret(double target){
-        turret.setPower(setTurretPID(target));
-    }
-
     public double getTurretPos()
     {
         return turretEnc.getCurrentPosition();
     }
-
-//    public double getTurretHeading()
-//    {
-//        double turretHeading = 67; //TODO return actual turret heading
-//        return turretHeading;
-//    }
 
     public void toggleTurretLock()
     {
@@ -113,12 +107,16 @@ public class Shooter implements Subsystem{
         error = vision.getTx();
         if (Math.abs(error) < deadband) error = 0.0;
         turretPower = turretController.calculate(error, targetAngle);
-        turretPower = clamp(turretPower, -maxPow, maxPow);
+        turretPower = util.clamp(turretPower, -maxPow, maxPow);
         return turretPower;
     }
 
-    public double clamp(double v, double lo, double hi) {
-        return Math.max(lo, Math.min(hi, v));
+    boolean pastPosLimit(){
+        return false;
+    }
+
+    boolean pastNegLimit(){
+        return false;
     }
 
     //---------Shooter------
@@ -165,6 +163,10 @@ public class Shooter implements Subsystem{
         }
     }
 
+    public void toggleShooter(){
+        shooterShoot = !shooterShoot;
+    }
+
     //---------Hood------
     public void setHoodPos(double pos){
         hood.setPosition(pos);
@@ -174,31 +176,38 @@ public class Shooter implements Subsystem{
         return hood.getPosition();
     }
 
-    public void setHoodUp(){
-        hood.setPosition(hoodUp);
-    }
-
-    public void setHoodDown(){
-        hood.setPosition(hoodDown);
-    }
-
-
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-        setHoodDown();
+
     }
 
     @Override
     public void update(){
 
-        if (useTurretLock){
-            turretTarget = 0.0;
-            turret.setPower(setTurretPID(turretTarget));
+        if (useTurretLock && useTurretPID) {
+            setTurretPower(setTurretPID(0.0));
+        } else if (useTurretPID){
+            setTurretPower(setTurretPID(turretTarget));
+        } else if (manualTurret){
+            if (!pastPosLimit() && turretManualPow > 0) {
+                setTurretPower(turretManualPow);
+            } else if (!pastNegLimit() && turretManualPow < 0) {
+                setTurretPower(turretManualPow);
+            } else {
+                setTurretPower(turretManualPow);
+            }
         }
 
-//        if (shooterShoot){
-//            setShooterRPM(targetRPM);
-//        }
+        if (useData && vision.hasTarget()){
+            targetRPM = util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
+            setHoodPos(util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp));
+        }
+
+        if (shooterShoot){
+            setShooterRPM(targetRPM);
+        } else {
+            setShooterRPM(targetRPM);
+        }
     }
 }

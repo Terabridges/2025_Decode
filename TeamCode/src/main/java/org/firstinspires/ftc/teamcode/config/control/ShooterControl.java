@@ -16,8 +16,8 @@ public class ShooterControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector turretLockToggle = new EdgeDetector( () -> shooter.toggleTurretLock());
-    EdgeDetector RPMup = new EdgeDetector( () -> shooter.bumpShooterUp());
-    EdgeDetector RPMdown = new EdgeDetector( () -> shooter.bumpShooterDown());
+    EdgeDetector toggleShooter = new EdgeDetector( () -> shooter.toggleShooter());
+
 
     //---------------- Constructor ----------------
     public ShooterControl(Shooter shooter, Gamepad gp1, Gamepad gp2){
@@ -37,9 +37,8 @@ public class ShooterControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        turretLockToggle.update(gp1.right_bumper);
-        RPMup.update(gp1.dpad_up);
-        RPMdown.update(gp1.dpad_down);
+        turretLockToggle.update(gp1.dpad_up);
+        toggleShooter.update(gp1.y);
 
     }
 

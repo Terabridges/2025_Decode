@@ -15,8 +15,8 @@ public class IntakeControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector intakeDown = new EdgeDetector( () -> intake.setRaiserDown());
-    EdgeDetector intakeDownFE = new EdgeDetector( () -> intake.useRaiserFalse(), true);
+    EdgeDetector toggleRaiser = new EdgeDetector( () -> intake.toggleRaiser());
+    EdgeDetector toggleRaiserFE = new EdgeDetector( () -> intake.useRaiserFalse(), true);
 
     //---------------- Constructor ----------------
     public IntakeControl(Intake intake, Gamepad gp1, Gamepad gp2){
@@ -45,8 +45,8 @@ public class IntakeControl implements Control {
             intake.spinnerZero();
         }
 
-        intakeDown.update(gp1.left_bumper);
-        intakeDownFE.update(gp1.left_bumper);
+        toggleRaiser.update(gp1.a);
+        toggleRaiserFE.update(gp1.a);
 
     }
 
