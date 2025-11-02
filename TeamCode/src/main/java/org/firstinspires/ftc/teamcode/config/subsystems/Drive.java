@@ -16,6 +16,14 @@ public class Drive implements Subsystem{
     //---------------- Software ----------------
     public boolean manualDrive = true;
     public boolean useSlowMode = false;
+    double leftFrontPow = 0.0;
+    double rightFrontPow = 0.0;
+    double leftBackPow = 0.0;
+    double rightBackPow = 0.0;
+
+    public double FAST_MULT = 1.0;
+    public double SLOW_MULT = 0.6;
+    public double speed = FAST_MULT;
 
 
     //---------------- Constructor ----------------
@@ -29,7 +37,16 @@ public class Drive implements Subsystem{
     }
 
     //---------------- Methods ----------------
+    public void setDrivePowers(double lf, double rf, double lb, double rb){
+        leftFrontPow = lf;
+        rightFrontPow = rf;
+        leftBackPow = lb;
+        rightBackPow = rb;
+    }
 
+    public void toggleSlowMode(){
+        useSlowMode = !useSlowMode;
+    }
 
     //---------------- Interface Methods ----------------
     @Override
@@ -40,6 +57,17 @@ public class Drive implements Subsystem{
     @Override
     public void update(){
 
+        speed = (useSlowMode ? SLOW_MULT : FAST_MULT);
+        if(manualDrive){
+            leftFrontPow*=speed;
+            rightFrontPow*=speed;
+            leftBackPow*=speed;
+            rightBackPow*=speed;
+            leftFront.setPower(leftFrontPow);
+            rightFront.setPower(rightFrontPow);
+            leftBack.setPower(leftBackPow);
+            rightBack.setPower(rightBackPow);
+        }
     }
 
 }

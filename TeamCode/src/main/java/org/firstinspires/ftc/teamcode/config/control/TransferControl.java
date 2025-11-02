@@ -18,6 +18,8 @@ public class TransferControl implements Control {
     EdgeDetector transferLeftFE = new EdgeDetector( () -> transfer.spindexZero(), true);
     EdgeDetector transferRightRE = new EdgeDetector( () -> transfer.spindexRight());
     EdgeDetector transferRightFE = new EdgeDetector( () -> transfer.spindexZero(), true);
+    EdgeDetector ballLeft = new EdgeDetector( () -> transfer.ballLeft());
+    EdgeDetector ballRight = new EdgeDetector( () -> transfer.ballRight());
     EdgeDetector toggleClutch = new EdgeDetector(() -> transfer.toggleClutch());
 
     //---------------- Constructor ----------------
@@ -42,8 +44,9 @@ public class TransferControl implements Control {
         transferLeftFE.update(gp1.dpad_left);
         transferRightRE.update(gp1.dpad_right);
         transferRightFE.update(gp1.dpad_right);
+        ballLeft.update(gp1.left_bumper);
+        ballRight.update(gp1.right_bumper);
         toggleClutch.update(gp1.b);
-
     }
 
     @Override

@@ -36,6 +36,8 @@ public class Intake implements Subsystem{
     double raiserUpPos = 190.0;
     double raiserDownPos = 222.0;
 
+    boolean raiserUp = true;
+
     //---------------- Constructor ----------------
     public Intake(HardwareMap map) {
         spinner = map.get(DcMotor.class, "spinner");
@@ -82,12 +84,22 @@ public class Intake implements Subsystem{
 
     public void setRaiserUp(){
         useRaiser = true;
+        raiserUp = true;
         raiserTarget = raiserUpPos;
     }
 
     public void setRaiserDown(){
         useRaiser = true;
+        raiserUp = false;
         raiserTarget = raiserDownPos;
+    }
+
+    public void toggleRaiser(){
+        if(raiserUp){
+            setRaiserDown();
+        } else {
+            setRaiserUp();
+        }
     }
 
     public void zeroRaiser(){
@@ -112,11 +124,11 @@ public class Intake implements Subsystem{
             setSpinnerPower(spinnerTarget);
         }
 
-//        if (useRaiser){
-//            setRaiser(raiserTarget);
-//        } else {
-//            zeroRaiser();
-//        }
+        if (useRaiser){
+            setRaiser(raiserTarget);
+        } else {
+            zeroRaiser();
+        }
     }
 
 }

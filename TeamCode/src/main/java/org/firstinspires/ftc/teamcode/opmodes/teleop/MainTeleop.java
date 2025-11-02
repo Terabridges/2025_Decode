@@ -2,7 +2,10 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.sfdev.assembly.state.StateMachine;
+import com.sfdev.assembly.state.StateMachineBuilder;
 
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.DriveControl;
@@ -11,6 +14,8 @@ import org.firstinspires.ftc.teamcode.config.control.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.TransferControl;
 import org.firstinspires.ftc.teamcode.config.control.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +37,15 @@ public class MainTeleop extends LinearOpMode {
     public Gamepad currentGamepad2;
     public Gamepad previousGamepad2;
 
+    public enum shootStates {
+        INIT,
+        PREP,
+        SPINDEX,
+        WAIT
+    }
+
+    public StateMachine shooterMachine;
+
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
@@ -50,16 +64,20 @@ public class MainTeleop extends LinearOpMode {
         currentGamepad2 = new Gamepad();
         previousGamepad2 = new Gamepad();
 
+        shooterMachine = getShooterMachine(robot);
+
+        robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
 
         robot.toInit();
+        shooterMachine.start();
 
         while (opModeIsActive()){
             gamepadUpdate();
             robot.update();
             controlsUpdate();
-
+            stateMachinesUpdate();
         }
     }
 
@@ -77,5 +95,37 @@ public class MainTeleop extends LinearOpMode {
 
         previousGamepad2.copy(currentGamepad2);
         currentGamepad2.copy(gamepad2);
+    }
+
+    public void stateMachinesUpdate(){
+        shooterMachine.update();
+    }
+
+    public StateMachine getShooterMachine (Robot robot){
+        Shooter shooter = robot.shooter;
+        Transfer transfer = robot.transfer;
+        return new StateMachineBuilder()
+                .state(shootStates.INIT)
+                .transition(()->(currentGamepad1.x && !previousGamepad1.x), shootStates.PREP)
+
+                .state(shootStates.PREP)
+                .onEnter(()-> {
+                    transfer.setClutchDown();
+                    shooter.shooterShoot = true;
+                })
+                .transition(()-> shooter.isAtRPM(), shootStates.SPINDEX)
+
+                .state(shootStates.SPINDEX)
+                .onEnter(()-> transfer.ballLeft(3))
+                .transition(()-> transfer.spindexAtTarget(), shootStates.WAIT)
+
+                .state(shootStates.WAIT)
+                .transitionTimed(0.75, shootStates.INIT)
+                .onExit(()-> {
+                    transfer.setClutchUp();
+                    shooter.shooterShoot = false;
+                })
+
+                .build();
     }
 }

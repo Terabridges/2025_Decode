@@ -18,9 +18,7 @@ public class FreshmanLabor extends LinearOpMode {
 
     private JoinedTelemetry joinedTelemetry;
 
-    double targetRPM = 0;
     double rpmIncrement = 1000;
-    boolean runShooter = false;
     double targetAngle = 0;
     double angleIncrement = 0.2;
 
@@ -41,6 +39,12 @@ public class FreshmanLabor extends LinearOpMode {
         waitForStart();
 
         robot.toInit();
+        robot.shooter.shooterShoot = false;
+        robot.shooter.manualTurret = false;
+        robot.shooter.useTurretPID = true;
+        robot.transfer.useSpindexPID = false;
+        robot.shooter.useData = false;
+        robot.intake.useRaiserFalse();
 
         while (opModeIsActive()){
             previousGamepad1.copy(currentGamepad1);
@@ -71,11 +75,11 @@ public class FreshmanLabor extends LinearOpMode {
 
             //Dpad up and down to change RPM
             if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up){
-                targetRPM += rpmIncrement;
+                robot.shooter.targetRPM += rpmIncrement;
             }
 
             if (currentGamepad1.dpad_down && !previousGamepad1.dpad_down){
-                targetRPM -= rpmIncrement;
+                robot.shooter.targetRPM -= rpmIncrement;
             }
 
             //Dpad left and right to change RPM incrememt
@@ -145,12 +149,7 @@ public class FreshmanLabor extends LinearOpMode {
 
             //left bumper controls shooter on
             if(currentGamepad1.left_bumper && !previousGamepad1.left_bumper){
-                runShooter = !runShooter;
-            }
-            if (runShooter){
-                robot.shooter.setShooterRPM(targetRPM);
-            } else {
-                robot.shooter.setShooterRPM(0);
+                robot.shooter.toggleShooter();
             }
 
             //right bumper sets angle
@@ -169,7 +168,7 @@ public class FreshmanLabor extends LinearOpMode {
             joinedTelemetry.addData("Distance", robot.vision.getDistanceInches());
             joinedTelemetry.addData("Current RPM", robot.shooter.getShooterRPM());
             joinedTelemetry.addData("Current Angle", robot.shooter.getHoodPos());
-            joinedTelemetry.addData("Target RPM", targetRPM);
+            joinedTelemetry.addData("Target RPM", robot.shooter.targetRPM);
             joinedTelemetry.addData("RPM Increment", rpmIncrement);
             joinedTelemetry.addData("Target Angle", targetAngle);
             joinedTelemetry.addData("Angle Increment", angleIncrement);

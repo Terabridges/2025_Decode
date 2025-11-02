@@ -7,15 +7,18 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.utility.Util;
+
 public class Transfer implements Subsystem{
 
     //---------------- Hardware ----------------
     public DcMotor spindex;
     public Servo clutch;
     public RevColorSensorV3 colorSensor;
+    Util util;
 
     //---------------- Software ----------------
-    boolean useSpindexPID = true;
+    public boolean useSpindexPID = true;
     double spindexManualPow = 0;
     public boolean isClutchDown = false;
     double clutchUp = 0.46;
@@ -41,6 +44,7 @@ public class Transfer implements Subsystem{
         spindexController.setIntegrationBounds(-inteTolerance, inteTolerance);
         spindexController.setTolerance(posTolerance);
         spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        util = new Util();
     }
 
     //---------------- Methods ----------------
@@ -50,28 +54,43 @@ public class Transfer implements Subsystem{
     }
 
     public void spindexRight(){
+        useSpindexPID = false;
         spindexManualPow = 0.3;
     }
     public void spindexLeft(){
+        useSpindexPID = false;
         spindexManualPow = -0.3;
     }
     public void spindexZero(){
+        useSpindexPID = false;
         spindexManualPow = 0.0;
     }
 
     public void ballRight(){
+        useSpindexPID = true;
         spindexTarget += ball;
     }
 
     public void ballRight(int num){
+        useSpindexPID = true;
         spindexTarget += (num * ball);
     }
 
+    public boolean spindexAtTarget(){
+        if(!useSpindexPID){
+            return false;
+        } else {
+            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 40);
+        }
+    }
+
     public void ballLeft(){
+        useSpindexPID = true;
         spindexTarget -= ball;
     }
 
     public void ballLeft(int num){
+        useSpindexPID = true;
         spindexTarget -= (num * ball);
     }
 
@@ -97,12 +116,8 @@ public class Transfer implements Subsystem{
         spindexController.setPID(p, i, d);
         double currentPos = spindex.getCurrentPosition();
         spindexPow = spindexController.calculate(currentPos, targetPos);
-        spindexPow = clamp(spindexPow, -max, max);
+        spindexPow = util.clamp(spindexPow, -max, max);
         return spindexPow;
-    }
-
-    public double clamp(double v, double lo, double hi) {
-        return Math.max(lo, Math.min(hi, v));
     }
 
     //---------------- Interface Methods ----------------
@@ -115,13 +130,11 @@ public class Transfer implements Subsystem{
     @Override
     public void update(){
 
-//        if (useSpindexPID){
-//            setSpindexPow(setSpindexPID(spindexTarget));
-//        } else {
-//            setSpindexPow(spindexManualPow);
-//        }
-
-        setSpindexPow(spindexManualPow);
+        if (useSpindexPID){
+            setSpindexPow(setSpindexPID(spindexTarget));
+        } else {
+            setSpindexPow(spindexManualPow);
+        }
     }
 
 }
