@@ -8,11 +8,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
-import org.firstinspires.ftc.teamcode.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.utility.ShooterData;
-import org.firstinspires.ftc.teamcode.utility.Util;
+import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Shooter implements Subsystem{
 

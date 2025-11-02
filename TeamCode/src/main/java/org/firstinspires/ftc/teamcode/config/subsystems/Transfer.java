@@ -2,12 +2,11 @@ package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.utility.Util;
+import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Transfer implements Subsystem{
 

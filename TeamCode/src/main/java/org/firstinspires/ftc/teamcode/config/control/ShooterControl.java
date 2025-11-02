@@ -3,10 +3,9 @@ package org.firstinspires.ftc.teamcode.config.control;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class ShooterControl implements Control {
 

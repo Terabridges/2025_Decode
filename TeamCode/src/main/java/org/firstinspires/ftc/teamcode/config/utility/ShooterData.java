@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.utility;
+package org.firstinspires.ftc.teamcode.config.utility;
 
 import com.arcrobotics.ftclib.util.InterpLUT;
 
