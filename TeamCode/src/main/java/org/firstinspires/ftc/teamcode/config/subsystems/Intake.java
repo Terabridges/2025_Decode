@@ -6,8 +6,9 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.utility.AbsoluteAnalogEncoder;
 
 public class Intake implements Subsystem{
 

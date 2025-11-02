@@ -3,9 +3,10 @@ package org.firstinspires.ftc.teamcode.config.control;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.utility.EdgeDetector;
 
 public class IntakeControl implements Control {
 

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.config.utility;
+package org.firstinspires.ftc.teamcode.utility;
 
 import com.qualcomm.robotcore.hardware.AnalogInput;
 

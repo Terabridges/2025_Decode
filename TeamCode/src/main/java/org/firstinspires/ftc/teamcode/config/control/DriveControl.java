@@ -5,7 +5,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.config.subsystems.TemplateSubsystem;
+import org.firstinspires.ftc.teamcode.utility.EdgeDetector;
 
 public class DriveControl implements Control {
 

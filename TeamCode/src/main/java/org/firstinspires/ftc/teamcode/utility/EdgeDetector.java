@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.config.utility;
+package org.firstinspires.ftc.teamcode.utility;
 
 public class EdgeDetector {
     public boolean isPressed = false;
