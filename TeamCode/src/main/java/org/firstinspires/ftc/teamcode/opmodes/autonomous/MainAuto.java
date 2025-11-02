@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.MainAuto.changes;
 import static org.firstinspires.ftc.teamcode.opmodes.autonomous.MainAuto.drawCurrent;
 import static org.firstinspires.ftc.teamcode.opmodes.autonomous.MainAuto.drawCurrentAndHistory;
 import static org.firstinspires.ftc.teamcode.opmodes.autonomous.MainAuto.follower;
@@ -12,16 +11,20 @@ import com.bylazar.configurables.annotations.IgnoreConfigurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.PathBuilder;
+import com.pedropathing.paths.PathChain;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.PoseHistory;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.config.pedroPathing.Tuning;
-import org.firstinspires.ftc.teamcode.utility.Drawing;
+import org.firstinspires.ftc.teamcode.config.utility.AutoPoses;
+import org.firstinspires.ftc.teamcode.config.utility.Drawing;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +100,47 @@ public class MainAuto extends SelectableOpMode
 
 }
 
-class BaseAuto extends OpMode{
+class PathGen {
+    int currentRow = 0;
+    public PathChain GoToPickup, Pickup, GoToScoreCR, GoToScoreLR, GoToLoad;
+    AutoPoses ap = new AutoPoses();
+
+    public void setCurrentRow(int i) {
+        if (i < 4 && i >= 0) {
+            currentRow = i;
+        }
+    }
+    public PathChain buildLinearPath(Pose start, Pose end) {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(start, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    public PathChain buildCurvedPath(Pose start, Pose control, Pose end) {
+        return follower.pathBuilder()
+                .addPath(new BezierCurve(start, control, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+    public void buildBluePaths() {
+        follower.update();
+        Pose currentPose = follower.getPose();
+
+        GoToPickup = buildLinearPath(currentPose, ap.pickupStart[currentRow]);
+        Pickup = buildLinearPath(currentPose, ap.pickupEnd[currentRow]);
+        GoToScoreCR = buildLinearPath(currentPose, ap.closeRangeScore);
+        GoToScoreLR = buildLinearPath(currentPose, ap.longRangeScore);
+        GoToLoad = buildLinearPath(currentPose, ap.loadingPose);
+
+    }
+
+    public void buildRedPaths() {
+
+    }
+}
+
+class BaseAuto extends OpMode {
 
     public Pose startPose = new Pose(0, 0, 0.0); //Configure
 
@@ -117,7 +160,7 @@ class BaseAuto extends OpMode{
     @Override
     public void start() {
         follower.setStartingPose(startPose);
-        Tuning.follower.update();
+        follower.update();
     }
 
     @Override
