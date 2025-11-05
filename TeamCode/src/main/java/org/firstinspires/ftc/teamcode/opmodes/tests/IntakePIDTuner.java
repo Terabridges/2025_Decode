@@ -60,7 +60,7 @@ public class IntakePIDTuner extends LinearOpMode {
             }
 
             if(currentGamepad1.x && !previousGamepad1.x){
-                intake.raiserLeft.setPower(rightPow);
+                //intake.raiserLeft.setPower(rightPow);
             }
 
             if(currentGamepad1.b && !previousGamepad1.b){
@@ -68,7 +68,7 @@ public class IntakePIDTuner extends LinearOpMode {
             }
 
             if(currentGamepad1.y && !previousGamepad1.y){
-                intake.raiserLeft.setPower(0);
+                //intake.raiserLeft.setPower(0);
                 intake.raiserRight.setPower(0);
             }
 
@@ -94,7 +94,7 @@ public class IntakePIDTuner extends LinearOpMode {
     }
 
     public void setRaiser(double target){
-        intake.raiserLeft.setPower(setRaiserPID(target)); //Was mult by -1, just set servo to be reversed
+        //intake.raiserLeft.setPower(setRaiserPID(target)); //Was mult by -1, just set servo to be reversed
         intake.raiserRight.setPower(setRaiserPID(target));
     }
 
