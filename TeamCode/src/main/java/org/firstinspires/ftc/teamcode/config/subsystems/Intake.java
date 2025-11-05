@@ -13,7 +13,7 @@ public class Intake implements Subsystem{
 
     //---------------- Hardware ----------------
     public DcMotor spinner;
-    public CRServo raiserLeft;
+    //public CRServo raiserLeft;
     public CRServo raiserRight;
     public AnalogInput raiserAnalog;
     public AbsoluteAnalogEncoder raiserEnc;
@@ -41,7 +41,7 @@ public class Intake implements Subsystem{
     //---------------- Constructor ----------------
     public Intake(HardwareMap map) {
         spinner = map.get(DcMotor.class, "spinner");
-        raiserLeft = map.get(CRServo.class, "intake_left");
+        //raiserLeft = map.get(CRServo.class, "intake_left");
         raiserRight = map.get(CRServo.class, "intake_right");
         raiserAnalog = map.get(AnalogInput.class, "intake_analog");
         raiserEnc = new AbsoluteAnalogEncoder(raiserAnalog, 3.3, 0, 1);
@@ -49,7 +49,7 @@ public class Intake implements Subsystem{
         raiserController = new PIDController(p, i, d);
         raiserController.setIntegrationBounds(-inteTolerance, inteTolerance);
         raiserController.setTolerance(posTolerance);
-        raiserLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        //raiserLeft.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     //---------------- Methods ----------------
@@ -78,7 +78,7 @@ public class Intake implements Subsystem{
     }
 
     public void setRaiser(double target){
-        raiserLeft.setPower(setRaiserPID(target));
+        //raiserLeft.setPower(setRaiserPID(target));
         raiserRight.setPower(setRaiserPID(target));
     }
 
@@ -103,7 +103,7 @@ public class Intake implements Subsystem{
     }
 
     public void zeroRaiser(){
-        raiserLeft.setPower(0);
+        //raiserLeft.setPower(0);
         raiserRight.setPower(0);
     }
 
