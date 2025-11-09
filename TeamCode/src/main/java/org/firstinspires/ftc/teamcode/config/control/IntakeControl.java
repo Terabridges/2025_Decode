@@ -14,8 +14,7 @@ public class IntakeControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector toggleRaiser = new EdgeDetector( () -> intake.toggleRaiser());
-    EdgeDetector toggleRaiserFE = new EdgeDetector( () -> intake.useRaiserFalse(), true);
+    EdgeDetector toggleRaiser = new EdgeDetector( () -> intake.toggleUseRaiser());
 
     //---------------- Constructor ----------------
     public IntakeControl(Intake intake, Gamepad gp1, Gamepad gp2){
@@ -45,7 +44,6 @@ public class IntakeControl implements Control {
         }
 
         toggleRaiser.update(gp1.a);
-        toggleRaiserFE.update(gp1.a);
 
     }
 

@@ -22,15 +22,16 @@ public class LockTester extends LinearOpMode {
     public Gamepad previousGamepad1 = new Gamepad();
 
     public PIDController turretController;
-    public static double p = 0.02, i = 0.00015, d = 0.0009;
+    public static double p = 0.045, i = 0.0001, d = 0.0002;
     public static double turretTarget = 0.0;
     double posTolerance = 1.2;
     double velTolerance = 5.0;
     public static double inteTolerance = 6.0;
-    public static double maxPow = 0.6;
-    public static double deadband = 0.18;
+    public static double maxPow = 0.18;
+    public static double deadband = 0.15;
     double turretPower, error;
     boolean useTurretLock = true;
+    double manualPower = 0;
 
     private JoinedTelemetry joinedTelemetry;
 
@@ -68,9 +69,19 @@ public class LockTester extends LinearOpMode {
             //shooter.turretLockUpdate(vision.getTx());
             if (useTurretLock){
             shooter.turret.setPower(setTurretPID(turretTarget));
+            } else {
+                shooter.turret.setPower(manualPower);
             }
 
-            shooter.update();
+            if (currentGamepad1.left_trigger > 0.1){
+                manualPower = 0.4;
+            } else if (currentGamepad1.right_trigger > 0.1){
+                manualPower = -0.4;
+            } else {
+                manualPower = 0;
+            }
+
+            //shooter.update();
             vision.update();
 
             updateTelem();
@@ -83,6 +94,8 @@ public class LockTester extends LinearOpMode {
     {
         joinedTelemetry.addData("X error", vision.getTx());
         joinedTelemetry.addData("Power", turretPower);
+        joinedTelemetry.addData("LockOn", useTurretLock);
+        joinedTelemetry.addData("AnalogVal", shooter.turretAnalog.getVoltage());
         joinedTelemetry.update();
     }
 

@@ -34,8 +34,8 @@ public class Shooter implements Subsystem{
     //---------------- Software ----------------!
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
-    double maxPow = 0.6;
-    double deadband = 0.18;
+    double maxPow = 0.18;
+    double deadband = 0.15;
     public double turretPower, error;
     double hoodDown = 0.0;
     double hoodUp = 1.0;
@@ -48,14 +48,13 @@ public class Shooter implements Subsystem{
     double turretManualPow = 0.0;
 
     //---------useBool------
-    public boolean useTurretPID = false;
     public boolean useTurretLock = false;
-    public boolean shooterShoot = true;
+    public boolean shooterShoot = false;
     public boolean manualTurret = true;
 
     //---------PID------
     public PIDController turretController;
-    double p = 0.02, i = 0.00015, d = 0.0009;
+    double p = 0.035, i = 0.0001, d = 0.0002;
     double posTolerance = 1.2;
     double velTolerance = 5.0;
     double inteTolerance = 6.0;
@@ -68,8 +67,9 @@ public class Shooter implements Subsystem{
         hood = map.get(Servo.class, "hood");
         turretAnalog = map.get(AnalogInput.class, "turret_analog");
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0.0, 1.0);
-        flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        turret.setDirection(DcMotorSimple.Direction.REVERSE);
+        flyLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        flyRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        turret.setDirection(DcMotorSimple.Direction.FORWARD);
 
         hood.setDirection(Servo.Direction.REVERSE);
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -83,6 +83,7 @@ public class Shooter implements Subsystem{
         turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
         turretController.setTolerance(posTolerance, velTolerance);
         util = new Util();
+        shooterData = new ShooterData();
     }
 
     //---------------- Methods ----------------!
@@ -190,10 +191,8 @@ public class Shooter implements Subsystem{
     @Override
     public void update(){
 
-        if (useTurretLock && useTurretPID) {
+        if (useTurretLock) {
             setTurretPower(setTurretPID(0.0));
-        } else if (useTurretPID){
-            setTurretPower(setTurretPID(turretTarget));
         } else if (manualTurret){
             if (!pastPosLimit() && turretManualPow > 0) {
                 setTurretPower(turretManualPow);
@@ -212,7 +211,7 @@ public class Shooter implements Subsystem{
         if (shooterShoot){
             setShooterRPM(targetRPM);
         } else {
-            setShooterRPM(targetRPM);
+            setShooterRPM(0);
         }
     }
 }
