@@ -41,10 +41,9 @@ public class FreshmanLabor extends LinearOpMode {
         robot.toInit();
         robot.shooter.shooterShoot = false;
         robot.shooter.manualTurret = false;
-        robot.shooter.useTurretPID = true;
         robot.transfer.useSpindexPID = false;
         robot.shooter.useData = false;
-        robot.intake.useRaiserFalse();
+        robot.intake.toggleUseRaiser();
 
         while (opModeIsActive()){
             previousGamepad1.copy(currentGamepad1);

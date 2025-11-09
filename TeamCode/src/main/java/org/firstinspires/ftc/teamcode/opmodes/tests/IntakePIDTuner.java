@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.arcrobotics.ftclib.controller.PIDFController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
@@ -19,17 +21,23 @@ public class IntakePIDTuner extends LinearOpMode {
     public Intake intake;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
+    public AnalogInput port0;
+    public AnalogInput port1;
+    public AnalogInput port2;
+    public AnalogInput port3;
+
 
     double raiserPower = 0.0;
     public static double raiserTarget = 0.0;
     double currentPos;
 
     public PIDController raiserController;
-    public static double p = 0.007, i = 0.001, d = 0.00005;
-    double posTolerance = 5.0;
+    public static double p = 0.0028, i = 0.0, d = 0.0;
+    double posTolerance = 3.0;
     double inteTolerance = 8.0;
     public static double leftPow = 0.1;
-    public static double rightPow = 0.1;
+    public static double maxPow = 0.15;
+    double spinTarget = 0;
 
     boolean useRaiser = false;
 
@@ -47,6 +55,10 @@ public class IntakePIDTuner extends LinearOpMode {
         raiserController = new PIDController(p, i, d);
         raiserController.setIntegrationBounds(-inteTolerance, inteTolerance);
         raiserController.setTolerance(posTolerance);
+//        port1 = hardwareMap.get(AnalogInput.class, "analog1");
+//        port2 = hardwareMap.get(AnalogInput.class, "intake_analog");
+//        port3 = hardwareMap.get(AnalogInput.class, "hood_analog");
+//        port0 = hardwareMap.get(AnalogInput.class, "turret_analog");
 
 
         waitForStart();
@@ -59,29 +71,35 @@ public class IntakePIDTuner extends LinearOpMode {
                 useRaiser = !useRaiser;
             }
 
-            if(currentGamepad1.x && !previousGamepad1.x){
-                //intake.raiserLeft.setPower(rightPow);
-            }
-
             if(currentGamepad1.b && !previousGamepad1.b){
                 intake.raiserRight.setPower(leftPow);
             }
 
             if(currentGamepad1.y && !previousGamepad1.y){
-                //intake.raiserLeft.setPower(0);
                 intake.raiserRight.setPower(0);
+            }
+
+            if (currentGamepad1.left_trigger > 0.1){
+                spinTarget = 0.95;
+            } else if (currentGamepad1.right_trigger > 0.1){
+                spinTarget = -0.95;
+            } else {
+                spinTarget = 0;
             }
 
             if(useRaiser){
                 setRaiser(raiserTarget);
-            } else {
-//                intake.raiserLeft.setPower(0);
-//                intake.raiserRight.setPower(0);
             }
+            intake.spinner.setPower(spinTarget);
 
             joinedTelemetry.addData("Raiser Pos", intake.raiserEnc.getCurrentPosition());
             joinedTelemetry.addData("Target Pos", raiserTarget);
             joinedTelemetry.addData("Error", raiserTarget-intake.raiserEnc.getCurrentPosition());
+            joinedTelemetry.addData("Power", raiserPower);
+//            joinedTelemetry.addData("Port0", port0.getVoltage());
+//            joinedTelemetry.addData("Port1", port1.getVoltage());
+//            joinedTelemetry.addData("Port2", port2.getVoltage());
+//            joinedTelemetry.addData("Port3", port3.getVoltage());
             joinedTelemetry.update();
         }
     }
@@ -90,11 +108,11 @@ public class IntakePIDTuner extends LinearOpMode {
         raiserController.setPID(p, i, d);
         currentPos = intake.raiserEnc.getCurrentPosition();
         raiserPower = raiserController.calculate(currentPos, targetPos);
+        raiserPower = clamp(raiserPower, -maxPow, maxPow);
         return raiserPower;
     }
 
     public void setRaiser(double target){
-        //intake.raiserLeft.setPower(setRaiserPID(target)); //Was mult by -1, just set servo to be reversed
         intake.raiserRight.setPower(setRaiserPID(target));
     }
 
@@ -104,4 +122,11 @@ public class IntakePIDTuner extends LinearOpMode {
     public double clamp(double v, double lo, double hi) {
         return Math.max(lo, Math.min(hi, v));
     }
+
+    //analog0 clutch
+    //analog1 turret
+    //analog3 intake
+
+    //intake down = 175
+    //intake up = 210
 }

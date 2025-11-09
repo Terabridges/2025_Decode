@@ -17,21 +17,25 @@ public class ShooterData {
     }
 
     private void addRPMData(){
+        RPMLUT.add(0, 2500); //Made up
         RPMLUT.add(23.5, 3100);
         RPMLUT.add(29.5, 3100);
         RPMLUT.add(39.5, 3250);
         RPMLUT.add(59.9, 3700);
         RPMLUT.add(68.8, 3700);
         RPMLUT.add(79.5, 4000);
+        RPMLUT.add(150, 5000); //Made up
     }
 
     private void addAngleData(){
+        AngleLUT.add(0, 0.15); //Made up
         AngleLUT.add(23.5, 0.175);
         AngleLUT.add(29.5, 0.35);
         AngleLUT.add(39.5, 0.475);
         AngleLUT.add(59.9, 0.8);
         AngleLUT.add(68.8, 0.8);
         AngleLUT.add(79.5, 0.8);
+        AngleLUT.add(150, 0.8); //Made up
     }
 
     public double getRPMVal(double distance){
