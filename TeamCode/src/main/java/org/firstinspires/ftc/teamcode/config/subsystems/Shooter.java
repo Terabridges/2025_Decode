@@ -204,10 +204,10 @@ public class Shooter implements Subsystem{
             }
         }
 
-        if (useData && vision.hasTarget()){
-            targetRPM = util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
-            setHoodPos(util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp));
-        }
+//        if (useData && vision.hasTarget()){
+//            targetRPM = util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
+//            setHoodPos(util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp));
+//        }
 
         if (shooterShoot){
             setShooterRPM(targetRPM);
