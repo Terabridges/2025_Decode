@@ -34,8 +34,8 @@ public class Shooter implements Subsystem{
     //---------------- Software ----------------!
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
-    double maxPow = 0.18;
-    double deadband = 0.15;
+    double maxPow = 0.135;
+    double deadband = 0;
     public double turretPower, error;
     double hoodDown = 0.0;
     double hoodUp = 1.0;
@@ -54,7 +54,7 @@ public class Shooter implements Subsystem{
 
     //---------PID------
     public PIDController turretController;
-    double p = 0.035, i = 0.0001, d = 0.0002;
+    double p = 0.022, i = 0.01, d = 0.0;
     double posTolerance = 1.2;
     double velTolerance = 5.0;
     double inteTolerance = 6.0;
@@ -203,10 +203,10 @@ public class Shooter implements Subsystem{
             }
         }
 
-//        if (useData && vision.hasTarget()){
-//            targetRPM = util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
-//            setHoodPos(util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp));
-//        }
+        if (useData && vision.hasTarget()){
+            targetRPM = util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
+            setHoodPos(util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp));
+        }
 
         if (shooterShoot){
             setShooterRPM(targetRPM);

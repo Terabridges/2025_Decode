@@ -20,8 +20,8 @@ public class clutchTester extends LinearOpMode {
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
     public Transfer transfer;
-    public static double transferUp = 0.46;
-    public static double transferDown = 0.525;
+    public static double transferUp = 0.42;
+    public static double transferDown = 0.55;
 
     @Override
     public void runOpMode(){

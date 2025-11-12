@@ -17,6 +17,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.PoseHistory;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -31,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configurable
-@TeleOp(name = "MainAuto", group = "Auto")
+@Autonomous(name = "MainAuto", group = "Auto")
 public class SelectableAuto extends SelectableOpMode
 {
     public static Follower follower;
@@ -128,7 +129,7 @@ class MainAuto extends OpMode {
     public Pose startPose;
     AutoPoses ap = new AutoPoses();
     public PathChain GoToPickup, Pickup, GoToScore, GoToLoad;
-    
+
     //Enums
     private Alliance alliance;
     private Range range;

@@ -21,7 +21,7 @@ public class Transfer implements Subsystem{
     double spindexManualPow = 0;
     public boolean isClutchDown = false;
     double clutchUp = 0.42;
-    double clutchDown = 0.65;
+    double clutchDown = 0.55;
     int ball = 175;
 
     PIDController spindexController;

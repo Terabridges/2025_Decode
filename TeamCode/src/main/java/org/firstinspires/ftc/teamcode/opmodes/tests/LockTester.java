@@ -22,12 +22,12 @@ public class LockTester extends LinearOpMode {
     public Gamepad previousGamepad1 = new Gamepad();
 
     public PIDController turretController;
-    public static double p = 0.045, i = 0.0001, d = 0.0002;
+    public static double p = 0.022, i = 0.01, d = 0.0;
     public static double turretTarget = 0.0;
     double posTolerance = 1.2;
     double velTolerance = 5.0;
-    public static double inteTolerance = 6.0;
-    public static double maxPow = 0.18;
+    public static double inteTolerance = 6;
+    public static double maxPow = 0.135;
     public static double deadband = 0.15;
     double turretPower, error;
     boolean useTurretLock = true;
