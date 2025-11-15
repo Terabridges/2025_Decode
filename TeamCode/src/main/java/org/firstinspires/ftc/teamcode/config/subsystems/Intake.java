@@ -30,7 +30,7 @@ public class Intake implements Subsystem{
     boolean useRaiser = true;
 
     public PIDController raiserController;
-    double p = 0.0028, i = 0.0, d = 0.0;
+    double p = 0.0035, i = 0.0, d = 0.0;
     double posTolerance = 3.0;
     double inteTolerance = 8.0;
     double raiserMaxPow = 0.15;
