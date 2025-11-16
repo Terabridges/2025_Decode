@@ -5,20 +5,14 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.norm
 
 import com.pedropathing.geometry.Pose;
 
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
+
 public class AutoPoses {
 
     // ---- index helpers ----
     private static int rIdx(Range r) {
         return (r == Range.CLOSE_RANGE) ? 0 : 1;   // 0 = close, 1 = long
-    }
-    private static int mIdx(Mode m) {
-        switch (m) {
-            case ONE_ROW:   return 0;
-            case TWO_ROW:   return 1;
-            case THREE_ROW: return 2;
-            case FOUR_ROW:  return 3;
-            default:        return 0; // or throw if pickup is not used for this mode
-        }
     }
 
     public Pose Mirror(Pose bluePose) {
@@ -124,14 +118,14 @@ public class AutoPoses {
        =========================
        load[alliance]
        score[alliance][range]
-       pickupStart[alliance][range][mode]
-       pickupEnd[alliance][range][mode]
+       pickupStart[alliance][range][rowIndex]
+       pickupEnd[alliance][range][rowIndex]
        ========================= */
 
-    public Pose[] load = new Pose[2];                 // [Alliance]
-    public Pose[][] score = new Pose[2][2];           // [Alliance][Range]
-    public Pose[][][] pickupStart = new Pose[2][2][4]; // [Alliance][Range][Mode]
-    public Pose[][][] pickupEnd = new Pose[2][2][4];   // [Alliance][Range][Mode]
+    public Pose[] load = new Pose[2];                  // [Alliance]
+    public Pose[][] score = new Pose[2][2];            // [Alliance][Range]
+    public Pose[][][] pickupStart = new Pose[2][2][4]; // [Alliance][Range][RowIndex]
+    public Pose[][][] pickupEnd = new Pose[2][2][4];   // [Alliance][Range][RowIndex]
 
 
     /* =========================
@@ -148,7 +142,7 @@ public class AutoPoses {
         score[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = scoreCR;
         score[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = scoreLR;
 
-        // --- Pickup Start (rows = modes 0..3) ---
+        // --- Pickup Start (rows = index 0..3) ---
         // Blue
         pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1StartCB;
         pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick1StartLB;
@@ -202,11 +196,11 @@ public class AutoPoses {
         return score[a.ordinal()][r.ordinal()];
     }
 
-    public Pose getPickupStart(Alliance a, Range r, Mode m) {
-        return pickupStart[a.ordinal()][r.ordinal()][m.ordinal()];
+    public Pose getPickupStart(Alliance a, Range r, int rowIndex) {
+        return pickupStart[a.ordinal()][r.ordinal()][rowIndex];
     }
 
-    public Pose getPickupEnd(Alliance a, Range r, Mode m) {
-        return pickupEnd[a.ordinal()][r.ordinal()][m.ordinal()];
+    public Pose getPickupEnd(Alliance a, Range r, int rowIndex) {
+        return pickupEnd[a.ordinal()][r.ordinal()][rowIndex];
     }
 }
