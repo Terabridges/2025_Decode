@@ -1,9 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.drawCurrent;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.drawCurrentAndHistory;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.follower;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.telemetryM;
 
 import com.bylazar.configurables.PanelsConfigurables;
 import com.bylazar.configurables.annotations.Configurable;
@@ -11,21 +7,15 @@ import com.bylazar.configurables.annotations.IgnoreConfigurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathChain;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.PoseHistory;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.config.autoUtil.Alliance;
-import org.firstinspires.ftc.teamcode.config.autoUtil.Mode;
-import org.firstinspires.ftc.teamcode.config.autoUtil.Range;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPoses;
 import org.firstinspires.ftc.teamcode.config.utility.Drawing;
 
 import java.util.ArrayList;
@@ -121,80 +111,4 @@ public class SelectableAuto extends SelectableOpMode
         drawCurrent();
     }
 
-}
-
-class MainAuto extends OpMode {
-
-    //Path Gen
-    public Pose startPose;
-    AutoPoses ap = new AutoPoses();
-    public PathChain GoToPickup, Pickup, GoToScore, GoToLoad;
-
-    //Enums
-    private Alliance alliance;
-    private Range range;
-    private Mode mode;
-
-    MainAuto(Alliance alliance, Range range, Mode mode) {
-        this.alliance = alliance;
-        this.range = range;
-        this.mode = mode;
-        startPose = ap.findStartPose(alliance, range);
-    }
-
-    @Override
-    public void init() {
-
-    }
-
-    @Override
-    public void init_loop() {
-        telemetryM.debug("Auto: " + this.getClass().getSimpleName());
-        telemetryM.update(telemetry);
-        follower.update();
-        drawCurrent();
-    }
-
-    @Override
-    public void start() {
-        follower.setStartingPose(startPose);
-        follower.update();
-    }
-
-    @Override
-    public void loop() {
-        follower.update();
-        drawCurrentAndHistory();
-
-        // Auto ends when we’re done with the last path.
-        if (!follower.isBusy())
-        {
-            requestOpModeStop();
-        }
-    }
-
-    public void buildPaths() {
-        follower.update();
-        Pose currentPose = follower.getPose();
-
-        GoToPickup = buildLinearPath(currentPose, ap.getPickupStart(alliance, range, mode));
-        Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, mode));
-        GoToScore = buildLinearPath(currentPose, ap.getScore(alliance, range));
-        GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance));
-
-    }
-
-    public PathChain buildLinearPath(Pose start, Pose end) {
-        return follower.pathBuilder()
-                .addPath(new BezierLine(start, end))
-                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .build();
-    }
-
-    public PathChain buildCurvedPath(Pose start, Pose control, Pose end) {
-        return follower.pathBuilder()
-                .addPath(new BezierCurve(start, control, end))
-                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .build();
-    }
 }
