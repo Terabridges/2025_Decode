@@ -15,8 +15,6 @@ import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Shooter implements Subsystem{
 
-    // v = pi*diameter*rpm / 60
-
     //---------------- Hardware ----------------!
     public CRServo turret;
     public AnalogInput turretAnalog;
@@ -34,9 +32,6 @@ public class Shooter implements Subsystem{
     //---------------- Software ----------------!
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
-    double maxPow = 0.135;
-    double deadband = 0;
-    public double turretPower, error;
     double hoodDown = 0.0;
     double hoodUp = 1.0;
     public boolean useData = true;
@@ -46,19 +41,32 @@ public class Shooter implements Subsystem{
     double turretTarget = 0.0;
     public double targetRPM = 0.0;
     double turretManualPow = 0.0;
-    private int requiredTagId = -1;
 
     //---------useBool------
     public boolean useTurretLock = false;
+    public boolean useTurretPID = false;
     public boolean shooterShoot = false;
     public boolean manualTurret = true;
 
     //---------PID------
+    public PIDController turretLockController;
+    double p1 = 0.022, i1 = 0.01, d1 = 0.0;
+    double posTolerance1 = 1.2;
+    double velTolerance1 = 5.0;
+    double inteTolerance1 = 6.0;
+    double deadband1 = 0;
+    double maxPow1 = 0.135;
+    public double turretPower1, error1;
+
     public PIDController turretController;
-    double p = 0.022, i = 0.01, d = 0.0;
-    double posTolerance = 1.2;
-    double velTolerance = 5.0;
-    double inteTolerance = 6.0;
+    double p2 = 0.0, i2 = 0.0, d2 = 0.0;
+    double posTolerance2 = 4;
+    double velTolerance2 = 4;
+    double inteTolerance2 = 4;
+    double deadband2 = 0;
+    double maxPow2 = 0.4;
+    public double turretPower2, error2;
+
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -80,9 +88,14 @@ public class Shooter implements Subsystem{
 
         this.vision = vision;
 
-        turretController = new PIDController(p, i, d);
-        turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
-        turretController.setTolerance(posTolerance, velTolerance);
+        turretLockController = new PIDController(p1, i1, d1);
+        turretLockController.setIntegrationBounds(-inteTolerance1, inteTolerance1);
+        turretLockController.setTolerance(posTolerance1, velTolerance1);
+
+        turretController = new PIDController(p2, i2, d2);
+        turretController.setIntegrationBounds(-inteTolerance2, inteTolerance2);
+        turretController.setTolerance(posTolerance2, velTolerance2);
+
         util = new Util();
         shooterData = new ShooterData();
     }
@@ -105,18 +118,22 @@ public class Shooter implements Subsystem{
         useTurretLock = !useTurretLock;
     }
 
-    /** Sets the fiducial ID that the turret lock is allowed to track. Use -1 to accept any tag. */
-    public void setRequiredTagId(int tagId) {
-        requiredTagId = tagId;
+    public double setTurretLockPID(double targetAngle) {
+        turretLockController.setPID(p1, i1, d1);
+        error1 = vision.getTx();
+        if (Math.abs(error1) < deadband1) error1 = 0.0;
+        turretPower1 = turretLockController.calculate(error1, targetAngle);
+        turretPower1 = util.clamp(turretPower1, -maxPow1, maxPow1);
+        return turretPower1;
     }
 
     public double setTurretPID(double targetAngle) {
-        turretController.setPID(p, i, d);
-        error = vision.getTx();
-        if (Math.abs(error) < deadband) error = 0.0;
-        turretPower = turretController.calculate(error, targetAngle);
-        turretPower = util.clamp(turretPower, -maxPow, maxPow);
-        return turretPower;
+        turretController.setPID(p2, i2, d2);
+        error2 = 0;
+        if (Math.abs(error2) < deadband2) error2 = 0.0;
+        turretPower2 = turretController.calculate(error2, targetAngle);
+        turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
+        return turretPower2;
     }
 
     boolean pastPosLimit(){
@@ -196,24 +213,28 @@ public class Shooter implements Subsystem{
 
     @Override
     public void update(){
-        boolean hasDesiredTarget = vision != null && vision.hasTarget()
-                && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
 
-        if (useTurretLock && hasDesiredTarget) {
-            setTurretPower(setTurretPID(0.0));
+        if (useTurretLock) {
+            setTurretPower(setTurretLockPID(0.0));
+        } else if (useTurretPID){
+            setTurretPower(setTurretPID(turretTarget));
         } else if (manualTurret){
             if (!pastPosLimit() && turretManualPow > 0) {
                 setTurretPower(turretManualPow);
             } else if (!pastNegLimit() && turretManualPow < 0) {
                 setTurretPower(turretManualPow);
-            } else {
-                setTurretPower(turretManualPow);
             }
         }
 
         if (useData && vision.hasTarget()){
-            targetRPM = util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
-            setHoodPos(util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp));
+            double rpmVal =  util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
+            double angleVal = util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp);
+            if (rpmVal != -2){
+                targetRPM = rpmVal;
+            }
+            if (angleVal != -2) {
+                setHoodPos(angleVal);
+            }
         }
 
         if (shooterShoot){

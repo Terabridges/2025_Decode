@@ -6,8 +6,7 @@
             <goBILDA5202SeriesMotor name="right_back" port="1" />
             <goBILDA5202SeriesMotor name="spindex" port="2" />
             <goBILDA5202SeriesMotor name="spinner" port="3" />
-            <DigitalDevice name="color" port="0" />
-            <DigitalDevice name="distance" port="2" />
+            <DigitalDevice name="distance_sensor" port="2" />
             <RevColorSensorV3 name="color_sensor" port="0" bus="0" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
@@ -19,7 +18,7 @@
             <ContinuousRotationServo name="intake_right" port="1" />
             <Servo name="clutch" port="2" />
             <Servo name="hood" port="3" />
-            <Servo name="rgblight" port="5" />
+            <Servo name="light" port="5" />
             <AnalogInput name="hood_analog" port="0" />
             <AnalogInput name="turret_analog" port="1" />
             <AnalogInput name="empty" port="2" />

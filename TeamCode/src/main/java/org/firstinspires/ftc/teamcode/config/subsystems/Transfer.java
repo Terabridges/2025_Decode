@@ -4,8 +4,10 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Transfer implements Subsystem{
@@ -22,15 +24,25 @@ public class Transfer implements Subsystem{
     public boolean isClutchDown = false;
     double clutchUp = 0.42;
     double clutchDown = 0.55;
-    int ball = 175;
+    int ball = 180;
 
     PIDController spindexController;
-    double p = 0.0012, i = 0, d = 0;
-    double posTolerance = 10;
-    double inteTolerance = 10;
+    double p = 0.0017, i = 0.0000125, d = 0.0;
+    double posTolerance = 5;
+    double inteTolerance = 5;
     double spindexPow = 0.0;
     double spindexTarget = 0.0;
-    double max = 0.25;
+    double max = 0.225;
+
+    NormalizedRGBA colors;
+    float red;
+    float green;
+    float blue;
+    double colorDistance;
+    public boolean ballDetected = false;
+    public String ballColor = "none";
+
+    boolean autoIntake = false;
 
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
@@ -44,6 +56,8 @@ public class Transfer implements Subsystem{
         spindexController.setTolerance(posTolerance);
         spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         util = new Util();
+
+        colors = new NormalizedRGBA();
     }
 
     //---------------- Methods ----------------
@@ -54,11 +68,11 @@ public class Transfer implements Subsystem{
 
     public void spindexRight(){
         useSpindexPID = false;
-        spindexManualPow = 0.3;
+        spindexManualPow = max;
     }
     public void spindexLeft(){
         useSpindexPID = false;
-        spindexManualPow = -0.3;
+        spindexManualPow = -max;
     }
     public void spindexZero(){
         useSpindexPID = false;
@@ -79,7 +93,7 @@ public class Transfer implements Subsystem{
         if(!useSpindexPID){
             return false;
         } else {
-            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 40);
+            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 6);
         }
     }
 
@@ -119,6 +133,30 @@ public class Transfer implements Subsystem{
         return spindexPow;
     }
 
+    public void setColorValues(){
+        colors = colorSensor.getNormalizedColors();
+        red = colors.red;
+        green = colors.green;
+        blue = colors.blue;
+        colorDistance = colorSensor.getDistance(DistanceUnit.INCH);
+
+        if (colorDistance < 1.92){
+            ballDetected = true;
+            if (green > red && green > blue){
+                ballColor = "green";
+            } else {
+                ballColor = "purple";
+            }
+        } else {
+            ballDetected = false;
+            ballColor = "none";
+        }
+    }
+
+    public void toggleAutoIntake(){
+        autoIntake = !autoIntake;
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
@@ -133,6 +171,13 @@ public class Transfer implements Subsystem{
             setSpindexPow(setSpindexPID(spindexTarget));
         } else {
             setSpindexPow(spindexManualPow);
+        }
+        setColorValues();
+
+        if(autoIntake){
+            if (ballDetected && spindexAtTarget()){
+                ballRight();
+            }
         }
     }
 

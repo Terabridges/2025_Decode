@@ -21,6 +21,7 @@ public class TransferControl implements Control {
     EdgeDetector ballLeft = new EdgeDetector( () -> transfer.ballLeft());
     EdgeDetector ballRight = new EdgeDetector( () -> transfer.ballRight());
     EdgeDetector toggleClutch = new EdgeDetector(() -> transfer.toggleClutch());
+    EdgeDetector toggleAutoIntake = new EdgeDetector( () -> transfer.toggleAutoIntake());
 
     //---------------- Constructor ----------------
     public TransferControl(Transfer transfer, Gamepad gp1, Gamepad gp2){
@@ -47,10 +48,11 @@ public class TransferControl implements Control {
         ballLeft.update(gp1.left_bumper);
         ballRight.update(gp1.right_bumper);
         toggleClutch.update(gp1.b);
+        toggleAutoIntake.update(gp1.a);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("Ball Color", transfer.ballColor);
     }
 }
