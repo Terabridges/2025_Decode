@@ -6,6 +6,8 @@ public class ShooterData {
 
     public InterpLUT RPMLUT;
     public InterpLUT AngleLUT;
+    public double minDistance = 0;
+    public double maxDistance = 150;
 
     public ShooterData(){
         RPMLUT = new InterpLUT();
@@ -39,10 +41,18 @@ public class ShooterData {
     }
 
     public double getRPMVal(double distance){
-        return RPMLUT.get(distance);
+        if (distance < minDistance || distance > maxDistance){
+            return -2;
+        } else {
+            return RPMLUT.get(distance);
+        }
     }
 
     public double getAngleVal(double distance){
-        return AngleLUT.get(distance);
+        if (distance < minDistance || distance > maxDistance){
+            return -2;
+        } else {
+            return AngleLUT.get(distance);
+        }
     }
 }

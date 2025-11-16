@@ -21,13 +21,13 @@ public class spindexTester extends LinearOpMode {
     public Transfer transfer;
 
     public PIDController spindexController;
-    public static double p = 0.0012, i = 0, d = 0;
-    public static double posTolerance = 10;
-    public static double inteTolerance = 10;
+    public static double p = 0.0017, i = 0.0000125, d = 0.0;
+    public static double posTolerance = 5;
+    public static double inteTolerance = 5;
     public static double spindexPower = 0.0;
     public static double spindexTarget = 0.0;
-    public static double max = 0.25;
-    //one ball: 175
+    public static double max = 0.225;
+    public static int ball = 180;
 
     @Override
     public void runOpMode(){
@@ -43,10 +43,19 @@ public class spindexTester extends LinearOpMode {
         spindexController.setTolerance(posTolerance);
 
         waitForStart();
+        transfer.toInit();
         while (opModeIsActive()){
 
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);
+
+            if(currentGamepad1.x && !previousGamepad1.x){
+                spindexTarget -= ball;
+            }
+
+            if(currentGamepad1.b && !previousGamepad1.b){
+                spindexTarget += ball;
+            }
 
             joinedTelemetry.addData("Current Pos", transfer.spindex.getCurrentPosition());
             joinedTelemetry.addData("Target Pos", spindexTarget);
