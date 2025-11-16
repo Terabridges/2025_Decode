@@ -46,6 +46,7 @@ public class Shooter implements Subsystem{
     double turretTarget = 0.0;
     public double targetRPM = 0.0;
     double turretManualPow = 0.0;
+    private int requiredTagId = -1;
 
     //---------useBool------
     public boolean useTurretLock = false;
@@ -102,6 +103,11 @@ public class Shooter implements Subsystem{
     public void toggleTurretLock()
     {
         useTurretLock = !useTurretLock;
+    }
+
+    /** Sets the fiducial ID that the turret lock is allowed to track. Use -1 to accept any tag. */
+    public void setRequiredTagId(int tagId) {
+        requiredTagId = tagId;
     }
 
     public double setTurretPID(double targetAngle) {
@@ -190,8 +196,10 @@ public class Shooter implements Subsystem{
 
     @Override
     public void update(){
+        boolean hasDesiredTarget = vision != null && vision.hasTarget()
+                && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
 
-        if (useTurretLock) {
+        if (useTurretLock && hasDesiredTarget) {
             setTurretPower(setTurretPID(0.0));
         } else if (manualTurret){
             if (!pastPosLimit() && turretManualPow > 0) {
