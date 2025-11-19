@@ -43,7 +43,7 @@ public class IntakeControl implements Control {
             intake.spinnerZero();
         }
 
-        toggleRaiser.update(gp1.a);
+        //toggleRaiser.update(gp1.a);
 
     }
 

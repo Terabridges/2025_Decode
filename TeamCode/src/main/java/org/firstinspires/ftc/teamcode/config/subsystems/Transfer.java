@@ -176,7 +176,7 @@ public class Transfer implements Subsystem{
 
         if(autoIntake){
             if (ballDetected && spindexAtTarget()){
-                ballRight();
+                ballLeft();
             }
         }
     }
