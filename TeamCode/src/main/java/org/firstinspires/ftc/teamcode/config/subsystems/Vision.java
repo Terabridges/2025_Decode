@@ -67,6 +67,14 @@ public class Vision implements Subsystem{
         return 0.0;
     }
 
+    /** Returns the ID of the currently tracked fiducial, or -1 if none is visible. */
+    public int getCurrentTagId() {
+        if (!hasTarget() || latest.getFiducialResults().isEmpty()) {
+            return -1;
+        }
+        return latest.getFiducialResults().get(0).getFiducialId();
+    }
+
     private void pinpointInit(){
         pinpoint.setOffsets(5.70866, -1.527559, DistanceUnit.INCH);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
