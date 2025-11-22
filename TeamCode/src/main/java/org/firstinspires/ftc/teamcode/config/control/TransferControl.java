@@ -14,14 +14,16 @@ public class TransferControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector transferLeftRE = new EdgeDetector( () -> transfer.spindexLeft());
-    EdgeDetector transferLeftFE = new EdgeDetector( () -> transfer.spindexZero(), true);
-    EdgeDetector transferRightRE = new EdgeDetector( () -> transfer.spindexRight());
-    EdgeDetector transferRightFE = new EdgeDetector( () -> transfer.spindexZero(), true);
+//    EdgeDetector transferLeftRE = new EdgeDetector( () -> transfer.spindexLeft());
+//    EdgeDetector transferLeftFE = new EdgeDetector( () -> transfer.spindexZero(), true);
+//    EdgeDetector transferRightRE = new EdgeDetector( () -> transfer.spindexRight());
+//    EdgeDetector transferRightFE = new EdgeDetector( () -> transfer.spindexZero(), true);
     EdgeDetector ballLeft = new EdgeDetector( () -> transfer.ballLeft());
     EdgeDetector ballRight = new EdgeDetector( () -> transfer.ballRight());
+    EdgeDetector ballLeftSmall = new EdgeDetector( () -> transfer.ballLeftSmall());
+    EdgeDetector ballRightSmall = new EdgeDetector( () -> transfer.ballRightSmall());
     EdgeDetector toggleClutch = new EdgeDetector(() -> transfer.toggleClutch());
-    EdgeDetector toggleAutoIntake = new EdgeDetector( () -> transfer.toggleAutoIntake());
+    //EdgeDetector toggleAutoIntake = new EdgeDetector( () -> transfer.toggleAutoIntake());
 
     //---------------- Constructor ----------------
     public TransferControl(Transfer transfer, Gamepad gp1, Gamepad gp2){
@@ -41,18 +43,20 @@ public class TransferControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        transferLeftRE.update(gp1.dpad_left);
-        transferLeftFE.update(gp1.dpad_left);
-        transferRightRE.update(gp1.dpad_right);
-        transferRightFE.update(gp1.dpad_right);
+//        transferLeftRE.update(gp1.dpad_left);
+//        transferLeftFE.update(gp1.dpad_left);
+//        transferRightRE.update(gp1.dpad_right);
+//        transferRightFE.update(gp1.dpad_right);
         ballLeft.update(gp1.left_bumper);
         ballRight.update(gp1.right_bumper);
+        ballLeftSmall.update(gp1.dpad_left);
+        ballRightSmall.update(gp1.dpad_right);
         toggleClutch.update(gp1.b);
-        toggleAutoIntake.update(gp1.a);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Ball Color", transfer.ballColor);
+        telemetry.addData("Ball Order,", transfer.balls);
     }
 }

@@ -1,12 +1,12 @@
 GAMEPAD 1:
-//A: Toggle Auto Intake
+//A: Clutch Super
 //X: Shoot All Macro
 //Y: Toggle Shooter
 //B: Toggle Clutch
 //Down: Toggle Speed
-//Left: SpindexLeft
+//Left: BallLeftSmall
 //Up: Toggle LockOn
-//Right: SpindexRight
+//Right: BallRightSmall
 //LeftBump: BallLeft
 //RightBump: BallRight
 //LeftTrig: SpinIn

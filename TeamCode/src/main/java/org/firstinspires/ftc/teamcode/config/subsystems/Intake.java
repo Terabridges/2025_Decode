@@ -28,9 +28,11 @@ public class Intake implements Subsystem{
     double raiserTarget = 0.0;
     double currentPos;
     boolean useRaiser = true;
+    public boolean spinnerMacro = false;
+    public double spinnerMacroTarget = 0;
 
     public PIDController raiserController;
-    double p = 0.0035, i = 0.0, d = 0.0;
+    double p = 0.003, i = 0.0, d = 0.0;
     double posTolerance = 3.0;
     double inteTolerance = 8.0;
     double raiserMaxPow = 0.15;
@@ -103,7 +105,9 @@ public class Intake implements Subsystem{
     @Override
     public void update(){
 
-        if (useSpinner){
+        if (spinnerMacro){
+            setSpinnerPower(spinnerMacroTarget);
+        } else if (useSpinner){
             setSpinnerPower(spinnerTarget);
         }
 

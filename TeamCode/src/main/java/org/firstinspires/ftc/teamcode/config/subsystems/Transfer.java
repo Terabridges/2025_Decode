@@ -24,6 +24,7 @@ public class Transfer implements Subsystem{
     public boolean isClutchDown = false;
     double clutchUp = 0.42;
     double clutchDown = 0.55;
+    double clutchDownFar = 0.9;
     int ball = 180;
 
     PIDController spindexController;
@@ -32,7 +33,8 @@ public class Transfer implements Subsystem{
     double inteTolerance = 5;
     double spindexPow = 0.0;
     double spindexTarget = 0.0;
-    double max = 0.225;
+    double max = 0.15;
+    //0.225
 
     NormalizedRGBA colors;
     float red;
@@ -42,7 +44,11 @@ public class Transfer implements Subsystem{
     public boolean ballDetected = false;
     public String ballColor = "none";
 
-    boolean autoIntake = false;
+    public boolean autoIntake = true;
+    public boolean isDetecting = true;
+    public String[] ballList = {"E", "E", "E"};
+    public String balls = "";
+    public int numBalls = 0;
 
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
@@ -80,13 +86,47 @@ public class Transfer implements Subsystem{
     }
 
     public void ballRight(){
+        ballRight(1);
+        shiftRight();
+    }
+
+    public void ballRightSmall(){
         useSpindexPID = true;
-        spindexTarget += ball;
+        spindexTarget += 80;
     }
 
     public void ballRight(int num){
         useSpindexPID = true;
         spindexTarget += (num * ball);
+    }
+
+    private void shiftRight(){
+        String temp = ballList[2];
+        ballList[2] = ballList[1];
+        ballList[1] = ballList[0];
+        ballList[0] = temp;
+    }
+
+    private void shiftLeft(){
+        String temp = ballList[0];
+        ballList[0] = ballList[1];
+        ballList[1] = ballList[2];
+        ballList[2] = temp;
+    }
+
+    public void ballLeft(){
+        ballLeft(1);
+        shiftLeft();
+    }
+
+    public void ballLeft(int num){
+        useSpindexPID = true;
+        spindexTarget -= (num * ball);
+    }
+
+    public void ballLeftSmall(){
+        useSpindexPID = true;
+        spindexTarget -= 80;
     }
 
     public boolean spindexAtTarget(){
@@ -97,18 +137,13 @@ public class Transfer implements Subsystem{
         }
     }
 
-    public void ballLeft(){
-        useSpindexPID = true;
-        spindexTarget -= ball;
-    }
-
-    public void ballLeft(int num){
-        useSpindexPID = true;
-        spindexTarget -= (num * ball);
-    }
-
     public void setClutchDown(){
         clutch.setPosition(clutchDown);
+        isClutchDown = true;
+    }
+
+    public void setClutchDownFar(){
+        clutch.setPosition(clutchDownFar);
         isClutchDown = true;
     }
 
@@ -123,6 +158,13 @@ public class Transfer implements Subsystem{
         } else {
             setClutchDown();
         }
+    }
+
+    public void emptyBalls(){
+        ballList[0] = "E";
+        ballList[1] = "E";
+        ballList[2] = "E";
+        numBalls = 0;
     }
 
     public double setSpindexPID(double targetPos) {
@@ -172,13 +214,31 @@ public class Transfer implements Subsystem{
         } else {
             setSpindexPow(spindexManualPow);
         }
-        setColorValues();
 
-        if(autoIntake){
-            if (ballDetected && spindexAtTarget()){
-                ballLeft();
+        setColorValues();
+        if (isDetecting && autoIntake){
+            if (numBalls != 3){
+                if(ballDetected && spindexAtTarget()){
+                    if(ballColor.equals("green")){
+                        ballList[0] = "G";
+                        numBalls++;
+                    } else if (ballColor.equals("purple")){
+                        ballList[0] = "P";
+                        numBalls++;
+                    }
+
+                    if(!ballList[1].equals("E") && ballList[2].equals("E")){
+                        ballRight();
+                    } else if (ballList[1].equals("E") && !ballList[2].equals("E")){
+                        ballLeft();
+                    } else if (ballList[1].equals("E") && ballList[2].equals("E")){
+                        ballRight();
+                    }
+                }
             }
         }
+
+        balls = ballList[0] + ballList[1] + ballList[2];
     }
 
 }

@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.config.control.IntakeControl;
 import org.firstinspires.ftc.teamcode.config.control.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.TransferControl;
 import org.firstinspires.ftc.teamcode.config.control.VisionControl;
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
@@ -39,12 +40,19 @@ public class MainTeleop extends LinearOpMode {
 
     public enum shootStates {
         INIT,
-        PREP,
-        SPINDEX,
-        WAIT
+        CLUTCHDOWN,
+        SPIN,
+        CLUTCHDOWNFAR
     }
 
-    public StateMachine shooterMachine;
+    public enum clutchStates {
+        INIT,
+        CLUTCHDOWN,
+        CLUTCHUP
+    }
+
+    public StateMachine shootAllMachine;
+    public StateMachine clutchSuperMachine;
 
     @Override
     public void runOpMode(){
@@ -64,14 +72,16 @@ public class MainTeleop extends LinearOpMode {
         currentGamepad2 = new Gamepad();
         previousGamepad2 = new Gamepad();
 
-        shooterMachine = getShooterMachine(robot);
+        shootAllMachine = getShootAllMachine(robot);
+        clutchSuperMachine = getClutchSuperMachine(robot);
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
 
         robot.toInit();
-        shooterMachine.start();
+        shootAllMachine.start();
+        clutchSuperMachine.start();
 
         while (opModeIsActive()){
             gamepadUpdate();
@@ -98,33 +108,76 @@ public class MainTeleop extends LinearOpMode {
     }
 
     public void stateMachinesUpdate(){
-        shooterMachine.update();
+        shootAllMachine.update();
+        clutchSuperMachine.update();
     }
 
-    public StateMachine getShooterMachine (Robot robot){
+    public StateMachine getShootAllMachine (Robot robot){
         Shooter shooter = robot.shooter;
         Transfer transfer = robot.transfer;
+        Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(()->(currentGamepad1.x && !previousGamepad1.x), shootStates.PREP)
+                .transition(()->(currentGamepad1.x && !previousGamepad1.x), shootStates.CLUTCHDOWN)
 
-                .state(shootStates.PREP)
+                .state(shootStates.CLUTCHDOWN)
                 .onEnter(()-> {
+                    intake.spinnerMacro = true;
                     transfer.setClutchDown();
+                    intake.spinnerMacroTarget = 0.95;
                     shooter.shooterShoot = true;
+                    transfer.isDetecting = false;
                 })
-                .transition(()-> shooter.isAtRPM(), shootStates.SPINDEX)
+                .transitionTimed(0.5, shootStates.SPIN)
 
-                .state(shootStates.SPINDEX)
-                .onEnter(()-> transfer.ballLeft(3))
-                .transition(()-> transfer.spindexAtTarget(), shootStates.WAIT)
+                .state(shootStates.SPIN)
+                .onEnter(()-> {
+                    transfer.ballRight();
+                    transfer.ballRight();
+                    transfer.ballRightSmall();
+                })
+                .transitionTimed(3.2, shootStates.CLUTCHDOWNFAR)
 
-                .state(shootStates.WAIT)
-                .transitionTimed(0.75, shootStates.INIT)
+                .state(shootStates.CLUTCHDOWNFAR)
+                .onEnter(()-> {
+                    transfer.setClutchDownFar();
+                })
+                .transitionTimed(1.5, shootStates.INIT)
                 .onExit(()-> {
                     transfer.setClutchUp();
+                    intake.spinnerMacroTarget = 0;
                     shooter.shooterShoot = false;
+                    transfer.isDetecting = true;
+                    transfer.ballLeftSmall();
+                    transfer.emptyBalls();
+                    intake.spinnerMacro = false;
                 })
+
+                .build();
+    }
+
+    public StateMachine getClutchSuperMachine (Robot robot){
+        Transfer transfer = robot.transfer;
+        Intake intake = robot.intake;
+        return new StateMachineBuilder()
+                .state(clutchStates.INIT)
+                .transition(()->(currentGamepad1.a && !previousGamepad1.a), clutchStates.CLUTCHDOWN)
+
+                .state(clutchStates.CLUTCHDOWN)
+                .onEnter(()-> {
+                    intake.spinnerMacro = true;
+                    intake.spinnerMacroTarget = 0.95;
+                    transfer.setClutchDownFar();
+                })
+                .transitionTimed(1.2, clutchStates.CLUTCHUP)
+
+                .state(clutchStates.CLUTCHUP)
+                .onEnter(()->{
+                    intake.spinnerMacro = false;
+                    intake.spinnerMacroTarget = 0;
+                    transfer.setClutchUp();
+                })
+                .transitionTimed(0.2, clutchStates.INIT)
 
                 .build();
     }
