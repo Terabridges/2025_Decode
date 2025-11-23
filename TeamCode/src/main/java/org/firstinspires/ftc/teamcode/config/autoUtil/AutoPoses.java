@@ -24,11 +24,14 @@ public class AutoPoses {
 
     //------------------ POSES ------------------
 
+    double robotWidth;
+    double robotLength;
+
     //Starting Poses
-    public Pose blueCloseStartPose = new Pose();
+    public Pose blueCloseStartPose = new Pose(48 + robotWidth/2, robotLength/2, 90);
     public Pose blueFarStartPose = new Pose();
-    public Pose redCloseStartPose = new Pose();
-    public Pose redFarStartPose = new Pose();
+    public Pose redCloseStartPose = Mirror(blueCloseStartPose);
+    public Pose redFarStartPose = Mirror(blueFarStartPose);
 
     public Pose findStartPose(Alliance a, Range r) {
         switch (a) {
@@ -44,17 +47,15 @@ public class AutoPoses {
     // ========================
     // SCORE POSES
     // ========================
-    public Pose scoreCB = new Pose();
-    public Pose scoreLB = new Pose();
-
-    // Red = mirror of Blue
+    public Pose scoreCB = new Pose(48, 96, 180);
+    public Pose scoreLB = new Pose(48 + robotWidth/2, 24, 180);
     public Pose scoreCR = Mirror(scoreCB);
     public Pose scoreLR = Mirror(scoreLB);
 
     // ========================
     // LOAD POSES
     // ========================
-    public Pose loadB = new Pose();
+    public Pose loadB = new Pose(robotWidth/2, robotLength/2, 90);
     public Pose loadR = Mirror(loadB);
 
     // ========================
@@ -62,26 +63,26 @@ public class AutoPoses {
     // ========================
 
     // Row 1
-    public Pose pick1StartCB = new Pose();
-    public Pose pick1StartLB = new Pose();
+    public Pose pick1StartCB = new Pose(24, robotLength/2, 180);
+    public Pose pick1StartLB = new Pose(48, 84, 180);
     public Pose pick1StartCR = Mirror(pick1StartCB);
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
-    public Pose pick2StartCB = new Pose();
-    public Pose pick2StartLB = new Pose();
+    public Pose pick2StartCB = new Pose(48, 36, 180);
+    public Pose pick2StartLB = new Pose(48, 60, 180);
     public Pose pick2StartCR = Mirror(pick2StartCB);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
     // Row 3
-    public Pose pick3StartCB = new Pose();
-    public Pose pick3StartLB = new Pose();
+    public Pose pick3StartCB = new Pose(48, 60, 180);
+    public Pose pick3StartLB = new Pose(48, 36, 180);
     public Pose pick3StartCR = Mirror(pick3StartCB);
     public Pose pick3StartLR = Mirror(pick3StartLB);
 
     // Row 4
-    public Pose pick4StartCB = new Pose();
-    public Pose pick4StartLB = new Pose();
+    public Pose pick4StartCB = new Pose(48, 84, 180);
+    public Pose pick4StartLB = new Pose(24, robotLength/2, 180);
     public Pose pick4StartCR = Mirror(pick4StartCB);
     public Pose pick4StartLR = Mirror(pick4StartLB);
 
@@ -90,26 +91,26 @@ public class AutoPoses {
     // ========================
 
     // Row 1
-    public Pose pick1EndCB = new Pose();
-    public Pose pick1EndLB = new Pose();
+    public Pose pick1EndCB = new Pose(robotWidth/2, 12, 180);
+    public Pose pick1EndLB = new Pose(24, 84, 180);
     public Pose pick1EndCR = Mirror(pick1EndCB);
     public Pose pick1EndLR = Mirror(pick1EndLB);
 
     // Row 2
-    public Pose pick2EndCB = new Pose();
-    public Pose pick2EndLB = new Pose();
+    public Pose pick2EndCB = new Pose(24, 36, 180);
+    public Pose pick2EndLB = new Pose(24, 60, 180);
     public Pose pick2EndCR = Mirror(pick2EndCB);
     public Pose pick2EndLR = Mirror(pick2EndLB);
 
     // Row 3
-    public Pose pick3EndCB = new Pose();
-    public Pose pick3EndLB = new Pose();
+    public Pose pick3EndCB = new Pose(24, 60, 180);
+    public Pose pick3EndLB = new Pose(24, 36, 180);
     public Pose pick3EndCR = Mirror(pick3EndCB);
     public Pose pick3EndLR = Mirror(pick3EndLB);
 
     // Row 4
-    public Pose pick4EndCB = new Pose();
-    public Pose pick4EndLB = new Pose();
+    public Pose pick4EndCB = new Pose(24, 84, 180);
+    public Pose pick4EndLB = new Pose(robotWidth/2, 12, 180);
     public Pose pick4EndCR = Mirror(pick4EndCB);
     public Pose pick4EndLR = Mirror(pick4EndLB);
 
