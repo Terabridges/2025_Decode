@@ -33,7 +33,7 @@ public class Transfer implements Subsystem{
     double inteTolerance = 5;
     double spindexPow = 0.0;
     double spindexTarget = 0.0;
-    double max = 0.15;
+    double max = 0.175;
     //0.225
 
     NormalizedRGBA colors;
@@ -49,6 +49,8 @@ public class Transfer implements Subsystem{
     public String[] ballList = {"E", "E", "E"};
     public String balls = "";
     public int numBalls = 0;
+
+    public String motif = "PPG";
 
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
@@ -193,6 +195,15 @@ public class Transfer implements Subsystem{
             ballDetected = false;
             ballColor = "none";
         }
+    }
+
+    public int rotateOrder(){
+        if (motif.equals("PPG")){
+            if(balls.equals("PPG")){
+                return 0;
+            }
+        }
+        return -1;
     }
 
     public void toggleAutoIntake(){

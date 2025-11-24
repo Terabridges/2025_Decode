@@ -33,7 +33,7 @@ public class Shooter implements Subsystem{
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
     double hoodDown = 0.0;
-    double hoodUp = 1.0;
+    double hoodUp = 0.9;
     public boolean useData = true;
     double maxRPM = 5500;
     private int requiredTagId = -1;
@@ -81,7 +81,7 @@ public class Shooter implements Subsystem{
         flyRight.setDirection(DcMotorSimple.Direction.FORWARD);
         turret.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        hood.setDirection(Servo.Direction.REVERSE);
+        hood.setDirection(Servo.Direction.FORWARD);
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);

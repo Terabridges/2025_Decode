@@ -5,8 +5,12 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.sfdev.assembly.state.StateMachine;
+import com.sfdev.assembly.state.StateMachineBuilder;
 
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
 //TODO make sure hood angle is consistent, starts at the same place
 
@@ -22,6 +26,14 @@ public class FreshmanLabor extends LinearOpMode {
     double targetAngle = 0;
     double angleIncrement = 0.2;
 
+    public enum clutchStates {
+        INIT,
+        CLUTCHDOWN,
+        CLUTCHUP
+    }
+
+    public StateMachine clutchSuperMachine;
+
     @Override
     public void runOpMode(){
 
@@ -35,19 +47,23 @@ public class FreshmanLabor extends LinearOpMode {
         currentGamepad1 = new Gamepad();
         previousGamepad1 = new Gamepad();
 
+        clutchSuperMachine = getClutchSuperMachine(robot);
+
 
         waitForStart();
 
         robot.toInit();
         robot.shooter.shooterShoot = false;
-        robot.shooter.manualTurret = false;
+        robot.shooter.manualTurret = true;
         robot.transfer.useSpindexPID = false;
         robot.shooter.useData = false;
-        robot.intake.toggleUseRaiser();
+        clutchSuperMachine.start();
 
         while (opModeIsActive()){
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);
+
+            clutchSuperMachine.update();
 
             //Left Stick X controls spindex
             if (currentGamepad1.left_stick_x > 0.1){
@@ -61,15 +77,8 @@ public class FreshmanLabor extends LinearOpMode {
             //Right stick Y controls spinner
             if (currentGamepad1.right_stick_y < -0.1){
                 robot.intake.spinnerIn();
-            } else if (currentGamepad1.right_stick_y > 0.1){
-                robot.intake.spinnerOut();
             } else {
                 robot.intake.spinnerZero();
-            }
-
-            //back controls clutch
-            if (currentGamepad1.back && !previousGamepad1.back){
-                robot.transfer.toggleClutch();
             }
 
             //Dpad up and down to change RPM
@@ -153,13 +162,20 @@ public class FreshmanLabor extends LinearOpMode {
 
             //right bumper sets angle
             if(currentGamepad1.right_bumper && !previousGamepad1.right_bumper){
-                robot.shooter.setHoodPos(targetAngle);
+                robot.shooter.hood.setPosition(targetAngle);
             }
 
             //start toggles turret lock
             if(currentGamepad1.start && !previousGamepad1.start){
                 robot.shooter.toggleTurretLock();
             }
+
+            //back controls clutch
+            if (currentGamepad1.back && !previousGamepad1.back){
+                robot.transfer.toggleClutch();
+            }
+
+            //rstickButton controls shoot macro
 
             robot.update();
 
@@ -171,9 +187,33 @@ public class FreshmanLabor extends LinearOpMode {
             joinedTelemetry.addData("RPM Increment", rpmIncrement);
             joinedTelemetry.addData("Target Angle", targetAngle);
             joinedTelemetry.addData("Angle Increment", angleIncrement);
-            joinedTelemetry.addData("Turret Lock?", robot.shooter.useTurretLock);
-            joinedTelemetry.addData("Clutch engaged?", robot.transfer.isClutchDown);
             joinedTelemetry.update();
         }
+    }
+
+    public StateMachine getClutchSuperMachine (Robot robot){
+        Transfer transfer = robot.transfer;
+        Intake intake = robot.intake;
+        return new StateMachineBuilder()
+                .state(clutchStates.INIT)
+                .transition(()->(currentGamepad1.left_stick_button && !previousGamepad1.left_stick_button), clutchStates.CLUTCHDOWN)
+
+                .state(clutchStates.CLUTCHDOWN)
+                .onEnter(()-> {
+                    intake.spinnerMacro = true;
+                    intake.spinnerMacroTarget = 0.95;
+                    transfer.setClutchDownFar();
+                })
+                .transitionTimed(1.2, clutchStates.CLUTCHUP)
+
+                .state(clutchStates.CLUTCHUP)
+                .onEnter(()->{
+                    intake.spinnerMacro = false;
+                    intake.spinnerMacroTarget = 0;
+                    transfer.setClutchUp();
+                })
+                .transitionTimed(0.2, clutchStates.INIT)
+
+                .build();
     }
 }
