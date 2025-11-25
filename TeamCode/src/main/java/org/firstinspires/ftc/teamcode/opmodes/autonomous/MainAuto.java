@@ -115,7 +115,6 @@ class MainAuto extends OpMode {
 
         robot.update();
         autoMachine.update();
-        stateMachinesUpdate();
 
         drawCurrentAndHistory();
 
@@ -189,7 +188,7 @@ class MainAuto extends OpMode {
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-                .transition(this::followerIdle, AutoStates.GO_TO_SHOOT)
+                .transition(this::followerIdle, AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -304,12 +303,6 @@ class MainAuto extends OpMode {
                 .build();
     }
 
-    public void stateMachinesUpdate(){
-        shootAllMachine.update();
-        clutchSuperMachine.update();
-    }
-
-    //TODO Implement auto version without gamepad
     public StateMachine getShootAllMachine (Robot robot){
         Shooter shooter = robot.shooter;
         Transfer transfer = robot.transfer;

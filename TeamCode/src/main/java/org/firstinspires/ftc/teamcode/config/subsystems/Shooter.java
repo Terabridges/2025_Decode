@@ -49,6 +49,13 @@ public class Shooter implements Subsystem{
     public boolean shooterShoot = false;
     public boolean manualTurret = true;
 
+    // Hood smoothing
+    private double filteredDist = 0.0;
+    private double filteredHood = 0.0;
+    private static final double DIST_ALPHA = 0.2;      // lower = smoother distance
+    private static final double HOOD_MAX_STEP = 0.03;  // max hood position change per update
+    private static final double HOOD_DEADBAND = 0.001;
+
     //---------PID------
     public PIDController turretLockController;
     double p1 = 0.022, i1 = 0.01, d1 = 0.0;
@@ -225,6 +232,8 @@ public class Shooter implements Subsystem{
 
         if (useTurretLock && hasDesiredTarget) {
             setTurretPower(setTurretLockPID(0.0));
+//        } else if (useTurretPID) {
+//            setTurretPower(setTurretPID(turretTargetDeg));
         } else if (manualTurret){
             if (!pastPosLimit() && turretManualPow > 0) {
                 setTurretPower(turretManualPow);
@@ -234,15 +243,23 @@ public class Shooter implements Subsystem{
         }
 
         if (useData && vision.hasTarget()){
-            double rpmVal =  util.clamp(shooterData.getRPMVal(vision.getDistanceInches()), 0, maxRPM);
-            double angleVal = util.clamp(shooterData.getAngleVal(vision.getDistanceInches()), hoodDown, hoodUp);
+            // Smooth distance before lookup to reduce jitter
+            double rawDist = vision.getDistanceInches();
+            filteredDist = filteredDist + DIST_ALPHA * (rawDist - filteredDist);
+
+            double rpmVal =  util.clamp(shooterData.getRPMVal(filteredDist), 0, maxRPM);
+            double angleVal = util.clamp(shooterData.getAngleVal(filteredDist), hoodDown, hoodUp);
             if (rpmVal != -2){
                 targetRPM = rpmVal;
             }
             if (angleVal != -2) {
-                if (Math.abs(hood.getPosition() - angleVal) > 0.015) {
-                    setHoodPos(angleVal);
+                // Slew-limit hood to avoid jitter
+                if (Math.abs(angleVal - filteredHood) > HOOD_DEADBAND) {
+                    double delta = angleVal - filteredHood;
+                    double step = Math.max(-HOOD_MAX_STEP, Math.min(HOOD_MAX_STEP, delta));
+                    filteredHood += step;
                 }
+                setHoodPos(filteredHood);
             }
         }
 
