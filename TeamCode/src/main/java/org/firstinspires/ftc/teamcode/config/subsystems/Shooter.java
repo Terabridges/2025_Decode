@@ -59,14 +59,14 @@ public class Shooter implements Subsystem{
     double maxPow1 = 0.135;
     public double turretPower1, error1;
 
-    public PIDController turretController;
-    double p2 = 0.0, i2 = 0.0, d2 = 0.0;
-    double posTolerance2 = 4;
-    double velTolerance2 = 4;
-    double inteTolerance2 = 4;
-    double deadband2 = 0;
-    double maxPow2 = 0.4;
-    public double turretPower2, error2;
+//    public PIDController turretController;
+//    double p2 = 0.0, i2 = 0.0, d2 = 0.0;
+//    double posTolerance2 = 4;
+//    double velTolerance2 = 4;
+//    double inteTolerance2 = 4;
+//    double deadband2 = 0;
+//    double maxPow2 = 0.4;
+//    public double turretPower2, error2;
 
 
     //---------------- Constructor ----------------!
@@ -93,9 +93,9 @@ public class Shooter implements Subsystem{
         turretLockController.setIntegrationBounds(-inteTolerance1, inteTolerance1);
         turretLockController.setTolerance(posTolerance1, velTolerance1);
 
-        turretController = new PIDController(p2, i2, d2);
-        turretController.setIntegrationBounds(-inteTolerance2, inteTolerance2);
-        turretController.setTolerance(posTolerance2, velTolerance2);
+//        turretController = new PIDController(p2, i2, d2);
+//        turretController.setIntegrationBounds(-inteTolerance2, inteTolerance2);
+//        turretController.setTolerance(posTolerance2, velTolerance2);
 
         util = new Util();
         shooterData = new ShooterData();
@@ -133,14 +133,14 @@ public class Shooter implements Subsystem{
         return turretPower1;
     }
 
-    public double setTurretPID(double targetAngle) {
-        turretController.setPID(p2, i2, d2);
-        error2 = 0;
-        if (Math.abs(error2) < deadband2) error2 = 0.0;
-        turretPower2 = turretController.calculate(error2, targetAngle);
-        turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
-        return turretPower2;
-    }
+//    public double setTurretPID(double targetAngle) {
+//        turretController.setPID(p2, i2, d2);
+//        error2 = 0;
+//        if (Math.abs(error2) < deadband2) error2 = 0.0;
+//        turretPower2 = turretController.calculate(error2, targetAngle);
+//        turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
+//        return turretPower2;
+//    }
 
     boolean pastPosLimit(){
         return false;
@@ -225,8 +225,6 @@ public class Shooter implements Subsystem{
 
         if (useTurretLock && hasDesiredTarget) {
             setTurretPower(setTurretLockPID(0.0));
-        } else if (useTurretPID){
-            setTurretPower(setTurretPID(turretTarget));
         } else if (manualTurret){
             if (!pastPosLimit() && turretManualPow > 0) {
                 setTurretPower(turretManualPow);
@@ -242,7 +240,9 @@ public class Shooter implements Subsystem{
                 targetRPM = rpmVal;
             }
             if (angleVal != -2) {
-                setHoodPos(angleVal);
+                if (Math.abs(hood.getPosition() - angleVal) > 0.015) {
+                    setHoodPos(angleVal);
+                }
             }
         }
 

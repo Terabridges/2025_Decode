@@ -21,13 +21,14 @@ public class spindexTester extends LinearOpMode {
     public Transfer transfer;
 
     public PIDController spindexController;
-    public static double p = 0.0017, i = 0.0000125, d = 0.0;
+    public static double p = 0.004, i = 0.0000125, d = 0.0003;
     public static double posTolerance = 5;
     public static double inteTolerance = 5;
     public static double spindexPower = 0.0;
     public static double spindexTarget = 0.0;
-    public static double max = 0.225;
+    public static double max = 0.4;
     public static int ball = 180;
+    boolean usePid = true;
 
     @Override
     public void runOpMode(){
@@ -57,15 +58,31 @@ public class spindexTester extends LinearOpMode {
                 spindexTarget += ball;
             }
 
+            if(currentGamepad1.a && !previousGamepad1.a) {
+                usePid = !usePid;
+            }
+
+            if (currentGamepad1.right_trigger > 0){
+                transfer.spindex.setPower(max);
+            } else if (currentGamepad1.left_trigger > 0){
+                transfer.spindex.setPower(-max);
+            } else if ((previousGamepad1.left_trigger > 0 && currentGamepad1.left_trigger == 0) || (previousGamepad1.right_trigger > 0 && currentGamepad1.right_trigger == 0)) {
+                transfer.spindex.setPower(0);
+            }
+
             joinedTelemetry.addData("Current Pos", transfer.spindex.getCurrentPosition());
             joinedTelemetry.addData("Target Pos", spindexTarget);
             joinedTelemetry.addData("power", spindexPower);
+            joinedTelemetry.addData("usePid", usePid);
             joinedTelemetry.update();
 
-            transfer.spindex.setPower(setSpindexPID(spindexTarget));
+            if (usePid) {
+                transfer.spindex.setPower(setSpindexPID(spindexTarget));
+            }
         }
 
     }
+
 
     public double setSpindexPID(double targetPos) {
         spindexController.setPID(p, i, d);

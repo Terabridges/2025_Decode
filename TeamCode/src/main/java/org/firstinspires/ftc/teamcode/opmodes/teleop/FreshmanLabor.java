@@ -4,12 +4,14 @@ import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
 //TODO make sure hood angle is consistent, starts at the same place
@@ -26,12 +28,30 @@ public class FreshmanLabor extends LinearOpMode {
     double targetAngle = 0;
     double angleIncrement = 0.2;
 
+    public double clutchDownTime = 0.15;
+    public double clutchDownFarTime = 0.6;
+
+    public enum shootStates {
+        INIT,
+        SPIN0,
+        CLUTCHDOWN1,
+        CLUTCHDOWNFAR1,
+        SPIN1,
+        CLUTCHDOWN2,
+        CLUTCHDOWNFAR2,
+        SPIN2,
+        CLUTCHDOWN3,
+        CLUTCHDOWNFAR3,
+    }
+
     public enum clutchStates {
         INIT,
+        SPIN,
         CLUTCHDOWN,
         CLUTCHUP
     }
 
+    public StateMachine shootAllMachine;
     public StateMachine clutchSuperMachine;
 
     @Override
@@ -47,17 +67,21 @@ public class FreshmanLabor extends LinearOpMode {
         currentGamepad1 = new Gamepad();
         previousGamepad1 = new Gamepad();
 
+        shootAllMachine = getShootAllMachine(robot);
         clutchSuperMachine = getClutchSuperMachine(robot);
 
+        robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
 
         robot.toInit();
+        shootAllMachine.start();
+        clutchSuperMachine.start();
         robot.shooter.shooterShoot = false;
         robot.shooter.manualTurret = true;
-        robot.transfer.useSpindexPID = false;
+        robot.transfer.useSpindexPID = true;
+        robot.transfer.isDetecting = false;
         robot.shooter.useData = false;
-        clutchSuperMachine.start();
 
         while (opModeIsActive()){
             previousGamepad1.copy(currentGamepad1);
@@ -66,12 +90,10 @@ public class FreshmanLabor extends LinearOpMode {
             clutchSuperMachine.update();
 
             //Left Stick X controls spindex
-            if (currentGamepad1.left_stick_x > 0.1){
-                robot.transfer.spindexRight();
-            } else if (currentGamepad1.left_stick_x < -0.1){
-                robot.transfer.spindexLeft();
-            } else {
-                robot.transfer.spindexZero();
+            if (currentGamepad1.left_stick_x > 0.1 && previousGamepad1.left_stick_x == 0){
+                robot.transfer.ballRight();
+            } else if (currentGamepad1.left_stick_x < -0.1 && previousGamepad1.left_stick_x == 0){
+                robot.transfer.ballLeft();
             }
 
             //Right stick Y controls spinner
@@ -175,7 +197,9 @@ public class FreshmanLabor extends LinearOpMode {
                 robot.transfer.toggleClutch();
             }
 
-            //rstickButton controls shoot macro
+            //rstickButton controls shoot all macro
+
+            //lstickButton controls shoot one macro
 
             robot.update();
 
@@ -187,32 +211,109 @@ public class FreshmanLabor extends LinearOpMode {
             joinedTelemetry.addData("RPM Increment", rpmIncrement);
             joinedTelemetry.addData("Target Angle", targetAngle);
             joinedTelemetry.addData("Angle Increment", angleIncrement);
+            joinedTelemetry.addData("Locked on?", robot.shooter.useTurretLock);
             joinedTelemetry.update();
         }
+    }
+
+    public StateMachine getShootAllMachine (Robot robot){
+        Shooter shooter = robot.shooter;
+        Transfer transfer = robot.transfer;
+        Intake intake = robot.intake;
+        return new StateMachineBuilder()
+                .state(shootStates.INIT)
+                .transition(()->(currentGamepad1.right_stick_button && !previousGamepad1.right_stick_button), shootStates.SPIN0)
+
+                .state(shootStates.SPIN0)
+                .onEnter(()-> {
+                    transfer.ballRightSmall();
+                    intake.spinnerMacro = true;
+                    intake.spinnerMacroTarget = 0.95;
+                })
+                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN1)
+
+                .state(shootStates.CLUTCHDOWN1)
+                .onEnter(()-> transfer.setClutchDown())
+                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR1)
+
+                .state(shootStates.CLUTCHDOWNFAR1)
+                .onEnter(()-> transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.SPIN1)
+                .onExit(()-> {
+                    transfer.setClutchUp();
+                })
+
+                .state(shootStates.SPIN1)
+                .onEnter(()-> {
+                    transfer.ballRight();
+                })
+                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN2)
+
+                .state(shootStates.CLUTCHDOWN2)
+                .onEnter(()-> {
+                    transfer.setClutchDown();
+                })
+                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR2)
+
+                .state(shootStates.CLUTCHDOWNFAR2)
+                .onEnter(()-> transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
+                .onExit(()-> transfer.setClutchUp())
+
+                .state(shootStates.SPIN2)
+                .onEnter(()-> {
+                    transfer.ballRight();
+                })
+                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN3)
+
+                .state(shootStates.CLUTCHDOWN3)
+                .onEnter(()-> {
+                    transfer.setClutchDown();
+                })
+                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR3)
+
+                .state(shootStates.CLUTCHDOWNFAR3)
+                .onEnter(()-> transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.INIT)
+                .onExit(()-> {
+                    transfer.setClutchUp();
+                    intake.spinnerMacroTarget = 0;
+                    transfer.ballLeftSmall();
+                    intake.spinnerMacro = false;
+                })
+
+                .build();
     }
 
     public StateMachine getClutchSuperMachine (Robot robot){
         Transfer transfer = robot.transfer;
         Intake intake = robot.intake;
+        Shooter shooter = robot.shooter;
         return new StateMachineBuilder()
                 .state(clutchStates.INIT)
-                .transition(()->(currentGamepad1.left_stick_button && !previousGamepad1.left_stick_button), clutchStates.CLUTCHDOWN)
+                .transition(()->(currentGamepad1.left_stick_button && !previousGamepad1.left_stick_button), clutchStates.SPIN)
+
+                .state(clutchStates.SPIN)
+                .onEnter(()-> transfer.ballRightSmall())
+                .transition(()->transfer.spindexAtTarget(), clutchStates.CLUTCHDOWN)
 
                 .state(clutchStates.CLUTCHDOWN)
                 .onEnter(()-> {
                     intake.spinnerMacro = true;
                     intake.spinnerMacroTarget = 0.95;
-                    transfer.setClutchDownFar();
+                    transfer.setClutchDown();
                 })
-                .transitionTimed(1.2, clutchStates.CLUTCHUP)
+                .transitionTimed(clutchDownTime, clutchStates.CLUTCHUP)
+                .onExit(()-> transfer.setClutchDownFar())
 
                 .state(clutchStates.CLUTCHUP)
-                .onEnter(()->{
+                .transitionTimed(clutchDownFarTime, clutchStates.INIT)
+                .onExit(()->{
                     intake.spinnerMacro = false;
                     intake.spinnerMacroTarget = 0;
                     transfer.setClutchUp();
+                    transfer.ballLeftSmall();
                 })
-                .transitionTimed(0.2, clutchStates.INIT)
 
                 .build();
     }
