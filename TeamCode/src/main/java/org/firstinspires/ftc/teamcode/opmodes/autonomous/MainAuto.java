@@ -11,6 +11,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
@@ -20,6 +21,10 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
 class MainAuto extends OpMode {
 
@@ -34,9 +39,17 @@ class MainAuto extends OpMode {
     private final Mode mode;
     private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD }
 
+    private enum ShootState { INIT, CLUTCHDOWN, SPIN, CLUTCHDOWNFAR }
+    private enum ClutchState { INIT, CLUTCHDOWN, CLUTCHUP }
+
     //State machine
     private StateMachine autoMachine;
     private AutoStates activeState = AutoStates.GO_TO_SHOOT;
+    private StateMachine shootAllMachine;
+    private StateMachine clutchSuperMachine;
+
+    //Robot and subsystems
+    private Robot robot;
 
     //Other Variables
     private int rowsToRun = 0;
@@ -57,12 +70,21 @@ class MainAuto extends OpMode {
 
     @Override
     public void init() {
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
+
+        shootAllMachine = getShootAllMachine(robot);
+        clutchSuperMachine = getClutchSuperMachine(robot);
+
+        autoMachine = buildAutoMachine();
+
+        robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
         rowsToRun = Math.min(resolveRowsForMode(mode), MAX_ROWS);
         rowsCompleted = 0;
         currentRowIndex = 0;
         preloadComplete = false;
+
         stateTimer.reset();
-        autoMachine = buildAutoMachine();
     }
 
     @Override
@@ -81,14 +103,20 @@ class MainAuto extends OpMode {
         if (autoMachine != null) {
             autoMachine.start();
         }
+
+        robot.toInit();
+        shootAllMachine.start();
+        clutchSuperMachine.start();
     }
 
     @Override
     public void loop() {
         follower.update();
-        if (autoMachine != null) {
-            autoMachine.update();
-        }
+
+        robot.update();
+        autoMachine.update();
+        stateMachinesUpdate();
+
         drawCurrentAndHistory();
 
         // Auto ends after we reach the final state and finish the park path.
@@ -181,7 +209,7 @@ class MainAuto extends OpMode {
     private void onEnterCompleteShoot() {
         setActiveState(AutoStates.COMPLETE_SHOOT);
         stateTimer.reset();
-        //Call shoot method here
+        //TODO Call shoot method here
     }
 
     private void onExitCompleteShoot() {
@@ -190,7 +218,7 @@ class MainAuto extends OpMode {
         } else {
             rowsCompleted = Math.min(rowsCompleted + 1, MAX_ROWS);
         }
-        //Call end shoot method here
+        //TODO Call end shoot method here
     }
 
     private void onEnterGoToPickup() {
@@ -203,17 +231,17 @@ class MainAuto extends OpMode {
     private void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
         buildPath(PathRequest.PICKUP);
-        //Activate intake
+        robot.intake.spinnerIn();
         followPath(Pickup);
     }
 
     private void onExitCompletePickup() {
-        //Deactivate intake
+        robot.intake.spinnerZero();
     }
 
     private void onEnterLeave() {
         setActiveState(AutoStates.LEAVE);
-        // build and follow leave path (ensure we are outside of triangle)
+        //TODO build and follow leave path (ensure we are outside of triangle)
     }
 
     private void refreshCurrentRowIndex() {
@@ -273,6 +301,82 @@ class MainAuto extends OpMode {
         return follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    public void stateMachinesUpdate(){
+        shootAllMachine.update();
+        clutchSuperMachine.update();
+    }
+
+    //TODO Implement auto version without gamepad
+    public StateMachine getShootAllMachine (Robot robot){
+        Shooter shooter = robot.shooter;
+        Transfer transfer = robot.transfer;
+        Intake intake = robot.intake;
+        return new StateMachineBuilder()
+                .state(ShootState.INIT)
+                .transition(()->(true), ShootState.CLUTCHDOWN)
+
+                .state(ShootState.CLUTCHDOWN)
+                .onEnter(()-> {
+                    intake.spinnerMacro = true;
+                    transfer.setClutchDown();
+                    intake.spinnerMacroTarget = 0.95;
+                    shooter.shooterShoot = true;
+                    transfer.isDetecting = false;
+                })
+                .transitionTimed(0.5, ShootState.SPIN)
+
+                .state(ShootState.SPIN)
+                .onEnter(()-> {
+                    transfer.ballRight();
+                    transfer.ballRight();
+                    transfer.ballRightSmall();
+                })
+                .transitionTimed(3.2, ShootState.CLUTCHDOWNFAR)
+
+                .state(ShootState.CLUTCHDOWNFAR)
+                .onEnter(()-> {
+                    transfer.setClutchDownFar();
+                })
+                .transitionTimed(1.5, ShootState.INIT)
+                .onExit(()-> {
+                    transfer.setClutchUp();
+                    intake.spinnerMacroTarget = 0;
+                    shooter.shooterShoot = false;
+                    transfer.isDetecting = true;
+                    transfer.ballLeftSmall();
+                    transfer.emptyBalls();
+                    intake.spinnerMacro = false;
+                })
+
+                .build();
+    }
+
+    public StateMachine getClutchSuperMachine (Robot robot){
+        Transfer transfer = robot.transfer;
+        Intake intake = robot.intake;
+        return new StateMachineBuilder()
+                .state(ClutchState.INIT)
+                .transition(()->(true), ClutchState.CLUTCHDOWN)
+
+                .state(ClutchState.CLUTCHDOWN)
+                .onEnter(()-> {
+                    intake.spinnerMacro = true;
+                    intake.spinnerMacroTarget = 0.95;
+                    transfer.setClutchDownFar();
+                })
+                .transitionTimed(1.2, ClutchState.CLUTCHUP)
+
+                .state(ClutchState.CLUTCHUP)
+                .onEnter(()->{
+                    intake.spinnerMacro = false;
+                    intake.spinnerMacroTarget = 0;
+                    transfer.setClutchUp();
+                })
+                .transitionTimed(0.2, ClutchState.INIT)
+
                 .build();
     }
 }
