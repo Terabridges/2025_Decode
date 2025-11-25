@@ -52,6 +52,8 @@ public class AutoPoses {
     public Pose scoreCR = Mirror(scoreCB);
     public Pose scoreLR = Mirror(scoreLB);
 
+    //TODO add a secondary score pose if need to save time (Closer to middle row, top of close triangle)
+
     // ========================
     // LOAD POSES
     // ========================
