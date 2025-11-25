@@ -209,6 +209,11 @@ class MainAuto extends OpMode {
     private void onEnterCompleteShoot() {
         setActiveState(AutoStates.COMPLETE_SHOOT);
         stateTimer.reset();
+        coarseTurretAimAtGoal();
+        if (robot != null && robot.shooter != null) {
+            // enable fine vision lock once coarse aim is set
+            robot.shooter.useTurretLock = true;
+        }
         //TODO Call shoot method here
     }
 
@@ -378,5 +383,35 @@ class MainAuto extends OpMode {
                 .transitionTimed(0.2, ClutchState.INIT)
 
                 .build();
+    }
+
+    /** Returns the static goal pose in field (Pedro) coordinates. */
+    private Pose getGoalPose() {
+        if (alliance == Alliance.BLUE) {
+            return new Pose(0, 144, 0);
+        } else {
+            return new Pose(144, 144, 0);
+        }
+    }
+
+    /** Wraps an angle in degrees to [-180, 180). */
+    private double wrapDeg(double deg) {
+        return ((deg + 180) % 360 + 360) % 360 - 180;
+    }
+
+    /** Point turret toward the goal using chassis pose (coarse aim). */
+    private void coarseTurretAimAtGoal() {
+        if (robot == null || follower == null || robot.shooter == null) return;
+        Pose robotPose = follower.getPose();
+        if (robotPose == null) return;
+
+        Pose goal = getGoalPose();
+        double desiredHeadingRad = Math.atan2(goal.getY() - robotPose.getY(), goal.getX() - robotPose.getX());
+        double turretTargetDeg = wrapDeg(Math.toDegrees(desiredHeadingRad - robotPose.getHeading()));
+
+        robot.shooter.useTurretLock = false;
+        robot.shooter.useTurretPID = true;
+        robot.shooter.manualTurret = false;
+        robot.shooter.setTurretTargetDeg(turretTargetDeg);
     }
 }

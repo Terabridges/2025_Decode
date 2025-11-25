@@ -39,7 +39,8 @@ public class Shooter implements Subsystem{
     private int requiredTagId = -1;
 
     //---------Targets------
-    double turretTarget = 0.0;
+    double turretTarget = 0.0; // degrees in turret frame
+    public double turretTargetDeg = 0.0;
     public double targetRPM = 0.0;
     double turretManualPow = 0.0;
 
@@ -119,6 +120,19 @@ public class Shooter implements Subsystem{
         useTurretLock = !useTurretLock;
     }
 
+    // Angle helpers
+    private double wrapDeg(double deg) {
+        return ((deg + 180) % 360 + 360) % 360 - 180;
+    }
+
+    /** Sets a turret target in degrees (chassis/turret frame). Enables turret PID and disables manual. */
+    public void setTurretTargetDeg(double targetDeg) {
+        turretTargetDeg = wrapDeg(targetDeg);
+        turretTarget = turretTargetDeg;
+        useTurretPID = true;
+        manualTurret = false;
+    }
+
     /** Sets the fiducial ID that the turret lock is allowed to track. Use -1 to accept any tag. */
     public void setRequiredTagId(int tagId) {
         requiredTagId = tagId;
@@ -133,11 +147,13 @@ public class Shooter implements Subsystem{
         return turretPower1;
     }
 
-    public double setTurretPID(double targetAngle) {
+    public double setTurretPID(double targetAngleDeg) {
         turretController.setPID(p2, i2, d2);
-        error2 = 0;
+        double currentDeg = turretEnc.getCurrentPosition(); // 0–360 from analog encoder
+        double errorDeg = wrapDeg(targetAngleDeg - currentDeg); // shortest path
+        error2 = errorDeg;
         if (Math.abs(error2) < deadband2) error2 = 0.0;
-        turretPower2 = turretController.calculate(error2, targetAngle);
+        turretPower2 = turretController.calculate(error2, 0.0); // drive error to zero
         turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
         return turretPower2;
     }
