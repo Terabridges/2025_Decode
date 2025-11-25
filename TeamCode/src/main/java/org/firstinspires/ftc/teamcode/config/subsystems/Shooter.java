@@ -50,10 +50,8 @@ public class Shooter implements Subsystem{
     public boolean manualTurret = true;
 
     // Hood smoothing
-    private double filteredDist = 0.0;
     private double filteredHood = 0.0;
-    private static final double DIST_ALPHA = 0.2;      // lower = smoother distance
-    private static final double HOOD_MAX_STEP = 0.03;  // max hood position change per update
+    private static final double HOOD_MAX_STEP = 0.025;  // max hood position change per update
     private static final double HOOD_DEADBAND = 0.001;
 
     //---------PID------
@@ -243,12 +241,11 @@ public class Shooter implements Subsystem{
         }
 
         if (useData && vision.hasTarget()){
-            // Smooth distance before lookup to reduce jitter
             double rawDist = vision.getDistanceInches();
-            filteredDist = filteredDist + DIST_ALPHA * (rawDist - filteredDist);
 
-            double rpmVal =  util.clamp(shooterData.getRPMVal(filteredDist), 0, maxRPM);
-            double angleVal = util.clamp(shooterData.getAngleVal(filteredDist), hoodDown, hoodUp);
+            // Lookup directly from table to preserve accuracy, then smooth the hood motion only
+            double rpmVal =  util.clamp(shooterData.getRPMVal(rawDist), 0, maxRPM);
+            double angleVal = util.clamp(shooterData.getAngleVal(rawDist), hoodDown, hoodUp);
             if (rpmVal != -2){
                 targetRPM = rpmVal;
             }
