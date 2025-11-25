@@ -24,12 +24,12 @@ public class AutoPoses {
 
     //------------------ POSES ------------------
 
-    double robotWidth;
-    double robotLength;
+    double robotWidth = 14.5;
+    double robotLength = 15.25;
 
     //Starting Poses
-    public Pose blueCloseStartPose = new Pose(48 + robotWidth/2, robotLength/2, 90);
-    public Pose blueFarStartPose = new Pose();
+    public Pose blueCloseStartPose = new Pose();
+    public Pose blueFarStartPose = new Pose(48 + robotWidth/2, robotLength/2, 90);
     public Pose redCloseStartPose = Mirror(blueCloseStartPose);
     public Pose redFarStartPose = Mirror(blueFarStartPose);
 

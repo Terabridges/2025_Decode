@@ -7,7 +7,7 @@ public class ShooterData {
     public InterpLUT RPMLUT;
     public InterpLUT AngleLUT;
     public double minDistance = 0;
-    public double maxDistance = 150;
+    public double maxDistance = 165;
 
     public ShooterData(){
         RPMLUT = new InterpLUT();
@@ -19,25 +19,27 @@ public class ShooterData {
     }
 
     private void addRPMData(){
-        RPMLUT.add(0, 2500); //Made up
-        RPMLUT.add(23.5, 3100);
-        RPMLUT.add(29.5, 3100);
-        RPMLUT.add(39.5, 3250);
-        RPMLUT.add(59.9, 3700);
-        RPMLUT.add(68.8, 3700);
-        RPMLUT.add(79.5, 4000);
-        RPMLUT.add(150, 5000); //Made up
+        RPMLUT.add(minDistance, 3700);
+        RPMLUT.add(22.38, 3600);
+        RPMLUT.add(40, 3700);
+        RPMLUT.add(61.5, 3800);
+        RPMLUT.add(74.4, 4000);
+        RPMLUT.add(88, 4500);
+        RPMLUT.add(126.5, 5700);
+        RPMLUT.add(145, 5700);
+        RPMLUT.add(maxDistance, 5700);
     }
 
     private void addAngleData(){
-        AngleLUT.add(0, 0.15); //Made up
-        AngleLUT.add(23.5, 0.175);
-        AngleLUT.add(29.5, 0.35);
-        AngleLUT.add(39.5, 0.475);
-        AngleLUT.add(59.9, 0.8);
-        AngleLUT.add(68.8, 0.8);
-        AngleLUT.add(79.5, 0.8);
-        AngleLUT.add(150, 0.8); //Made up
+        AngleLUT.add(minDistance, 0);
+        AngleLUT.add(22.38, 0.25);
+        AngleLUT.add(40, 0.4);
+        AngleLUT.add(61.5, 0.4);
+        AngleLUT.add(74.4, 0.55);
+        AngleLUT.add(88, 0.65);
+        AngleLUT.add(126.5, 0.83);
+        AngleLUT.add(145, 0.95);
+        AngleLUT.add(maxDistance, 0.95);
     }
 
     public double getRPMVal(double distance){

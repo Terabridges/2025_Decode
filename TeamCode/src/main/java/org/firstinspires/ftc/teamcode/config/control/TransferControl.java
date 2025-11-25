@@ -58,5 +58,7 @@ public class TransferControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Ball Color", transfer.ballColor);
         telemetry.addData("Ball Order,", transfer.balls);
+        telemetry.addData("DistanceSensor", transfer.colorDistance);
+        telemetry.addData("ColorTimer", transfer.colorTimer.seconds());
     }
 }

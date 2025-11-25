@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
@@ -23,24 +24,25 @@ public class Transfer implements Subsystem{
     double spindexManualPow = 0;
     public boolean isClutchDown = false;
     double clutchUp = 0.42;
-    double clutchDown = 0.55;
-    double clutchDownFar = 0.9;
+    double clutchBarelyDown = 0.55;
+    double clutchDown = 0.62;
+    double clutchDownFar = 0.95;
     int ball = 180;
 
     PIDController spindexController;
-    double p = 0.0017, i = 0.0000125, d = 0.0;
+    double p = 0.004, i = 0.0000125, d = 0.0003;
     double posTolerance = 5;
     double inteTolerance = 5;
     double spindexPow = 0.0;
     double spindexTarget = 0.0;
-    double max = 0.175;
-    //0.225
+    double max = 0.4;
 
     NormalizedRGBA colors;
     float red;
     float green;
     float blue;
-    double colorDistance;
+    public double colorDistance = 0;
+    double previousColorDistance = 0;
     public boolean ballDetected = false;
     public String ballColor = "none";
 
@@ -49,6 +51,8 @@ public class Transfer implements Subsystem{
     public String[] ballList = {"E", "E", "E"};
     public String balls = "";
     public int numBalls = 0;
+
+    public ElapsedTime colorTimer = new ElapsedTime();
 
     public String motif = "PPG";
 
@@ -66,6 +70,7 @@ public class Transfer implements Subsystem{
         util = new Util();
 
         colors = new NormalizedRGBA();
+        colorTimer.reset();
     }
 
     //---------------- Methods ----------------
@@ -182,18 +187,39 @@ public class Transfer implements Subsystem{
         red = colors.red;
         green = colors.green;
         blue = colors.blue;
+        previousColorDistance = colorDistance;
         colorDistance = colorSensor.getDistance(DistanceUnit.INCH);
 
-        if (colorDistance < 1.92){
+//        if (colorDistance < 1.92){
+//            ballDetected = true;
+//            if (green > red && green > blue){
+//                ballColor = "green";
+//            } else {
+//                ballColor = "purple";
+//            }
+//        } else {
+//            ballDetected = false;
+//            ballColor = "none";
+//        }
+
+        if (colorDistance < 1.92 && previousColorDistance > 1.92){
+            colorTimer.reset();
             ballDetected = true;
-            if (green > red && green > blue){
-                ballColor = "green";
-            } else {
-                ballColor = "purple";
-            }
-        } else {
+        }
+
+        if (colorDistance > 1.92){
             ballDetected = false;
             ballColor = "none";
+        }
+
+        if(ballDetected){
+            if (colorTimer.seconds() > 0.04){
+                if (green > red && green > blue){
+                    ballColor = "green";
+                } else {
+                    ballColor = "purple";
+                }
+            }
         }
     }
 
@@ -238,12 +264,14 @@ public class Transfer implements Subsystem{
                         numBalls++;
                     }
 
-                    if(!ballList[1].equals("E") && ballList[2].equals("E")){
-                        ballRight();
-                    } else if (ballList[1].equals("E") && !ballList[2].equals("E")){
-                        ballLeft();
-                    } else if (ballList[1].equals("E") && ballList[2].equals("E")){
-                        ballRight();
+                    if (ballColor.equals("green") || ballColor.equals("purple")) {
+                        if (!ballList[1].equals("E") && ballList[2].equals("E")) {
+                            ballRight();
+                        } else if (ballList[1].equals("E") && !ballList[2].equals("E")) {
+                            ballLeft();
+                        } else if (ballList[1].equals("E") && ballList[2].equals("E")) {
+                            ballRight();
+                        }
                     }
                 }
             }
