@@ -44,5 +44,6 @@ public class TransferControl implements Control {
         telemetry.addData("Ball Color", transfer.ballColor);
         telemetry.addData("Ball Order,", transfer.balls);
         telemetry.addData("Sees Red", transfer.isRed);
+        telemetry.addData("Spindexer Position", transfer.spindex.getCurrentPosition());
     }
 }
