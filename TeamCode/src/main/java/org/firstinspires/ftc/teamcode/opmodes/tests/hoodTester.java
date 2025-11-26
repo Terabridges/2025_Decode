@@ -1,27 +1,28 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
-import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Configurable
-@TeleOp(name="clutchTester", group="Test")
-public class clutchTester extends LinearOpMode {
+@TeleOp(name="hoodTester", group="Test")
+public class hoodTester extends LinearOpMode {
 
     private JoinedTelemetry joinedTelemetry;
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
-    public Transfer transfer;
-    public static double transferUp = 0.42;
-    public static double transferDown = 0.55;
+    public Shooter shooter;
+    public Vision vision;
+    public static double hoodDown = 0;
+    public static double hoodUp = 1;
 
     @Override
     public void runOpMode(){
@@ -30,7 +31,8 @@ public class clutchTester extends LinearOpMode {
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
                 telemetry
         );
-        transfer = new Transfer(hardwareMap);
+        vision = new Vision(hardwareMap);
+        shooter = new Shooter(hardwareMap, vision);
 
         waitForStart();
         while (opModeIsActive()){
@@ -38,19 +40,15 @@ public class clutchTester extends LinearOpMode {
             currentGamepad1.copy(gamepad1);
 
             if(currentGamepad1.a && !previousGamepad1.a){
-                transfer.clutch.setPosition(transferDown);
+                shooter.hood.setPosition(hoodDown);
             }
 
             if(currentGamepad1.y && !previousGamepad1.y){
-                transfer.clutch.setPosition(transferUp);
-            }
+                shooter.hood.setPosition(hoodUp);
         }
 
     }
 
 
-    //Up: 0.12
-    //Down: 0.3
-    //Really Down: 0.85
-
+}
 }

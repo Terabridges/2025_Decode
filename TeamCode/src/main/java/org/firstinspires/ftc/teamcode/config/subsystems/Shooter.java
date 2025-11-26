@@ -8,10 +8,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
-import org.firstinspires.ftc.teamcode.utility.AbsoluteAnalogEncoder;
-import org.firstinspires.ftc.teamcode.utility.Util;
+import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
+import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Shooter implements Subsystem{
 
@@ -22,35 +22,55 @@ public class Shooter implements Subsystem{
     public DcMotorEx flyLeft;
     public DcMotorEx flyRight;
     public Servo hood;
+    public Servo light;
     //public TouchSensor hoodSwitch;
 
     //---------Objects------
     public Vision vision;
     public Util util;
+    public ShooterData shooterData;
 
     //---------------- Software ----------------!
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
-    double maxPow = 0.6;
-    double deadband = 0.18;
-    public double turretPower, error;
+    double hoodDown = 0.0;
+    double hoodUp = 0.9;
+    public boolean useData = true;
+    double maxRPM = 5700;
+    private int requiredTagId = -1;
+    public boolean useLight = true;
+    public String lightColor = "none";
 
     //---------Targets------
     double turretTarget = 0.0;
-    double targetRPM = 0.0;
-    double hoodTarget = 0.0;
+    public double targetRPM = 0.0;
+    public double turretManualPow = 0.0;
 
     //---------useBool------
-    boolean useTurretPID = true;
     public boolean useTurretLock = false;
-    boolean shooterShoot = true;
+    public boolean useTurretPID = false;
+    public boolean shooterShoot = false;
+    public boolean manualTurret = false;
+
+    // Hood smoothing
+    private double filteredHood = 0.0;
+    private static final double HOOD_MAX_STEP = 0.025;  // max hood position change per update
+    private static final double HOOD_DEADBAND = 0.001;
 
     //---------PID------
-    public PIDController turretController;
-    double p = 0.02, i = 0.00015, d = 0.0009;
-    double posTolerance = 1.2;
-    double velTolerance = 5.0;
-    double inteTolerance = 6.0;
+    public PIDController turretLockController;
+    double p1 = 0.022, i1 = 0.01, d1 = 0.0;
+    double posTolerance1 = 1.2;
+    double velTolerance1 = 5.0;
+    double inteTolerance1 = 6.0;
+    double deadband1 = 0;
+    double maxPow1 = 0.135;
+    public double turretPower1, error1;
+
+    //--------
+    public double turretRight = 0.85;
+    public double turretLeft = -0.85;
+    public double currentTurretPos;
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -58,12 +78,14 @@ public class Shooter implements Subsystem{
         flyLeft = map.get(DcMotorEx.class, "fly_left");
         flyRight = map.get(DcMotorEx.class, "fly_right");
         hood = map.get(Servo.class, "hood");
-        //hoodAnalog: hood_analog
-        //hoodSwitch = map.get(TouchSensor.class, "hood_switch");
         turretAnalog = map.get(AnalogInput.class, "turret_analog");
-        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
-        flyRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        turret.setDirection(DcMotorSimple.Direction.REVERSE);
+        light = map.get(Servo.class, "light");
+        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0.0, 1.0);
+        flyLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        flyRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        turret.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        hood.setDirection(Servo.Direction.FORWARD);
         flyLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flyLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -71,9 +93,12 @@ public class Shooter implements Subsystem{
 
         this.vision = vision;
 
-        turretController = new PIDController(p, i, d);
-        turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
-        turretController.setTolerance(posTolerance, velTolerance);
+        turretLockController = new PIDController(p1, i1, d1);
+        turretLockController.setIntegrationBounds(-inteTolerance1, inteTolerance1);
+        turretLockController.setTolerance(posTolerance1, velTolerance1);
+
+        util = new Util();
+        shooterData = new ShooterData();
     }
 
     //---------------- Methods ----------------!
@@ -84,8 +109,30 @@ public class Shooter implements Subsystem{
         turret.setPower(power);
     }
 
-    public void setTurret(double target){
-        turret.setPower(setTurretPID(target));
+    public double limitTurretPower(int startLimit, int endLimit){
+        //1 - (pos-start)/(end-start)
+        //240 340
+        return (1 - ((turretEnc.getCurrentPosition()-startLimit)/(endLimit-startLimit)));
+    }
+
+    public void turretManualRightRE(){
+        manualTurret = true;
+        turretManualPow = turretRight;
+    }
+
+    public void turretManualRightFE(){
+        manualTurret = false;
+        turretManualPow = 0;
+    }
+
+    public void turretManualLeftRE(){
+        manualTurret = true;
+        turretManualPow = turretLeft;
+    }
+
+    public void turretManualLeftFE(){
+        manualTurret = false;
+        turretManualPow = 0;
     }
 
     public double getTurretPos()
@@ -98,17 +145,27 @@ public class Shooter implements Subsystem{
         useTurretLock = !useTurretLock;
     }
 
-    public double setTurretPID(double targetAngle) {
-        turretController.setPID(p, i, d);
-        error = vision.getTx();
-        if (Math.abs(error) < deadband) error = 0.0;
-        turretPower = turretController.calculate(error, targetAngle);
-        turretPower = clamp(turretPower, -maxPow, maxPow);
-        return turretPower;
+    //Blue is 20, Red is 24
+    /** Sets the fiducial ID that the turret lock is allowed to track. Use -1 to accept any tag. */
+    public void setRequiredTagId(int tagId) {
+        requiredTagId = tagId;
     }
 
-    public double clamp(double v, double lo, double hi) {
-        return Math.max(lo, Math.min(hi, v));
+    public double setTurretLockPID(double targetAngle) {
+        turretLockController.setPID(p1, i1, d1);
+        error1 = vision.getTx();
+        if (Math.abs(error1) < deadband1) error1 = 0.0;
+        turretPower1 = turretLockController.calculate(error1, targetAngle);
+        turretPower1 = util.clamp(turretPower1, -maxPow1, maxPow1);
+        return turretPower1;
+    }
+
+    boolean pastPosLimit(){
+        return (turretEnc.getCurrentPosition() <= 80);
+    }
+
+    boolean pastNegLimit(){
+        return (turretEnc.getCurrentPosition() >= 325);
     }
 
     //---------Shooter------
@@ -155,6 +212,18 @@ public class Shooter implements Subsystem{
         }
     }
 
+    public void toggleShooter(){
+        shooterShoot = !shooterShoot;
+    }
+
+    public boolean isAtRPM(){
+        if (targetRPM > 4000){
+            return (Math.abs(targetRPM - getShooterRPM()) < 750);
+        } else {
+            return (Math.abs(targetRPM - getShooterRPM()) < 500);
+        }
+    }
+
     //---------Hood------
     public void setHoodPos(double pos){
         hood.setPosition(pos);
@@ -164,27 +233,100 @@ public class Shooter implements Subsystem{
         return hood.getPosition();
     }
 
-//    public boolean isHoodSensorOn(){
-//        return hoodSwitch.isPressed();
-//    }
-
+    //---------------
+    public double getColorPWN(String color){
+        if (color.equals("red")){
+            return 0.280;
+        } else if (color.equals("green")){
+            return 0.470;
+        } else if (color.equals("blue")){
+            return 0.611;
+        } else {
+            return 0;
+        }
+    }
 
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-
+        if (vision.allianceColor.equals("red")){
+            setRequiredTagId(24);
+        } else if (vision.allianceColor.equals("blue")){
+            setRequiredTagId(20);
+        }
     }
 
     @Override
     public void update(){
 
-        if (useTurretLock){
-            turretTarget = 0.0;
-            turret.setPower(setTurretPID(turretTarget));
+        boolean hasDesiredTarget = vision != null && vision.hasTarget()
+                && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
+
+//        if (manualTurret){
+//            if (!pastPosLimit() && turretManualPow > 0) {
+//                setTurretPower(turretManualPow);
+//            } else if (!pastNegLimit() && turretManualPow < 0) {
+//                setTurretPower(turretManualPow);
+//            }
+
+        if (manualTurret){
+            if(turretManualPow > 0){
+                if (getTurretPos() <= 130){
+                    setTurretPower(turretManualPow*limitTurretPower(130, 30));
+                } else {
+                    setTurretPower(turretManualPow);
+                }
+            } else if (turretManualPow < 0){
+                if (getTurretPos() >= 240){
+                    setTurretPower(turretManualPow*limitTurretPower(240, 340));
+                } else {
+                    setTurretPower(turretManualPow);
+                }
+            }
+        } else if (useTurretLock && hasDesiredTarget) {
+            setTurretPower(setTurretLockPID(0.0));
+        } else {
+            setTurretPower(0);
+        }
+
+        if (useData && vision.hasTarget()){
+            double rawDist = vision.getDistanceInches();
+
+            // Lookup directly from table to preserve accuracy, then smooth the hood motion only
+            double rpmVal =  util.clamp(shooterData.getRPMVal(rawDist), 0, maxRPM);
+            double angleVal = util.clamp(shooterData.getAngleVal(rawDist), hoodDown, hoodUp);
+            if (rpmVal != -2){
+                targetRPM = rpmVal;
+            }
+            if (angleVal != -2) {
+                // Slew-limit hood to avoid jitter
+                if (Math.abs(angleVal - filteredHood) > HOOD_DEADBAND) {
+                    double delta = angleVal - filteredHood;
+                    double step = Math.max(-HOOD_MAX_STEP, Math.min(HOOD_MAX_STEP, delta));
+                    filteredHood += step;
+                }
+                if (useTurretLock) {
+                    setHoodPos(filteredHood);
+                }
+            }
         }
 
         if (shooterShoot){
             setShooterRPM(targetRPM);
+        } else {
+            setShooterRPM(0);
         }
+
+        if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget){
+            lightColor = "green";
+        } else {
+            if(vision.allianceColor.equals("red")) {
+                lightColor = "red";
+            } else if (vision.allianceColor.equals("blue")){
+                lightColor = "blue";
+            }
+        }
+
+        light.setPosition(getColorPWN(lightColor));
     }
 }

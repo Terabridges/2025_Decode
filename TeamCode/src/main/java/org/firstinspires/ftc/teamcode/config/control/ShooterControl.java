@@ -3,10 +3,9 @@ package org.firstinspires.ftc.teamcode.config.control;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class ShooterControl implements Control {
 
@@ -16,8 +15,8 @@ public class ShooterControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector turretLockToggle = new EdgeDetector( () -> shooter.toggleTurretLock());
-    EdgeDetector RPMup = new EdgeDetector( () -> shooter.bumpShooterUp());
-    EdgeDetector RPMdown = new EdgeDetector( () -> shooter.bumpShooterDown());
+    EdgeDetector toggleShooter = new EdgeDetector( () -> shooter.toggleShooter());
+
 
     //---------------- Constructor ----------------
     public ShooterControl(Shooter shooter, Gamepad gp1, Gamepad gp2){
@@ -37,18 +36,28 @@ public class ShooterControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        turretLockToggle.update(gp1.right_bumper);
-        RPMup.update(gp1.dpad_up);
-        RPMdown.update(gp1.dpad_down);
+        turretLockToggle.update(gp1.dpad_up);
+        toggleShooter.update(gp1.y);
+        if (gp1.right_trigger > 0.05){
+            shooter.manualTurret = true;
+            shooter.turretManualPow = gp1.right_trigger/2;
+        } else if (gp1.left_trigger > 0.05){
+            shooter.manualTurret = true;
+            shooter.turretManualPow = -gp1.left_trigger /2;
+        } else {
+            shooter.manualTurret = false;
+            shooter.turretManualPow = 0;
+        }
 
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Turret Lock?", shooter.useTurretLock);
-        telemetry.addData("Turret Pow", shooter.turretPower);
-        telemetry.addData("Target RPM", shooter.getShooterRPM());
-        telemetry.addData("Current RPM", shooter.velToRPM(shooter.getShooterVel()));
-        telemetry.addData("actual vision error", shooter.vision.getTx());
+        telemetry.addData("Target RPM", shooter.targetRPM);
+        telemetry.addData("Current RPM", shooter.getShooterRPM());
+        telemetry.addData("Current Angle", shooter.getHoodPos());
+        telemetry.addData("Current Turret Pos", shooter.getTurretPos());
     }
+
 }

@@ -38,6 +38,6 @@ public class VisionControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Turret Error", vision.getTx());
+        telemetry.addData("Vision Error", vision.getTx());
     }
 }

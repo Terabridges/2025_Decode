@@ -5,8 +5,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.TemplateSubsystem;
-import org.firstinspires.ftc.teamcode.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class DriveControl implements Control {
 
@@ -15,11 +14,7 @@ public class DriveControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-
-    public double FAST_MULT = 1.0;
-    public double SLOW_MULT = 0.6;
-    public double speed = FAST_MULT;
-    EdgeDetector slowModeRE = new EdgeDetector( () -> toggleSlowMode());
+    EdgeDetector slowModeRE = new EdgeDetector( () -> drive.toggleSlowMode());
 
     //---------------- Constructor ----------------
     public DriveControl(Drive drive, Gamepad gp1, Gamepad gp2){
@@ -34,16 +29,13 @@ public class DriveControl implements Control {
     }
 
     //---------------- Methods ----------------
-    public void toggleSlowMode(){
-        drive.useSlowMode = !drive.useSlowMode;
-    }
+
 
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
 
-        slowModeRE.update(gp1.x);
-        speed = (drive.useSlowMode ? SLOW_MULT : FAST_MULT);
+        slowModeRE.update(gp1.dpad_down);
 
         if(drive.manualDrive){
             double max;
@@ -68,14 +60,7 @@ public class DriveControl implements Control {
                 leftBackPower /= max;
                 rightBackPower /= max;
             }
-            leftFrontPower *= speed;
-            rightFrontPower *= speed;
-            leftBackPower *= speed;
-            rightBackPower *= speed;
-            drive.leftFront.setPower(leftFrontPower);
-            drive.rightFront.setPower(rightFrontPower);
-            drive.leftBack.setPower(leftBackPower);
-            drive.rightBack.setPower(rightBackPower);
+            drive.setDrivePowers(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
         }
     }
 
