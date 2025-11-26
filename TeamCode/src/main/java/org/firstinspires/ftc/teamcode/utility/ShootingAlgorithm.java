@@ -52,7 +52,8 @@ public class ShootingAlgorithm {
         for (int i = 0; i <= steps; i++) {
             double t = (double)i / steps;
             double theta = thetaMin + t * (thetaMax - thetaMin);
-            double A = Math.cos(theta), B = Math.sin(theta);
+            double A = Math.cos(theta);
+            double B = Math.sin(theta);
             // coefficients
             double a = x * A * B - y * A * A;
             double b = x * (A * uy + B * ux) - 2 * y * A * ux;
