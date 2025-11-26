@@ -70,7 +70,9 @@ class MainAuto extends OpMode {
 
     @Override
     public void init() {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
+        robot = new Robot(hardwareMap, telemetry);
+
+        robot.drive.manualDrive = false;
 
         shootAllMachine = getShootAllMachine(robot);
         clutchSuperMachine = getClutchSuperMachine(robot);
