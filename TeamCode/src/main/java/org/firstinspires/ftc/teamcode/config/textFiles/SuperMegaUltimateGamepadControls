@@ -1,20 +1,20 @@
 GAMEPAD 1:
-//A: Clutch Super
-//X: Shoot All Macro
-//Y: Toggle Shooter
-//B: Toggle Clutch
-//Down: Toggle Speed
-//Left: BallLeftSmall
-//Up: Toggle LockOn
-//Right: BallRightSmall
-//LeftBump: BallLeft
-//RightBump: BallRight
-//LeftTrig: SpinIn
-//RightTrig: SpinOut
-//LStX: Strafe
-//LStY: Movement
-//RStX: Turning
-//RStY: Turning
+A: Shoot One
+X: Shoot All Macro
+Y: Toggle Shooter
+B: Reset Spindex Macro
+Down: Toggle Speed
+Left: Turret Manual Left
+Up: Toggle LockOn
+Right: Turret Manual Right
+LeftBump: BallLeft
+RightBump: BallRight
+LeftTrig: SpinIn
+RightTrig: SpinOut
+LStX: Strafe
+LStY: Movement
+RStX: Turning
+RStY: Turning
 LStCl:
 RStCl:
 Back:

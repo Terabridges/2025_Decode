@@ -58,11 +58,21 @@ public class MainTeleop extends LinearOpMode {
         CLUTCHUP
     }
 
+    public enum resetStates {
+        INIT,
+        SPIN,
+        RESET,
+        SPIN2,
+        RESET2
+    }
+
     public double clutchDownTime = 0.15;
     public double clutchDownFarTime = 0.72;
+    int fromRed = -90;
 
     public StateMachine shootAllMachine;
     public StateMachine clutchSuperMachine;
+    public StateMachine resetMachine;
 
     @Override
     public void runOpMode(){
@@ -84,14 +94,44 @@ public class MainTeleop extends LinearOpMode {
 
         shootAllMachine = getShootAllMachine(robot);
         clutchSuperMachine = getClutchSuperMachine(robot);
+        resetMachine = getSpindexResetMachine(robot);
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        while (opModeInInit()){
+            previousGamepad1.copy(currentGamepad1);
+            currentGamepad1.copy(gamepad1);
+
+            if (currentGamepad1.a && !previousGamepad1.a){
+                if(robot.transfer.motif.equals("PPG")){
+                    robot.transfer.motif = "GPP";
+                } else if(robot.transfer.motif.equals("GPP")){
+                    robot.transfer.motif = "PGP";
+                } else if(robot.transfer.motif.equals("PGP")){
+                    robot.transfer.motif = "PPG";
+                }
+            }
+
+            if (currentGamepad1.b && !previousGamepad1.b){
+                if(robot.vision.allianceColor.equals("red")){
+                    robot.vision.allianceColor = "blue";
+                } else if (robot.vision.allianceColor.equals("blue")){
+                    robot.vision.allianceColor = "red";
+                }
+            }
+
+            telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+            telemetry.addData("Motif", robot.transfer.motif);
+            telemetry.addData("Alliance Color", robot.vision.allianceColor);
+            telemetry.update();
+        }
 
         waitForStart();
 
         robot.toInit();
         shootAllMachine.start();
         clutchSuperMachine.start();
+        resetMachine.start();
 
         while (opModeIsActive()){
             gamepadUpdate();
@@ -120,6 +160,7 @@ public class MainTeleop extends LinearOpMode {
     public void stateMachinesUpdate(){
         shootAllMachine.update();
         clutchSuperMachine.update();
+        resetMachine.update();
     }
 
     public StateMachine getShootAllMachine (Robot robot){
@@ -137,9 +178,14 @@ public class MainTeleop extends LinearOpMode {
                     intake.spinnerMacroTarget = 0.95;
                     shooter.shooterShoot = true;
                     transfer.isDetecting = false;
+                    if(transfer.desiredRotate == 3 || transfer.desiredRotate == 5){
+                        transfer.ballLeft();
+                    } else if (transfer.desiredRotate == 4){
+                        transfer.ballRight();
+                    }
                 })
-                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN1)
-                .transitionTimed(1.5, shootStates.CLUTCHDOWN1)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
+                .transitionTimed(2.25, shootStates.CLUTCHDOWN1)
 
                 .state(shootStates.CLUTCHDOWN1)
                 .onEnter(()-> transfer.setClutchDown())
@@ -154,7 +200,11 @@ public class MainTeleop extends LinearOpMode {
 
                 .state(shootStates.SPIN1)
                 .onEnter(()-> {
-                    transfer.ballRight();
+                    if (transfer.desiredRotate == 1 || transfer.desiredRotate == 3){
+                        transfer.ballLeft();
+                    } else if (transfer.desiredRotate == 2 || transfer.desiredRotate == 4 || transfer.desiredRotate == 5) {
+                        transfer.ballRight();
+                    }
                 })
                 .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN2)
                 .transitionTimed(1.5, shootStates.CLUTCHDOWN2)
@@ -172,7 +222,11 @@ public class MainTeleop extends LinearOpMode {
 
                 .state(shootStates.SPIN2)
                 .onEnter(()-> {
-                    transfer.ballRight();
+                    if (transfer.desiredRotate == 1 || transfer.desiredRotate == 3){
+                        transfer.ballLeft();
+                    } else if (transfer.desiredRotate == 2 || transfer.desiredRotate == 4 || transfer.desiredRotate == 5) {
+                        transfer.ballRight();
+                    }
                 })
                 .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN3)
                 .transitionTimed(1.5, shootStates.CLUTCHDOWN3)
@@ -208,17 +262,19 @@ public class MainTeleop extends LinearOpMode {
                 .transition(()->(currentGamepad1.a && !previousGamepad1.a), clutchStates.SPIN)
 
                 .state(clutchStates.SPIN)
-                .onEnter(()-> transfer.ballRightSmall())
-                .transition(()->transfer.spindexAtTarget(), clutchStates.CLUTCHDOWN)
-                .transitionTimed(1.5, clutchStates.CLUTCHDOWN)
+                .onEnter(()-> {
+                    transfer.ballRightSmall();
+                    shooter.shooterShoot = true;
+                    intake.spinnerMacro = true;
+                    intake.spinnerMacroTarget = 0.95;
+                    transfer.isDetecting = false;
+                })
+                .transition(()->transfer.spindexAtTarget() && shooter.isAtRPM(), clutchStates.CLUTCHDOWN)
+                .transitionTimed(2.25, clutchStates.CLUTCHDOWN)
 
                 .state(clutchStates.CLUTCHDOWN)
                 .onEnter(()-> {
-                    intake.spinnerMacro = true;
-                    intake.spinnerMacroTarget = 0.95;
-                    shooter.shooterShoot = true;
                     transfer.setClutchDown();
-                    transfer.isDetecting = false;
                 })
                 .transitionTimed(clutchDownTime, clutchStates.CLUTCHUP)
                 .onExit(()-> transfer.setClutchDownFar())
@@ -233,6 +289,48 @@ public class MainTeleop extends LinearOpMode {
                     shooter.shooterShoot = false;
                     transfer.isDetecting = true;
                     transfer.ballList[1] = "E";
+                })
+
+                .build();
+    }
+
+    public StateMachine getSpindexResetMachine (Robot robot){
+        Transfer transfer = robot.transfer;
+        return new StateMachineBuilder()
+                .state(resetStates.INIT)
+                .transition(()->(currentGamepad1.b && !previousGamepad1.b), resetStates.SPIN)
+
+                .state(resetStates.SPIN)
+                .onEnter(()->{
+                    transfer.useSpindexPID = false;
+                    transfer.isDetecting = false;
+                    transfer.spindexManualPow = 0.075;
+                    transfer.spindexTarget = 0;
+                })
+                .transition(()-> transfer.isRed, resetStates.RESET)
+
+                .state(resetStates.RESET)
+                .onEnter(()->{
+                    transfer.spindexManualPow = 0;
+                    transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    transfer.useSpindexPID = true;
+                })
+                .transitionTimed(0.1, resetStates.SPIN2)
+                .onExit(()-> transfer.spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER))
+
+                .state(resetStates.SPIN2)
+                .onEnter(()->transfer.spindexTarget += fromRed)
+                .transition(()->transfer.spindexAtTarget(), resetStates.RESET2)
+
+                .state(resetStates.RESET2)
+                .onEnter(()->{
+                    transfer.spindexTarget = 0;
+                    transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                })
+                .transitionTimed(0.1, resetStates.INIT)
+                .onExit(()-> {
+                    transfer.spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    transfer.isDetecting = true;
                 })
 
                 .build();

@@ -21,12 +21,12 @@ public class Transfer implements Subsystem{
 
     //---------------- Software ----------------
     public boolean useSpindexPID = true;
-    double spindexManualPow = 0;
+    public double spindexManualPow = 0;
     public boolean isClutchDown = false;
-    double clutchUp = 0.42;
-    double clutchBarelyDown = 0.55;
-    double clutchDown = 0.62;
-    double clutchDownFar = 0.95;
+    double clutchUp = 0.12;
+    double clutchBarelyDown = 0.26;
+    double clutchDown = 0.32;
+    double clutchDownFar = 0.85;
     int ball = 180;
 
     PIDController spindexController;
@@ -34,7 +34,7 @@ public class Transfer implements Subsystem{
     double posTolerance = 5;
     double inteTolerance = 5;
     double spindexPow = 0.0;
-    double spindexTarget = 0.0;
+    public double spindexTarget = 0.0;
     double max = 0.4;
 
     NormalizedRGBA colors;
@@ -55,6 +55,8 @@ public class Transfer implements Subsystem{
     public ElapsedTime colorTimer = new ElapsedTime();
 
     public String motif = "PPG";
+    public int desiredRotate = 1;
+    public boolean isRed = false;
 
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
@@ -221,15 +223,42 @@ public class Transfer implements Subsystem{
                 }
             }
         }
+
+        if (red > green && red > blue){
+            isRed = true;
+        } else {
+            isRed = false;
+        }
     }
 
+    //1 is left, 2 is right, 3 is skip one left then left, 4 is skip one right then right, 5 is skip one left then right
     public int rotateOrder(){
         if (motif.equals("PPG")){
             if(balls.equals("PPG")){
-                return 0;
+                return 2;
+            } else if (balls.equals("GPP")){
+                return 1;
+            } else if (balls.equals("PGP")){
+                return 4;
+            }
+        } else if (motif.equals("GPP")){
+            if(balls.equals("PPG")){
+                return 3;
+            } else if (balls.equals("GPP")){
+                return 4;
+            } else if (balls.equals("PGP")){
+                return 2;
+            }
+        } else if (motif.equals("PGP")){
+            if(balls.equals("PPG")){
+                return 1;
+            } else if (balls.equals("GPP")){
+                return 2;
+            } else if (balls.equals("PGP")){
+                return 5;
             }
         }
-        return -1;
+        return 2;
     }
 
     public void toggleAutoIntake(){
@@ -278,6 +307,9 @@ public class Transfer implements Subsystem{
         }
 
         balls = ballList[0] + ballList[1] + ballList[2];
+        if (isDetecting){
+            desiredRotate = rotateOrder();
+        }
     }
 
 }

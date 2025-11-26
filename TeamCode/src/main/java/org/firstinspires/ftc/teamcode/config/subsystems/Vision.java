@@ -7,6 +7,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -25,6 +26,7 @@ public class Vision implements Subsystem{
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
+    public String allianceColor = "red";
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
@@ -34,6 +36,8 @@ public class Vision implements Subsystem{
     }
 
     //---------------- Methods ----------------
+
+
     private void limelightInit(){
         limelight.setPollRateHz(100);
         limelight.pipelineSwitch(currentPipeline);
