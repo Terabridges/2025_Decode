@@ -29,7 +29,7 @@ public class FreshmanLabor extends LinearOpMode {
     double angleIncrement = 0.2;
 
     public double clutchDownTime = 0.15;
-    public double clutchDownFarTime = 0.6;
+    public double clutchDownFarTime = 0.72;
 
     public enum shootStates {
         INIT,
@@ -78,7 +78,7 @@ public class FreshmanLabor extends LinearOpMode {
         shootAllMachine.start();
         clutchSuperMachine.start();
         robot.shooter.shooterShoot = false;
-        robot.shooter.manualTurret = true;
+        robot.shooter.manualTurret = false;
         robot.transfer.useSpindexPID = true;
         robot.transfer.isDetecting = false;
         robot.shooter.useData = false;

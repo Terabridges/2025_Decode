@@ -28,6 +28,7 @@ public class colorSensorTester extends LinearOpMode {
     float blue;
     double distance;
     boolean ballDetected = false;
+    boolean seesRed = false;
     String ballColor = "none";
 
     @Override
@@ -53,25 +54,32 @@ public class colorSensorTester extends LinearOpMode {
             blue = colors.blue;
             distance = transfer.colorSensor.getDistance(DistanceUnit.INCH);
 
-            if (distance < 1.92){
-                ballDetected = true;
-                if (green > red && green > blue){
-                    ballColor = "green";
-                } else {
-                    ballColor = "purple";
-                }
-            } else {
-                ballDetected = false;
-                ballColor = "none";
-            }
+//            if (distance < 1.92){
+//                ballDetected = true;
+//                if (green > red && green > blue){
+//                    ballColor = "green";
+//                } else {
+//                    ballColor = "purple";
+//                }
+//            } else {
+//                ballDetected = false;
+//                ballColor = "none";
+//            }
 
+            if(red > green && red > blue){
+                seesRed = true;
+            } else {
+                seesRed = false;
+            }
 
             joinedTelemetry.addData("Red", red);
             joinedTelemetry.addData("Blue", blue);
             joinedTelemetry.addData("Green", green);
             joinedTelemetry.addData("Distance", distance);
-            joinedTelemetry.addData("Sees Ball?", ballDetected);
-            joinedTelemetry.addData("Detected Ball Color?", ballColor);
+//            joinedTelemetry.addData("Sees Ball?", ballDetected);
+//            joinedTelemetry.addData("Detected Ball Color?", ballColor);
+            joinedTelemetry.addData("Sees Red", seesRed);
+            joinedTelemetry.addData("SpindexPos", transfer.spindex.getCurrentPosition());
 
             joinedTelemetry.update();
 
