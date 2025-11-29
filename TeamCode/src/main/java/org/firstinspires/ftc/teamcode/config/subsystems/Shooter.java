@@ -309,10 +309,12 @@ public class Shooter implements Subsystem {
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit() {
-        if (vision.allianceColor.equals("red")) {
-            setRequiredTagId(24);
-        } else if (vision.allianceColor.equals("blue")) {
-            setRequiredTagId(20);
+        if (vision != null) {
+            if ("red".equals(vision.allianceColor)) {
+                setRequiredTagId(24);
+            } else if ("blue".equals(vision.allianceColor)) {
+                setRequiredTagId(20);
+            }
         }
     }
 
@@ -322,78 +324,69 @@ public class Shooter implements Subsystem {
         boolean hasDesiredTarget = vision != null && vision.hasTarget()
                 && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
 
-        if (useTurretLock && hasDesiredTarget) {
-            setTurretPower(setTurretLockPID(0.0));
-        } else if (useTurretPID) {
-            setTurretPower(setTurretPID(turretTarget));
-
-//        if (manualTurret){
-//            if (!pastPosLimit() && turretManualPow > 0) {
-//                setTurretPower(turretManualPow);
-//            } else if (!pastNegLimit() && turretManualPow < 0) {
-//                setTurretPower(turretManualPow);
-//            }
-
-            if (manualTurret) {
-                if (turretManualPow > 0) {
-                    if (getTurretPos() <= 130) {
-                        setTurretPower(turretManualPow * limitTurretPower(130, 30));
-                    } else {
-                        setTurretPower(turretManualPow);
-                    }
-                } else if (turretManualPow < 0) {
-                    if (getTurretPos() >= 240) {
-                        setTurretPower(turretManualPow * limitTurretPower(240, 340));
-                    } else {
-                        setTurretPower(turretManualPow);
-                    }
+        // Turret control priority: manual -> lock -> PID -> idle
+        if (manualTurret) {
+            if (turretManualPow > 0) {
+                if (getTurretPos() <= 130) {
+                    setTurretPower(turretManualPow * limitTurretPower(130, 30));
+                } else {
+                    setTurretPower(turretManualPow);
                 }
-                //Questionable here
-            } else if (useTurretLock && hasDesiredTarget) {
-                setTurretPower(setTurretLockPID(0.0));
+            } else if (turretManualPow < 0) {
+                if (getTurretPos() >= 240) {
+                    setTurretPower(turretManualPow * limitTurretPower(240, 340));
+                } else {
+                    setTurretPower(turretManualPow);
+                }
             } else {
                 setTurretPower(0);
             }
-
-            if (useData && vision.hasTarget()) {
-                double rawDist = vision.getDistanceInches();
-
-                // Lookup directly from table to preserve accuracy, then smooth the hood motion only
-                double rpmVal = util.clamp(shooterData.getRPMVal(rawDist), 0, maxRPM);
-                double angleVal = util.clamp(shooterData.getAngleVal(rawDist), hoodDown, hoodUp);
-                if (rpmVal != -2) {
-                    targetRPM = rpmVal;
-                }
-                if (angleVal != -2) {
-                    // Slew-limit hood to avoid jitter
-                    if (Math.abs(angleVal - filteredHood) > HOOD_DEADBAND) {
-                        double delta = angleVal - filteredHood;
-                        double step = Math.max(-HOOD_MAX_STEP, Math.min(HOOD_MAX_STEP, delta));
-                        filteredHood += step;
-                    }
-                    if (useTurretLock) {
-                        setHoodPos(filteredHood);
-                    }
-                }
-            }
-
-            if (shooterShoot) {
-                setShooterRPM(targetRPM);
-            } else {
-                setShooterRPM(0);
-            }
-
-            if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget) {
-                lightColor = "green";
-            } else {
-                if (vision.allianceColor.equals("red")) {
-                    lightColor = "red";
-                } else if (vision.allianceColor.equals("blue")) {
-                    lightColor = "blue";
-                }
-            }
-
-            light.setPosition(getColorPWN(lightColor));
+        } else if (useTurretLock && hasDesiredTarget) {
+            setTurretPower(setTurretLockPID(0.0));
+        } else if (useTurretPID) {
+            setTurretPower(setTurretPID(turretTarget));
+        } else {
+            setTurretPower(0);
         }
+
+        if (useData && hasDesiredTarget) {
+            double rawDist = vision.getDistanceInches();
+
+            // Lookup directly from table to preserve accuracy, then smooth the hood motion only
+            double rpmVal = util.clamp(shooterData.getRPMVal(rawDist), 0, maxRPM);
+            double angleVal = util.clamp(shooterData.getAngleVal(rawDist), hoodDown, hoodUp);
+            if (rpmVal != -2) {
+                targetRPM = rpmVal;
+            }
+            if (angleVal != -2) {
+                // Slew-limit hood to avoid jitter
+                if (Math.abs(angleVal - filteredHood) > HOOD_DEADBAND) {
+                    double delta = angleVal - filteredHood;
+                    double step = Math.max(-HOOD_MAX_STEP, Math.min(HOOD_MAX_STEP, delta));
+                    filteredHood += step;
+                }
+                if (useTurretLock) {
+                    setHoodPos(filteredHood);
+                }
+            }
+        }
+
+        if (shooterShoot) {
+            setShooterRPM(targetRPM);
+        } else {
+            setShooterRPM(0);
+        }
+
+        if (hasDesiredTarget && vision != null && vision.getTx() != 0 && vision.getTx() < 1.5) {
+            lightColor = "green";
+        } else if (vision != null) {
+            if ("red".equals(vision.allianceColor)) {
+                lightColor = "red";
+            } else if ("blue".equals(vision.allianceColor)) {
+                lightColor = "blue";
+            }
+        }
+
+        light.setPosition(getColorPWN(lightColor));
     }
 }
