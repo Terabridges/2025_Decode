@@ -44,7 +44,7 @@ class MainAuto extends OpMode {
 
     //State machine
     private StateMachine autoMachine;
-    private AutoStates activeState = AutoStates.GO_TO_SHOOT;
+    private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
     private StateMachine shootAllMachine;
     private StateMachine clutchSuperMachine;
 
@@ -58,6 +58,10 @@ class MainAuto extends OpMode {
     private boolean stopRequested = false;
     private boolean preloadComplete = false;
     private static final double SHOOT_ACTION_SECONDS = 1.0;
+    private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
+    private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
+    private final ElapsedTime motifTimer = new ElapsedTime();
+    private int acquiredMotifId = -1;
     private static final int MAX_ROWS = 4;
     private final ElapsedTime stateTimer = new ElapsedTime();
 
@@ -81,10 +85,18 @@ class MainAuto extends OpMode {
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+        if (robot != null && robot.shooter != null) {
+            int tagId = (alliance == Alliance.BLUE) ? 20 : 24;
+            robot.shooter.setRequiredTagId(tagId);
+        }
+
         rowsToRun = Math.min(resolveRowsForMode(mode), MAX_ROWS);
         rowsCompleted = 0;
         currentRowIndex = 0;
         preloadComplete = false;
+
+        follower.setStartingPose(startPose);
+        follower.update();
 
         stateTimer.reset();
     }
@@ -99,16 +111,12 @@ class MainAuto extends OpMode {
 
     @Override
     public void start() {
-        follower.setStartingPose(startPose);
-        follower.update();
         stopRequested = false;
-        if (autoMachine != null) {
-            autoMachine.start();
-        }
 
+        autoMachine.start();
         robot.toInit();
-        shootAllMachine.start();
-        clutchSuperMachine.start();
+//        shootAllMachine.start();
+//        clutchSuperMachine.start();
     }
 
     @Override
@@ -117,6 +125,9 @@ class MainAuto extends OpMode {
 
         robot.update();
         autoMachine.update();
+
+        telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
+        telemetryM.update(telemetry);
 
         drawCurrentAndHistory();
 
@@ -172,25 +183,30 @@ class MainAuto extends OpMode {
 
     private StateMachine buildAutoMachine() {
         return new StateMachineBuilder()
+                .state(AutoStates.ACQUIRE_MOTIF)
+                .onEnter(this::onEnterAcquireMotif)
+                .onExit(this::onExitAcquireMotif)
+                .transition(() -> motifAcquiredOrTimedOut() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
+
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
-                .transition(this::shouldSkipShootPhase, AutoStates.LEAVE)
-                .transition(this::followerIdle, AutoStates.COMPLETE_SHOOT)
+                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-                .transition(() -> shootActionComplete() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> shootActionComplete() && !shouldStartNextCycle(), AutoStates.LEAVE)
+                .transition(() -> (shootActionComplete() || stateTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> (shootActionComplete() || stateTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
-                .transition(this::followerIdle, AutoStates.COMPLETE_PICKUP)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_PICKUP)
 
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-                .transition(this::followerIdle, AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -198,18 +214,57 @@ class MainAuto extends OpMode {
                 .build();
     }
 
+    private void onEnterAcquireMotif() {
+        setActiveState(AutoStates.ACQUIRE_MOTIF);
+
+        motifTimer.reset();
+        stateTimer.reset();
+
+        coarseTurretAimAtObelisk();
+    }
+
+    private boolean motifAcquiredOrTimedOut() {
+        boolean acquired = false;
+        if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
+            acquired = robot.shooter.vision.hasTarget();
+        }
+        return acquired || motifTimer.seconds() >= MOTIF_ACQUIRE_TIMEOUT;
+    }
+
+    private void onExitAcquireMotif() {
+        if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
+            acquiredMotifId = robot.shooter.vision.getCurrentTagId();
+            robot.shooter.setMotifTagId(acquiredMotifId);
+        }
+    }
+
+    private boolean stateTimedOut() {
+        return stateTimer.seconds() >= STATE_TIMEOUT_SECONDS;
+    }
+
     private void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
+
+        stateTimer.reset();
+
         if (!preloadComplete && !shouldShootPreload()) {
             return;
         }
+
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(GoToScore);
+
+        coarseTurretAimAtGoal();
+        if (robot != null && robot.shooter != null) {
+            robot.shooter.useTurretLock = true;
+        }
     }
 
     private void onEnterCompleteShoot() {
         setActiveState(AutoStates.COMPLETE_SHOOT);
+
         stateTimer.reset();
+
         //TODO Call shoot method here
     }
 
@@ -224,6 +279,9 @@ class MainAuto extends OpMode {
 
     private void onEnterGoToPickup() {
         setActiveState(AutoStates.GO_TO_PICKUP);
+
+        stateTimer.reset();
+
         refreshCurrentRowIndex();
         buildPath(PathRequest.GO_TO_PICKUP);
         followPath(GoToPickup);
@@ -231,6 +289,9 @@ class MainAuto extends OpMode {
 
     private void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
+
+        stateTimer.reset();
+
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
         followPath(Pickup);
@@ -242,6 +303,9 @@ class MainAuto extends OpMode {
 
     private void onEnterLeave() {
         setActiveState(AutoStates.LEAVE);
+
+        stateTimer.reset();
+        
         //TODO build and follow leave path (ensure we are outside of triangle)
     }
 
@@ -373,5 +437,48 @@ class MainAuto extends OpMode {
                 .transitionTimed(0.2, ClutchState.INIT)
 
                 .build();
+    }
+
+    /** Returns the static goal pose in field (Pedro) coordinates. */
+    private Pose getGoalPose() {
+        if (alliance == Alliance.BLUE) {
+            return new Pose(0, 144, Math.toRadians(90));
+        } else {
+            return new Pose(144, 144, Math.toRadians(90));
+        }
+    }
+
+    /** Returns the obelisk pose in field coordinates (adjust if field measurements change). */
+    private Pose getObeliskPose() {
+        // Placeholder: aim near the alliance goal area; update to the true obelisk location if different.
+        return new Pose(72, 144, Math.toRadians(90));
+    }
+
+    /** Wraps an angle in degrees to [-180, 180). */
+    private double wrapDeg(double deg) {
+        return ((deg + 180) % 360 + 360) % 360 - 180;
+    }
+
+    /** Shared coarse aim helper to point turret from current pose toward a field target. */
+    private void coarseTurretAimAt(Pose target) {
+        if (robot == null || follower == null || robot.shooter == null) return;
+        Pose robotPose = follower.getPose();
+        if (robotPose == null || target == null) return;
+        robot.shooter.aimTurretAtFieldPose(
+                robotPose.getX(),
+                robotPose.getY(),
+                robotPose.getHeading(),
+                target.getX(),
+                target.getY());
+    }
+
+    /** Point turret toward the goal using chassis pose (coarse aim). */
+    private void coarseTurretAimAtGoal() {
+        coarseTurretAimAt(getGoalPose());
+    }
+
+    /** Point turret toward the obelisk using chassis pose (coarse aim). */
+    private void coarseTurretAimAtObelisk() {
+        coarseTurretAimAt(getObeliskPose());
     }
 }
