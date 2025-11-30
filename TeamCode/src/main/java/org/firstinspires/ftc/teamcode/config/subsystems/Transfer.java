@@ -35,7 +35,7 @@ public class Transfer implements Subsystem{
     double inteTolerance = 5;
     double spindexPow = 0.0;
     public double spindexTarget = 0.0;
-    double max = 0.4;
+    public double max = 0.4;
 
     NormalizedRGBA colors;
     float red;
@@ -142,7 +142,7 @@ public class Transfer implements Subsystem{
         if(!useSpindexPID){
             return false;
         } else {
-            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 6);
+            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 7);
         }
     }
 
@@ -153,6 +153,11 @@ public class Transfer implements Subsystem{
 
     public void setClutchDownFar(){
         clutch.setPosition(clutchDownFar);
+        isClutchDown = true;
+    }
+
+    public void setClutchBarelyDown(){
+        clutch.setPosition(clutchBarelyDown);
         isClutchDown = true;
     }
 
@@ -215,7 +220,7 @@ public class Transfer implements Subsystem{
         }
 
         if(ballDetected){
-            if (colorTimer.seconds() > 0.04){
+            if (colorTimer.seconds() > 0.03){
                 if (green > red && green > blue){
                     ballColor = "green";
                 } else {
@@ -232,33 +237,62 @@ public class Transfer implements Subsystem{
     }
 
     //1 is left, 2 is right, 3 is skip one left then left, 4 is skip one right then right, 5 is skip one left then right
+//    public int rotateOrder(){
+//        if (motif.equals("PPG")){
+//            if(balls.equals("PPG")){
+//                return 2;
+//            } else if (balls.equals("GPP")){
+//                return 1;
+//            } else if (balls.equals("PGP")){
+//                return 4;
+//            }
+//        } else if (motif.equals("GPP")){
+//            if(balls.equals("PPG")){
+//                return 3;
+//            } else if (balls.equals("GPP")){
+//                return 4;
+//            } else if (balls.equals("PGP")){
+//                return 2;
+//            }
+//        } else if (motif.equals("PGP")){
+//            if(balls.equals("PPG")){
+//                return 1;
+//            } else if (balls.equals("GPP")){
+//                return 2;
+//            } else if (balls.equals("PGP")){
+//                return 5;
+//            }
+//        }
+//        return 2;
+//    }
+    //0 is no rotate, 1 is rotate left, 2 is rotate right
     public int rotateOrder(){
         if (motif.equals("PPG")){
             if(balls.equals("PPG")){
-                return 2;
-            } else if (balls.equals("GPP")){
                 return 1;
+            } else if (balls.equals("GPP")){
+                return 2;
             } else if (balls.equals("PGP")){
-                return 4;
+                return 0;
             }
         } else if (motif.equals("GPP")){
             if(balls.equals("PPG")){
-                return 3;
+                return 0;
             } else if (balls.equals("GPP")){
-                return 4;
+                return 1;
             } else if (balls.equals("PGP")){
                 return 2;
             }
         } else if (motif.equals("PGP")){
             if(balls.equals("PPG")){
-                return 1;
-            } else if (balls.equals("GPP")){
                 return 2;
+            } else if (balls.equals("GPP")){
+                return 0;
             } else if (balls.equals("PGP")){
-                return 5;
+                return 1;
             }
         }
-        return 2;
+        return 0;
     }
 
     public void toggleAutoIntake(){

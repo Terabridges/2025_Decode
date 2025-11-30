@@ -38,17 +38,26 @@ public class MainTeleop extends LinearOpMode {
     public Gamepad currentGamepad2;
     public Gamepad previousGamepad2;
 
+//    public enum shootStates {
+//        INIT,
+//        SPIN0,
+//        CLUTCHDOWN1,
+//        CLUTCHDOWNFAR1,
+//        SPIN1,
+//        CLUTCHDOWN2,
+//        CLUTCHDOWNFAR2,
+//        SPIN2,
+//        CLUTCHDOWN3,
+//        CLUTCHDOWNFAR3,
+//    }
+
     public enum shootStates {
         INIT,
-        SPIN0,
-        CLUTCHDOWN1,
-        CLUTCHDOWNFAR1,
+        PRESPIN,
+        CLUTCHDOWN,
         SPIN1,
-        CLUTCHDOWN2,
-        CLUTCHDOWNFAR2,
         SPIN2,
-        CLUTCHDOWN3,
-        CLUTCHDOWNFAR3,
+        SPIN3,
     }
 
     public enum clutchStates {
@@ -68,6 +77,7 @@ public class MainTeleop extends LinearOpMode {
 
     public double clutchDownTime = 0.15;
     public double clutchDownFarTime = 0.72;
+    public double spinTime = 2.5;
     int fromRed = -90;
 
     public StateMachine shootAllMachine;
@@ -163,91 +173,155 @@ public class MainTeleop extends LinearOpMode {
         resetMachine.update();
     }
 
+//    public StateMachine getShootAllMachine (Robot robot){
+//        Shooter shooter = robot.shooter;
+//        Transfer transfer = robot.transfer;
+//        Intake intake = robot.intake;
+//        return new StateMachineBuilder()
+//                .state(shootStates.INIT)
+//                .transition(()->(currentGamepad1.x && !previousGamepad1.x), shootStates.SPIN0)
+//
+//                .state(shootStates.SPIN0)
+//                .onEnter(()-> {
+//                    transfer.ballRightSmall();
+//                    intake.spinnerMacro = true;
+//                    intake.spinnerMacroTarget = 0.95;
+//                    shooter.shooterShoot = true;
+//                    transfer.isDetecting = false;
+//                    if(transfer.desiredRotate == 3 || transfer.desiredRotate == 5){
+//                        transfer.ballLeft();
+//                    } else if (transfer.desiredRotate == 4){
+//                        transfer.ballRight();
+//                    }
+//                })
+//                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
+//                .transitionTimed(2.25, shootStates.CLUTCHDOWN1)
+//
+//                .state(shootStates.CLUTCHDOWN1)
+//                .onEnter(()-> transfer.setClutchDown())
+//                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR1)
+//
+//                .state(shootStates.CLUTCHDOWNFAR1)
+//                .onEnter(()-> transfer.setClutchDownFar())
+//                .transitionTimed(clutchDownFarTime, shootStates.SPIN1)
+//                .onExit(()-> {
+//                    transfer.setClutchUp();
+//                })
+//
+//                .state(shootStates.SPIN1)
+//                .onEnter(()-> {
+//                    if (transfer.desiredRotate == 1 || transfer.desiredRotate == 3){
+//                        transfer.ballLeft();
+//                    } else if (transfer.desiredRotate == 2 || transfer.desiredRotate == 4 || transfer.desiredRotate == 5) {
+//                        transfer.ballRight();
+//                    }
+//                })
+//                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN2)
+//                .transitionTimed(1.5, shootStates.CLUTCHDOWN2)
+//
+//                .state(shootStates.CLUTCHDOWN2)
+//                .onEnter(()-> {
+//                    transfer.setClutchDown();
+//                })
+//                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR2)
+//
+//                .state(shootStates.CLUTCHDOWNFAR2)
+//                .onEnter(()-> transfer.setClutchDownFar())
+//                .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
+//                .onExit(()-> transfer.setClutchUp())
+//
+//                .state(shootStates.SPIN2)
+//                .onEnter(()-> {
+//                    if (transfer.desiredRotate == 1 || transfer.desiredRotate == 3){
+//                        transfer.ballLeft();
+//                    } else if (transfer.desiredRotate == 2 || transfer.desiredRotate == 4 || transfer.desiredRotate == 5) {
+//                        transfer.ballRight();
+//                    }
+//                })
+//                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN3)
+//                .transitionTimed(1.5, shootStates.CLUTCHDOWN3)
+//
+//                .state(shootStates.CLUTCHDOWN3)
+//                .onEnter(()-> {
+//                    transfer.setClutchDown();
+//                })
+//                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR3)
+//
+//                .state(shootStates.CLUTCHDOWNFAR3)
+//                .onEnter(()-> transfer.setClutchDownFar())
+//                .transitionTimed(clutchDownFarTime, shootStates.INIT)
+//                .onExit(()-> {
+//                    transfer.setClutchUp();
+//                    intake.spinnerMacroTarget = 0;
+//                    shooter.shooterShoot = false;
+//                    transfer.isDetecting = true;
+//                    transfer.ballLeftSmall();
+//                    transfer.emptyBalls();
+//                    intake.spinnerMacro = false;
+//                })
+//
+//                .build();
+//    }
+
+    //only Counterclockwise rotation
     public StateMachine getShootAllMachine (Robot robot){
         Shooter shooter = robot.shooter;
         Transfer transfer = robot.transfer;
         Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(()->(currentGamepad1.x && !previousGamepad1.x), shootStates.SPIN0)
+                .transition(()->(currentGamepad1.x && !previousGamepad1.x), shootStates.PRESPIN)
 
-                .state(shootStates.SPIN0)
+                .state(shootStates.PRESPIN)
                 .onEnter(()-> {
-                    transfer.ballRightSmall();
                     intake.spinnerMacro = true;
                     intake.spinnerMacroTarget = 0.95;
                     shooter.shooterShoot = true;
                     transfer.isDetecting = false;
-                    if(transfer.desiredRotate == 3 || transfer.desiredRotate == 5){
+                    if(transfer.desiredRotate == 1){
                         transfer.ballLeft();
-                    } else if (transfer.desiredRotate == 4){
+                    } else if (transfer.desiredRotate == 2){
                         transfer.ballRight();
                     }
                 })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
-                .transitionTimed(2.25, shootStates.CLUTCHDOWN1)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN)
+                .transitionTimed(2.5, shootStates.CLUTCHDOWN)
 
-                .state(shootStates.CLUTCHDOWN1)
-                .onEnter(()-> transfer.setClutchDown())
-                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR1)
-
-                .state(shootStates.CLUTCHDOWNFAR1)
-                .onEnter(()-> transfer.setClutchDownFar())
-                .transitionTimed(clutchDownFarTime, shootStates.SPIN1)
-                .onExit(()-> {
-                    transfer.setClutchUp();
+                .state(shootStates.CLUTCHDOWN)
+                .onEnter(()-> {
+                    transfer.max = 0.275;
+                    transfer.setClutchBarelyDown();
                 })
+                .transitionTimed(0.1, shootStates.SPIN1)
 
                 .state(shootStates.SPIN1)
                 .onEnter(()-> {
-                    if (transfer.desiredRotate == 1 || transfer.desiredRotate == 3){
-                        transfer.ballLeft();
-                    } else if (transfer.desiredRotate == 2 || transfer.desiredRotate == 4 || transfer.desiredRotate == 5) {
-                        transfer.ballRight();
-                    }
+                    transfer.ballLeft();
                 })
-                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN2)
-                .transitionTimed(1.5, shootStates.CLUTCHDOWN2)
-
-                .state(shootStates.CLUTCHDOWN2)
-                .onEnter(()-> {
-                    transfer.setClutchDown();
-                })
-                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR2)
-
-                .state(shootStates.CLUTCHDOWNFAR2)
-                .onEnter(()-> transfer.setClutchDownFar())
-                .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
-                .onExit(()-> transfer.setClutchUp())
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN2)
+                .transitionTimed(2.5, shootStates.SPIN2)
 
                 .state(shootStates.SPIN2)
                 .onEnter(()-> {
-                    if (transfer.desiredRotate == 1 || transfer.desiredRotate == 3){
-                        transfer.ballLeft();
-                    } else if (transfer.desiredRotate == 2 || transfer.desiredRotate == 4 || transfer.desiredRotate == 5) {
-                        transfer.ballRight();
-                    }
+                    transfer.ballLeft();
                 })
-                .transition(()-> transfer.spindexAtTarget(), shootStates.CLUTCHDOWN3)
-                .transitionTimed(1.5, shootStates.CLUTCHDOWN3)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN3)
+                .transitionTimed(2.5, shootStates.SPIN3)
 
-                .state(shootStates.CLUTCHDOWN3)
+                .state(shootStates.SPIN3)
                 .onEnter(()-> {
-                    transfer.setClutchDown();
+                    transfer.ballLeft();
                 })
-                .transitionTimed(clutchDownTime, shootStates.CLUTCHDOWNFAR3)
-
-                .state(shootStates.CLUTCHDOWNFAR3)
-                .onEnter(()-> transfer.setClutchDownFar())
-                .transitionTimed(clutchDownFarTime, shootStates.INIT)
-                .onExit(()-> {
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.INIT)
+                .transitionTimed(2.5, shootStates.INIT)
+                .onExit(()->{
                     transfer.setClutchUp();
                     intake.spinnerMacroTarget = 0;
                     shooter.shooterShoot = false;
                     transfer.isDetecting = true;
-                    transfer.ballLeftSmall();
                     transfer.emptyBalls();
                     intake.spinnerMacro = false;
+                    transfer.max = 0.4;
                 })
 
                 .build();
@@ -270,7 +344,7 @@ public class MainTeleop extends LinearOpMode {
                     transfer.isDetecting = false;
                 })
                 .transition(()->transfer.spindexAtTarget() && shooter.isAtRPM(), clutchStates.CLUTCHDOWN)
-                .transitionTimed(2.25, clutchStates.CLUTCHDOWN)
+                .transitionTimed(2.5, clutchStates.CLUTCHDOWN)
 
                 .state(clutchStates.CLUTCHDOWN)
                 .onEnter(()-> {

@@ -218,9 +218,9 @@ public class Shooter implements Subsystem{
 
     public boolean isAtRPM(){
         if (targetRPM > 4000){
-            return (Math.abs(targetRPM - getShooterRPM()) < 750);
+            return (Math.abs(targetRPM - getShooterRPM()) < 450);
         } else {
-            return (Math.abs(targetRPM - getShooterRPM()) < 500);
+            return (Math.abs(targetRPM - getShooterRPM()) < 300);
         }
     }
 
