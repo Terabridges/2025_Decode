@@ -278,9 +278,9 @@ public class Shooter implements Subsystem {
 
     public boolean isAtRPM() {
         if (targetRPM > 4000) {
-            return (Math.abs(targetRPM - getShooterRPM()) < 750);
+            return (Math.abs(targetRPM - getShooterRPM()) < 450);
         } else {
-            return (Math.abs(targetRPM - getShooterRPM()) < 500);
+            return (Math.abs(targetRPM - getShooterRPM()) < 300);
         }
     }
 
@@ -308,13 +308,11 @@ public class Shooter implements Subsystem {
 
     //---------------- Interface Methods ----------------!
     @Override
-    public void toInit() {
-        if (vision != null) {
-            if ("red".equals(vision.allianceColor)) {
-                setRequiredTagId(24);
-            } else if ("blue".equals(vision.allianceColor)) {
-                setRequiredTagId(20);
-            }
+    public void toInit(){
+        if (vision.allianceColor.equals("red")){
+            setRequiredTagId(24);
+        } else if (vision.allianceColor.equals("blue")){
+            setRequiredTagId(20);
         }
     }
 
@@ -377,12 +375,12 @@ public class Shooter implements Subsystem {
             setShooterRPM(0);
         }
 
-        if (hasDesiredTarget && vision != null && vision.getTx() != 0 && vision.getTx() < 1.5) {
+        if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget){
             lightColor = "green";
-        } else if (vision != null) {
-            if ("red".equals(vision.allianceColor)) {
+        } else {
+            if(vision.allianceColor.equals("red")) {
                 lightColor = "red";
-            } else if ("blue".equals(vision.allianceColor)) {
+            } else if (vision.allianceColor.equals("blue")){
                 lightColor = "blue";
             }
         }

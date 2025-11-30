@@ -4,13 +4,13 @@ X: Shoot All Macro
 Y: Toggle Shooter
 B: Reset Spindex Macro
 Down: Toggle Speed
-Left: Turret Manual Left
+Left: One Ball Left
 Up: Toggle LockOn
-Right: Turret Manual Right
-LeftBump: BallLeft
-RightBump: BallRight
-LeftTrig: SpinIn
-RightTrig: SpinOut
+Right: One Ball Right
+LeftBump: Spin In
+RightBump: Spin Out
+LeftTrig: Turret Manual Left
+RightTrig: Turret Manual Right
 LStX: Strafe
 LStY: Movement
 RStX: Turning
@@ -20,7 +20,6 @@ RStCl:
 Back:
 Start:
 
-// on left means coded, // on right means working
 
 GAMEPAD 2: (Coming Soon)
 A:
