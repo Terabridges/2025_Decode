@@ -10,6 +10,7 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -21,6 +22,8 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.ShotPlan;
+import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -37,6 +40,7 @@ class MainAuto extends OpMode {
     private final Alliance alliance;
     private final Range range;
     private final Mode mode;
+    private final ShotPlan shotPlan;
     private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD }
 
     private enum ShootState { INIT, CLUTCHDOWN, SPIN, CLUTCHDOWNFAR }
@@ -59,16 +63,21 @@ class MainAuto extends OpMode {
     private boolean preloadComplete = false;
     private static final double SHOOT_ACTION_SECONDS = 1.0;
     private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
-    private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
+    private static final double STATE_TIMEOUT_SECONDS = 2.0; // fallback: force state advance after this time
     private final ElapsedTime motifTimer = new ElapsedTime();
     private int acquiredMotifId = -1;
     private static final int MAX_ROWS = 4;
     private final ElapsedTime stateTimer = new ElapsedTime();
 
     MainAuto(Alliance alliance, Range range, Mode mode) {
+        this(alliance, range, mode, ShotPlan.ALL_SELECTED);
+    }
+
+    MainAuto(Alliance alliance, Range range, Mode mode, ShotPlan shotPlan) {
         this.alliance = alliance;
         this.range = range;
         this.mode = mode;
+        this.shotPlan = shotPlan;
         startPose = ap.findStartPose(alliance, range);
     }
 
@@ -127,15 +136,18 @@ class MainAuto extends OpMode {
         autoMachine.update();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
+        telemetry.addData("Auto Action", getActionMessage());
+        telemetry.addData("State Time", "%.2f", stateTimer.seconds());
         telemetryM.update(telemetry);
+        telemetry.update();
 
         drawCurrentAndHistory();
 
         // Auto ends after we reach the final state and finish the park path.
-        if (!stopRequested && activeState == AutoStates.LEAVE && followerIdle()) {
-            stopRequested = true;
-            requestOpModeStop();
-        }
+//        if (!stopRequested && activeState == AutoStates.LEAVE && followerIdle()) {
+//            stopRequested = true;
+//            requestOpModeStop();
+//        }
     }
 
     private void buildPath(PathRequest request) {
@@ -150,16 +162,16 @@ class MainAuto extends OpMode {
 
         switch (request) {
             case GO_TO_PICKUP:
-                GoToPickup = buildLinearPath(currentPose, ap.getPickupStart(alliance, range, currentRowIndex));
+                GoToPickup = buildLinearPath(currentPose, ap.getPickupStart(alliance, range, currentRowIndex), true);
                 break;
             case PICKUP:
-                Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex));
+                Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
                 break;
             case GO_TO_SCORE:
-                GoToScore = buildLinearPath(currentPose, ap.getScore(alliance, range));
+                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), false);
                 break;
             case GO_TO_LOAD:
-                GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance));
+                GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);
                 break;
         }
     }
@@ -186,27 +198,34 @@ class MainAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                .transition(() -> motifAcquiredOrTimedOut() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
+//                .transition(() -> motifAcquiredOrTimedOut() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
+                .transition(this::stateTimedOut, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
-                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
+//                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
+//                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
+                .transition(this::stateTimedOut, AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-                .transition(() -> (shootActionComplete() || stateTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> (shootActionComplete() || stateTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
+//                .transition(() -> (shootActionComplete() || stateTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+//                .transition(() -> (shootActionComplete() || stateTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
+                .transition(() -> stateTimedOut() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> stateTimedOut() && !shouldStartNextCycle(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_PICKUP)
+//                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_PICKUP)
+                .transition(this::stateTimedOut, AutoStates.COMPLETE_PICKUP)
 
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+//                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+                .transition(() -> followerIdle() && hasPendingRows(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+                .transition(() -> followerIdle() && !hasPendingRows(), AutoStates.LEAVE)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -242,6 +261,38 @@ class MainAuto extends OpMode {
         return stateTimer.seconds() >= STATE_TIMEOUT_SECONDS;
     }
 
+    private int getCurrentShotIndex() {
+        int idx = preloadComplete ? rowsCompleted : 0;
+        return Math.min(idx, 4); // clamp to known rows
+    }
+
+    private Pose getScorePoseForCurrentShot() {
+        int shotIndex = getCurrentShotIndex();
+        if (shotPlan == ShotPlan.CLOSEST_POINT) {
+            return ap.getClosestScore(alliance, range, shotIndex);
+        }
+        return ap.getScore(alliance, range);
+    }
+
+    private String getActionMessage() {
+        switch (activeState) {
+            case ACQUIRE_MOTIF:
+                return "Looking for motif tag";
+            case GO_TO_SHOOT:
+                return "Driving to score (row " + (rowsCompleted + 1) + ")";
+            case COMPLETE_SHOOT:
+                return "Shooting row " + (rowsCompleted + 1);
+            case GO_TO_PICKUP:
+                return "Driving to pickup row " + (rowsCompleted + 1);
+            case COMPLETE_PICKUP:
+                return "Intaking row " + (rowsCompleted + 1);
+            case LEAVE:
+                return "Parking / leave path";
+            default:
+                return "Idle";
+        }
+    }
+
     private void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
 
@@ -271,6 +322,7 @@ class MainAuto extends OpMode {
     private void onExitCompleteShoot() {
         if (!preloadComplete) {
             preloadComplete = true;
+            rowsCompleted = 0; // start counting rows after preload
         } else {
             rowsCompleted = Math.min(rowsCompleted + 1, MAX_ROWS);
         }
@@ -294,7 +346,7 @@ class MainAuto extends OpMode {
 
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
-        followPath(Pickup);
+        followPath(Pickup, 0.2);
     }
 
     private void onExitCompletePickup() {
@@ -310,12 +362,20 @@ class MainAuto extends OpMode {
     }
 
     private void refreshCurrentRowIndex() {
-        currentRowIndex = Math.min(rowsCompleted, MAX_ROWS - 1);
+        currentRowIndex = preloadComplete
+                ? Math.max(0, Math.min(rowsCompleted, MAX_ROWS - 1))
+                : 0;
     }
 
     private void followPath(PathChain path) {
         if (follower != null && path != null) {
-            follower.followPath(path);
+            follower.followPath(path, true);
+        }
+    }
+
+    private void followPath(PathChain path, double power) {
+        if (follower != null && path != null) {
+            follower.followPath(path, power, true);
         }
     }
 
@@ -331,11 +391,14 @@ class MainAuto extends OpMode {
         return rowsCompleted < rowsToRun;
     }
 
+    /** Determines if another row remains after the current shot completes. */
     private boolean shouldStartNextCycle() {
         if (!preloadComplete) {
             return rowsToRun > 0;
         }
-        return hasPendingRows();
+        // rowsCompleted will be incremented when exiting COMPLETE_SHOOT; look ahead one.
+        int nextCount = rowsCompleted + 1;
+        return nextCount < rowsToRun;
     }
 
     private boolean shootActionComplete() {
@@ -355,11 +418,24 @@ class MainAuto extends OpMode {
         return !preloadComplete && !shouldShootPreload();
     }
 
-    public PathChain buildLinearPath(Pose start, Pose end) {
-        return follower.pathBuilder()
-                .addPath(new BezierLine(start, end))
-                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .build();
+    public PathChain buildLinearPath(Pose start, Pose end, boolean smoothEnd) {
+        PathChain chain;
+        if (smoothEnd) {
+            chain = follower.pathBuilder()
+                    .addPath(new BezierLine(start, end))
+                    .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                    .setBrakingStart(0.5)
+                    .setBrakingStrength(0.8)
+                    .build();
+        }
+        else
+        {
+            chain = follower.pathBuilder()
+                    .addPath(new BezierLine(start, end))
+                    .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                    .build();
+        }
+        return chain;
     }
 
     public PathChain buildCurvedPath(Pose start, Pose control, Pose end) {

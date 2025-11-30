@@ -44,27 +44,27 @@ public class ShooterData {
     }
 
     private void addAngleData(){
-        AngleLUT.add(minDistance, 0.2);
-        AngleLUT.add( 22.8 ,0.2);
+        AngleLUT.add(minDistance, 0.2  );
+        AngleLUT.add( 22.8 ,0.2  );
         AngleLUT.add( 24.8 ,0.225);
-        AngleLUT.add( 33.6 ,0.3);
+        AngleLUT.add( 33.6 ,0.3  );
         AngleLUT.add( 33.9 ,0.275);
-        AngleLUT.add( 34.05,0.25);
-        AngleLUT.add( 35.7 ,0.2);
-        AngleLUT.add( 43   ,0.4);
-        AngleLUT.add( 44.2 ,0.4);
-        AngleLUT.add( 52.67,0.5);
-        AngleLUT.add( 53.7 ,0.5);
-        AngleLUT.add( 61.4 ,0.6);
-        AngleLUT.add( 63.9 ,0.6);
-        AngleLUT.add( 67.4 ,0.6);
-        AngleLUT.add( 72.47,0.6);
-        AngleLUT.add( 72.5 ,0.7);
-        AngleLUT.add( 83.7 ,0.7);
-        AngleLUT.add( 122.5,0.7);
-        AngleLUT.add( 123.5,0.7);
-        AngleLUT.add( 126.7,0.9);
-        AngleLUT.add( 141  ,0.8);
+        AngleLUT.add( 34.05,0.25 );
+        AngleLUT.add( 35.7 ,0.2  );
+        AngleLUT.add( 43   ,0.4  );
+        AngleLUT.add( 44.2 ,0.4  );
+        AngleLUT.add( 52.67,0.5  );
+        AngleLUT.add( 53.7 ,0.5  );
+        AngleLUT.add( 61.4 ,0.6  );
+        AngleLUT.add( 63.9 ,0.6  );
+        AngleLUT.add( 67.4 ,0.6  );
+        AngleLUT.add( 72.47,0.6  );
+        AngleLUT.add( 72.5 ,0.7  );
+        AngleLUT.add( 83.7 ,0.7  );
+        AngleLUT.add( 122.5,0.7  );
+        AngleLUT.add( 123.5,0.7  );
+        AngleLUT.add( 126.7,0.9  );
+        AngleLUT.add( 141  ,0.8  );
         AngleLUT.add(maxDistance, 0.8);
     }
 
