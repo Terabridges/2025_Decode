@@ -218,7 +218,7 @@ public class Shooter implements Subsystem {
         error2 = turretEnc.getCurrentPosition();
         turretPower2 = turretController.calculate(error2, targetAngleDeg); // drive error to zero
         turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
-        return turretPower2;
+        return -turretPower2;
     }
 
     boolean pastPosLimit() {
