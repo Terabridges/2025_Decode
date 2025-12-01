@@ -34,14 +34,15 @@ class MainAuto extends OpMode {
     //Path Gen
     public Pose startPose;
     private final AutoPoses ap = new AutoPoses();
-    private PathChain GoToPickup, Pickup, GoToScore, GoToLoad;
+    private PathChain GoToPickup, Pickup, GoToScore, GoToLoad, LeavePath;
 
     //Enums
     private final Alliance alliance;
     private final Range range;
     private final Mode mode;
     private final ShotPlan shotPlan;
-    private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD }
+    private Range lastScoreRangeUsed;
+    private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD, LEAVE }
 
     private enum ShootState { INIT, CLUTCHDOWN, SPIN, CLUTCHDOWNFAR }
     private enum ClutchState { INIT, CLUTCHDOWN, CLUTCHUP }
@@ -78,6 +79,7 @@ class MainAuto extends OpMode {
         this.range = range;
         this.mode = mode;
         this.shotPlan = shotPlan;
+        this.lastScoreRangeUsed = range;
         startPose = ap.findStartPose(alliance, range);
     }
 
@@ -168,10 +170,14 @@ class MainAuto extends OpMode {
                 Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
                 break;
             case GO_TO_SCORE:
+                lastScoreRangeUsed = getScoreRangeForCurrentShot();
                 GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), false);
                 break;
             case GO_TO_LOAD:
                 GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);
+                break;
+            case LEAVE:
+                LeavePath = buildLinearPath(currentPose, ap.getLeave(alliance, lastScoreRangeUsed), false);
                 break;
         }
     }
@@ -266,12 +272,22 @@ class MainAuto extends OpMode {
         return Math.min(idx, 4); // clamp to known rows
     }
 
-    private Pose getScorePoseForCurrentShot() {
+    private Range getScoreRangeForCurrentShot() {
         int shotIndex = getCurrentShotIndex();
         if (shotPlan == ShotPlan.CLOSEST_POINT) {
-            return ap.getClosestScore(alliance, range, shotIndex);
+            boolean useClose;
+            if (range == Range.LONG_RANGE) {
+                useClose = shotIndex >= 3;
+            } else {
+                useClose = shotIndex <= 2;
+            }
+            return useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
         }
-        return ap.getScore(alliance, range);
+        return range;
+    }
+
+    private Pose getScorePoseForCurrentShot() {
+        return ap.getScore(alliance, getScoreRangeForCurrentShot());
     }
 
     private String getActionMessage() {
@@ -357,8 +373,9 @@ class MainAuto extends OpMode {
         setActiveState(AutoStates.LEAVE);
 
         stateTimer.reset();
-        
-        //TODO build and follow leave path (ensure we are outside of triangle)
+
+        buildPath(PathRequest.LEAVE);
+        followPath(LeavePath);
     }
 
     private void refreshCurrentRowIndex() {

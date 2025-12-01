@@ -65,6 +65,14 @@ public class AutoPoses {
     public Pose loadR = Mirror(loadB);
 
     // ========================
+    // LEAVE POSES
+    // ========================
+    public Pose leaveCB = poseDeg(48, 36, 90);
+    public Pose leaveLB = poseDeg(36, 84, 90);
+    public Pose leaveCR = Mirror(leaveCB);
+    public Pose leaveLR = Mirror(leaveLB);
+
+    // ========================
     // PICKUP START POSES
     // ========================
     double intakeStart = 42.5;
@@ -136,6 +144,7 @@ public class AutoPoses {
     public Pose[][] score = new Pose[2][2];            // [Alliance][Range]
     public Pose[][][] pickupStart = new Pose[2][2][4]; // [Alliance][Range][RowIndex]
     public Pose[][][] pickupEnd = new Pose[2][2][4];   // [Alliance][Range][RowIndex]
+    public Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
 
 
     /* =========================
@@ -193,6 +202,12 @@ public class AutoPoses {
         pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick3EndLR;
         pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][3] = pick4EndCR;
         pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][3]  = pick4EndLR;
+
+        // --- Leave ---
+        leave[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = leaveCB;
+        leave[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = leaveLB;
+        leave[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = leaveCR;
+        leave[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = leaveLR;
     }
 
     /* =========================
@@ -227,5 +242,9 @@ public class AutoPoses {
 
     public Pose getPickupEnd(Alliance a, Range r, int rowIndex) {
         return pickupEnd[a.ordinal()][r.ordinal()][rowIndex];
+    }
+
+    public Pose getLeave(Alliance a, Range r) {
+        return leave[a.ordinal()][r.ordinal()];
     }
 }
