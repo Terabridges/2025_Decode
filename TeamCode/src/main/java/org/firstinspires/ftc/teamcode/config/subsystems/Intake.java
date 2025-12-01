@@ -32,7 +32,7 @@ public class Intake implements Subsystem{
     public double spinnerMacroTarget = 0;
 
     public PIDController raiserController;
-    double p = 0.003, i = 0.0, d = 0.0;
+    double p = 0.002, i = 0.0, d = 0.0; //p = 0.003
     double posTolerance = 3.0;
     double inteTolerance = 8.0;
     double raiserMaxPow = 0.15;

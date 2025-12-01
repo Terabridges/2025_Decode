@@ -63,19 +63,16 @@ public class Shooter implements Subsystem {
     public PIDController turretLockController;
     double p1 = 0.022, i1 = 0.01, d1 = 0.0;
     double posTolerance1 = 1.2;
-    double velTolerance1 = 5.0;
     double inteTolerance1 = 6.0;
     double deadband1 = 0;
     double maxPow1 = 0.135;
     public double turretPower1, error1;
 
     public PIDController turretController;
-    double p2 = 0.0, i2 = 0.0, d2 = 0.0;
-    double posTolerance2 = 4;
-    double velTolerance2 = 4;
-    double inteTolerance2 = 4;
-    double deadband2 = 0;
-    double maxPow2 = 0.4;
+    double p2 = 0.006, i2 = 0.005, d2 = 0.0;
+    double posTolerance2 = 7;
+    double inteTolerance2 = 15;
+    double maxPow2 = 1;
     public double turretPower2, error2;
 
     //--------
@@ -106,11 +103,11 @@ public class Shooter implements Subsystem {
 
         turretLockController = new PIDController(p1, i1, d1);
         turretLockController.setIntegrationBounds(-inteTolerance1, inteTolerance1);
-        turretLockController.setTolerance(posTolerance1, velTolerance1);
+        turretLockController.setTolerance(posTolerance1);
 
         turretController = new PIDController(p2, i2, d2);
         turretController.setIntegrationBounds(-inteTolerance2, inteTolerance2);
-        turretController.setTolerance(posTolerance2, velTolerance2);
+        turretController.setTolerance(posTolerance2);
 
         util = new Util();
         shooterData = new ShooterData();
@@ -214,7 +211,6 @@ public class Shooter implements Subsystem {
         double currentDeg = turretEnc.getCurrentPosition(); // 0–360 from analog encoder
         double errorDeg = wrapDeg(targetAngleDeg - currentDeg); // shortest path
         error2 = errorDeg;
-        if (Math.abs(error2) < deadband2) error2 = 0.0;
         turretPower2 = turretController.calculate(error2, 0.0); // drive error to zero
         turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
         return turretPower2;
