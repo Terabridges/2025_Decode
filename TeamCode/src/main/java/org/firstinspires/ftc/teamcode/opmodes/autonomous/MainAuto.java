@@ -144,6 +144,7 @@ class MainAuto extends OpMode {
     @Override
     public void loop() {
         follower.update();
+        updateTurretAim();
 
         robot.update();
         autoMachine.update();
@@ -349,11 +350,6 @@ class MainAuto extends OpMode {
 
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(GoToScore);
-
-        coarseTurretAimAtGoal();
-        if (robot != null && robot.shooter != null) {
-            robot.shooter.useTurretLock = true;
-        }
     }
 
     private void onEnterCompleteShoot() {
@@ -639,5 +635,25 @@ class MainAuto extends OpMode {
     /** Point turret toward the obelisk using chassis pose (coarse aim). */
     private void coarseTurretAimAtObelisk() {
         coarseTurretAimAt(getObeliskPose());
+    }
+
+    /** Keep turret target refreshed while driving based on the active auto state. */
+    private void updateTurretAim() {
+        switch (activeState) {
+            case ACQUIRE_MOTIF:
+                coarseTurretAimAtObelisk();
+                break;
+            case GO_TO_SHOOT:
+                coarseTurretAimAtGoal();
+                break;
+            case COMPLETE_SHOOT:
+                if (robot != null && robot.shooter != null) {
+                    robot.shooter.useTurretLock = true; // enable vision lock while completing the shot
+                }
+                break;
+            default:
+                // no coarse aim updates needed
+                break;
+        }
     }
 }
