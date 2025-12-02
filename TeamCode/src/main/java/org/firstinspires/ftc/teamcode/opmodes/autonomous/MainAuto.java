@@ -343,10 +343,6 @@ class MainAuto extends OpMode {
 
     private Pose getScorePoseForCurrentShot() {
         Pose base = ap.getScore(alliance, getScoreRangeForCurrentShot());
-        // For far start preload, keep the heading aligned with the start pose to avoid unnecessary turret turns.
-        if (!preloadComplete && range == Range.LONG_RANGE && startPose != null) {
-            return new Pose(base.getX(), base.getY(), startPose.getHeading());
-        }
         return base;
     }
 
