@@ -82,6 +82,8 @@ public class Shooter implements Subsystem {
     public double turretRight = 0.85;
     public double turretLeft = -0.85;
     public double currentTurretPos;
+    double upperLimit = 340;
+    double lowerLimit = 30;
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -224,6 +226,8 @@ public class Shooter implements Subsystem {
     }
 
     public double setTurretPID(double targetAngleDeg) {
+        if (targetAngleDeg > upperLimit){targetAngleDeg = upperLimit;}
+        if (targetAngleDeg < lowerLimit){targetAngleDeg = lowerLimit;}
         turretController.setPID(p2, i2, d2);
         double currentDeg = turretEnc.getCurrentPosition(); // 0..360 from analog encoder
         double clampedTarget = util.clamp(targetAngleDeg, TURRET_MIN_DEG, TURRET_MAX_DEG);
@@ -231,15 +235,15 @@ public class Shooter implements Subsystem {
         error2 = errorDeg;
         turretPower2 = turretController.calculate(error2, 0.0); // drive error to zero
         turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
-        return turretPower2;
+        return -turretPower2;
     }
 
     boolean pastPosLimit() {
-        return (turretEnc.getCurrentPosition() <= 80);
+        return (turretEnc.getCurrentPosition() <= lowerLimit);
     }
 
     boolean pastNegLimit() {
-        return (turretEnc.getCurrentPosition() >= 325);
+        return (turretEnc.getCurrentPosition() >= upperLimit);
     }
 
     //---------Shooter------
