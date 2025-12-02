@@ -11,6 +11,7 @@ import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 
 @TeleOp(name = "TurretAimTester", group = "Test")
 public class TurretAimTester extends LinearOpMode {
@@ -27,8 +28,11 @@ public class TurretAimTester extends LinearOpMode {
         follower.setStartingPose(poses.findStartPose(Alliance.BLUE, Range.LONG_RANGE));
 
         Gamepad gp = gamepad1;
+        boolean prevStart = false;
+        boolean forceBlue = false;
 
         telemetry.addLine("Turret Aim Tester: A=Blue goal, Y=Red goal, X=Obelisk");
+        telemetry.addLine("B toggles Force Blue; START zeros pose to current");
         telemetry.update();
 
         waitForStart();
@@ -37,7 +41,15 @@ public class TurretAimTester extends LinearOpMode {
             // Update follower pose (odometry)
             follower.update();
 
-            if (gp.a) {
+            if (gp.start && !prevStart) {
+                Pose current = follower.getPose();
+                follower.setStartingPose(current != null ? current : new Pose());
+            }
+            if (gp.b && !prevStart) {
+                forceBlue = !forceBlue;
+            }
+
+            if (forceBlue || gp.a) {
                 // Blue goal at (0, 144)
                 shooter.aimTurretAtFieldPose(
                         follower.getPose().getX(),
@@ -77,13 +89,19 @@ public class TurretAimTester extends LinearOpMode {
             shooter.update();
             robot.drive.update(); // keep drive motors idle/update states
 
+            Pose p = follower.getPose();
             telemetry.addData("Turret Target", shooter.turretTargetDeg);
             telemetry.addData("Turret Pos", shooter.getTurretPos());
-            telemetry.addData("Pose", "%.1f, %.1f, %.1f°",
-                    follower.getPose().getX(),
-                    follower.getPose().getY(),
-                    Math.toDegrees(follower.getPose().getHeading()));
+            if (p != null) {
+                telemetry.addData("Pose", "%.1f, %.1f, %.1f deg",
+                        p.getX(),
+                        p.getY(),
+                        Math.toDegrees(p.getHeading()));
+            }
+            telemetry.addData("Force Blue", forceBlue);
             telemetry.update();
+
+            prevStart = gp.start;
         }
     }
 }
