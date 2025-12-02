@@ -324,6 +324,10 @@ public class Shooter implements Subsystem {
         }
     }
 
+    public boolean isFarShot(){
+        return (vision.getDistanceInches() > 90);
+    }
+
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
@@ -393,7 +397,7 @@ public class Shooter implements Subsystem {
             setShooterRPM(0);
         }
 
-        if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget){
+        if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget && useTurretLock){
             lightColor = "green";
         } else {
             if(vision.allianceColor.equals("red")) {

@@ -55,9 +55,12 @@ public class MainTeleop extends LinearOpMode {
         INIT,
         PRESPIN,
         CLUTCHDOWN,
+        WAIT1,
+        SPIN,
         SPIN1,
         SPIN2,
         SPIN3,
+        WAIT2
     }
 
     public enum clutchStates {
@@ -285,37 +288,56 @@ public class MainTeleop extends LinearOpMode {
                     }
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN)
-                .transitionTimed(2.5, shootStates.CLUTCHDOWN)
+                .transitionTimed(2, shootStates.CLUTCHDOWN)
 
                 .state(shootStates.CLUTCHDOWN)
                 .onEnter(()-> {
                     transfer.max = 0.275;
                     transfer.setClutchBarelyDown();
                 })
-                .transitionTimed(0.1, shootStates.SPIN1)
+                .transitionTimed(0.1, shootStates.WAIT1)
+
+                .state(shootStates.WAIT1)
+                .transition(()-> shooter.isFarShot(), shootStates.SPIN1)
+                .transition(() -> !shooter.isFarShot(), shootStates.SPIN)
+
+                .state(shootStates.SPIN)
+                .onEnter(()->{
+                    transfer.max = 0.25;
+                    transfer.ballLeft();
+                    transfer.ballLeft();
+                })
+                .transition(()-> transfer.spindexAtTarget(), shootStates.SPIN3)
+                .transitionTimed(3, shootStates.SPIN3)
 
                 .state(shootStates.SPIN1)
                 .onEnter(()-> {
                     transfer.ballLeft();
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN2)
-                .transitionTimed(2.5, shootStates.SPIN2)
+                .transitionTimed(2, shootStates.SPIN2)
 
                 .state(shootStates.SPIN2)
                 .onEnter(()-> {
                     transfer.ballLeft();
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN3)
-                .transitionTimed(2.5, shootStates.SPIN3)
+                .transitionTimed(2, shootStates.SPIN3)
 
                 .state(shootStates.SPIN3)
                 .onEnter(()-> {
-                    transfer.ballLeft();
+                    transfer.max = 0.275;
+                    transfer.ballLeftSmall();
                 })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.INIT)
-                .transitionTimed(2.5, shootStates.INIT)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.WAIT2)
+                .transitionTimed(2, shootStates.WAIT2)
+                .onExit(()-> transfer.setClutchDownFar())
+
+                .state(shootStates.WAIT2)
+                .transitionTimed(0.7, shootStates.INIT)
                 .onExit(()->{
                     transfer.setClutchUp();
+                    transfer.ballRightSmall();
                     intake.spinnerMacroTarget = 0;
                     shooter.shooterShoot = false;
                     transfer.isDetecting = true;
@@ -344,7 +366,7 @@ public class MainTeleop extends LinearOpMode {
                     transfer.isDetecting = false;
                 })
                 .transition(()->transfer.spindexAtTarget() && shooter.isAtRPM(), clutchStates.CLUTCHDOWN)
-                .transitionTimed(2.5, clutchStates.CLUTCHDOWN)
+                .transitionTimed(2, clutchStates.CLUTCHDOWN)
 
                 .state(clutchStates.CLUTCHDOWN)
                 .onEnter(()-> {
