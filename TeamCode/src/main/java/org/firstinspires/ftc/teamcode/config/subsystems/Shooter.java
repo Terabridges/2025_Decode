@@ -41,6 +41,9 @@ public class Shooter implements Subsystem {
     public boolean useLight = true;
     public String lightColor = "none";
     private int motifTagId = -1;
+    private static final double TURRET_OFFSET_DEG = 45.0; // encoder reading when turret faces field +X
+    private static final double TURRET_MIN_DEG = 30.0;
+    private static final double TURRET_MAX_DEG = 340.0;
 
     //---------Targets------
     public double turretTarget = 0.0; // degrees in turret frame
@@ -161,12 +164,25 @@ public class Shooter implements Subsystem {
         return ((deg + 180) % 360 + 360) % 360 - 180;
     }
 
+    private double normalize360(double deg) {
+        return ((deg % 360) + 360) % 360;
+    }
+
+    private double encoderToLogical(double encoderDeg) {
+        return normalize360(encoderDeg - TURRET_OFFSET_DEG);
+    }
+
+    private double logicalToEncoder(double logicalDeg) {
+        return normalize360(logicalDeg + TURRET_OFFSET_DEG);
+    }
+
     /**
      * Sets a turret target in degrees (chassis/turret frame). Enables turret PID and disables manual.
      */
     public void setTurretTargetDeg(double targetDeg) {
-        turretTargetDeg = wrapDeg(targetDeg);
-        turretTarget = turretTargetDeg;
+        double encoderTarget = util.clamp(logicalToEncoder(targetDeg), TURRET_MIN_DEG, TURRET_MAX_DEG);
+        turretTargetDeg = normalize360(targetDeg);
+        turretTarget = encoderTarget;
         useTurretPID = true;
         manualTurret = false;
     }
@@ -178,6 +194,7 @@ public class Shooter implements Subsystem {
                                      double goalX, double goalY) {
         double desiredHeadingRad = Math.atan2(goalY - robotY, goalX - robotX);
         double turretTargetFieldDeg = Math.toDegrees(desiredHeadingRad - robotHeadingRad);
+        turretTargetFieldDeg = ((turretTargetFieldDeg % 360) + 360) % 360; // normalize 0..360 to avoid wrap jumps
         setTurretTargetDeg(turretTargetFieldDeg);
         useTurretLock = false;
         manualTurret = false;
@@ -212,11 +229,11 @@ public class Shooter implements Subsystem {
         if (targetAngleDeg > upperLimit){targetAngleDeg = upperLimit;}
         if (targetAngleDeg < lowerLimit){targetAngleDeg = lowerLimit;}
         turretController.setPID(p2, i2, d2);
-//        double currentDeg = turretEnc.getCurrentPosition(); // 0–360 from analog encoder
-//        double errorDeg = wrapDeg(targetAngleDeg - currentDeg); // shortest path
-//        error2 = errorDeg;
-        error2 = turretEnc.getCurrentPosition();
-        turretPower2 = turretController.calculate(error2, targetAngleDeg); // drive error to zero
+        double currentDeg = turretEnc.getCurrentPosition(); // 0..360 from analog encoder
+        double clampedTarget = util.clamp(targetAngleDeg, TURRET_MIN_DEG, TURRET_MAX_DEG);
+        double errorDeg = clampedTarget - currentDeg; // avoid wrapping through hard limit
+        error2 = errorDeg;
+        turretPower2 = turretController.calculate(error2, 0.0); // drive error to zero
         turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
         return -turretPower2;
     }
@@ -327,7 +344,6 @@ public class Shooter implements Subsystem {
         boolean hasDesiredTarget = vision != null && vision.hasTarget()
                 && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
 
-        //Limits from
         // Turret control priority: manual -> lock -> PID -> idle
         if (manualTurret) {
             if (turretManualPow > 0) {
