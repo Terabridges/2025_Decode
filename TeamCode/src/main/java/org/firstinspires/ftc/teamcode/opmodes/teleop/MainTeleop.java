@@ -111,6 +111,8 @@ public class MainTeleop extends LinearOpMode {
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+        robot.shooter.teleOp = true;
+
         while (opModeInInit()){
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);

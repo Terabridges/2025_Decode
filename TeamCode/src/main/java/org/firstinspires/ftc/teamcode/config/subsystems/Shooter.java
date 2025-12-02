@@ -37,7 +37,7 @@ public class Shooter implements Subsystem {
     double hoodUp = 0.9;
     public boolean useData = true;
     double maxRPM = 5700;
-    private int requiredTagId = -1;
+    public int requiredTagId = -1;
     public boolean useLight = true;
     public String lightColor = "none";
     private int motifTagId = -1;
@@ -86,6 +86,7 @@ public class Shooter implements Subsystem {
     double lowerLimit = 30;
 
     public boolean hasDesiredTarget = false;
+    public boolean teleOp = false;
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -333,11 +334,13 @@ public class Shooter implements Subsystem {
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-        if (vision.allianceColor.equals("red")){
-            setRequiredTagId(24);
-        } else if (vision.allianceColor.equals("blue")){
-            setRequiredTagId(20);
-        }
+//        if (teleOp == true) {
+//            if (vision.allianceColor.equals("red")) {
+//                setRequiredTagId(24);
+//            } else if (vision.allianceColor.equals("blue")) {
+//                setRequiredTagId(20);
+//            }
+//        }
     }
 
     @Override

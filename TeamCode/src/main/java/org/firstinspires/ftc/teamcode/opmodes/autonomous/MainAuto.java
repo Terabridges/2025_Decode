@@ -165,6 +165,7 @@ class MainAuto extends OpMode {
         telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
         telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
         telemetry.addData("current Tag seen", robot.vision.getCurrentTagId());
+        telemetry.addData("required tag", robot.shooter.requiredTagId);
 
         telemetryM.update(telemetry);
         telemetry.update();
