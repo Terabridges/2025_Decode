@@ -66,6 +66,7 @@ class MainAuto extends OpMode {
     private Robot robot;
 
     //Other Variables
+    private final boolean skipEdgeRows = true;
     private int rowsToRun = 0;
     private int rowsCompleted = 0;
     private int currentRowIndex = 0;
@@ -113,6 +114,13 @@ class MainAuto extends OpMode {
         }
 
         rowsToRun = Math.min(resolveRowsForMode(mode), MAX_ROWS);
+        if (skipEdgeRows) {
+            if (range == Range.LONG_RANGE && rowsToRun > 0) {
+                rowsToRun = Math.max(0, rowsToRun - 1); // skip row 1 on far side
+            } else if (range == Range.CLOSE_RANGE && rowsToRun == MAX_ROWS) {
+                rowsToRun = MAX_ROWS - 1; // skip row 4 on close side
+            }
+        }
         rowsCompleted = 0;
         currentRowIndex = 0;
         preloadComplete = false;
@@ -223,6 +231,18 @@ class MainAuto extends OpMode {
         }
     }
 
+    /** Maps the logical row count to the actual row index, respecting any skipped edge rows. */
+    private int mapRowIndex(int logicalCount) {
+        if (!skipEdgeRows) {
+            return logicalCount;
+        }
+        if (range == Range.LONG_RANGE) {
+            return logicalCount + 1; // skip row 1 (index 0) on far side
+        }
+        // close side: skip row 4 (index 3) by limiting rowsToRun; mapping stays the same
+        return logicalCount;
+    }
+
     private StateMachine buildAutoMachine() {
         return new StateMachineBuilder()
                 .state(AutoStates.ACQUIRE_MOTIF)
@@ -296,7 +316,7 @@ class MainAuto extends OpMode {
     }
 
     private int getCurrentShotIndex() {
-        int idx = preloadComplete ? rowsCompleted : 0;
+        int idx = preloadComplete ? mapRowIndex(rowsCompleted) : 0;
         return Math.min(idx, 4); // clamp to known rows
     }
 
@@ -315,7 +335,12 @@ class MainAuto extends OpMode {
     }
 
     private Pose getScorePoseForCurrentShot() {
-        return ap.getScore(alliance, getScoreRangeForCurrentShot());
+        Pose base = ap.getScore(alliance, getScoreRangeForCurrentShot());
+        // For far start preload, keep the heading aligned with the start pose to avoid unnecessary turret turns.
+        if (!preloadComplete && range == Range.LONG_RANGE && startPose != null) {
+            return new Pose(base.getX(), base.getY(), startPose.getHeading());
+        }
+        return base;
     }
 
     private String getActionMessage() {
@@ -426,9 +451,10 @@ class MainAuto extends OpMode {
     }
 
     private void refreshCurrentRowIndex() {
+        int mapped = mapRowIndex(rowsCompleted);
         currentRowIndex = preloadComplete
-                ? Math.max(0, Math.min(rowsCompleted, MAX_ROWS - 1))
-                : 0;
+                ? Math.max(0, Math.min(mapped, MAX_ROWS - 1))
+                : mapRowIndex(0);
     }
 
     private void followPath(PathChain path) {
