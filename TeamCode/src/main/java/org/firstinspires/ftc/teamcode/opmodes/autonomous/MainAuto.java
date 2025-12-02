@@ -52,7 +52,9 @@ class MainAuto extends OpMode {
         WAIT1,
         SPIN,
         SPIN1,
+        CLUTCHDOWN1,
         SPIN2,
+        CLUTCHDOWN2,
         SPIN3,
         WAIT2
     }
@@ -95,6 +97,11 @@ class MainAuto extends OpMode {
         this.lastScoreRangeUsed = range;
         startPose = ap.findStartPose(alliance, range);
     }
+
+    public double clutchDownTime = 0.1;
+    public double clutchDownFarTime = 0.3;
+    public double spinTime = 2.75;
+    public double spinUpTimeout = 1.75;
 
     @Override
     public void init() {
@@ -167,6 +174,7 @@ class MainAuto extends OpMode {
         telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
         telemetry.addData("Ball List", robot.transfer.balls);
         telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
+        telemetry.addData("Vision Error", robot.vision.getTx());
 
         telemetryM.update(telemetry);
         telemetry.update();
@@ -548,6 +556,7 @@ class MainAuto extends OpMode {
                 .build();
     }
 
+    //.transition(()->(startShooting && shooter.hasDesiredTarget), shootStates.PRESPIN)
     public StateMachine getShootAllMachine (Robot robot){
         Shooter shooter = robot.shooter;
         Transfer transfer = robot.transfer;
@@ -558,7 +567,6 @@ class MainAuto extends OpMode {
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {
-                    startShooting = false;
                     intake.spinnerMacro = true;
                     intake.spinnerMacroTarget = 0.95;
                     shooter.shooterShoot = true;
@@ -570,14 +578,14 @@ class MainAuto extends OpMode {
                     }
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN)
-                .transitionTimed(2, shootStates.CLUTCHDOWN)
+                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN)
 
                 .state(shootStates.CLUTCHDOWN)
                 .onEnter(()-> {
                     transfer.max = 0.275;
                     transfer.setClutchBarelyDown();
                 })
-                .transitionTimed(0.1, shootStates.WAIT1)
+                .transitionTimed(clutchDownTime, shootStates.WAIT1)
 
                 .state(shootStates.WAIT1)
                 .transition(()-> shooter.isFarShot(), shootStates.SPIN1)
@@ -590,33 +598,47 @@ class MainAuto extends OpMode {
                     transfer.ballLeft();
                 })
                 .transition(()-> transfer.spindexAtTarget(), shootStates.SPIN3)
-                .transitionTimed(3, shootStates.SPIN3)
+                .transitionTimed(spinTime, shootStates.SPIN3)
 
                 .state(shootStates.SPIN1)
                 .onEnter(()-> {
-                    transfer.ballLeft();
+                    transfer.ballLeftSmall();
                 })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN2)
-                .transitionTimed(2, shootStates.SPIN2)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
+                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN1)
+
+                .state(shootStates.CLUTCHDOWN1)
+                .onEnter(()->transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
+                .onExit(()->transfer.setClutchBarelyDown())
 
                 .state(shootStates.SPIN2)
                 .onEnter(()-> {
                     transfer.ballLeft();
                 })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN3)
-                .transitionTimed(2, shootStates.SPIN3)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN2)
+                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN2)
+
+                .state(shootStates.CLUTCHDOWN2)
+                .onEnter(()->transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.SPIN3)
+                .onExit(()-> {
+                    transfer.setClutchBarelyDown();
+                    transfer.ballRightSmall();
+                })
 
                 .state(shootStates.SPIN3)
                 .onEnter(()-> {
                     transfer.max = 0.275;
                     transfer.ballLeftSmall();
+                    transfer.ballLeft();
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.WAIT2)
-                .transitionTimed(2, shootStates.WAIT2)
+                .transitionTimed(spinUpTimeout, shootStates.WAIT2)
                 .onExit(()-> transfer.setClutchDownFar())
 
                 .state(shootStates.WAIT2)
-                .transitionTimed(0.7, shootStates.INIT)
+                .transitionTimed(clutchDownFarTime, shootStates.INIT)
                 .onExit(()->{
                     transfer.setClutchUp();
                     transfer.ballRightSmall();
@@ -626,7 +648,6 @@ class MainAuto extends OpMode {
                     transfer.emptyBalls();
                     intake.spinnerMacro = false;
                     transfer.max = 0.4;
-                    shootingComplete = true;
                 })
 
                 .build();
