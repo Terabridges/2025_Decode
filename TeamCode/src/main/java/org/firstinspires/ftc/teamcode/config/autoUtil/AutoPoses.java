@@ -65,6 +65,15 @@ public class AutoPoses {
     public Pose loadR = Mirror(loadB);
 
     // ========================
+    // RELEASE (lever) POSES
+    // ========================
+
+    public Pose releaseGoToCloseB = poseDeg(32, 70, 180);
+    public Pose releaseCompleteCloseB = poseDeg(28, 70, 180);
+    public Pose releaseGoToCloseR = Mirror(releaseGoToCloseB);
+    public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseB);
+
+    // ========================
     // LEAVE POSES
     // ========================
     public Pose leaveCB = poseDeg(48, 36, 90);
@@ -145,6 +154,8 @@ public class AutoPoses {
     public Pose[][][] pickupStart = new Pose[2][2][4]; // [Alliance][Range][RowIndex]
     public Pose[][][] pickupEnd = new Pose[2][2][4];   // [Alliance][Range][RowIndex]
     public Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
+    public Pose[][] releaseGoTo = new Pose[2][2];      // [Alliance][Range]
+    public Pose[][] releaseComplete = new Pose[2][2];  // [Alliance][Range]
 
 
     /* =========================
@@ -208,6 +219,17 @@ public class AutoPoses {
         leave[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = leaveLB;
         leave[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = leaveCR;
         leave[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = leaveLR;
+
+        // --- Release lever (only defined for close side; long side mirrors close defaults) ---
+        releaseGoTo[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = releaseGoToCloseB;
+        releaseGoTo[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = releaseGoToCloseB; // not used, but set for completeness
+        releaseGoTo[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = releaseGoToCloseR;
+        releaseGoTo[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = releaseGoToCloseR;
+
+        releaseComplete[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = releaseCompleteCloseB;
+        releaseComplete[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = releaseCompleteCloseB;
+        releaseComplete[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = releaseCompleteCloseR;
+        releaseComplete[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = releaseCompleteCloseR;
     }
 
     /* =========================
@@ -247,4 +269,8 @@ public class AutoPoses {
     public Pose getLeave(Alliance a, Range r) {
         return leave[a.ordinal()][r.ordinal()];
     }
+
+    public Pose getReleaseGoTo(Alliance a, Range r) { return releaseGoTo[a.ordinal()][r.ordinal()]; }
+
+    public Pose getReleaseComplete(Alliance a, Range r) { return releaseComplete[a.ordinal()][r.ordinal()]; }
 }

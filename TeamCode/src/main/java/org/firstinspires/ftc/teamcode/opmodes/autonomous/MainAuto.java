@@ -34,7 +34,7 @@ class MainAuto extends OpMode {
     //Path Gen
     public Pose startPose;
     private final AutoPoses ap = new AutoPoses();
-    private PathChain GoToPickup, Pickup, GoToScore, GoToLoad, LeavePath;
+    private PathChain GoToPickup, Pickup, GoToScore, GoToLoad, LeavePath, ReleaseGoToPath, ReleaseCompletePath;
 
     //Enums
     private final Alliance alliance;
@@ -42,7 +42,7 @@ class MainAuto extends OpMode {
     private final Mode mode;
     private final ShotPlan shotPlan;
     private Range lastScoreRangeUsed;
-    private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD, LEAVE }
+    private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD, RELEASE_GO_TO, RELEASE_COMPLETE, LEAVE }
 
     private enum ShootState { INIT, CLUTCHDOWN, SPIN, CLUTCHDOWNFAR }
     private enum ClutchState { INIT, CLUTCHDOWN, CLUTCHUP }
@@ -176,6 +176,12 @@ class MainAuto extends OpMode {
             case GO_TO_LOAD:
                 GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);
                 break;
+            case RELEASE_GO_TO:
+                ReleaseGoToPath = buildLinearPath(currentPose, ap.getReleaseGoTo(alliance, range), false);
+                break;
+            case RELEASE_COMPLETE:
+                ReleaseCompletePath = buildLinearPath(currentPose, ap.getReleaseComplete(alliance, range), false);
+                break;
             case LEAVE:
                 LeavePath = buildLinearPath(currentPose, ap.getLeave(alliance, lastScoreRangeUsed), false);
                 break;
@@ -224,7 +230,16 @@ class MainAuto extends OpMode {
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+                .transition(() -> shouldReleaseAfterPickup() && (followerIdle() || stateTimedOut()), AutoStates.GO_TO_RELEASE)
+                .transition(() -> !shouldReleaseAfterPickup() && (followerIdle() || stateTimedOut()), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+
+                .state(AutoStates.GO_TO_RELEASE)
+                .onEnter(this::onEnterGoToRelease)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_RELEASE)
+
+                .state(AutoStates.COMPLETE_RELEASE)
+                .onEnter(this::onEnterCompleteRelease)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -295,6 +310,10 @@ class MainAuto extends OpMode {
                 return "Driving to pickup row " + (rowsCompleted + 1);
             case COMPLETE_PICKUP:
                 return "Intaking row " + (rowsCompleted + 1);
+            case GO_TO_RELEASE:
+                return "Driving to release lever";
+            case COMPLETE_RELEASE:
+                return "Releasing goal balls";
             case LEAVE:
                 return "Parking / leave path";
             default:
@@ -362,6 +381,24 @@ class MainAuto extends OpMode {
         robot.intake.spinnerZero();
     }
 
+    private void onEnterGoToRelease() {
+        setActiveState(AutoStates.GO_TO_RELEASE);
+
+        stateTimer.reset();
+
+        buildPath(PathRequest.RELEASE_GO_TO);
+        followPath(ReleaseGoToPath);
+    }
+
+    private void onEnterCompleteRelease() {
+        setActiveState(AutoStates.COMPLETE_RELEASE);
+
+        stateTimer.reset();
+
+        buildPath(PathRequest.RELEASE_COMPLETE);
+        followPath(ReleaseCompletePath, 0.35);
+    }
+
     private void onEnterLeave() {
         setActiveState(AutoStates.LEAVE);
 
@@ -395,6 +432,14 @@ class MainAuto extends OpMode {
 
     private boolean shouldShootPreload() {
         return mode != Mode.MOVE_ONLY;
+    }
+
+    /** Returns true if we should detour to the lever after collecting the first row on the close side. */
+    private boolean shouldReleaseAfterPickup() {
+        boolean closeSide = range == Range.CLOSE_RANGE;
+        boolean modeAllows = mode != Mode.MOVE_ONLY && mode != Mode.PRELOAD_ONLY;
+        boolean justFinishedFirstRow = preloadComplete && rowsCompleted == 0;
+        return closeSide && modeAllows && justFinishedFirstRow;
     }
 
     private boolean hasPendingRows() {
