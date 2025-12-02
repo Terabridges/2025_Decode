@@ -137,8 +137,7 @@ class MainAuto extends OpMode {
 
         autoMachine.start();
         robot.toInit();
-//        shootAllMachine.start();
-//        clutchSuperMachine.start();
+        shootAllMachine.start();
     }
 
     @Override
