@@ -332,7 +332,8 @@ class MainAuto extends OpMode {
         if (shotPlan == ShotPlan.CLOSEST_POINT) {
             boolean useClose;
             if (range == Range.LONG_RANGE) {
-                useClose = shotIndex >= 3;
+                // For far start, switch to close aiming once we reach field row 3+
+                useClose = shotIndex >= 2;
             } else {
                 useClose = shotIndex <= 2;
             }
@@ -420,7 +421,7 @@ class MainAuto extends OpMode {
 
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
-        followPath(Pickup, 0.2);
+        followPath(Pickup, 0.3);
     }
 
     private void onExitCompletePickup() {
