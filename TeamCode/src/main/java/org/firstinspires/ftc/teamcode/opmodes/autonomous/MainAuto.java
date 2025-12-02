@@ -162,11 +162,11 @@ class MainAuto extends OpMode {
         telemetry.addData("State Time", "%.2f", stateTimer.seconds());
         telemetry.addData("Current Motif ID", acquiredMotifId);
         telemetry.addData("Target RPM", robot.shooter.targetRPM);
+        telemetry.addData("Current RPM", robot.shooter.getShooterRPM());
         telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
         telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
-        telemetry.addData("current Tag seen", robot.vision.getCurrentTagId());
-        telemetry.addData("required tag", robot.shooter.requiredTagId);
-        telemetry.addData("shooting action complete", shootingComplete);
+        telemetry.addData("Ball List", robot.transfer.balls);
+        telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
 
         telemetryM.update(telemetry);
         telemetry.update();
@@ -382,6 +382,7 @@ class MainAuto extends OpMode {
             return;
         }
 
+        robot.shooter.shooterShoot = true;
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(GoToScore);
     }

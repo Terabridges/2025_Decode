@@ -25,10 +25,9 @@ public class LockTester extends LinearOpMode {
     public static double p = 0.022, i = 0.01, d = 0.0;
     public static double turretTarget = 0.0;
     double posTolerance = 1.2;
-    double velTolerance = 5.0;
     public static double inteTolerance = 6;
     public static double maxPow = 0.135;
-    public static double deadband = 0.15;
+    public static double deadband = 0.0;
     double turretPower, error;
     boolean useTurretLock = true;
     double manualPower = 0;
@@ -50,7 +49,7 @@ public class LockTester extends LinearOpMode {
 
         turretController = new PIDController(p, i, d);
         turretController.setIntegrationBounds(-inteTolerance, inteTolerance);
-        turretController.setTolerance(posTolerance, velTolerance);
+        turretController.setTolerance(posTolerance);
 
         waitForStart();
         while (opModeIsActive()){
@@ -66,7 +65,6 @@ public class LockTester extends LinearOpMode {
                 turretController.reset();
             }
 
-            //shooter.turretLockUpdate(vision.getTx());
             if (useTurretLock){
             shooter.turret.setPower(setTurretPID(turretTarget));
             } else {
@@ -95,7 +93,6 @@ public class LockTester extends LinearOpMode {
         joinedTelemetry.addData("X error", vision.getTx());
         joinedTelemetry.addData("Power", turretPower);
         joinedTelemetry.addData("LockOn", useTurretLock);
-        joinedTelemetry.addData("AnalogVal", shooter.turretAnalog.getVoltage());
         joinedTelemetry.update();
     }
 
@@ -114,4 +111,3 @@ public class LockTester extends LinearOpMode {
         return Math.max(lo, Math.min(hi, v));
     }
 }
-//TODO: add slew for smoothness?

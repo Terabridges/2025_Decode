@@ -58,7 +58,9 @@ public class MainTeleop extends LinearOpMode {
         WAIT1,
         SPIN,
         SPIN1,
+        CLUTCHDOWN1,
         SPIN2,
+        CLUTCHDOWN2,
         SPIN3,
         WAIT2
     }
@@ -78,9 +80,10 @@ public class MainTeleop extends LinearOpMode {
         RESET2
     }
 
-    public double clutchDownTime = 0.15;
-    public double clutchDownFarTime = 0.72;
-    public double spinTime = 2.5;
+    public double clutchDownTime = 0.1;
+    public double clutchDownFarTime = 0.3;
+    public double spinTime = 2.75;
+    public double spinUpTimeout = 1.75;
     int fromRed = -90;
 
     public StateMachine shootAllMachine;
@@ -161,6 +164,7 @@ public class MainTeleop extends LinearOpMode {
             c.update();
             c.addTelemetry(telemetry);
         }
+        telemetry.addData("Shooting State", shootAllMachine.getState());
         telemetry.update();
     }
 
@@ -290,14 +294,14 @@ public class MainTeleop extends LinearOpMode {
                     }
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN)
-                .transitionTimed(2, shootStates.CLUTCHDOWN)
+                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN)
 
                 .state(shootStates.CLUTCHDOWN)
                 .onEnter(()-> {
                     transfer.max = 0.275;
                     transfer.setClutchBarelyDown();
                 })
-                .transitionTimed(0.1, shootStates.WAIT1)
+                .transitionTimed(clutchDownTime, shootStates.WAIT1)
 
                 .state(shootStates.WAIT1)
                 .transition(()-> shooter.isFarShot(), shootStates.SPIN1)
@@ -310,33 +314,47 @@ public class MainTeleop extends LinearOpMode {
                     transfer.ballLeft();
                 })
                 .transition(()-> transfer.spindexAtTarget(), shootStates.SPIN3)
-                .transitionTimed(3, shootStates.SPIN3)
+                .transitionTimed(spinTime, shootStates.SPIN3)
 
                 .state(shootStates.SPIN1)
                 .onEnter(()-> {
-                    transfer.ballLeft();
+                    transfer.ballLeftSmall();
                 })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN2)
-                .transitionTimed(2, shootStates.SPIN2)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
+                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN1)
+
+                .state(shootStates.CLUTCHDOWN1)
+                .onEnter(()->transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
+                .onExit(()->transfer.setClutchBarelyDown())
 
                 .state(shootStates.SPIN2)
                 .onEnter(()-> {
                     transfer.ballLeft();
                 })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN3)
-                .transitionTimed(2, shootStates.SPIN3)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN2)
+                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN2)
+
+                .state(shootStates.CLUTCHDOWN2)
+                .onEnter(()->transfer.setClutchDownFar())
+                .transitionTimed(clutchDownFarTime, shootStates.SPIN3)
+                .onExit(()-> {
+                    transfer.setClutchBarelyDown();
+                    transfer.ballRightSmall();
+                })
 
                 .state(shootStates.SPIN3)
                 .onEnter(()-> {
                     transfer.max = 0.275;
                     transfer.ballLeftSmall();
+                    transfer.ballLeft();
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.WAIT2)
-                .transitionTimed(2, shootStates.WAIT2)
+                .transitionTimed(spinUpTimeout, shootStates.WAIT2)
                 .onExit(()-> transfer.setClutchDownFar())
 
                 .state(shootStates.WAIT2)
-                .transitionTimed(0.7, shootStates.INIT)
+                .transitionTimed(clutchDownFarTime, shootStates.INIT)
                 .onExit(()->{
                     transfer.setClutchUp();
                     transfer.ballRightSmall();
