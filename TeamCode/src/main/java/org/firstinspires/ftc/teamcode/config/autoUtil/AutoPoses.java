@@ -114,7 +114,7 @@ public class AutoPoses {
     // ========================
     // PICKUP END POSES
     // ========================
-    double intakeEnd = 20;
+    double intakeEnd = 26;
 
     // Row 1
     public Pose pick1EndLB = poseDeg(16, 16 + offset, 180); //TODO fix this

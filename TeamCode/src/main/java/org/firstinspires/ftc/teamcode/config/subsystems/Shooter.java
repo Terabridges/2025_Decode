@@ -365,7 +365,22 @@ public class Shooter implements Subsystem {
                 setTurretPower(0);
             }
         } else if (useTurretLock && hasDesiredTarget) {
-            setTurretPower(setTurretLockPID(0.0));
+            double lockPower = setTurretLockPID(0.0);
+            double pos = getTurretPos();
+            if (lockPower > 0) {
+                if (pos <= lowerLimit) {
+                    lockPower = 0.0;
+                } else if (pos <= 130) {
+                    lockPower *= limitTurretPower(130, 30);
+                }
+            } else if (lockPower < 0) {
+                if (pos >= upperLimit) {
+                    lockPower = 0.0;
+                } else if (pos >= 240) {
+                    lockPower *= limitTurretPower(240, 340);
+                }
+            }
+            setTurretPower(lockPower);
         } else if (useTurretPID) {
             setTurretPower(setTurretPID(turretTarget));
         } else {

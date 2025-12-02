@@ -60,13 +60,13 @@ public class ShooterData {
         AngleLUT.add( 63.9 ,0.6);
         AngleLUT.add( 67.4 ,0.6);
         AngleLUT.add( 72.47,0.6);
-        AngleLUT.add( 72.5 ,0.65); //7
-        AngleLUT.add( 83.7 ,0.65); //7
+        AngleLUT.add( 72.5 ,0.6); //7
+        AngleLUT.add( 83.7 ,0.6); //7
         AngleLUT.add( 122.5,0.7);
         AngleLUT.add( 123.5,0.7); //7
-        AngleLUT.add( 126.7,0.8); //9
-        AngleLUT.add( 141  ,0.9); //8
-        AngleLUT.add(maxDistance, 0.9); //8
+        AngleLUT.add( 126.7,0.7); //9 //8
+        AngleLUT.add( 141  ,0.8); //8 //9
+        AngleLUT.add(maxDistance, 0.8); //8 //9
     }
 
 //    public double getRPMVal(double distance){
