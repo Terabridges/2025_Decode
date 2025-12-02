@@ -318,6 +318,13 @@ class MainAuto extends OpMode {
         if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
             acquiredMotifId = robot.shooter.vision.getCurrentTagId();
             robot.shooter.setMotifTagId(acquiredMotifId);
+            if(acquiredMotifId == 21){
+                robot.transfer.motif = "GPP";
+            } else if (acquiredMotifId == 22){
+                robot.transfer.motif = "PGP";
+            } else if (acquiredMotifId == 23){
+                robot.transfer.motif = "PPG";
+            }
         }
     }
 
@@ -557,6 +564,8 @@ class MainAuto extends OpMode {
     }
 
     //.transition(()->(startShooting && shooter.hasDesiredTarget), shootStates.PRESPIN)
+    //startShooting = false;
+    //shootingComplete = true;
     public StateMachine getShootAllMachine (Robot robot){
         Shooter shooter = robot.shooter;
         Transfer transfer = robot.transfer;
@@ -567,6 +576,7 @@ class MainAuto extends OpMode {
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {
+                    startShooting = false;
                     intake.spinnerMacro = true;
                     intake.spinnerMacroTarget = 0.95;
                     shooter.shooterShoot = true;
@@ -648,6 +658,7 @@ class MainAuto extends OpMode {
                     transfer.emptyBalls();
                     intake.spinnerMacro = false;
                     transfer.max = 0.4;
+                    shootingComplete = true;
                 })
 
                 .build();
