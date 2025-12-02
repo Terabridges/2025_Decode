@@ -85,6 +85,8 @@ public class Shooter implements Subsystem {
     double upperLimit = 340;
     double lowerLimit = 30;
 
+    public boolean hasDesiredTarget = false;
+
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
         turret = map.get(CRServo.class, "turret");
@@ -341,8 +343,7 @@ public class Shooter implements Subsystem {
     @Override
     public void update() {
 
-        boolean hasDesiredTarget = vision != null && vision.hasTarget()
-                && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
+        hasDesiredTarget = vision != null && vision.hasTarget() && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
 
         // Turret control priority: manual -> lock -> PID -> idle
         if (manualTurret) {

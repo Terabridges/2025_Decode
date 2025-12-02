@@ -153,8 +153,11 @@ class MainAuto extends OpMode {
         telemetry.addData("Auto Action", getActionMessage());
         telemetry.addData("State Time", "%.2f", stateTimer.seconds());
         telemetry.addData("Current Motif ID", acquiredMotifId);
-        telemetry.addData("Start Shoot?", startShooting);
-        telemetry.addData("End Shoot?", shootingComplete);
+        telemetry.addData("Target RPM", robot.shooter.targetRPM);
+        telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
+        telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
+        telemetry.addData("current Tag seen", robot.vision.getCurrentTagId());
+
         telemetryM.update(telemetry);
         telemetry.update();
 
@@ -520,7 +523,7 @@ class MainAuto extends OpMode {
         Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(()->(startShooting), shootStates.PRESPIN)
+                .transition(()->(startShooting && shooter.hasDesiredTarget), shootStates.PRESPIN)
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {
