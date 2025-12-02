@@ -334,13 +334,13 @@ public class Shooter implements Subsystem {
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-//        if (teleOp == true) {
-//            if (vision.allianceColor.equals("red")) {
-//                setRequiredTagId(24);
-//            } else if (vision.allianceColor.equals("blue")) {
-//                setRequiredTagId(20);
-//            }
-//        }
+        if (teleOp == true) {
+            if (vision.allianceColor.equals("red")) {
+                setRequiredTagId(24);
+            } else if (vision.allianceColor.equals("blue")) {
+                setRequiredTagId(20);
+            }
+        }
     }
 
     @Override

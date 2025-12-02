@@ -344,6 +344,11 @@ public class Transfer implements Subsystem{
         if (isDetecting){
             desiredRotate = rotateOrder();
         }
+
+        if (colorDistance < 1.92){
+            colorTimer.reset();
+            ballDetected = true;
+        }
     }
 
 }
