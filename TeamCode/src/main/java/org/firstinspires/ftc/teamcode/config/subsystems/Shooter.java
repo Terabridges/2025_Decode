@@ -84,7 +84,6 @@ public class Shooter implements Subsystem {
     public double currentTurretPos;
     double upperLimit = 340;
     double lowerLimit = 30;
-
     public boolean hasDesiredTarget = false;
     public boolean teleOp = false;
 

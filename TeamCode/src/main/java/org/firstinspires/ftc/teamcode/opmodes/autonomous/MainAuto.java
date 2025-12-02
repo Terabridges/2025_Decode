@@ -72,8 +72,8 @@ class MainAuto extends OpMode {
     private int currentRowIndex = 0;
     private boolean stopRequested = false;
     private boolean preloadComplete = false;
-    private static final double SHOOT_ACTION_SECONDS = 1.0;
-    private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
+    private static final double SHOOT_ACTION_SECONDS = 10.0;
+    private static final double MOTIF_ACQUIRE_TIMEOUT = 2.0;
     private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
     private final ElapsedTime motifTimer = new ElapsedTime();
     private int acquiredMotifId = -1;
@@ -166,6 +166,7 @@ class MainAuto extends OpMode {
         telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
         telemetry.addData("current Tag seen", robot.vision.getCurrentTagId());
         telemetry.addData("required tag", robot.shooter.requiredTagId);
+        telemetry.addData("shooting action complete", shootingComplete);
 
         telemetryM.update(telemetry);
         telemetry.update();
@@ -249,7 +250,7 @@ class MainAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                .transition(() -> motifAcquiredOrTimedOut() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
+                .transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
@@ -259,8 +260,8 @@ class MainAuto extends OpMode {
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-                .transition(() -> (shootActionComplete() || stateTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> (shootActionComplete() || stateTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
+                .transition(() -> (shootActionComplete() || shootTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> (shootActionComplete() || shootTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
@@ -314,6 +315,11 @@ class MainAuto extends OpMode {
 
     private boolean stateTimedOut() {
         return stateTimer.seconds() >= STATE_TIMEOUT_SECONDS;
+    }
+
+    private boolean shootTimedOut()
+    {
+        return stateTimer.seconds() >= SHOOT_ACTION_SECONDS;
     }
 
     private int getCurrentShotIndex() {
@@ -504,7 +510,7 @@ class MainAuto extends OpMode {
         if (!preloadComplete && !shouldShootPreload()) {
             return true;
         }
-        return shootingComplete == true;
+        return shootingComplete;
 
         //TODO get a boolean from shooter subsystem
     }
@@ -666,23 +672,20 @@ class MainAuto extends OpMode {
         coarseTurretAimAt(getObeliskPose());
     }
 
-    /** Keep turret target refreshed while driving based on the active auto state. */
+    /** Keep turret target refreshed while driving */
     private void updateTurretAim() {
-        switch (activeState) {
-            case ACQUIRE_MOTIF:
-                coarseTurretAimAtObelisk();
-                break;
-            case GO_TO_SHOOT:
+        if (activeState == AutoStates.ACQUIRE_MOTIF) {
+            robot.shooter.useTurretLock = false;
+            coarseTurretAimAtObelisk();
+        }
+        else {
+            if (robot.shooter.hasDesiredTarget) {
+                robot.shooter.useTurretLock = true;
+            }
+            else {
+                robot.shooter.useTurretLock = false;
                 coarseTurretAimAtGoal();
-                break;
-            case COMPLETE_SHOOT:
-                if (robot != null && robot.shooter != null) {
-                    robot.shooter.useTurretLock = true; // enable vision lock while completing the shot
-                }
-                break;
-            default:
-                // no coarse aim updates needed
-                break;
+            }
         }
     }
 }

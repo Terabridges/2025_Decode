@@ -16,6 +16,13 @@ import com.pedropathing.geometry.Pose;
 @TeleOp(name = "TurretAimTester", group = "Test")
 public class TurretAimTester extends LinearOpMode {
 
+    private enum TargetLock {
+        NONE,
+        BLUE_GOAL,
+        RED_GOAL,
+        OBELISK
+    }
+
     @Override
     public void runOpMode() {
         Robot robot = new Robot(hardwareMap, telemetry);
@@ -29,10 +36,13 @@ public class TurretAimTester extends LinearOpMode {
 
         Gamepad gp = gamepad1;
         boolean prevStart = false;
-        boolean forceBlue = false;
+        boolean prevA = false;
+        boolean prevX = false;
+        boolean prevY = false;
+        TargetLock targetLock = TargetLock.NONE;
 
-        telemetry.addLine("Turret Aim Tester: A=Blue goal, Y=Red goal, X=Obelisk");
-        telemetry.addLine("B toggles Force Blue; START zeros pose to current");
+        telemetry.addLine("Turret Aim Tester: A=Toggle Blue goal, Y=Toggle Red goal, X=Toggle Obelisk");
+        telemetry.addLine("START zeros pose to current");
         telemetry.update();
 
         waitForStart();
@@ -40,39 +50,59 @@ public class TurretAimTester extends LinearOpMode {
         while (opModeIsActive()) {
             // Update follower pose (odometry)
             follower.update();
+            Pose pose = follower.getPose();
 
             if (gp.start && !prevStart) {
-                Pose current = follower.getPose();
-                follower.setStartingPose(current != null ? current : new Pose());
-            }
-            if (gp.b && !prevStart) {
-                forceBlue = !forceBlue;
+                follower.setStartingPose(pose != null ? pose : new Pose());
             }
 
-            if (forceBlue || gp.a) {
-                // Blue goal at (0, 144)
-                shooter.aimTurretAtFieldPose(
-                        follower.getPose().getX(),
-                        follower.getPose().getY(),
-                        follower.getPose().getHeading(),
-                        0,
-                        144);
-            } else if (gp.y) {
-                // Red goal at (144, 144)
-                shooter.aimTurretAtFieldPose(
-                        follower.getPose().getX(),
-                        follower.getPose().getY(),
-                        follower.getPose().getHeading(),
-                        144,
-                        144);
-            } else if (gp.x) {
-                // Obelisk placeholder at midfield top edge
-                shooter.aimTurretAtFieldPose(
-                        follower.getPose().getX(),
-                        follower.getPose().getY(),
-                        follower.getPose().getHeading(),
-                        72,
-                        144);
+            if (gp.a && !prevA) {
+                targetLock = targetLock == TargetLock.BLUE_GOAL ? TargetLock.NONE : TargetLock.BLUE_GOAL;
+            }
+            if (gp.y && !prevY) {
+                targetLock = targetLock == TargetLock.RED_GOAL ? TargetLock.NONE : TargetLock.RED_GOAL;
+            }
+            if (gp.x && !prevX) {
+                targetLock = targetLock == TargetLock.OBELISK ? TargetLock.NONE : TargetLock.OBELISK;
+            }
+
+            if (pose != null) {
+                switch (targetLock) {
+                    case BLUE_GOAL:
+                        // Blue goal at (0, 144)
+                        shooter.aimTurretAtFieldPose(
+                                pose.getX(),
+                                pose.getY(),
+                                pose.getHeading(),
+                                0,
+                                144);
+                        break;
+                    case RED_GOAL:
+                        // Red goal at (144, 144)
+                        shooter.aimTurretAtFieldPose(
+                                pose.getX(),
+                                pose.getY(),
+                                pose.getHeading(),
+                                144,
+                                144);
+                        break;
+                    case OBELISK:
+                        // Obelisk placeholder at midfield top edge
+                        shooter.aimTurretAtFieldPose(
+                                pose.getX(),
+                                pose.getY(),
+                                pose.getHeading(),
+                                72,
+                                144);
+                        break;
+                    case NONE:
+                        shooter.useTurretPID = false;
+                        shooter.useTurretLock = false;
+                        break;
+                }
+            } else {
+                shooter.useTurretPID = false;
+                shooter.useTurretLock = false;
             }
 
             // Simple mecanum field-agnostic drive for repositioning during test.
@@ -89,7 +119,7 @@ public class TurretAimTester extends LinearOpMode {
             shooter.update();
             robot.drive.update(); // keep drive motors idle/update states
 
-            Pose p = follower.getPose();
+            Pose p = pose;
             telemetry.addData("Turret Target", shooter.turretTargetDeg);
             telemetry.addData("Turret Pos", shooter.getTurretPos());
             if (p != null) {
@@ -98,10 +128,13 @@ public class TurretAimTester extends LinearOpMode {
                         p.getY(),
                         Math.toDegrees(p.getHeading()));
             }
-            telemetry.addData("Force Blue", forceBlue);
+            telemetry.addData("Target Lock", targetLock);
             telemetry.update();
 
             prevStart = gp.start;
+            prevA = gp.a;
+            prevX = gp.x;
+            prevY = gp.y;
         }
     }
 }
