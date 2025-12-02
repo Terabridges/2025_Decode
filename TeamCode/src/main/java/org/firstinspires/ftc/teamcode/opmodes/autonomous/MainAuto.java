@@ -204,34 +204,27 @@ class MainAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-//                .transition(() -> motifAcquiredOrTimedOut() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
-                .transition(this::stateTimedOut, AutoStates.GO_TO_SHOOT)
+                .transition(() -> motifAcquiredOrTimedOut() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
-//                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
-//                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
-                .transition(this::stateTimedOut, AutoStates.COMPLETE_SHOOT)
+                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-//                .transition(() -> (shootActionComplete() || stateTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-//                .transition(() -> (shootActionComplete() || stateTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
-                .transition(() -> stateTimedOut() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> stateTimedOut() && !shouldStartNextCycle(), AutoStates.LEAVE)
+                .transition(() -> (shootActionComplete() || stateTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> (shootActionComplete() || stateTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
-//                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_PICKUP)
-                .transition(this::stateTimedOut, AutoStates.COMPLETE_PICKUP)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_PICKUP)
 
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-//                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
-                .transition(() -> followerIdle() && hasPendingRows(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
-                .transition(() -> followerIdle() && !hasPendingRows(), AutoStates.LEAVE)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -545,11 +538,6 @@ class MainAuto extends OpMode {
     private Pose getObeliskPose() {
         // Placeholder: aim near the alliance goal area; update to the true obelisk location if different.
         return new Pose(72, 144, Math.toRadians(90));
-    }
-
-    /** Wraps an angle in degrees to [-180, 180). */
-    private double wrapDeg(double deg) {
-        return ((deg + 180) % 360 + 360) % 360 - 180;
     }
 
     /** Shared coarse aim helper to point turret from current pose toward a field target. */
