@@ -28,6 +28,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.opmodes.teleop.MainTeleop;
 
 class MainAuto extends OpMode {
 
@@ -44,14 +45,22 @@ class MainAuto extends OpMode {
     private Range lastScoreRangeUsed;
     private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD, LEAVE }
 
-    private enum ShootState { INIT, CLUTCHDOWN, SPIN, CLUTCHDOWNFAR }
-    private enum ClutchState { INIT, CLUTCHDOWN, CLUTCHUP }
+    public enum shootStates {
+        INIT,
+        PRESPIN,
+        CLUTCHDOWN,
+        WAIT1,
+        SPIN,
+        SPIN1,
+        SPIN2,
+        SPIN3,
+        WAIT2
+    }
 
     //State machine
     private StateMachine autoMachine;
     private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
     private StateMachine shootAllMachine;
-    private StateMachine clutchSuperMachine;
 
     //Robot and subsystems
     private Robot robot;
@@ -69,6 +78,8 @@ class MainAuto extends OpMode {
     private int acquiredMotifId = -1;
     private static final int MAX_ROWS = 4;
     private final ElapsedTime stateTimer = new ElapsedTime();
+
+    boolean startShooting = false;
 
     MainAuto(Alliance alliance, Range range, Mode mode) {
         this(alliance, range, mode, ShotPlan.ALL_SELECTED);
@@ -90,7 +101,6 @@ class MainAuto extends OpMode {
         robot.drive.manualDrive = false;
 
         shootAllMachine = getShootAllMachine(robot);
-        clutchSuperMachine = getClutchSuperMachine(robot);
 
         autoMachine = buildAutoMachine();
 
@@ -332,8 +342,10 @@ class MainAuto extends OpMode {
 
         stateTimer.reset();
 
-        //TODO Call shoot method here
+        startShooting = true;
     }
+
+
 
     private void onExitCompleteShoot() {
         if (!preloadComplete) {
@@ -342,7 +354,6 @@ class MainAuto extends OpMode {
         } else {
             rowsCompleted = Math.min(rowsCompleted + 1, MAX_ROWS);
         }
-        //TODO Call end shoot method here
     }
 
     private void onEnterGoToPickup() {
@@ -467,67 +478,80 @@ class MainAuto extends OpMode {
         Transfer transfer = robot.transfer;
         Intake intake = robot.intake;
         return new StateMachineBuilder()
-                .state(ShootState.INIT)
-                .transition(()->(true), ShootState.CLUTCHDOWN)
+                .state(shootStates.INIT)
+                .transition(()->(startShooting), shootStates.PRESPIN)
 
-                .state(ShootState.CLUTCHDOWN)
+                .state(shootStates.PRESPIN)
                 .onEnter(()-> {
+                    startShooting = false;
                     intake.spinnerMacro = true;
-                    transfer.setClutchDown();
                     intake.spinnerMacroTarget = 0.95;
                     shooter.shooterShoot = true;
                     transfer.isDetecting = false;
+                    if(transfer.desiredRotate == 1){
+                        transfer.ballLeft();
+                    } else if (transfer.desiredRotate == 2){
+                        transfer.ballRight();
+                    }
                 })
-                .transitionTimed(0.5, ShootState.SPIN)
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN)
+                .transitionTimed(2, shootStates.CLUTCHDOWN)
 
-                .state(ShootState.SPIN)
+                .state(shootStates.CLUTCHDOWN)
                 .onEnter(()-> {
-                    transfer.ballRight();
-                    transfer.ballRight();
-                    transfer.ballRightSmall();
+                    transfer.max = 0.275;
+                    transfer.setClutchBarelyDown();
                 })
-                .transitionTimed(3.2, ShootState.CLUTCHDOWNFAR)
+                .transitionTimed(0.1, shootStates.WAIT1)
 
-                .state(ShootState.CLUTCHDOWNFAR)
-                .onEnter(()-> {
-                    transfer.setClutchDownFar();
+                .state(shootStates.WAIT1)
+                .transition(()-> shooter.isFarShot(), shootStates.SPIN1)
+                .transition(() -> !shooter.isFarShot(), shootStates.SPIN)
+
+                .state(shootStates.SPIN)
+                .onEnter(()->{
+                    transfer.max = 0.25;
+                    transfer.ballLeft();
+                    transfer.ballLeft();
                 })
-                .transitionTimed(1.5, ShootState.INIT)
-                .onExit(()-> {
+                .transition(()-> transfer.spindexAtTarget(), shootStates.SPIN3)
+                .transitionTimed(3, shootStates.SPIN3)
+
+                .state(shootStates.SPIN1)
+                .onEnter(()-> {
+                    transfer.ballLeft();
+                })
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN2)
+                .transitionTimed(2, shootStates.SPIN2)
+
+                .state(shootStates.SPIN2)
+                .onEnter(()-> {
+                    transfer.ballLeft();
+                })
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.SPIN3)
+                .transitionTimed(2, shootStates.SPIN3)
+
+                .state(shootStates.SPIN3)
+                .onEnter(()-> {
+                    transfer.max = 0.275;
+                    transfer.ballLeftSmall();
+                })
+                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.WAIT2)
+                .transitionTimed(2, shootStates.WAIT2)
+                .onExit(()-> transfer.setClutchDownFar())
+
+                .state(shootStates.WAIT2)
+                .transitionTimed(0.7, shootStates.INIT)
+                .onExit(()->{
                     transfer.setClutchUp();
+                    transfer.ballRightSmall();
                     intake.spinnerMacroTarget = 0;
                     shooter.shooterShoot = false;
                     transfer.isDetecting = true;
-                    transfer.ballLeftSmall();
                     transfer.emptyBalls();
                     intake.spinnerMacro = false;
+                    transfer.max = 0.4;
                 })
-
-                .build();
-    }
-
-    public StateMachine getClutchSuperMachine (Robot robot){
-        Transfer transfer = robot.transfer;
-        Intake intake = robot.intake;
-        return new StateMachineBuilder()
-                .state(ClutchState.INIT)
-                .transition(()->(true), ClutchState.CLUTCHDOWN)
-
-                .state(ClutchState.CLUTCHDOWN)
-                .onEnter(()-> {
-                    intake.spinnerMacro = true;
-                    intake.spinnerMacroTarget = 0.95;
-                    transfer.setClutchDownFar();
-                })
-                .transitionTimed(1.2, ClutchState.CLUTCHUP)
-
-                .state(ClutchState.CLUTCHUP)
-                .onEnter(()->{
-                    intake.spinnerMacro = false;
-                    intake.spinnerMacroTarget = 0;
-                    transfer.setClutchUp();
-                })
-                .transitionTimed(0.2, ClutchState.INIT)
 
                 .build();
     }
