@@ -235,7 +235,7 @@ public class Shooter implements Subsystem {
         error2 = errorDeg;
         turretPower2 = turretController.calculate(error2, 0.0); // drive error to zero
         turretPower2 = util.clamp(turretPower2, -maxPow2, maxPow2);
-        return -turretPower2;
+        return turretPower2;
     }
 
     boolean pastPosLimit() {

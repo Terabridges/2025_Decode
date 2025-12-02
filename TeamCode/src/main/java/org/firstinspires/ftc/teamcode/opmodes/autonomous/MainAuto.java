@@ -73,13 +73,14 @@ class MainAuto extends OpMode {
     private boolean preloadComplete = false;
     private static final double SHOOT_ACTION_SECONDS = 1.0;
     private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
-    private static final double STATE_TIMEOUT_SECONDS = 2.0; // fallback: force state advance after this time
+    private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
     private final ElapsedTime motifTimer = new ElapsedTime();
     private int acquiredMotifId = -1;
     private static final int MAX_ROWS = 4;
     private final ElapsedTime stateTimer = new ElapsedTime();
 
     boolean startShooting = false;
+    boolean shootingComplete = false;
 
     MainAuto(Alliance alliance, Range range, Mode mode) {
         this(alliance, range, mode, ShotPlan.ALL_SELECTED);
@@ -146,10 +147,14 @@ class MainAuto extends OpMode {
 
         robot.update();
         autoMachine.update();
+        shootAllMachine.update();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetry.addData("Auto Action", getActionMessage());
         telemetry.addData("State Time", "%.2f", stateTimer.seconds());
+        telemetry.addData("Current Motif ID", acquiredMotifId);
+        telemetry.addData("Start Shoot?", startShooting);
+        telemetry.addData("End Shoot?", shootingComplete);
         telemetryM.update(telemetry);
         telemetry.update();
 
@@ -269,7 +274,9 @@ class MainAuto extends OpMode {
     private boolean motifAcquiredOrTimedOut() {
         boolean acquired = false;
         if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
-            acquired = robot.shooter.vision.hasTarget();
+            if ( (robot.shooter.vision.getCurrentTagId() == 21) || (robot.shooter.vision.getCurrentTagId() == 22) || (robot.shooter.vision.getCurrentTagId() == 23) ) {
+                acquired = robot.shooter.vision.hasTarget();
+            }
         }
         return acquired || motifTimer.seconds() >= MOTIF_ACQUIRE_TIMEOUT;
     }
@@ -366,6 +373,7 @@ class MainAuto extends OpMode {
         } else {
             rowsCompleted = Math.min(rowsCompleted + 1, MAX_ROWS);
         }
+        shootingComplete = false;
     }
 
     private void onEnterGoToPickup() {
@@ -471,7 +479,7 @@ class MainAuto extends OpMode {
         if (!preloadComplete && !shouldShootPreload()) {
             return true;
         }
-        return stateTimer.seconds() >= SHOOT_ACTION_SECONDS;
+        return shootingComplete == true;
 
         //TODO get a boolean from shooter subsystem
     }
@@ -589,6 +597,7 @@ class MainAuto extends OpMode {
                     transfer.emptyBalls();
                     intake.spinnerMacro = false;
                     transfer.max = 0.4;
+                    shootingComplete = true;
                 })
 
                 .build();
