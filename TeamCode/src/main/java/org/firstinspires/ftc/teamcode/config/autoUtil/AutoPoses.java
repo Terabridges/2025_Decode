@@ -76,8 +76,9 @@ public class AutoPoses {
     // ========================
     // LEAVE POSES
     // ========================
-    public Pose leaveCB = poseDeg(48, 36, 90);
-    public Pose leaveLB = poseDeg(36, 84, 90);
+    // Close-side park is nearer the scoring area; long-side park is farther.
+    public Pose leaveCB = poseDeg(36, 84, 90);
+    public Pose leaveLB = poseDeg(48, 36, 90);
     public Pose leaveCR = Mirror(leaveCB);
     public Pose leaveLR = Mirror(leaveLB);
 

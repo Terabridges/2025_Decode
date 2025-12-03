@@ -56,6 +56,11 @@ public class Shooter implements Subsystem {
     public boolean useTurretPID = false;
     public boolean shooterShoot = false;
     public boolean manualTurret = false;
+    private double prevFlywheelVel = 0.0;
+    private long prevFlywheelTimeNs = System.nanoTime();
+    private double kFlywheelAccelFF = 1e-6; // scales flywheel accel (ticks/s^2) into turret power
+    private double flywheelAccelThreshold = 1000.0;
+    private double filteredTx = 0.0;
 
     // Hood smoothing
     private double filteredHood = 0.0;
@@ -64,9 +69,9 @@ public class Shooter implements Subsystem {
 
     //---------PID------
     public PIDController turretLockController;
-    double p1 = 0.005, i1 = 0.012, d1 = 0.0;
+    double p1 = 0.005, i1 = 0.01, d1 = 0.002;
     double inteTolerance1 = 8.0;
-    double deadband1 = 0;
+    double deadband1 = 0.6;
     double maxPow1 = 0.14;
     public double turretPower1, error1;
     double lowThresh = 0.01;
@@ -220,7 +225,7 @@ public class Shooter implements Subsystem {
 
     public double setTurretLockPID(double targetAngle) {
         turretLockController.setPID(p1, i1, d1);
-        error1 = vision.getTx();
+        error1 = targetAngle;
         if (Math.abs(error1) < deadband1) error1 = 0.0;
         turretPower1 = turretLockController.calculate(error1, targetAngle);
         turretPower1 = util.clamp(turretPower1, -maxPow1, maxPow1);
@@ -336,7 +341,8 @@ public class Shooter implements Subsystem {
     }
 
     public boolean isFarShot(){
-        return (vision.getDistanceInches() > 90);
+        //return (vision.getDistanceInches() > 90);
+        return true;
     }
 
     //---------------- Interface Methods ----------------!
@@ -355,6 +361,8 @@ public class Shooter implements Subsystem {
     public void update() {
 
         hasDesiredTarget = vision != null && vision.hasTarget() && (requiredTagId < 0 || vision.getCurrentTagId() == requiredTagId);
+        double flywheelFF = getFlywheelAccelFF();
+        double filteredTxVal = getFilteredTx();
 
         // Turret control priority: manual -> lock -> PID -> idle
         if (manualTurret) {
@@ -374,7 +382,10 @@ public class Shooter implements Subsystem {
                 setTurretPower(0);
             }
         } else if (useTurretLock && hasDesiredTarget) {
-            double lockPower = setTurretLockPID(0.0);
+            double lockPower = setTurretLockPID(filteredTxVal) + flywheelFF;
+            if (Math.abs(filteredTxVal) < 3.0) {
+                lockPower *= 0.5;
+            }
             double pos = getTurretPos();
             if (lockPower > 0) {
                 if (pos <= lowerLimit) {
@@ -435,5 +446,28 @@ public class Shooter implements Subsystem {
         }
 
         light.setPosition(getColorPWN(lightColor));
+    }
+
+    private double getFilteredTx() {
+        double raw = (vision != null) ? vision.getTx() : 0.0;
+        // simple low-pass filter to reduce jitter
+        filteredTx = 0.7 * filteredTx + 0.3 * raw;
+        return filteredTx;
+    }
+
+    private double getFlywheelAccelFF() {
+        long now = System.nanoTime();
+        double dt = (now - prevFlywheelTimeNs) / 1e9;
+        double vel = getShooterVel();
+        double accel = 0.0;
+        if (dt > 1e-4) {
+            accel = (vel - prevFlywheelVel) / dt;
+        }
+        prevFlywheelVel = vel;
+        prevFlywheelTimeNs = now;
+        if (!shooterShoot || Math.abs(accel) < flywheelAccelThreshold) {
+            return 0.0;
+        }
+        return kFlywheelAccelFF * accel;
     }
 }

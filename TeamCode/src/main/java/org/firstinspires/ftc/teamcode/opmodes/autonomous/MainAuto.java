@@ -36,6 +36,7 @@ class MainAuto extends OpMode {
     public Pose startPose;
     private final AutoPoses ap = new AutoPoses();
     private PathChain GoToPickup, Pickup, GoToScore, GoToLoad, LeavePath, ReleaseGoToPath, ReleaseCompletePath;
+    double intakeSpeed = 0.25;
 
     //Enums
     private final Alliance alliance;
@@ -460,7 +461,7 @@ class MainAuto extends OpMode {
 
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
-        followPath(Pickup, 0.215);
+        followPath(Pickup, intakeSpeed);
     }
 
     private void onExitCompletePickup() {
