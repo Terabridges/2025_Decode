@@ -81,9 +81,11 @@ class MainAuto extends OpMode {
     private int acquiredMotifId = -1;
     private static final int MAX_ROWS = 4;
     private final ElapsedTime stateTimer = new ElapsedTime();
+    private final ElapsedTime shotDelayTimer = new ElapsedTime();
 
     boolean startShooting = false;
     boolean shootingComplete = false;
+    private double shotDelaySeconds = 0.5;
 
     MainAuto(Alliance alliance, Range range, Mode mode) {
         this(alliance, range, mode, ShotPlan.ALL_SELECTED);
@@ -165,16 +167,17 @@ class MainAuto extends OpMode {
         shootAllMachine.update();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
-        telemetry.addData("Auto Action", getActionMessage());
-        telemetry.addData("State Time", "%.2f", stateTimer.seconds());
-        telemetry.addData("Current Motif ID", acquiredMotifId);
-        telemetry.addData("Target RPM", robot.shooter.targetRPM);
-        telemetry.addData("Current RPM", robot.shooter.getShooterRPM());
-        telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
-        telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
-        telemetry.addData("Ball List", robot.transfer.balls);
-        telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
-        telemetry.addData("Vision Error", robot.vision.getTx());
+        telemetryM.debug("Auto Action", getActionMessage());
+        telemetryM.debug("State Time", "%.2f", stateTimer.seconds());
+        telemetryM.debug("Current Row", currentRowIndex);
+        telemetryM.debug("Current Motif ID", acquiredMotifId);
+        telemetryM.debug("Target RPM", robot.shooter.targetRPM);
+        telemetryM.debug("Current RPM", robot.shooter.getShooterRPM());
+        telemetryM.debug("Sees desired tag?", robot.shooter.hasDesiredTarget);
+        telemetryM.debug("Turret Lock", robot.shooter.useTurretLock);
+        telemetryM.debug("Ball List", robot.transfer.balls);
+        telemetryM.debug("Shoot Order Number", robot.transfer.rotateOrder());
+        telemetryM.debug("Vision Error", robot.vision.getTx());
 
         telemetryM.update(telemetry);
         telemetry.update();
@@ -342,8 +345,7 @@ class MainAuto extends OpMode {
         return Math.min(idx, 4); // clamp to known rows
     }
 
-    private Range getScoreRangeForCurrentShot() {
-        int shotIndex = getCurrentShotIndex();
+    private Range getScoreRangeForShotIndex(int shotIndex) {
         if (shotPlan == ShotPlan.CLOSEST_POINT) {
             boolean useClose;
             if (range == Range.LONG_RANGE) {
@@ -355,6 +357,27 @@ class MainAuto extends OpMode {
             return useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
         }
         return range;
+    }
+
+    private Range getScoreRangeForCurrentShot() {
+        int shotIndex = getCurrentShotIndex();
+        return getScoreRangeForShotIndex(shotIndex);
+    }
+
+    /**
+     * Range selection specifically for leave/park. For closest-point plans that switch to a close
+     * shot late in a far-start run, choose leave based on the last field row shot.
+     */
+    private Range getLeaveRangeForShotIndex(int shotIndex) {
+        if (shotPlan == ShotPlan.ALL_SELECTED) {
+            return range;
+        }
+        if (range == Range.LONG_RANGE) {
+            // Far start: rows 0-2 leave long, rows 3-4 leave close.
+            return (shotIndex <= 2) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
+        }
+        // Close start: rows 0-2 leave close, rows 3-4 leave long.
+        return (shotIndex <= 2) ? Range.CLOSE_RANGE : Range.LONG_RANGE;
     }
 
     private Pose getScorePoseForCurrentShot() {
@@ -403,6 +426,7 @@ class MainAuto extends OpMode {
         setActiveState(AutoStates.COMPLETE_SHOOT);
 
         stateTimer.reset();
+        shotDelayTimer.reset();
 
         startShooting = true;
     }
@@ -436,7 +460,7 @@ class MainAuto extends OpMode {
 
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
-        followPath(Pickup, 0.225);
+        followPath(Pickup, 0.215);
     }
 
     private void onExitCompletePickup() {
@@ -466,6 +490,9 @@ class MainAuto extends OpMode {
 
         stateTimer.reset();
 
+        // Park based on the range last used to score; fall back to the initially selected range.
+        int lastShotIdx = preloadComplete ? mapRowIndex(Math.max(0, rowsCompleted - 1)) : 0;
+        lastScoreRangeUsed = getLeaveRangeForShotIndex(lastShotIdx);
         buildPath(PathRequest.LEAVE);
         followPath(LeavePath);
     }
@@ -572,7 +599,7 @@ class MainAuto extends OpMode {
         Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(()->(startShooting && shooter.hasDesiredTarget), shootStates.PRESPIN)
+                .transition(() -> (startShooting && shooter.hasDesiredTarget && shotDelayTimer.seconds() >= shotDelaySeconds), shootStates.PRESPIN)
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {

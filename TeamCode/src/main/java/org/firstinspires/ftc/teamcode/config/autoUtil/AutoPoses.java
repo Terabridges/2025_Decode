@@ -51,7 +51,7 @@ public class AutoPoses {
     // ========================
     // SCORE POSES
     // ========================
-    public Pose scoreCB = poseDeg(48, 96, 120);
+    public Pose scoreCB = poseDeg(48, 96, 80);
     public Pose scoreLB = poseDeg(48 + robotWidth/2, 16, 210);
     public Pose scoreCR = Mirror(scoreCB);
     public Pose scoreLR = Mirror(scoreLB);
