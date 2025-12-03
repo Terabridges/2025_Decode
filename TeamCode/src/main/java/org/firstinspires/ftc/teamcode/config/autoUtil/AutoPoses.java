@@ -51,7 +51,7 @@ public class AutoPoses {
     // ========================
     // SCORE POSES
     // ========================
-    public Pose scoreCB = poseDeg(48, 96, 180);
+    public Pose scoreCB = poseDeg(48, 96, 120);
     public Pose scoreLB = poseDeg(48 + robotWidth/2, 16, 210);
     public Pose scoreCR = Mirror(scoreCB);
     public Pose scoreLR = Mirror(scoreLB);
@@ -114,7 +114,7 @@ public class AutoPoses {
     // ========================
     // PICKUP END POSES
     // ========================
-    double intakeEnd = 26;
+    double intakeEnd = 24.5;
 
     // Row 1
     public Pose pick1EndLB = poseDeg(16, 16 + offset, 180); //TODO fix this

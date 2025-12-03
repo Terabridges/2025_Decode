@@ -37,11 +37,11 @@ public class ShooterData {
         RPMLUT.add( 72.47,4000); //4100
         RPMLUT.add( 72.5 ,4000); //4100
         RPMLUT.add( 83.7 ,4000); //4200
-        RPMLUT.add( 122.5,4850); //5400
-        RPMLUT.add( 123.5,4850); //5400
-        RPMLUT.add( 126.7,4900); //5400
-        RPMLUT.add( 141  ,5100); //4880
-        RPMLUT.add(maxDistance, 5100); //4900
+        RPMLUT.add( 122.5,4675); //5400
+        RPMLUT.add( 123.5,4675); //5400
+        RPMLUT.add( 126.7,4715); //5400
+        RPMLUT.add( 141  ,5000); //4880
+        RPMLUT.add(maxDistance, 5000); //4900
     }
 
     private void addAngleData(){
@@ -56,12 +56,12 @@ public class ShooterData {
         AngleLUT.add( 44.2 ,0.4);
         AngleLUT.add( 52.67,0.5);
         AngleLUT.add( 53.7 ,0.5);
-        AngleLUT.add( 61.4 ,0.6);
-        AngleLUT.add( 63.9 ,0.6);
-        AngleLUT.add( 67.4 ,0.6);
-        AngleLUT.add( 72.47,0.6);
-        AngleLUT.add( 72.5 ,0.6); //7
-        AngleLUT.add( 83.7 ,0.65); //7
+        AngleLUT.add( 61.4 ,0.5);
+        AngleLUT.add( 63.9 ,0.525);
+        AngleLUT.add( 67.4 ,0.55);
+        AngleLUT.add( 72.47,0.55);
+        AngleLUT.add( 72.5 ,0.55); //7
+        AngleLUT.add( 83.7 ,0.6); //7
         AngleLUT.add( 122.5,0.7);
         AngleLUT.add( 123.5,0.7); //7
         AngleLUT.add( 126.7,0.7); //9 //8

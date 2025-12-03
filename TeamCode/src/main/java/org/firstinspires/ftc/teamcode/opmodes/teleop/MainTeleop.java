@@ -309,7 +309,7 @@ public class MainTeleop extends LinearOpMode {
 
                 .state(shootStates.SPIN)
                 .onEnter(()->{
-                    transfer.max = 0.25;
+                    transfer.max = 0.2;
                     transfer.ballLeft();
                     transfer.ballLeft();
                 })
@@ -386,7 +386,7 @@ public class MainTeleop extends LinearOpMode {
                     transfer.isDetecting = false;
                 })
                 .transition(()->transfer.spindexAtTarget() && shooter.isAtRPM(), clutchStates.CLUTCHDOWN)
-                .transitionTimed(2, clutchStates.CLUTCHDOWN)
+                .transitionTimed(spinUpTimeout, clutchStates.CLUTCHDOWN)
 
                 .state(clutchStates.CLUTCHDOWN)
                 .onEnter(()-> {

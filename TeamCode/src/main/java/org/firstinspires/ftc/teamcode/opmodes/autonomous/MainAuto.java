@@ -436,7 +436,7 @@ class MainAuto extends OpMode {
 
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
-        followPath(Pickup, 0.3);
+        followPath(Pickup, 0.225);
     }
 
     private void onExitCompletePickup() {
@@ -603,7 +603,7 @@ class MainAuto extends OpMode {
 
                 .state(shootStates.SPIN)
                 .onEnter(()->{
-                    transfer.max = 0.25;
+                    transfer.max = 0.2;
                     transfer.ballLeft();
                     transfer.ballLeft();
                 })

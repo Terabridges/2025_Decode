@@ -64,12 +64,13 @@ public class Shooter implements Subsystem {
 
     //---------PID------
     public PIDController turretLockController;
-    double p1 = 0.022, i1 = 0.01, d1 = 0.0;
-    double posTolerance1 = 1.2;
-    double inteTolerance1 = 6.0;
+    double p1 = 0.005, i1 = 0.012, d1 = 0.0;
+    double inteTolerance1 = 8.0;
     double deadband1 = 0;
-    double maxPow1 = 0.135;
+    double maxPow1 = 0.14;
     public double turretPower1, error1;
+    double lowThresh = 0.01;
+    double minPow = 0.07;
 
     public PIDController turretController;
     double p2 = 0.006, i2 = 0.005, d2 = 0.0;
@@ -110,7 +111,6 @@ public class Shooter implements Subsystem {
 
         turretLockController = new PIDController(p1, i1, d1);
         turretLockController.setIntegrationBounds(-inteTolerance1, inteTolerance1);
-        turretLockController.setTolerance(posTolerance1);
 
         turretController = new PIDController(p2, i2, d2);
         turretController.setIntegrationBounds(-inteTolerance2, inteTolerance2);
@@ -224,6 +224,15 @@ public class Shooter implements Subsystem {
         if (Math.abs(error1) < deadband1) error1 = 0.0;
         turretPower1 = turretLockController.calculate(error1, targetAngle);
         turretPower1 = util.clamp(turretPower1, -maxPow1, maxPow1);
+        if (turretPower1 > lowThresh){
+            if (turretPower1 < minPow){
+                turretPower1 = minPow;
+            }
+        } else if (turretPower1 < -lowThresh){
+            if (turretPower1 > -minPow){
+                turretPower1 = -minPow;
+            }
+        }
         return turretPower1;
     }
 

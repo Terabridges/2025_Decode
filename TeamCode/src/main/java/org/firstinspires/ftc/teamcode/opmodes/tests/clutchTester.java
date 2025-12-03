@@ -49,9 +49,9 @@ public class clutchTester extends LinearOpMode {
     }
 
 
-    //Up: 0.2
-    //Down: 0.4
-    //Really Down: 0.875
-    //barely down: 0.32
+    //Up: 0.05
+    //Down: 0.45
+    //Really Down: 0.9
+    //barely down: 0.35
 
 }
