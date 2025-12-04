@@ -30,13 +30,17 @@ public class Robot {
 
     //---------------- Constructors ----------------
     public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2){
+        this(hardwareMap, telemetry, gp1, gp2, false);
+    }
+
+    public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2, boolean autoMode){
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
 
         vision = new Vision(hardwareMap);
         drive = new Drive(hardwareMap);
         intake = new Intake(hardwareMap);
-        shooter = new Shooter(hardwareMap, vision);
+        shooter = autoMode ? new ShooterAuto(hardwareMap, vision) : new Shooter(hardwareMap, vision);
         transfer = new Transfer(hardwareMap);
 
         subsystems = new ArrayList<>(Arrays.asList(drive, intake, shooter, transfer, vision));
@@ -47,7 +51,11 @@ public class Robot {
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
     public Robot(HardwareMap hardwareMap, Telemetry telemetry){
-        this(hardwareMap, telemetry, null, null);
+        this(hardwareMap, telemetry, null, null, false);
+    }
+
+    public Robot(HardwareMap hardwareMap, Telemetry telemetry, boolean autoMode){
+        this(hardwareMap, telemetry, null, null, autoMode);
     }
 
     //---------------- Interface Methods ----------------

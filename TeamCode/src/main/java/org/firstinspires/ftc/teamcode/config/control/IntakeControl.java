@@ -14,7 +14,11 @@ public class IntakeControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector toggleRaiser = new EdgeDetector( () -> intake.toggleUseRaiser());
+    EdgeDetector IntakeInRE = new EdgeDetector( () -> intake.spinnerIn());
+    EdgeDetector IntakeInFE = new EdgeDetector( () -> intake.spinnerZero(), true);
+    EdgeDetector IntakeOutRE = new EdgeDetector( () -> intake.spinnerOut());
+    EdgeDetector IntakeOutFE = new EdgeDetector( () -> intake.spinnerZero(), true);
+
 
     //---------------- Constructor ----------------
     public IntakeControl(Intake intake, Gamepad gp1, Gamepad gp2){
@@ -35,15 +39,10 @@ public class IntakeControl implements Control {
     @Override
     public void update(){
 
-        if(gp1.left_trigger > 0){
-            intake.spinnerIn();
-        } else if (gp1.right_trigger > 0){
-            intake.spinnerOut();
-        } else {
-            intake.spinnerZero();
-        }
-
-        //toggleRaiser.update(gp1.a);
+        IntakeInRE.update(gp1.left_bumper);
+        IntakeInFE.update(gp1.left_bumper);
+        IntakeOutRE.update(gp1.right_bumper);
+        IntakeOutFE.update(gp1.right_bumper);
 
     }
 

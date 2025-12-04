@@ -1,39 +1,40 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import android.provider.Settings;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class Vision implements Subsystem{
 
     //---------------- Hardware ----------------
     //public NormalizedColorSensor ballInspector;
     public Limelight3A limelight;
-    public GoBildaPinpointDriver pinpoint;
 
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
+    public String allianceColor = GlobalVariables.allianceColor;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
         //ballInspector = map.get(NormalizedColorSensor.class, "ball_inspector");
         limelight = map.get(Limelight3A.class, "limelight");
-        pinpoint =  map.get(GoBildaPinpointDriver.class, "pinpoint");
     }
 
     //---------------- Methods ----------------
+
+
     private void limelightInit(){
         limelight.setPollRateHz(100);
         limelight.pipelineSwitch(currentPipeline);
@@ -73,17 +74,6 @@ public class Vision implements Subsystem{
             return -1;
         }
         return latest.getFiducialResults().get(0).getFiducialId();
-    }
-
-    private void pinpointInit(){
-        pinpoint.setOffsets(5.70866, -1.527559, DistanceUnit.INCH);
-        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        pinpoint.resetPosAndIMU();
-    }
-
-    private void pinpointUpdate(){
-        pinpoint.update();
     }
 
     public double getDistanceInches()
@@ -155,13 +145,11 @@ public class Vision implements Subsystem{
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-        pinpointInit();
         limelightInit();
     }
 
     @Override
     public void update(){
-        pinpointUpdate();
         limelightUpdate();
     }
 }

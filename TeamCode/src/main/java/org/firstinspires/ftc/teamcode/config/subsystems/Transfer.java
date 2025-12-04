@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Transfer implements Subsystem{
@@ -21,12 +22,12 @@ public class Transfer implements Subsystem{
 
     //---------------- Software ----------------
     public boolean useSpindexPID = true;
-    double spindexManualPow = 0;
+    public double spindexManualPow = 0;
     public boolean isClutchDown = false;
-    double clutchUp = 0.42;
-    double clutchBarelyDown = 0.55;
-    double clutchDown = 0.62;
-    double clutchDownFar = 0.95;
+    double clutchUp = 0.05;
+    double clutchBarelyDown = 0.35;
+    double clutchDown = 0.45;
+    double clutchDownFar = 0.82;
     int ball = 180;
 
     PIDController spindexController;
@@ -34,8 +35,8 @@ public class Transfer implements Subsystem{
     double posTolerance = 5;
     double inteTolerance = 5;
     double spindexPow = 0.0;
-    double spindexTarget = 0.0;
-    double max = 0.4;
+    public double spindexTarget = 0.0;
+    public double max = 0.4;
 
     NormalizedRGBA colors;
     float red;
@@ -54,7 +55,9 @@ public class Transfer implements Subsystem{
 
     public ElapsedTime colorTimer = new ElapsedTime();
 
-    public String motif = "PPG";
+    public String motif = GlobalVariables.motif;
+    public int desiredRotate = 1;
+    public boolean isRed = false;
 
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
@@ -140,7 +143,7 @@ public class Transfer implements Subsystem{
         if(!useSpindexPID){
             return false;
         } else {
-            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 6);
+            return (Math.abs(spindexTarget - spindex.getCurrentPosition()) < 7);
         }
     }
 
@@ -151,6 +154,11 @@ public class Transfer implements Subsystem{
 
     public void setClutchDownFar(){
         clutch.setPosition(clutchDownFar);
+        isClutchDown = true;
+    }
+
+    public void setClutchBarelyDown(){
+        clutch.setPosition(clutchBarelyDown);
         isClutchDown = true;
     }
 
@@ -213,7 +221,7 @@ public class Transfer implements Subsystem{
         }
 
         if(ballDetected){
-            if (colorTimer.seconds() > 0.04){
+            if (colorTimer.seconds() > 0.03){
                 if (green > red && green > blue){
                     ballColor = "green";
                 } else {
@@ -221,19 +229,97 @@ public class Transfer implements Subsystem{
                 }
             }
         }
+
+        if (red > green && red > blue){
+            isRed = true;
+        } else {
+            isRed = false;
+        }
     }
 
+    //1 is left, 2 is right, 3 is skip one left then left, 4 is skip one right then right, 5 is skip one left then right
+//    public int rotateOrder(){
+//        if (motif.equals("PPG")){
+//            if(balls.equals("PPG")){
+//                return 2;
+//            } else if (balls.equals("GPP")){
+//                return 1;
+//            } else if (balls.equals("PGP")){
+//                return 4;
+//            }
+//        } else if (motif.equals("GPP")){
+//            if(balls.equals("PPG")){
+//                return 3;
+//            } else if (balls.equals("GPP")){
+//                return 4;
+//            } else if (balls.equals("PGP")){
+//                return 2;
+//            }
+//        } else if (motif.equals("PGP")){
+//            if(balls.equals("PPG")){
+//                return 1;
+//            } else if (balls.equals("GPP")){
+//                return 2;
+//            } else if (balls.equals("PGP")){
+//                return 5;
+//            }
+//        }
+//        return 2;
+//    }
+    //0 is no rotate, 1 is rotate left, 2 is rotate right
     public int rotateOrder(){
         if (motif.equals("PPG")){
             if(balls.equals("PPG")){
+                return 1;
+            } else if (balls.equals("GPP")){
+                return 2;
+            } else if (balls.equals("PGP")){
                 return 0;
             }
+        } else if (motif.equals("GPP")){
+            if(balls.equals("PPG")){
+                return 0;
+            } else if (balls.equals("GPP")){
+                return 1;
+            } else if (balls.equals("PGP")){
+                return 2;
+            }
+        } else if (motif.equals("PGP")){
+            if(balls.equals("PPG")){
+                return 2;
+            } else if (balls.equals("GPP")){
+                return 0;
+            } else if (balls.equals("PGP")){
+                return 1;
+            }
         }
-        return -1;
+        return 0;
     }
 
     public void toggleAutoIntake(){
         autoIntake = !autoIntake;
+    }
+
+    public void updateTwoBall(){
+        if(balls.equals("PEG")){
+            ballList[1] = "P";
+        } else if (balls.equals("GEP")){
+            ballList[1] = "P";
+        } else if (balls.equals("PEP")){
+            ballList[1] = "G";
+        } else if(balls.equals("EPG")){
+            ballList[0] = "P";
+        } else if (balls.equals("EGP")){
+            ballList[0] = "P";
+        } else if (balls.equals("EPP")){
+            ballList[0] = "G";
+        } else if(balls.equals("PGE")){
+            ballList[2] = "P";
+        } else if (balls.equals("GPE")){
+            ballList[2] = "P";
+        } else if (balls.equals("PPE")){
+            ballList[2] = "G";
+        }
     }
 
     //---------------- Interface Methods ----------------
@@ -241,6 +327,7 @@ public class Transfer implements Subsystem{
     public void toInit(){
         setClutchUp();
         spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
     }
 
     @Override
@@ -278,6 +365,10 @@ public class Transfer implements Subsystem{
         }
 
         balls = ballList[0] + ballList[1] + ballList[2];
+        if (isDetecting){
+            desiredRotate = rotateOrder();
+            updateTwoBall();
+        }
     }
 
 }

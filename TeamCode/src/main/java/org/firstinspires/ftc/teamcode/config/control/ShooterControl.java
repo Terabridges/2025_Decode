@@ -38,6 +38,16 @@ public class ShooterControl implements Control {
     public void update(){
         turretLockToggle.update(gp1.dpad_up);
         toggleShooter.update(gp1.y);
+        if (gp1.right_trigger > 0.05){
+            shooter.manualTurret = true;
+            shooter.turretManualPow = gp1.right_trigger/2;
+        } else if (gp1.left_trigger > 0.05){
+            shooter.manualTurret = true;
+            shooter.turretManualPow = -gp1.left_trigger /2;
+        } else {
+            shooter.manualTurret = false;
+            shooter.turretManualPow = 0;
+        }
 
     }
 
@@ -46,5 +56,9 @@ public class ShooterControl implements Control {
         telemetry.addData("Turret Lock?", shooter.useTurretLock);
         telemetry.addData("Target RPM", shooter.targetRPM);
         telemetry.addData("Current RPM", shooter.getShooterRPM());
+        telemetry.addData("Current Angle", shooter.getHoodPos());
+        telemetry.addData("Current Turret Pos", shooter.getTurretPos());
+        telemetry.addData("Is Far Shot", shooter.isFarShot());
     }
+
 }

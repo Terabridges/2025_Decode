@@ -15,6 +15,10 @@ public class AutoPoses {
         return (r == Range.CLOSE_RANGE) ? 0 : 1;   // 0 = close, 1 = long
     }
 
+    private Pose poseDeg(double x, double y, double headingDeg) {
+        return new Pose(x, y, Math.toRadians(headingDeg));
+    }
+
     public Pose Mirror(Pose bluePose) {
         double x = 144 - bluePose.getX();
         double y = bluePose.getY();
@@ -28,8 +32,8 @@ public class AutoPoses {
     double robotLength = 15.25;
 
     //Starting Poses
-    public Pose blueCloseStartPose = new Pose();
-    public Pose blueFarStartPose = new Pose(48 + robotWidth/2, robotLength/2, 90);
+    public Pose blueCloseStartPose = poseDeg(48 + robotWidth/2, robotLength/2, 180); //TODO use actual pose
+    public Pose blueFarStartPose = poseDeg(48 + robotWidth/2, robotLength/2, 180);
     public Pose redCloseStartPose = Mirror(blueCloseStartPose);
     public Pose redFarStartPose = Mirror(blueFarStartPose);
 
@@ -47,8 +51,8 @@ public class AutoPoses {
     // ========================
     // SCORE POSES
     // ========================
-    public Pose scoreCB = new Pose(48, 96, 180);
-    public Pose scoreLB = new Pose(48 + robotWidth/2, 24, 180);
+    public Pose scoreCB = poseDeg(48, 96, 80);
+    public Pose scoreLB = poseDeg(48 + robotWidth/2, 16, 210);
     public Pose scoreCR = Mirror(scoreCB);
     public Pose scoreLR = Mirror(scoreLB);
 
@@ -57,62 +61,83 @@ public class AutoPoses {
     // ========================
     // LOAD POSES
     // ========================
-    public Pose loadB = new Pose(robotWidth/2, robotLength/2, 90);
+    public Pose loadB = poseDeg(robotWidth/2, robotLength/2, 90);
     public Pose loadR = Mirror(loadB);
+
+    // ========================
+    // RELEASE (lever) POSES
+    // ========================
+
+    public Pose releaseGoToCloseB = poseDeg(32, 70, 80);
+    public Pose releaseCompleteCloseB = poseDeg(28, 70, 210);
+    public Pose releaseGoToCloseR = Mirror(releaseGoToCloseB);
+    public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseB);
+
+    // ========================
+    // LEAVE POSES
+    // ========================
+    // Close-side park is nearer the scoring area; long-side park is farther.
+    public Pose leaveCB = poseDeg(36, 84, 90);
+    public Pose leaveLB = poseDeg(48, 36, 90);
+    public Pose leaveCR = Mirror(leaveCB);
+    public Pose leaveLR = Mirror(leaveLB);
 
     // ========================
     // PICKUP START POSES
     // ========================
+    double intakeStart = 43.5;
+    double offset = -3;
 
     // Row 1
-    public Pose pick1StartCB = new Pose(24, robotLength/2, 180);
-    public Pose pick1StartLB = new Pose(48, 84, 180);
+    public Pose pick1StartLB = poseDeg(24, 16 + offset, 180); //TODO fix this
+    public Pose pick1StartCB = poseDeg(intakeStart, 84, 180);
     public Pose pick1StartCR = Mirror(pick1StartCB);
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
-    public Pose pick2StartCB = new Pose(48, 36, 180);
-    public Pose pick2StartLB = new Pose(48, 60, 180);
+    public Pose pick2StartLB = poseDeg(intakeStart, 36 + offset, 180);
+    public Pose pick2StartCB = poseDeg(intakeStart, 60 + offset, 180);
     public Pose pick2StartCR = Mirror(pick2StartCB);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
     // Row 3
-    public Pose pick3StartCB = new Pose(48, 60, 180);
-    public Pose pick3StartLB = new Pose(48, 36, 180);
+    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offset-1, 180);
+    public Pose pick3StartCB = poseDeg(intakeStart, 36 + offset, 180);
     public Pose pick3StartCR = Mirror(pick3StartCB);
     public Pose pick3StartLR = Mirror(pick3StartLB);
 
     // Row 4
-    public Pose pick4StartCB = new Pose(48, 84, 180);
-    public Pose pick4StartLB = new Pose(24, robotLength/2, 180);
+    public Pose pick4StartLB = poseDeg(intakeStart, 84, 180);
+    public Pose pick4StartCB = poseDeg(24, 16 + offset, 180); //TODO fix this
     public Pose pick4StartCR = Mirror(pick4StartCB);
     public Pose pick4StartLR = Mirror(pick4StartLB);
 
     // ========================
     // PICKUP END POSES
     // ========================
+    double intakeEnd = 24.5;
 
     // Row 1
-    public Pose pick1EndCB = new Pose(robotWidth/2, 12, 180);
-    public Pose pick1EndLB = new Pose(24, 84, 180);
+    public Pose pick1EndLB = poseDeg(16, 16 + offset, 180); //TODO fix this
+    public Pose pick1EndCB = poseDeg(intakeEnd, 84, 180);
     public Pose pick1EndCR = Mirror(pick1EndCB);
     public Pose pick1EndLR = Mirror(pick1EndLB);
 
     // Row 2
-    public Pose pick2EndCB = new Pose(24, 36, 180);
-    public Pose pick2EndLB = new Pose(24, 60, 180);
+    public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offset, 180);
+    public Pose pick2EndCB = poseDeg(intakeEnd, 60 + offset, 180);
     public Pose pick2EndCR = Mirror(pick2EndCB);
     public Pose pick2EndLR = Mirror(pick2EndLB);
 
     // Row 3
-    public Pose pick3EndCB = new Pose(24, 60, 180);
-    public Pose pick3EndLB = new Pose(24, 36, 180);
+    public Pose pick3EndLB = poseDeg(intakeEnd, 60 + offset-1, 180);
+    public Pose pick3EndCB = poseDeg(intakeEnd, 36 + offset, 180);
     public Pose pick3EndCR = Mirror(pick3EndCB);
     public Pose pick3EndLR = Mirror(pick3EndLB);
 
     // Row 4
-    public Pose pick4EndCB = new Pose(24, 84, 180);
-    public Pose pick4EndLB = new Pose(robotWidth/2, 12, 180);
+    public Pose pick4EndLB = poseDeg(intakeEnd, 84, 180);
+    public Pose pick4EndCB = poseDeg(16, 16 + offset, 180); //TODO fix this
     public Pose pick4EndCR = Mirror(pick4EndCB);
     public Pose pick4EndLR = Mirror(pick4EndLB);
 
@@ -129,6 +154,9 @@ public class AutoPoses {
     public Pose[][] score = new Pose[2][2];            // [Alliance][Range]
     public Pose[][][] pickupStart = new Pose[2][2][4]; // [Alliance][Range][RowIndex]
     public Pose[][][] pickupEnd = new Pose[2][2][4];   // [Alliance][Range][RowIndex]
+    public Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
+    public Pose[][] releaseGoTo = new Pose[2][2];      // [Alliance][Range]
+    public Pose[][] releaseComplete = new Pose[2][2];  // [Alliance][Range]
 
 
     /* =========================
@@ -186,6 +214,23 @@ public class AutoPoses {
         pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick3EndLR;
         pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][3] = pick4EndCR;
         pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][3]  = pick4EndLR;
+
+        // --- Leave ---
+        leave[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = leaveCB;
+        leave[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = leaveLB;
+        leave[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = leaveCR;
+        leave[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = leaveLR;
+
+        // --- Release lever (only defined for close side; long side mirrors close defaults) ---
+        releaseGoTo[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = releaseGoToCloseB;
+        releaseGoTo[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = releaseGoToCloseB; // not used, but set for completeness
+        releaseGoTo[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = releaseGoToCloseR;
+        releaseGoTo[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = releaseGoToCloseR;
+
+        releaseComplete[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = releaseCompleteCloseB;
+        releaseComplete[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = releaseCompleteCloseB;
+        releaseComplete[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = releaseCompleteCloseR;
+        releaseComplete[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = releaseCompleteCloseR;
     }
 
     /* =========================
@@ -199,6 +244,21 @@ public class AutoPoses {
         return score[a.ordinal()][r.ordinal()];
     }
 
+    /** Returns the score pose for a given shot index using the "closest point" plan. */
+    public Pose getClosestScore(Alliance a, Range selectedRange, int shotIndex) {
+        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3, 4 = row4
+        boolean useClose;
+        if (selectedRange == Range.LONG_RANGE) {
+            // Preload, row1, row2 = long; row3+, close
+            useClose = shotIndex >= 2;
+        } else {
+            // Preload, row1, row2 = close; row3+, long
+            useClose = shotIndex <= 2;
+        }
+        Range r = useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
+        return getScore(a, r);
+    }
+
     public Pose getPickupStart(Alliance a, Range r, int rowIndex) {
         return pickupStart[a.ordinal()][r.ordinal()][rowIndex];
     }
@@ -206,4 +266,12 @@ public class AutoPoses {
     public Pose getPickupEnd(Alliance a, Range r, int rowIndex) {
         return pickupEnd[a.ordinal()][r.ordinal()][rowIndex];
     }
+
+    public Pose getLeave(Alliance a, Range r) {
+        return leave[a.ordinal()][r.ordinal()];
+    }
+
+    public Pose getReleaseGoTo(Alliance a, Range r) { return releaseGoTo[a.ordinal()][r.ordinal()]; }
+
+    public Pose getReleaseComplete(Alliance a, Range r) { return releaseComplete[a.ordinal()][r.ordinal()]; }
 }
