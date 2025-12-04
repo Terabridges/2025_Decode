@@ -128,6 +128,7 @@ public class MainTeleop extends LinearOpMode {
                 } else if(robot.transfer.motif.equals("PGP")){
                     robot.transfer.motif = "PPG";
                 }
+                robot.shooter.teleOp = true;
             }
 
             if (currentGamepad1.b && !previousGamepad1.b){
@@ -136,6 +137,7 @@ public class MainTeleop extends LinearOpMode {
                 } else if (robot.vision.allianceColor.equals("blue")){
                     robot.vision.allianceColor = "red";
                 }
+                robot.shooter.teleOp = true;
             }
 
             telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");

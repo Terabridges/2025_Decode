@@ -139,6 +139,11 @@ class MainAuto extends OpMode {
         follower.update();
 
         stateTimer.reset();
+
+        robot.transfer.ballList[0] = "G";
+        robot.transfer.ballList[1] = "P";
+        robot.transfer.ballList[2] = "P";
+        robot.transfer.numBalls = 3;
     }
 
     @Override

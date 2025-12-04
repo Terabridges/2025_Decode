@@ -299,11 +299,34 @@ public class Transfer implements Subsystem{
         autoIntake = !autoIntake;
     }
 
+    public void updateTwoBall(){
+        if(balls.equals("PEG")){
+            ballList[1] = "P";
+        } else if (balls.equals("GEP")){
+            ballList[1] = "P";
+        } else if (balls.equals("PEP")){
+            ballList[1] = "G";
+        } else if(balls.equals("EPG")){
+            ballList[0] = "P";
+        } else if (balls.equals("EGP")){
+            ballList[0] = "P";
+        } else if (balls.equals("EPP")){
+            ballList[0] = "G";
+        } else if(balls.equals("PGE")){
+            ballList[2] = "P";
+        } else if (balls.equals("GPE")){
+            ballList[2] = "P";
+        } else if (balls.equals("PPE")){
+            ballList[2] = "G";
+        }
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
         setClutchUp();
         spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
     }
 
     @Override
@@ -343,11 +366,7 @@ public class Transfer implements Subsystem{
         balls = ballList[0] + ballList[1] + ballList[2];
         if (isDetecting){
             desiredRotate = rotateOrder();
-        }
-
-        if (colorDistance < 1.92){
-            colorTimer.reset();
-            ballDetected = true;
+            updateTwoBall();
         }
     }
 
