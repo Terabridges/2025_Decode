@@ -17,6 +17,7 @@ public class ShooterAuto extends Shooter {
     private double filteredHoodAuto = 0.0;
     private static final double HOOD_MAX_STEP_AUTO = 0.025;
     private static final double HOOD_DEADBAND_AUTO = 0.001;
+    private double maxPow = 0.11;
 
     public ShooterAuto(HardwareMap map, Vision vision) {
         super(map, vision);
@@ -34,7 +35,7 @@ public class ShooterAuto extends Shooter {
         error1 = targetAngle;
         if (Math.abs(error1) < deadband1) error1 = 0.0;
         turretPower1 = turretLockController.calculate(error1, targetAngle);
-        turretPower1 = util.clamp(turretPower1, -maxPow1, maxPow1);
+        turretPower1 = util.clamp(turretPower1, -maxPow, maxPow);
         if (turretPower1 > lowThresh) {
             if (turretPower1 < minPow) {
                 turretPower1 = minPow;
@@ -130,7 +131,7 @@ public class ShooterAuto extends Shooter {
             setShooterRPM(0);
         }
 
-        if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget && useTurretLock){
+        if (vision.getTx() != 0 && Math.abs(vision.getTx()) < 3 && hasDesiredTarget && useTurretLock){
             lightColor = "green";
         } else {
             if(vision.allianceColor.equals("red")) {

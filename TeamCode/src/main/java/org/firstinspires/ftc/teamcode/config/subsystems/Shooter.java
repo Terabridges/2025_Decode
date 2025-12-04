@@ -424,7 +424,7 @@ public class Shooter implements Subsystem {
             setShooterRPM(0);
         }
 
-        if (vision.getTx() != 0 && vision.getTx() < 1.5 && hasDesiredTarget && useTurretLock){
+        if (vision.getTx() != 0 && Math.abs(vision.getTx()) < 3 && hasDesiredTarget && useTurretLock){
             lightColor = "green";
         } else {
             if(vision.allianceColor.equals("red")) {

@@ -101,7 +101,7 @@ public class AutoPoses {
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
     // Row 3
-    public Pose pick3StartLB = poseDeg(intakeStart, 60 + offset, 180);
+    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offset-1, 180);
     public Pose pick3StartCB = poseDeg(intakeStart, 36 + offset, 180);
     public Pose pick3StartCR = Mirror(pick3StartCB);
     public Pose pick3StartLR = Mirror(pick3StartLB);
@@ -130,7 +130,7 @@ public class AutoPoses {
     public Pose pick2EndLR = Mirror(pick2EndLB);
 
     // Row 3
-    public Pose pick3EndLB = poseDeg(intakeEnd, 60 + offset, 180);
+    public Pose pick3EndLB = poseDeg(intakeEnd, 60 + offset-1, 180);
     public Pose pick3EndCB = poseDeg(intakeEnd, 36 + offset, 180);
     public Pose pick3EndCR = Mirror(pick3EndCB);
     public Pose pick3EndLR = Mirror(pick3EndLB);
