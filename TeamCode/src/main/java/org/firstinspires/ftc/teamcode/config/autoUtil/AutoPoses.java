@@ -68,8 +68,8 @@ public class AutoPoses {
     // RELEASE (lever) POSES
     // ========================
 
-    public Pose releaseGoToCloseB = poseDeg(32, 70, 180);
-    public Pose releaseCompleteCloseB = poseDeg(28, 70, 180);
+    public Pose releaseGoToCloseB = poseDeg(32, 70, 80);
+    public Pose releaseCompleteCloseB = poseDeg(28, 70, 210);
     public Pose releaseGoToCloseR = Mirror(releaseGoToCloseB);
     public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseB);
 
@@ -85,7 +85,7 @@ public class AutoPoses {
     // ========================
     // PICKUP START POSES
     // ========================
-    double intakeStart = 42.5;
+    double intakeStart = 43.5;
     double offset = -3;
 
     // Row 1

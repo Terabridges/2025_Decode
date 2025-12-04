@@ -83,6 +83,11 @@ class MainAuto extends OpMode {
     private static final int MAX_ROWS = 4;
     private final ElapsedTime stateTimer = new ElapsedTime();
     private final ElapsedTime shotDelayTimer = new ElapsedTime();
+    private boolean turretHoldEngaged = false;
+    private double turretHoldPosDeg = 0.0;
+    private final ElapsedTime turretStableTimer = new ElapsedTime();
+    private double prevTurretPosDeg = 0.0;
+    private long prevTurretTimeNs = System.nanoTime();
 
     boolean startShooting = false;
     boolean shootingComplete = false;
@@ -172,17 +177,19 @@ class MainAuto extends OpMode {
         autoMachine.update();
         shootAllMachine.update();
 
-        telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
-        telemetryM.debug("Auto Action", getActionMessage());
-        telemetryM.debug("State Time", "%.2f", stateTimer.seconds());
-        telemetryM.debug("Current Row", currentRowIndex);
+//        telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
+//        telemetryM.debug("Auto Action", getActionMessage());
+//        telemetryM.debug("State Time", "%.2f", stateTimer.seconds());
+        telemetryM.debug("Lock Pid Running?", robot.shooter.useTurretLock);
+        telemetryM.debug("Turret Pid Running?", robot.shooter.useTurretPID);
+//        telemetryM.debug("Current Row", currentRowIndex);
         telemetryM.debug("Current Motif ID", acquiredMotifId);
         telemetryM.debug("Target RPM", robot.shooter.targetRPM);
         telemetryM.debug("Current RPM", robot.shooter.getShooterRPM());
         telemetryM.debug("Sees desired tag?", robot.shooter.hasDesiredTarget);
-        telemetryM.debug("Turret Lock", robot.shooter.useTurretLock);
-        telemetryM.debug("Ball List", robot.transfer.balls);
-        telemetryM.debug("Shoot Order Number", robot.transfer.rotateOrder());
+//        telemetryM.debug("Turret Lock", robot.shooter.useTurretLock);
+//        telemetryM.debug("Ball List", robot.transfer.balls);
+//        telemetryM.debug("Shoot Order Number", robot.transfer.rotateOrder());
         telemetryM.debug("Vision Error", robot.vision.getTx());
 
         telemetryM.update(telemetry);
@@ -433,6 +440,9 @@ class MainAuto extends OpMode {
 
         stateTimer.reset();
         shotDelayTimer.reset();
+        turretStableTimer.reset();
+        turretHoldEngaged = false;
+        robot.shooter.useTurretPID = false;
 
         startShooting = true;
     }
@@ -575,8 +585,8 @@ class MainAuto extends OpMode {
             chain = follower.pathBuilder()
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .setBrakingStart(0.5)
-                    .setBrakingStrength(0.8)
+                    .setBrakingStart(0.65)
+                    .setBrakingStrength(0.85)
                     .build();
         }
         else
@@ -737,18 +747,74 @@ class MainAuto extends OpMode {
 
     /** Keep turret target refreshed while driving */
     private void updateTurretAim() {
+        // If we're latched in hold, keep enforcing it and return early.
+        if (turretHoldEngaged) {
+            robot.shooter.useTurretLock = false;
+            robot.shooter.useTurretPID = true;
+            robot.shooter.turretTarget = turretHoldPosDeg;
+            return;
+        }
+
+        // Engage a hold once we're centered enough in COMPLETE_SHOOT to avoid oscillation.
+        boolean inCompleteShoot = activeState == AutoStates.COMPLETE_SHOOT;
+        double tx = (robot.shooter != null && robot.shooter.vision != null) ? robot.shooter.vision.getTx() : 0.0;
+        boolean withinHoldBand = Math.abs(tx) <= 2.0;
+        double turretVelDegPerSec = getTurretVelocityDegPerSec();
+        boolean turretSteady = Math.abs(turretVelDegPerSec) <= 5.0; // require low motion before holding
+
+        // Track stability time inside band with low motion
+        if (inCompleteShoot && withinHoldBand && turretSteady) {
+            if (turretStableTimer.seconds() == 0.0) {
+                turretStableTimer.reset();
+            }
+        } else {
+            turretStableTimer.reset();
+        }
+        boolean stableLongEnough = turretStableTimer.seconds() >= 0.15; // 150ms dwell
+
+        telemetryM.debug("Within Hold Band?", withinHoldBand);
+        telemetryM.debug("Turret Vel (deg/s)", turretVelDegPerSec);
+        telemetryM.debug("Turret Stable Time", turretStableTimer.seconds());
+
+        if (inCompleteShoot && robot.shooter.hasDesiredTarget && withinHoldBand && stableLongEnough) {
+            turretHoldPosDeg = robot.shooter.getTurretPos(); // encoder-based degrees
+            robot.shooter.useTurretLock = false;
+            robot.shooter.useTurretPID = true;
+            robot.shooter.turretTarget = turretHoldPosDeg;
+            turretHoldEngaged = true;
+            return;
+        }
+
         if (activeState == AutoStates.ACQUIRE_MOTIF) {
             robot.shooter.useTurretLock = false;
+            robot.shooter.useTurretPID = false;
             coarseTurretAimAtObelisk();
         }
         else {
             if (robot.shooter.hasDesiredTarget) {
+                // vision lock takes priority; ensure PID hold is off
+                robot.shooter.useTurretPID = false;
                 robot.shooter.useTurretLock = true;
             }
             else {
                 robot.shooter.useTurretLock = false;
+                robot.shooter.useTurretPID = false;
                 coarseTurretAimAtGoal();
             }
         }
+    }
+
+    /** Estimate turret angular velocity using the encoder degrees. */
+    private double getTurretVelocityDegPerSec() {
+        double currentPosDeg = (robot != null && robot.shooter != null) ? robot.shooter.getTurretPos() : 0.0;
+        long now = System.nanoTime();
+        double dt = (now - prevTurretTimeNs) / 1e9;
+        double vel = 0.0;
+        if (dt > 1e-3) { // avoid divide by tiny dt
+            vel = (currentPosDeg - prevTurretPosDeg) / dt;
+        }
+        prevTurretPosDeg = currentPosDeg;
+        prevTurretTimeNs = now;
+        return vel;
     }
 }
