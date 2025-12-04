@@ -336,26 +336,34 @@ class MainAuto extends OpMode {
     private boolean motifAcquiredOrTimedOut() {
         boolean acquired = false;
         if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
-            if ( (robot.shooter.vision.getCurrentTagId() == 21) || (robot.shooter.vision.getCurrentTagId() == 22) || (robot.shooter.vision.getCurrentTagId() == 23) ) {
-                acquired = robot.shooter.vision.hasTarget();
-            }
+            acquired = robot.shooter.vision.seesTag(21)
+                    || robot.shooter.vision.seesTag(22)
+                    || robot.shooter.vision.seesTag(23);
         }
         return acquired || motifTimer.seconds() >= MOTIF_ACQUIRE_TIMEOUT;
     }
 
     private void onExitAcquireMotif() {
         if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
-            acquiredMotifId = robot.shooter.vision.getCurrentTagId();
-            robot.shooter.setMotifTagId(acquiredMotifId);
-            if(acquiredMotifId == 21){
-                robot.transfer.motif = "GPP";
-                GlobalVariables.motif = "GPP";
-            } else if (acquiredMotifId == 22){
-                robot.transfer.motif = "PGP";
-                GlobalVariables.motif = "PGP";
-            } else if (acquiredMotifId == 23){
-                robot.transfer.motif = "PPG";
-                GlobalVariables.motif = "PPG";
+            // Determine motif ID. On short side, infer correct face from which tags are visible.
+            if (range == Range.CLOSE_RANGE && !preloadComplete) {
+                acquiredMotifId = deduceObeliskIdFromVisible();
+            } else {
+                acquiredMotifId = robot.shooter.vision.getCurrentTagId();
+            }
+            boolean validMotif = acquiredMotifId == 21 || acquiredMotifId == 22 || acquiredMotifId == 23;
+            robot.shooter.setMotifTagId(validMotif ? acquiredMotifId : -1);
+            if(validMotif){
+                if(acquiredMotifId == 21){
+                    robot.transfer.motif = "GPP";
+                    GlobalVariables.motif = "GPP";
+                } else if (acquiredMotifId == 22){
+                    robot.transfer.motif = "PGP";
+                    GlobalVariables.motif = "PGP";
+                } else if (acquiredMotifId == 23){
+                    robot.transfer.motif = "PPG";
+                    GlobalVariables.motif = "PPG";
+                }
             }
         }
     }
@@ -743,6 +751,43 @@ class MainAuto extends OpMode {
     private Pose getObeliskPose() {
         // Placeholder: aim near the alliance goal area; update to the true obelisk location if different.
         return new Pose(72, 144, Math.toRadians(90));
+    }
+
+    /** Infer correct obelisk face when two tags are visible (short side). */
+    private int deduceObeliskIdFromVisible() {
+        if (robot == null || robot.shooter == null || robot.shooter.vision == null) return robot.shooter.vision.getCurrentTagId();
+        java.util.Set<Integer> seen = new java.util.HashSet<>();
+        if (robot.shooter.vision.latest != null) {
+            for (com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult f : robot.shooter.vision.latest.getFiducialResults()) {
+                int id = f.getFiducialId();
+                if (id == 21 || id == 22 || id == 23) {
+                    seen.add(id);
+                }
+            }
+        }
+        // Need exactly two visible to deduce the missing face.
+        if (seen.size() != 2) {
+            return robot.shooter.vision.getCurrentTagId();
+        }
+        int missing = -1;
+        for (int id : new int[]{21,22,23}) {
+            if (!seen.contains(id)) {
+                missing = id;
+                break;
+            }
+        }
+        if (missing == -1) return robot.shooter.vision.getCurrentTagId();
+        boolean isBlue = alliance == Alliance.BLUE;
+        if (isBlue) {
+            if (missing == 21) return 22;
+            if (missing == 22) return 23;
+            if (missing == 23) return 22;
+        } else {
+            if (missing == 22) return 21;
+            if (missing == 23) return 22;
+            if (missing == 21) return 23;
+        }
+        return robot.shooter.vision.getCurrentTagId();
     }
 
     /** Shared coarse aim helper to point turret from current pose toward a field target. */
