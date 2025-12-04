@@ -91,7 +91,6 @@ public class Shooter implements Subsystem {
     double upperLimit = 340;
     double lowerLimit = 30;
     public boolean hasDesiredTarget = false;
-    public boolean teleOp = false;
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -348,12 +347,10 @@ public class Shooter implements Subsystem {
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-        if (teleOp) {
-            if (vision.allianceColor.equals("red")) {
-                setRequiredTagId(24);
-            } else if (vision.allianceColor.equals("blue")) {
-                setRequiredTagId(20);
-            }
+        if (vision.allianceColor.equals("red")) {
+            setRequiredTagId(24);
+        } else if (vision.allianceColor.equals("blue")) {
+            setRequiredTagId(20);
         }
     }
 

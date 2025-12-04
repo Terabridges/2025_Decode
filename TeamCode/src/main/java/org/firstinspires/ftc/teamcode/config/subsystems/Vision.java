@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
+import android.provider.Settings;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -11,6 +13,7 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class Vision implements Subsystem{
 
@@ -21,7 +24,7 @@ public class Vision implements Subsystem{
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
-    public String allianceColor = "red";
+    public String allianceColor = GlobalVariables.allianceColor;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {

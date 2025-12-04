@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 public class Transfer implements Subsystem{
@@ -54,7 +55,7 @@ public class Transfer implements Subsystem{
 
     public ElapsedTime colorTimer = new ElapsedTime();
 
-    public String motif = "PPG";
+    public String motif = GlobalVariables.motif;
     public int desiredRotate = 1;
     public boolean isRed = false;
 

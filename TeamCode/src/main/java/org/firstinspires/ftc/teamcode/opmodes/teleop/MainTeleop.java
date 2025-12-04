@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,8 +115,6 @@ public class MainTeleop extends LinearOpMode {
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        robot.shooter.teleOp = true;
-
         while (opModeInInit()){
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);
@@ -128,7 +127,6 @@ public class MainTeleop extends LinearOpMode {
                 } else if(robot.transfer.motif.equals("PGP")){
                     robot.transfer.motif = "PPG";
                 }
-                robot.shooter.teleOp = true;
             }
 
             if (currentGamepad1.b && !previousGamepad1.b){
@@ -137,7 +135,6 @@ public class MainTeleop extends LinearOpMode {
                 } else if (robot.vision.allianceColor.equals("blue")){
                     robot.vision.allianceColor = "red";
                 }
-                robot.shooter.teleOp = true;
             }
 
             telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");

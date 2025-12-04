@@ -28,6 +28,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.opmodes.teleop.MainTeleop;
 
 class MainAuto extends OpMode {
@@ -121,6 +122,11 @@ class MainAuto extends OpMode {
         if (robot != null && robot.shooter != null) {
             int tagId = (alliance == Alliance.BLUE) ? 20 : 24;
             robot.shooter.setRequiredTagId(tagId);
+            if(alliance == Alliance.BLUE) {
+                GlobalVariables.allianceColor = "blue";
+            } else {
+                GlobalVariables.allianceColor = "red";
+            }
         }
 
         rowsToRun = Math.min(resolveRowsForMode(mode), MAX_ROWS);
@@ -329,10 +335,13 @@ class MainAuto extends OpMode {
             robot.shooter.setMotifTagId(acquiredMotifId);
             if(acquiredMotifId == 21){
                 robot.transfer.motif = "GPP";
+                GlobalVariables.motif = "GPP";
             } else if (acquiredMotifId == 22){
                 robot.transfer.motif = "PGP";
+                GlobalVariables.motif = "PGP";
             } else if (acquiredMotifId == 23){
                 robot.transfer.motif = "PPG";
+                GlobalVariables.motif = "PPG";
             }
         }
     }
