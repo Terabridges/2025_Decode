@@ -109,7 +109,7 @@ class MainAuto extends OpMode {
 
     @Override
     public void init() {
-        robot = new Robot(hardwareMap, telemetry);
+        robot = new Robot(hardwareMap, telemetry, true);
 
         robot.drive.manualDrive = false;
 
@@ -179,17 +179,20 @@ class MainAuto extends OpMode {
         shootAllMachine.update();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
-        telemetryM.debug("Auto Action", getActionMessage());
-        telemetryM.debug("State Time", "%.2f", stateTimer.seconds());
-        telemetryM.debug("Current Row", currentRowIndex);
-        telemetryM.debug("Current Motif ID", acquiredMotifId);
-        telemetryM.debug("Target RPM", robot.shooter.targetRPM);
-        telemetryM.debug("Current RPM", robot.shooter.getShooterRPM());
-        telemetryM.debug("Sees desired tag?", robot.shooter.hasDesiredTarget);
-        telemetryM.debug("Turret Lock", robot.shooter.useTurretLock);
-        telemetryM.debug("Ball List", robot.transfer.balls);
-        telemetryM.debug("Shoot Order Number", robot.transfer.rotateOrder());
-        telemetryM.debug("Vision Error", robot.vision.getTx());
+        telemetry.addData("Auto Action", getActionMessage());
+        telemetry.addData("State Time", "%.2f", stateTimer.seconds());
+        telemetry.addData("Current Row", currentRowIndex);
+        telemetry.addData("Current Motif ID", acquiredMotifId);
+        telemetry.addData("Target RPM", robot.shooter.targetRPM);
+        telemetry.addData("Current RPM", robot.shooter.getShooterRPM());
+        telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
+        telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
+        telemetry.addData("Ball List", robot.transfer.balls);
+        telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
+        telemetry.addData("Vision Error", robot.vision.getTx());
+        telemetry.addData("ShootAll State", shootAllMachine.getState());
+        telemetry.addData("Turret Pow", robot.shooter.turret.getPower());
+
 
         telemetryM.update(telemetry);
         telemetry.update();
@@ -584,8 +587,8 @@ class MainAuto extends OpMode {
             chain = follower.pathBuilder()
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .setBrakingStart(0.5)
-                    .setBrakingStrength(0.8)
+                    .setBrakingStart(0.65)
+                    .setBrakingStrength(0.85)
                     .build();
         }
         else
@@ -614,7 +617,7 @@ class MainAuto extends OpMode {
         Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(() -> (startShooting && shooter.hasDesiredTarget && shotDelayTimer.seconds() >= shotDelaySeconds), shootStates.PRESPIN)
+                .transition(() -> (startShooting && shooter.hasDesiredTarget && shotDelayTimer.seconds() >= shotDelaySeconds && Math.abs(robot.vision.getTx()) < 3), shootStates.PRESPIN)
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {
