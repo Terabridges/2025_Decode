@@ -12,6 +12,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
+@Disabled
 @Configurable
 @TeleOp(name="TurretTester", group="Test")
 public class TurretTester extends LinearOpMode {

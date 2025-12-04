@@ -16,11 +16,11 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Disabled
 @Configurable
-@TeleOp(name="LockTester", group="Test")
-public class LockTester extends LinearOpMode {
+@TeleOp(name="LockAutoTester", group="Test")
+public class LockAutoTester extends LinearOpMode {
 
     public Vision vision;
-    public Shooter shooter;
+    public ShooterAuto shooter;
     public Drive drive;
 
     public Gamepad currentGamepad1 = new Gamepad();
@@ -49,7 +49,7 @@ public class LockTester extends LinearOpMode {
         );
 
         vision = new Vision(hardwareMap);
-        shooter = new Shooter(hardwareMap, vision);
+        shooter = new ShooterAuto(hardwareMap, vision);
         drive = new Drive(hardwareMap);
         vision.toInit();
         shooter.toInit();

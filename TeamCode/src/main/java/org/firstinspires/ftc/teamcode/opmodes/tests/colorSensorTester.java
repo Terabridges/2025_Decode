@@ -6,6 +6,7 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -14,6 +15,7 @@ import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
+@Disabled
 @Configurable
 @TeleOp(name="ColorSensorTester", group="Test")
 public class colorSensorTester extends LinearOpMode {

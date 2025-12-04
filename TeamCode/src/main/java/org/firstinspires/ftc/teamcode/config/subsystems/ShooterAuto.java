@@ -17,16 +17,18 @@ public class ShooterAuto extends Shooter {
     private double filteredHoodAuto = 0.0;
     private static final double HOOD_MAX_STEP_AUTO = 0.025;
     private static final double HOOD_DEADBAND_AUTO = 0.001;
-    private double maxPow = 0.11;
+    private double maxPow = 0.3;
 
     public ShooterAuto(HardwareMap map, Vision vision) {
         super(map, vision);
         // Retune lock PID for the auto behavior
-        p1 = 0.005;
-        i1 = 0.01;
-        d1 = 0.002;
-        deadband1 = 0.6;
+        p1 = 0.035;
+        i1 = 0.03;
+        d1 = 0.0;
+        inteTolerance1 = 8;
+        deadband1 = 0.3;
         turretLockController.setPID(p1, i1, d1);
+        turretLockController.setIntegrationBounds(-inteTolerance1, inteTolerance1);
     }
 
     @Override
@@ -51,6 +53,11 @@ public class ShooterAuto extends Shooter {
     @Override
     public boolean isFarShot() {
         return true;
+    }
+
+    @Override
+    public String getShooterType(){
+        return "Auto";
     }
 
     @Override

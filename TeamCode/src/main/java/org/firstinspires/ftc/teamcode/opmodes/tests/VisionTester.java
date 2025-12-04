@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
+@Disabled
 @TeleOp(name="VisionTester", group="Test")
 public class VisionTester extends LinearOpMode {
 

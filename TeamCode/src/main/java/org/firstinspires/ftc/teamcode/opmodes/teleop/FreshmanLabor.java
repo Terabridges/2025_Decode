@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
 //TODO make sure hood angle is consistent, starts at the same place
 
+@Disabled
 @TeleOp(name="FreshmanLabor", group="TeleOp")
 public class FreshmanLabor extends LinearOpMode {
 

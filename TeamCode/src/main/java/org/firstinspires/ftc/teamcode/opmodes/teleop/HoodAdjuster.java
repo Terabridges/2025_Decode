@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Configurable
-@TeleOp(name="HoodAdjuster", group="TeleOp")
+@TeleOp(name="hoodAdjuster", group="TeleOp")
 public class HoodAdjuster extends LinearOpMode {
 
     public Gamepad currentGamepad1 = new Gamepad();
@@ -37,6 +37,9 @@ public class HoodAdjuster extends LinearOpMode {
             if(currentGamepad1.y && !previousGamepad1.y){
                 shooter.setHoodPos(0.9);
             }
+
+            telemetry.addData("Press A to test hood down. Press Y to test hood up", "");
+            telemetry.addData("Commanded Hood Angle", shooter.hood.getPosition());
         }
 
     }

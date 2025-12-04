@@ -58,6 +58,10 @@ public class Robot {
         this(hardwareMap, telemetry, null, null, autoMode);
     }
 
+    public double getVoltage(){
+        return voltageSensor.getVoltage();
+    }
+
     //---------------- Interface Methods ----------------
     public void update() {
         for (Subsystem s : subsystems) {

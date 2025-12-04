@@ -6,6 +6,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class ShooterControl implements Control {
 
@@ -56,9 +57,12 @@ public class ShooterControl implements Control {
         telemetry.addData("Turret Lock?", shooter.useTurretLock);
         telemetry.addData("Target RPM", shooter.targetRPM);
         telemetry.addData("Current RPM", shooter.getShooterRPM());
-        telemetry.addData("Current Angle", shooter.getHoodPos());
-        telemetry.addData("Current Turret Pos", shooter.getTurretPos());
-        telemetry.addData("Is Far Shot", shooter.isFarShot());
+        telemetry.addData("Motif", GlobalVariables.motif);
+        telemetry.addData("Shooter Type", shooter.getShooterType());
+
+//        telemetry.addData("Current Angle", shooter.getHoodPos());
+//        telemetry.addData("Current Turret Pos", shooter.getTurretPos());
+//        telemetry.addData("Is Far Shot", shooter.isFarShot());
     }
 
 }

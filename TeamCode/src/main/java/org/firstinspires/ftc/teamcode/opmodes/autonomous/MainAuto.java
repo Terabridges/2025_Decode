@@ -119,13 +119,21 @@ class MainAuto extends OpMode {
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+        if (robot.getVoltage() > 12.6){
+            intakeSpeed = 0.215;
+        } else {
+            intakeSpeed = 0.235;
+        }
+
         if (robot != null && robot.shooter != null) {
             int tagId = (alliance == Alliance.BLUE) ? 20 : 24;
             robot.shooter.setRequiredTagId(tagId);
             if(alliance == Alliance.BLUE) {
                 GlobalVariables.allianceColor = "blue";
+                robot.vision.allianceColor = "blue";
             } else {
                 GlobalVariables.allianceColor = "red";
+                robot.vision.allianceColor = "red";
             }
         }
 
@@ -192,6 +200,9 @@ class MainAuto extends OpMode {
         telemetry.addData("Vision Error", robot.vision.getTx());
         telemetry.addData("ShootAll State", shootAllMachine.getState());
         telemetry.addData("Turret Pow", robot.shooter.turret.getPower());
+        telemetry.addData("Is turret Tx In range?", Math.abs(robot.vision.getTx()) < 3);
+        telemetry.addData("Voltage", robot.getVoltage());
+        telemetry.addData("Intake Speed", intakeSpeed);
 
 
         telemetryM.update(telemetry);
@@ -588,7 +599,7 @@ class MainAuto extends OpMode {
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
                     .setBrakingStart(0.65)
-                    .setBrakingStrength(0.85)
+                    .setBrakingStrength(0.9)
                     .build();
         }
         else
@@ -617,7 +628,7 @@ class MainAuto extends OpMode {
         Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(() -> (startShooting && shooter.hasDesiredTarget && shotDelayTimer.seconds() >= shotDelaySeconds && Math.abs(robot.vision.getTx()) < 3), shootStates.PRESPIN)
+                .transition(() -> (startShooting && shooter.hasDesiredTarget && shotDelayTimer.seconds() >= shotDelaySeconds && Math.abs(robot.vision.getTx()) < 6), shootStates.PRESPIN)
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {
@@ -712,9 +723,19 @@ class MainAuto extends OpMode {
     /** Returns the static goal pose in field (Pedro) coordinates. */
     private Pose getGoalPose() {
         if (alliance == Alliance.BLUE) {
-            return new Pose(0, 144, Math.toRadians(90));
+            if (!preloadComplete) {
+                return new Pose(0-1.25, 144, Math.toRadians(90));
+            }
+            else {
+                return new Pose(0+10, 144, Math.toRadians(90));
+            }
         } else {
-            return new Pose(144, 144, Math.toRadians(90));
+            if (!preloadComplete) {
+                return new Pose(144+1.25, 144, Math.toRadians(90));
+            }
+            else {
+                return new Pose(144-4, 144, Math.toRadians(90));
+            }
         }
     }
 

@@ -64,7 +64,7 @@ public class Shooter implements Subsystem {
 
     //---------PID------
     public PIDController turretLockController;
-    double p1 = 0.005, i1 = 0.012, d1 = 0.0;
+    double p1 = 0.0055, i1 = 0.012, d1 = 0.0;
     double inteTolerance1 = 8.0;
     double deadband1 = 0;
     double maxPow1 = 0.14;
@@ -86,6 +86,7 @@ public class Shooter implements Subsystem {
     double upperLimit = 340;
     double lowerLimit = 30;
     public boolean hasDesiredTarget = false;
+    String shooterType;
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -335,7 +336,12 @@ public class Shooter implements Subsystem {
     }
 
     public boolean isFarShot(){
-        return (vision.getDistanceInches() > 90);
+        //return (vision.getDistanceInches() > 90);
+        return true;
+    }
+
+    public String getShooterType(){
+        return "TeleOp";
     }
 
     //---------------- Interface Methods ----------------!

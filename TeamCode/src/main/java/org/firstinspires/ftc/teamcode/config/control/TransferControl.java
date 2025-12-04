@@ -41,10 +41,11 @@ public class TransferControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Ball Color", transfer.ballColor);
         telemetry.addData("Ball Order,", transfer.balls);
-        telemetry.addData("Sees Red", transfer.isRed);
-        telemetry.addData("color timer seconds", transfer.colorTimer.seconds());
         telemetry.addData("spindex Pos", transfer.spindex.getCurrentPosition());
+
+//        telemetry.addData("Ball Color", transfer.ballColor);
+//        telemetry.addData("Sees Red", transfer.isRed);
+//        telemetry.addData("color timer seconds", transfer.colorTimer.seconds());
     }
 }

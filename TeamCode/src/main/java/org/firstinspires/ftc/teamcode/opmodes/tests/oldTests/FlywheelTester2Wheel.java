@@ -1,12 +1,14 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests.oldTests;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+@Disabled
 @Configurable
 @TeleOp(name = "FlywheelTester2Wheel")
 public class FlywheelTester2Wheel extends LinearOpMode {

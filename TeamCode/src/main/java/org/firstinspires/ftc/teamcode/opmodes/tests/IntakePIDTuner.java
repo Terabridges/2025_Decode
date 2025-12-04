@@ -5,6 +5,7 @@ import com.arcrobotics.ftclib.controller.PIDFController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -14,6 +15,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 
+@Disabled
 @Configurable
 @TeleOp(name="IntakeTuner", group="Test")
 public class IntakePIDTuner extends LinearOpMode {

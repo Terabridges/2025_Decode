@@ -34,14 +34,14 @@ public class ShooterData {
         RPMLUT.add( 61.4 ,3685);
         RPMLUT.add( 63.9 ,3685);
         RPMLUT.add( 67.4 ,3987);
-        RPMLUT.add( 72.47,4000); //4100
-        RPMLUT.add( 72.5 ,4000); //4100
-        RPMLUT.add( 83.7 ,4000); //4200
-        RPMLUT.add( 122.5,4675); //5400
-        RPMLUT.add( 123.5,4675); //5400
-        RPMLUT.add( 126.7,4715); //5400
-        RPMLUT.add( 141  ,5000); //4880
-        RPMLUT.add(maxDistance, 5000); //4900
+        RPMLUT.add( 72.47,4000);
+        RPMLUT.add( 72.5 ,4000);
+        RPMLUT.add( 83.7 ,4000);
+        RPMLUT.add( 122.5,4600);
+        RPMLUT.add( 123.5,4600);
+        RPMLUT.add( 126.7,4650);
+        RPMLUT.add( 141  ,5000);
+        RPMLUT.add(maxDistance, 5000);
     }
 
     private void addAngleData(){

@@ -51,8 +51,8 @@ public class AutoPoses {
     // ========================
     // SCORE POSES
     // ========================
-    public Pose scoreCB = poseDeg(48, 96, 80);
-    public Pose scoreLB = poseDeg(48 + robotWidth/2, 16, 210);
+    public Pose scoreCB = poseDeg(48, 96, 70);
+    public Pose scoreLB = poseDeg(48 + robotWidth/2, 14.5, 230);
     public Pose scoreCR = Mirror(scoreCB);
     public Pose scoreLR = Mirror(scoreLB);
 
@@ -77,8 +77,8 @@ public class AutoPoses {
     // LEAVE POSES
     // ========================
     // Close-side park is nearer the scoring area; long-side park is farther.
-    public Pose leaveCB = poseDeg(36, 84, 90);
-    public Pose leaveLB = poseDeg(48, 36, 90);
+    public Pose leaveCB = poseDeg(36, 84, 70);
+    public Pose leaveLB = poseDeg(48, 36, 230);
     public Pose leaveCR = Mirror(leaveCB);
     public Pose leaveLR = Mirror(leaveLB);
 
@@ -86,7 +86,7 @@ public class AutoPoses {
     // PICKUP START POSES
     // ========================
     double intakeStart = 43.5;
-    double offset = -3;
+    double offset = -1.5;
 
     // Row 1
     public Pose pick1StartLB = poseDeg(24, 16 + offset, 180); //TODO fix this
@@ -95,13 +95,13 @@ public class AutoPoses {
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
-    public Pose pick2StartLB = poseDeg(intakeStart, 36 + offset, 180);
+    public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offset - 4.5, 180);
     public Pose pick2StartCB = poseDeg(intakeStart, 60 + offset, 180);
     public Pose pick2StartCR = Mirror(pick2StartCB);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
     // Row 3
-    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offset-1, 180);
+    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offset - 6, 180);
     public Pose pick3StartCB = poseDeg(intakeStart, 36 + offset, 180);
     public Pose pick3StartCR = Mirror(pick3StartCB);
     public Pose pick3StartLR = Mirror(pick3StartLB);

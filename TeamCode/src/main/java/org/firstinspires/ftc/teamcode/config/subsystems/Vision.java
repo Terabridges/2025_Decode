@@ -25,6 +25,9 @@ public class Vision implements Subsystem{
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
     public String allianceColor = GlobalVariables.allianceColor;
+    public double lastTx = 0;
+    public double lastTy = 0;
+    public double lastDistance = 0;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
@@ -59,13 +62,17 @@ public class Vision implements Subsystem{
     */
 
     public double getTx() {
-        if (hasTarget()) { return latest.getTy(); }
-        return 0.0;
+//        if (hasTarget()) { return latest.getTy(); }
+//        return 0.0;
+        if (hasTarget()) { lastTx = latest.getTy(); }
+        return lastTx;
     }
 
     public double getTy() {
-        if (hasTarget()) { return -latest.getTx(); }
-        return 0.0;
+//        if (hasTarget()) { return -latest.getTx(); }
+//        return 0.0;
+        if (hasTarget()) { lastTy = -latest.getTx(); }
+        return lastTy;
     }
 
     /** Returns the ID of the currently tracked fiducial, or -1 if none is visible. */
@@ -78,14 +85,23 @@ public class Vision implements Subsystem{
 
     public double getDistanceInches()
     {
+//        if (hasTarget())
+//        {
+//            LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
+//            Pose3D p = f0.getTargetPoseCameraSpace();   // meters
+//            double z = p.getPosition().z;               // forward distance (meters)
+//            return z * 39.3701;
+//        }
+//        return 0.0;
         if (hasTarget())
         {
             LLResultTypes.FiducialResult f0 = latest.getFiducialResults().get(0);
             Pose3D p = f0.getTargetPoseCameraSpace();   // meters
             double z = p.getPosition().z;               // forward distance (meters)
-            return z * 39.3701;
+            z *= 39.3701;
+            lastDistance = z;
         }
-        return 0.0;
+        return lastDistance;
     }
 
     public double getPlanarDistanceInches()

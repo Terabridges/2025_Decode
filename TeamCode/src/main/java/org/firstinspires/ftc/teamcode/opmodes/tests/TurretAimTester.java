@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -13,6 +14,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 
+@Disabled
 @TeleOp(name = "TurretAimTester", group = "Test")
 public class TurretAimTester extends LinearOpMode {
 

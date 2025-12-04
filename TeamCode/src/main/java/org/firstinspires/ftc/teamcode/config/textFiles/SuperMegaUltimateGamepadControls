@@ -21,48 +21,24 @@ Back:
 Start:
 
 
-GAMEPAD 2: (Coming Soon)
-A:
-X:
-Y:
-B:
-Down:
-Left:
-Up:
-Right:
-LeftBump:
-RightBump:
-LeftTrig:
-RightTrig:
+GAMEPAD 2:
+A: Hood Offset Down 0.05
+X: EmptyBalls
+Y: Hood Offset Up 0.05
+B: Override Lock
+Down: RPM Offset Down 50
+Left: Spindexer Left Manual
+Up: RPM Offset Up 50
+Right: Spindexer Right Manual
+LeftBump: Switch Alliance States
+RightBump: Switch Motif States
+LeftTrig: Turret Manual Left
+RightTrig: Turret Manual Right
 LStX:
 LStY:
 RStX:
 RStY:
-LStCl:
-RStCl:
+LStCl: Reset Spindexer
+RStCl: Break from state machine
 Back:
 Start:
-
-
-
-
-
-
-
-
-
-
-OLD
-joysticks control movement
-
-what if its like a queing system, when you press A it adds "shoot green" to queue, B for "shoot purple" and Y to fire.
-
-A: Lower/raise intake
-Triggers: spintake in/out
-B: Clutch
-Y: Shooter
-Dpad l/r: spindex
-X: slow mode
-Rbump: toggle turret lock
-Dpad u/d: change target RPM
-Lbump: intake down

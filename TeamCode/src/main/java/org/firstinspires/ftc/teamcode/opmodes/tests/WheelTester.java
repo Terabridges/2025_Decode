@@ -36,6 +36,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+@Disabled
 @TeleOp(name="MotorTester", group="Test")
 public class WheelTester extends LinearOpMode {
 

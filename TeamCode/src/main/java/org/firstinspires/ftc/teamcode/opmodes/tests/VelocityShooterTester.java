@@ -4,6 +4,7 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -13,6 +14,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
+@Disabled
 @Configurable
 @TeleOp(name="VelocityTester", group="Test")
 public class VelocityShooterTester extends LinearOpMode {

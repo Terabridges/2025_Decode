@@ -4,6 +4,7 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -12,6 +13,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
+@Disabled
 @Configurable
 @TeleOp(name="hoodTester", group="Test")
 public class hoodTester extends LinearOpMode {
