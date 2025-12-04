@@ -16,6 +16,7 @@ public class TransferControl implements Control {
     Robot robot;
     EdgeDetector ballLeft = new EdgeDetector( () -> transfer.ballLeft());
     EdgeDetector ballRight = new EdgeDetector( () -> transfer.ballRight());
+    EdgeDetector emptyBalls = new EdgeDetector(()-> transfer.emptyBalls());
 
     //---------------- Constructor ----------------
     public TransferControl(Transfer transfer, Gamepad gp1, Gamepad gp2){
@@ -37,11 +38,12 @@ public class TransferControl implements Control {
     public void update(){
         ballLeft.update(gp1.dpad_left);
         ballRight.update(gp1.dpad_right);
+        emptyBalls.update(gp2.x);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Ball Order,", transfer.balls);
+        telemetry.addData("Balls", transfer.balls);
         telemetry.addData("spindex Pos", transfer.spindex.getCurrentPosition());
 
 //        telemetry.addData("Ball Color", transfer.ballColor);
