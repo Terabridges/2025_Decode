@@ -66,7 +66,7 @@ public class Shooter implements Subsystem {
     public PIDController turretLockController;
     double p1 = 0.005, i1 = 0.012, d1 = 0.0;
     double inteTolerance1 = 8.0;
-    double deadband1 = 0.0;
+    double deadband1 = 0;
     double maxPow1 = 0.14;
     public double turretPower1, error1;
     double lowThresh = 0.01;
