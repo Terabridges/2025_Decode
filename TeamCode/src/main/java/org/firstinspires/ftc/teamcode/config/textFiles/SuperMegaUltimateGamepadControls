@@ -26,9 +26,9 @@ A: Hood Offset Down 0.05
 X: EmptyBalls
 Y: Hood Offset Up 0.05
 B: Override Lock
-Down: RPM Offset Down 50
+Down: RPM Offset Down 25
 Left: Spindexer Left Manual
-Up: RPM Offset Up 50
+Up: RPM Offset Up 25
 Right: Spindexer Right Manual
 LeftBump: Switch Alliance States
 RightBump: Switch Motif States

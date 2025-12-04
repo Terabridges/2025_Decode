@@ -86,7 +86,8 @@ public class Shooter implements Subsystem {
     double upperLimit = 340;
     double lowerLimit = 30;
     public boolean hasDesiredTarget = false;
-    String shooterType;
+    public double hoodOffset = 0;
+    public double RPMOffset = 0;
 
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
@@ -344,6 +345,22 @@ public class Shooter implements Subsystem {
         return "TeleOp";
     }
 
+    public void bumpUpHoodOffset(){
+        hoodOffset += 0.05;
+    }
+
+    public void bumpDownHoodOffset(){
+        hoodOffset -= 0.05;
+    }
+
+    public void bumpUpRPMOffset(){
+        RPMOffset += 25;
+    }
+
+    public void bumpDownRPMOffset(){
+        RPMOffset -= 25;
+    }
+
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
@@ -416,13 +433,13 @@ public class Shooter implements Subsystem {
                     filteredHood += step;
                 }
                 if (useTurretLock) {
-                    setHoodPos(filteredHood);
+                    setHoodPos(filteredHood+hoodOffset);
                 }
             }
         }
 
         if (shooterShoot) {
-            setShooterRPM(targetRPM);
+            setShooterRPM(targetRPM+RPMOffset);
         } else {
             setShooterRPM(0);
         }

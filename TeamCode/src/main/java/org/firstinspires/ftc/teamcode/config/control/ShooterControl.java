@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.config.control;
 
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+import org.apache.commons.math3.geometry.spherical.twod.Edge;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -17,6 +18,10 @@ public class ShooterControl implements Control {
     Robot robot;
     EdgeDetector turretLockToggle = new EdgeDetector( () -> shooter.toggleTurretLock());
     EdgeDetector toggleShooter = new EdgeDetector( () -> shooter.toggleShooter());
+    EdgeDetector bumpUpHoodOffset = new EdgeDetector(()-> shooter.bumpUpHoodOffset());
+    EdgeDetector bumpDownHoodOffset = new EdgeDetector(()-> shooter.bumpDownHoodOffset());
+    EdgeDetector bumpUpRPMOffset = new EdgeDetector(()-> shooter.bumpUpRPMOffset());
+    EdgeDetector bumpDownRPMOffset = new EdgeDetector(()-> shooter.bumpDownRPMOffset());
 
 
     //---------------- Constructor ----------------
@@ -45,10 +50,21 @@ public class ShooterControl implements Control {
         } else if (gp1.left_trigger > 0.05){
             shooter.manualTurret = true;
             shooter.turretManualPow = -gp1.left_trigger /2;
+        } else if (gp2.right_trigger > 0.05){
+            shooter.manualTurret = true;
+            shooter.turretManualPow = gp2.right_trigger/2;
+        } else if (gp2.left_trigger > 0.05){
+            shooter.manualTurret = true;
+            shooter.turretManualPow = -gp2.left_trigger /2;
         } else {
             shooter.manualTurret = false;
             shooter.turretManualPow = 0;
         }
+
+        bumpUpHoodOffset.update(gp2.y);
+        bumpDownHoodOffset.update(gp2.a);
+        bumpUpRPMOffset.update(gp2.dpad_up);
+        bumpDownRPMOffset.update(gp2.dpad_down);
 
     }
 
@@ -59,6 +75,8 @@ public class ShooterControl implements Control {
         telemetry.addData("Current RPM", shooter.getShooterRPM());
         telemetry.addData("Motif", GlobalVariables.motif);
         telemetry.addData("Shooter Type", shooter.getShooterType());
+        telemetry.addData("Hood Offset", shooter.hoodOffset);
+        telemetry.addData("RPM Offset", shooter.RPMOffset);
 
 //        telemetry.addData("Current Angle", shooter.getHoodPos());
 //        telemetry.addData("Current Turret Pos", shooter.getTurretPos());
