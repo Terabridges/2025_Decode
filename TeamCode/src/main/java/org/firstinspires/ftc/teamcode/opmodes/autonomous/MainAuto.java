@@ -88,6 +88,7 @@ class MainAuto extends OpMode {
     boolean startShooting = false;
     boolean shootingComplete = false;
     private double shotDelaySeconds = 0.5;
+    private double releaseIdleTimestamp = -1.0;
 
     MainAuto(Alliance alliance, Range range, Mode mode) {
         this(alliance, range, mode, ShotPlan.ALL_SELECTED);
@@ -127,7 +128,7 @@ class MainAuto extends OpMode {
         if (robot.getVoltage() > 12.6){
             intakeSpeed = 0.215;
         } else {
-            intakeSpeed = 0.235;
+            intakeSpeed = 0.215;
         }
 
         if (robot != null && robot.shooter != null) {
@@ -321,7 +322,7 @@ class MainAuto extends OpMode {
 
                 .state(AutoStates.COMPLETE_RELEASE)
                 .onEnter(this::onEnterCompleteRelease)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.GO_TO_SHOOT)
+                .transition(this::releaseWaitDone, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -529,6 +530,7 @@ class MainAuto extends OpMode {
         setActiveState(AutoStates.COMPLETE_RELEASE);
 
         stateTimer.reset();
+        releaseIdleTimestamp = -1.0;
 
         buildPath(PathRequest.RELEASE_COMPLETE);
         followPath(ReleaseCompletePath, 0.35);
@@ -804,6 +806,22 @@ class MainAuto extends OpMode {
     /** Point turret toward the obelisk using chassis pose (coarse aim). */
     private void coarseTurretAimAtObelisk() {
         coarseTurretAimAt(getObeliskPose());
+    }
+
+    /** Waits 1s after the release path finishes before advancing. */
+    private boolean releaseWaitDone() {
+        if (stateTimedOut()) return true;
+        boolean idle = followerIdle();
+        double now = stateTimer.seconds();
+        if (idle) {
+            if (releaseIdleTimestamp < 0.0) {
+                releaseIdleTimestamp = now;
+            }
+            return (now - releaseIdleTimestamp) >= 1.0;
+        }
+        // not idle yet; reset marker
+        releaseIdleTimestamp = -1.0;
+        return false;
     }
 
     /** Keep turret target refreshed while driving */
