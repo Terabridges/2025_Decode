@@ -27,7 +27,7 @@ public class Transfer implements Subsystem{
     double clutchUp = 0.05;
     double clutchBarelyDown = 0.35;
     double clutchDown = 0.45;
-    double clutchDownFar = 0.82;
+    double clutchDownFar = 0.88; //0.82;
     int ball = 180;
 
     PIDController spindexController;
@@ -55,7 +55,6 @@ public class Transfer implements Subsystem{
 
     public ElapsedTime colorTimer = new ElapsedTime();
 
-    public String motif = GlobalVariables.motif;
     public int desiredRotate = 1;
     public boolean isRed = false;
 
@@ -78,17 +77,25 @@ public class Transfer implements Subsystem{
 
     //---------------- Methods ----------------
 
+    public void toggleSpindexMode(){
+        if (spindex.getMode() == DcMotor.RunMode.STOP_AND_RESET_ENCODER){
+            spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        } else if (spindex.getMode() == DcMotor.RunMode.RUN_USING_ENCODER){
+            spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        }
+    }
+
     public void setSpindexPow(double pow){
         spindex.setPower(pow);
     }
 
     public void spindexRight(){
         useSpindexPID = false;
-        spindexManualPow = max;
+        spindexManualPow = 0.5;
     }
     public void spindexLeft(){
         useSpindexPID = false;
-        spindexManualPow = -max;
+        spindexManualPow = -0.5;
     }
     public void spindexZero(){
         useSpindexPID = false;
@@ -268,7 +275,7 @@ public class Transfer implements Subsystem{
 //    }
     //0 is no rotate, 1 is rotate left, 2 is rotate right
     public int rotateOrder(){
-        if (motif.equals("PPG")){
+        if (GlobalVariables.motif.equals("PPG")){
             if(balls.equals("PPG")){
                 return 1;
             } else if (balls.equals("GPP")){
@@ -276,7 +283,7 @@ public class Transfer implements Subsystem{
             } else if (balls.equals("PGP")){
                 return 0;
             }
-        } else if (motif.equals("GPP")){
+        } else if (GlobalVariables.motif.equals("GPP")){
             if(balls.equals("PPG")){
                 return 0;
             } else if (balls.equals("GPP")){
@@ -284,7 +291,7 @@ public class Transfer implements Subsystem{
             } else if (balls.equals("PGP")){
                 return 2;
             }
-        } else if (motif.equals("PGP")){
+        } else if (GlobalVariables.motif.equals("PGP")){
             if(balls.equals("PPG")){
                 return 2;
             } else if (balls.equals("GPP")){

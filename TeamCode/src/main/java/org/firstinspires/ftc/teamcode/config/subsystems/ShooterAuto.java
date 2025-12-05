@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+
 /**
  * Auto-mode shooter variant that layers the new behavior on top of the base Shooter API.
  */
@@ -141,9 +143,9 @@ public class ShooterAuto extends Shooter {
         if (vision.getTx() != 0 && Math.abs(vision.getTx()) < 3 && hasDesiredTarget && useTurretLock){
             lightColor = "green";
         } else {
-            if(vision.allianceColor.equals("red")) {
+            if(GlobalVariables.allianceColor.equals("red")) {
                 lightColor = "red";
-            } else if (vision.allianceColor.equals("blue")){
+            } else if (GlobalVariables.allianceColor.equals("blue")){
                 lightColor = "blue";
             }
         }

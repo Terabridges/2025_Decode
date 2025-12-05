@@ -73,10 +73,10 @@ public class ShooterControl implements Control {
         telemetry.addData("Target RPM", shooter.targetRPM);
         telemetry.addData("Current RPM", shooter.getShooterRPM());
         telemetry.addData("Motif", GlobalVariables.motif);
-        telemetry.addData("Shooter Type", shooter.getShooterType());
         telemetry.addData("Hood Offset", shooter.hoodOffset);
         telemetry.addData("RPM Offset", shooter.RPMOffset);
 
+//        telemetry.addData("Shooter Type", shooter.getShooterType());
 //        telemetry.addData("Current Angle", shooter.getHoodPos());
 //        telemetry.addData("Current Turret Pos", shooter.getTurretPos());
 //        telemetry.addData("Is Far Shot", shooter.isFarShot());

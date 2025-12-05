@@ -15,8 +15,8 @@ LStX: Strafe
 LStY: Movement
 RStX: Turning
 RStY: Turning
-LStCl: Reset Heading
-RStCl: Toggle Field Centric
+LStBut: //Reset Heading
+RStBut: //Toggle Field Centric
 Back:
 Start:
 
@@ -25,7 +25,7 @@ GAMEPAD 2:
 A: Hood Offset Down 0.05
 X: EmptyBalls
 Y: Hood Offset Up 0.05
-B: Override Lock
+B:
 Down: RPM Offset Down 25
 Left: Spindexer Left Manual
 Up: RPM Offset Up 25
@@ -38,7 +38,7 @@ LStX:
 LStY:
 RStX:
 RStY:
-LStCl: Reset Spindexer
-RStCl: Break from state machine
+LStBut: Reset Spindexer
+RStBut: Break from state machine
 Back:
 Start:

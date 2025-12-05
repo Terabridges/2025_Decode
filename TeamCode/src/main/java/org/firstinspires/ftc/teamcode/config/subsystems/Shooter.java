@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
@@ -364,9 +365,9 @@ public class Shooter implements Subsystem {
     //---------------- Interface Methods ----------------!
     @Override
     public void toInit(){
-        if (vision.allianceColor.equals("red")) {
+        if (GlobalVariables.allianceColor.equals("red")) {
             setRequiredTagId(24);
-        } else if (vision.allianceColor.equals("blue")) {
+        } else if (GlobalVariables.allianceColor.equals("blue")) {
             setRequiredTagId(20);
         }
     }
@@ -447,9 +448,9 @@ public class Shooter implements Subsystem {
         if (vision.getTx() != 0 && Math.abs(vision.getTx()) < 3 && hasDesiredTarget && useTurretLock){
             lightColor = "green";
         } else {
-            if(vision.allianceColor.equals("red")) {
+            if(GlobalVariables.allianceColor.equals("red")) {
                 lightColor = "red";
-            } else if (vision.allianceColor.equals("blue")){
+            } else if (GlobalVariables.allianceColor.equals("blue")){
                 lightColor = "blue";
             }
         }
