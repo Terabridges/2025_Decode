@@ -109,7 +109,12 @@ class MainAuto extends OpMode {
 
     @Override
     public void init() {
-        robot = new Robot(hardwareMap, telemetry, true);
+        if (range == Range.CLOSE_RANGE) {
+            robot = new Robot(hardwareMap, telemetry, false);
+        }
+        else {
+            robot = new Robot(hardwareMap, telemetry, true);
+        }
 
         robot.drive.manualDrive = false;
 
@@ -347,7 +352,14 @@ class MainAuto extends OpMode {
         if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
             // Determine motif ID. On short side, infer correct face from which tags are visible.
             if (range == Range.CLOSE_RANGE && !preloadComplete) {
-                acquiredMotifId = deduceObeliskIdFromVisible();
+                int seenId = robot.shooter.vision.getCurrentTagId();
+                if (alliance == Alliance.BLUE) {
+                    // Blue: subtract 1, except 21 -> 23
+                    acquiredMotifId = (seenId == 21) ? 23 : (seenId - 1);
+                } else {
+                    // Red: add 1, except 23 -> 21
+                    acquiredMotifId = (seenId == 23) ? 21 : (seenId + 1);
+                }
             } else {
                 acquiredMotifId = robot.shooter.vision.getCurrentTagId();
             }
@@ -607,7 +619,7 @@ class MainAuto extends OpMode {
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
                     .setBrakingStart(0.65)
-                    .setBrakingStrength(0.9)
+                    .setBrakingStrength(0.85)
                     .build();
         }
         else
@@ -636,7 +648,7 @@ class MainAuto extends OpMode {
         Intake intake = robot.intake;
         return new StateMachineBuilder()
                 .state(shootStates.INIT)
-                .transition(() -> (startShooting && shooter.hasDesiredTarget && shotDelayTimer.seconds() >= shotDelaySeconds && Math.abs(robot.vision.getTx()) < 6), shootStates.PRESPIN)
+                .transition(() -> (startShooting && shooter.hasDesiredTarget && Math.abs(robot.vision.getTx()) < 6), shootStates.PRESPIN)
 
                 .state(shootStates.PRESPIN)
                 .onEnter(()-> {
@@ -731,18 +743,36 @@ class MainAuto extends OpMode {
     /** Returns the static goal pose in field (Pedro) coordinates. */
     private Pose getGoalPose() {
         if (alliance == Alliance.BLUE) {
-            if (!preloadComplete) {
+            if (!preloadComplete && (range == Range.LONG_RANGE)) {
                 return new Pose(0-1.25, 144, Math.toRadians(90));
             }
-            else {
+            else if (preloadComplete && (range == Range.LONG_RANGE)) {
                 return new Pose(0+10, 144, Math.toRadians(90));
             }
-        } else {
-            if (!preloadComplete) {
-                return new Pose(144+1.25, 144, Math.toRadians(90));
+            else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
+                return new Pose(0, 144, Math.toRadians(90));
+            }
+            else if (preloadComplete && (range == Range.CLOSE_RANGE)){
+                return new Pose(0, 144, Math.toRadians(90));
             }
             else {
+                return new Pose (0, 0, 0);
+            }
+        } else {
+            if (!preloadComplete && (range == Range.LONG_RANGE)) {
+                return new Pose(144+1.25, 144, Math.toRadians(90));
+            }
+            else if (preloadComplete && (range == Range.LONG_RANGE)) {
                 return new Pose(144-4, 144, Math.toRadians(90));
+            }
+            else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
+                return new Pose(144, 144, Math.toRadians(90));
+            }
+            else if (preloadComplete && (range == Range.CLOSE_RANGE)){
+                return new Pose(144, 144, Math.toRadians(90));
+            }
+            else {
+                return new Pose (0, 0, 0);
             }
         }
     }
@@ -751,43 +781,6 @@ class MainAuto extends OpMode {
     private Pose getObeliskPose() {
         // Placeholder: aim near the alliance goal area; update to the true obelisk location if different.
         return new Pose(72, 144, Math.toRadians(90));
-    }
-
-    /** Infer correct obelisk face when two tags are visible (short side). */
-    private int deduceObeliskIdFromVisible() {
-        if (robot == null || robot.shooter == null || robot.shooter.vision == null) return robot.shooter.vision.getCurrentTagId();
-        java.util.Set<Integer> seen = new java.util.HashSet<>();
-        if (robot.shooter.vision.latest != null) {
-            for (com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult f : robot.shooter.vision.latest.getFiducialResults()) {
-                int id = f.getFiducialId();
-                if (id == 21 || id == 22 || id == 23) {
-                    seen.add(id);
-                }
-            }
-        }
-        // Need exactly two visible to deduce the missing face.
-        if (seen.size() != 2) {
-            return robot.shooter.vision.getCurrentTagId();
-        }
-        int missing = -1;
-        for (int id : new int[]{21,22,23}) {
-            if (!seen.contains(id)) {
-                missing = id;
-                break;
-            }
-        }
-        if (missing == -1) return robot.shooter.vision.getCurrentTagId();
-        boolean isBlue = alliance == Alliance.BLUE;
-        if (isBlue) {
-            if (missing == 21) return 22;
-            if (missing == 22) return 23;
-            if (missing == 23) return 22;
-        } else {
-            if (missing == 22) return 21;
-            if (missing == 23) return 22;
-            if (missing == 21) return 23;
-        }
-        return robot.shooter.vision.getCurrentTagId();
     }
 
     /** Shared coarse aim helper to point turret from current pose toward a field target. */

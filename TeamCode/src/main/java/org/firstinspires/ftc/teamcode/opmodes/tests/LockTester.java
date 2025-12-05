@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.ShooterAuto;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
-@Disabled
+//@Disabled
 @Configurable
 @TeleOp(name="LockTester", group="Test")
 public class LockTester extends LinearOpMode {
@@ -27,10 +27,10 @@ public class LockTester extends LinearOpMode {
     public Gamepad previousGamepad1 = new Gamepad();
 
     public PIDController turretController;
-    public static double p = 0.005, i = 0.012, d = 0.0;
+    public static double p = 0.014, i = 0.012, d = 0.00005;
     public static double turretTarget = 0.0;
-    public static double inteTolerance = 8;
-    public static double maxPow = 0.14;
+    public static double inteTolerance = 6;
+    public static double maxPow = 0.18;
     public static double minPow = 0.07;
     public static double deadband = 0.0;
     double turretPower, error;
