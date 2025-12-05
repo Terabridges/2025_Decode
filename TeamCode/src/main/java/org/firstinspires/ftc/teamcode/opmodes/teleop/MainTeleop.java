@@ -82,7 +82,7 @@ public class MainTeleop extends LinearOpMode {
     }
 
     public double clutchDownTime = 0.1;
-    public double clutchDownFarTime = 0.3;
+    public double clutchDownFarTime = 0.4;
     public double spinTime = 2.75;
     public double spinUpTimeout = 1.75;
     int fromRed = -90;
@@ -120,26 +120,26 @@ public class MainTeleop extends LinearOpMode {
             currentGamepad1.copy(gamepad1);
 
             if (currentGamepad1.a && !previousGamepad1.a){
-                if(robot.transfer.motif.equals("PPG")){
-                    robot.transfer.motif = "GPP";
-                } else if(robot.transfer.motif.equals("GPP")){
-                    robot.transfer.motif = "PGP";
-                } else if(robot.transfer.motif.equals("PGP")){
-                    robot.transfer.motif = "PPG";
+                if(GlobalVariables.motif.equals("PPG")){
+                    GlobalVariables.motif = "GPP";
+                } else if(GlobalVariables.motif.equals("GPP")){
+                    GlobalVariables.motif = "PGP";
+                } else if(GlobalVariables.motif.equals("PGP")){
+                    GlobalVariables.motif = "PPG";
                 }
             }
 
             if (currentGamepad1.b && !previousGamepad1.b){
-                if(robot.vision.allianceColor.equals("red")){
-                    robot.vision.allianceColor = "blue";
-                } else if (robot.vision.allianceColor.equals("blue")){
-                    robot.vision.allianceColor = "red";
+                if(GlobalVariables.allianceColor.equals("red")){
+                    GlobalVariables.allianceColor = "blue";
+                } else if (GlobalVariables.allianceColor.equals("blue")){
+                    GlobalVariables.allianceColor = "red";
                 }
             }
 
             telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
-            telemetry.addData("Motif", robot.transfer.motif);
-            telemetry.addData("Alliance Color", robot.vision.allianceColor);
+            telemetry.addData("Motif", GlobalVariables.motif);
+            telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
             telemetry.update();
         }
 
@@ -155,6 +155,40 @@ public class MainTeleop extends LinearOpMode {
             robot.update();
             controlsUpdate();
             stateMachinesUpdate();
+
+
+            //Stop everything
+            if(currentGamepad2.right_stick_button && !previousGamepad2.right_stick_button){
+                shootAllMachine.setState(shootStates.INIT);
+                clutchSuperMachine.setState(clutchStates.INIT);
+                resetMachine.setState(resetStates.INIT);
+                robot.intake.spinnerMacroTarget = 0;
+                robot.shooter.shooterShoot = false;
+                robot.transfer.isDetecting = true;
+                robot.transfer.emptyBalls();
+                robot.intake.spinnerMacro = false;
+                robot.transfer.max = 0.4;
+            }
+
+            //Switch Alliance
+            if(currentGamepad2.left_bumper && !previousGamepad2.left_bumper){
+                if(GlobalVariables.allianceColor.equals("red")){
+                    GlobalVariables.allianceColor = "blue";
+                } else if (GlobalVariables.allianceColor.equals("blue")){
+                    GlobalVariables.allianceColor = "red";
+                }
+            }
+
+            //Switch Motif
+            if(currentGamepad2.right_bumper && !previousGamepad2.right_bumper){
+                if(GlobalVariables.motif.equals("PPG")){
+                    GlobalVariables.motif = "GPP";
+                } else if(GlobalVariables.motif.equals("GPP")){
+                    GlobalVariables.motif = "PGP";
+                } else if(GlobalVariables.motif.equals("PGP")){
+                    GlobalVariables.motif = "PPG";
+                }
+            }
         }
     }
 

@@ -24,7 +24,6 @@ public class Vision implements Subsystem{
     //---------------- Software ----------------
     public LLResult latest; //Cached result each loop
     public int currentPipeline = 0; //Current pipeline index (0..9)
-    public String allianceColor = GlobalVariables.allianceColor;
     public double lastTx = 0;
     public double lastTy = 0;
     public double lastDistance = 100;

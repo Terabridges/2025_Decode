@@ -17,6 +17,10 @@ public class TransferControl implements Control {
     EdgeDetector ballLeft = new EdgeDetector( () -> transfer.ballLeft());
     EdgeDetector ballRight = new EdgeDetector( () -> transfer.ballRight());
     EdgeDetector emptyBalls = new EdgeDetector(()-> transfer.emptyBalls());
+    EdgeDetector spindexMode = new EdgeDetector(()-> transfer.toggleSpindexMode());
+    EdgeDetector spindexManualLeftRE = new EdgeDetector(()-> transfer.spindexLeft());
+    EdgeDetector spindexManualFE = new EdgeDetector(()-> transfer.spindexZero());
+    EdgeDetector spindexManualRightRE = new EdgeDetector(()-> transfer.spindexRight());
 
     //---------------- Constructor ----------------
     public TransferControl(Transfer transfer, Gamepad gp1, Gamepad gp2){
@@ -39,12 +43,18 @@ public class TransferControl implements Control {
         ballLeft.update(gp1.dpad_left);
         ballRight.update(gp1.dpad_right);
         emptyBalls.update(gp2.x);
+        spindexMode.update(gp2.left_stick_button);
+        spindexManualLeftRE.update(gp2.dpad_left);
+        spindexManualFE.update(gp2.dpad_left);
+        spindexManualRightRE.update(gp2.dpad_right);
+        spindexManualFE.update(gp2.dpad_right);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Balls", transfer.balls);
-        telemetry.addData("spindex Pos", transfer.spindex.getCurrentPosition());
+        telemetry.addData("Spindex Pos", transfer.spindex.getCurrentPosition());
+        telemetry.addData("Spindex Runmode", transfer.spindex.getMode());
 
 //        telemetry.addData("Ball Color", transfer.ballColor);
 //        telemetry.addData("Sees Red", transfer.isRed);

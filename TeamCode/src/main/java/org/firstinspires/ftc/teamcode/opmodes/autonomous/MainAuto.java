@@ -146,10 +146,8 @@ class MainAuto extends OpMode {
             robot.shooter.setRequiredTagId(tagId);
             if(alliance == Alliance.BLUE) {
                 GlobalVariables.allianceColor = "blue";
-                robot.vision.allianceColor = "blue";
             } else {
                 GlobalVariables.allianceColor = "red";
-                robot.vision.allianceColor = "red";
             }
         }
 
@@ -378,13 +376,10 @@ class MainAuto extends OpMode {
             robot.shooter.setMotifTagId(validMotif ? acquiredMotifId : -1);
             if(validMotif){
                 if(acquiredMotifId == 21){
-                    robot.transfer.motif = "GPP";
                     GlobalVariables.motif = "GPP";
                 } else if (acquiredMotifId == 22){
-                    robot.transfer.motif = "PGP";
                     GlobalVariables.motif = "PGP";
                 } else if (acquiredMotifId == 23){
-                    robot.transfer.motif = "PPG";
                     GlobalVariables.motif = "PPG";
                 }
             }
