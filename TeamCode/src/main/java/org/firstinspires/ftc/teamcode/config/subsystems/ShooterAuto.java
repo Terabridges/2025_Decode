@@ -18,6 +18,7 @@ public class ShooterAuto extends Shooter {
     private static final double HOOD_MAX_STEP_AUTO = 0.025;
     private static final double HOOD_DEADBAND_AUTO = 0.001;
     private double maxPow = 0.3;
+    protected double lastValidDistanceInches = 0.0;
 
     public ShooterAuto(HardwareMap map, Vision vision) {
         super(map, vision);
@@ -112,10 +113,17 @@ public class ShooterAuto extends Shooter {
 
         if (useData && hasDesiredTarget) {
             double rawDist = vision.getDistanceInches();
+            boolean haveDistance = rawDist > 0.1;
+            if (haveDistance) {
+                lastValidDistanceInches = rawDist;
+            } else if (lastValidDistanceInches > 0.0) {
+                rawDist = lastValidDistanceInches; // fallback to last good reading to avoid hood dip
+                haveDistance = true;
+            }
 
             // Lookup directly from table to preserve accuracy, then smooth the hood motion only
-            double rpmVal = util.clamp(shooterData.getRPMVal(rawDist), 0, maxRPM);
-            double angleVal = util.clamp(shooterData.getAngleVal(rawDist), hoodDown, hoodUp);
+            double rpmVal = haveDistance ? util.clamp(shooterData.getRPMVal(rawDist), 0, maxRPM) : -2;
+            double angleVal = haveDistance ? util.clamp(shooterData.getAngleVal(rawDist), hoodDown, hoodUp) : -2;
             if (rpmVal != -2) {
                 targetRPM = rpmVal;
             }
