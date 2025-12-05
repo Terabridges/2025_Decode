@@ -41,21 +41,41 @@ public class SelectableAuto extends SelectableOpMode
         super("Select Auto", c -> {
             c.folder("Blue Side", p -> {
                 p.folder("Close Range", m -> {
-                    m.folder("All Selected Range", s -> {
-                        s.add("1 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("2 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("3 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("4 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("Move Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.ALL_SELECTED));
-                        s.add("Preload Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.ALL_SELECTED));
+                    m.folder("Release", rel -> {
+                        rel.folder("All Selected Range", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("2 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("3 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("4 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("Move Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.ALL_SELECTED, true));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.ALL_SELECTED, true));
+                        });
+                        rel.folder("Closest Point", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("2 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("3 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("4 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("Move Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.CLOSEST_POINT, true));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.CLOSEST_POINT, true));
+                        });
                     });
-                    m.folder("Closest Point", s -> {
-                        s.add("1 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("2 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("3 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("4 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("Move Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.CLOSEST_POINT));
-                        s.add("Preload Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.CLOSEST_POINT));
+                    m.folder("No Release", rel -> {
+                        rel.folder("All Selected Range", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("2 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("3 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("4 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("Move Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.ALL_SELECTED, false));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.ALL_SELECTED, false));
+                        });
+                        rel.folder("Closest Point", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("2 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("3 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("4 Row", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("Move Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.CLOSEST_POINT, false));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.BLUE, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.CLOSEST_POINT, false));
+                        });
                     });
                 });
                 p.folder("Long Range", m -> {
@@ -79,21 +99,41 @@ public class SelectableAuto extends SelectableOpMode
             });
             c.folder("Red Side", p -> {
                 p.folder("Close Range", m -> {
-                    m.folder("All Selected Range", s -> {
-                        s.add("1 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("2 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("3 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("4 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.ALL_SELECTED));
-                        s.add("Move Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.ALL_SELECTED));
-                        s.add("Preload Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.ALL_SELECTED));
+                    m.folder("Release", rel -> {
+                        rel.folder("All Selected Range", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("2 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("3 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("4 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.ALL_SELECTED, true));
+                            s.add("Move Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.ALL_SELECTED, true));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.ALL_SELECTED, true));
+                        });
+                        rel.folder("Closest Point", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("2 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("3 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("4 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.CLOSEST_POINT, true));
+                            s.add("Move Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.CLOSEST_POINT, true));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.CLOSEST_POINT, true));
+                        });
                     });
-                    m.folder("Closest Point", s -> {
-                        s.add("1 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("2 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("3 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("4 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.CLOSEST_POINT));
-                        s.add("Move Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.CLOSEST_POINT));
-                        s.add("Preload Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.CLOSEST_POINT));
+                    m.folder("No Release", rel -> {
+                        rel.folder("All Selected Range", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("2 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("3 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("4 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.ALL_SELECTED, false));
+                            s.add("Move Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.ALL_SELECTED, false));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.ALL_SELECTED, false));
+                        });
+                        rel.folder("Closest Point", s -> {
+                            s.add("1 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.ONE_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("2 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.TWO_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("3 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.THREE_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("4 Row", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.FOUR_ROW, ShotPlan.CLOSEST_POINT, false));
+                            s.add("Move Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.MOVE_ONLY, ShotPlan.CLOSEST_POINT, false));
+                            s.add("Preload Only", () -> new MainAuto(Alliance.RED, Range.CLOSE_RANGE, Mode.PRELOAD_ONLY, ShotPlan.CLOSEST_POINT, false));
+                        });
                     });
                 });
                 p.folder("Long Range", m -> {

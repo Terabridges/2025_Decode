@@ -44,6 +44,7 @@ class MainAuto extends OpMode {
     private final Range range;
     private final Mode mode;
     private final ShotPlan shotPlan;
+    private final boolean releaseAfterClosePickup;
     private Range lastScoreRangeUsed;
     private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD, RELEASE_GO_TO, RELEASE_COMPLETE, LEAVE }
 
@@ -95,10 +96,15 @@ class MainAuto extends OpMode {
     }
 
     MainAuto(Alliance alliance, Range range, Mode mode, ShotPlan shotPlan) {
+        this(alliance, range, mode, shotPlan, true);
+    }
+
+    MainAuto(Alliance alliance, Range range, Mode mode, ShotPlan shotPlan, boolean releaseAfterClosePickup) {
         this.alliance = alliance;
         this.range = range;
         this.mode = mode;
         this.shotPlan = shotPlan;
+        this.releaseAfterClosePickup = releaseAfterClosePickup;
         this.lastScoreRangeUsed = range;
         startPose = ap.findStartPose(alliance, range);
     }
@@ -127,16 +133,16 @@ class MainAuto extends OpMode {
 
         if (range == Range.LONG_RANGE) {
             if (robot.getVoltage() > 12.6){
-                intakeSpeed = 0.19;
-            } else {
                 intakeSpeed = 0.195;
+            } else {
+                intakeSpeed = 0.21;
             }
         }
         else {
             if (robot.getVoltage() > 12.6){
-                intakeSpeed = 0.19;
-            } else {
                 intakeSpeed = 0.195;
+            } else {
+                intakeSpeed = 0.21;
             }
         }
 
@@ -585,7 +591,7 @@ class MainAuto extends OpMode {
         boolean closeSide = range == Range.CLOSE_RANGE;
         boolean modeAllows = mode != Mode.MOVE_ONLY && mode != Mode.PRELOAD_ONLY;
         boolean justFinishedFirstRow = preloadComplete && rowsCompleted == 0;
-        return closeSide && modeAllows && justFinishedFirstRow;
+        return closeSide && modeAllows && justFinishedFirstRow && releaseAfterClosePickup;
     }
 
     private boolean hasPendingRows() {

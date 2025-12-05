@@ -93,15 +93,15 @@ public class AutoPoses {
 
     // Row 1
     public Pose pick1StartLB = poseDeg(24, 16 + offsetLong, 180); //TODO fix this
-    public Pose pick1StartCB = poseDeg(intakeStart, 84 + offsetClose, 180 + offsetHeading);
-    public Pose pick1StartCBFake = poseDeg(intakeStart, 84 + offsetClose, 180 - offsetHeading);
+    public Pose pick1StartCB = poseDeg(intakeStart-0.75, 84 + offsetClose, 180 + offsetHeading);
+    public Pose pick1StartCBFake = poseDeg(intakeStart-2, 84 + offsetClose, 180 - offsetHeading);
     public Pose pick1StartCR = Mirror(pick1StartCBFake);
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
     public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180 + 3);
     public Pose pick2StartCB = poseDeg(intakeStart, 60 + offsetClose, 180 + offsetHeading);
-    public Pose pick2StartCBFake = poseDeg(intakeStart, 60 + offsetClose, 180 + offsetHeading);
+    public Pose pick2StartCBFake = poseDeg(intakeStart - 3, 60 + offsetClose, 180 - 4);
     public Pose pick2StartCR = Mirror(pick2StartCBFake);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 

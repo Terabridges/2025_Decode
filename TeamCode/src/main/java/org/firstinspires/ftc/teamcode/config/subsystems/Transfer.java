@@ -27,7 +27,7 @@ public class Transfer implements Subsystem{
     double clutchUp = 0.05;
     double clutchBarelyDown = 0.35;
     double clutchDown = 0.45;
-    double clutchDownFar = 0.88; //0.82;
+    double clutchDownFar = 0.85; //0.82;
     int ball = 180;
 
     PIDController spindexController;

@@ -19,7 +19,7 @@ public class TransferControl implements Control {
     EdgeDetector emptyBalls = new EdgeDetector(()-> transfer.emptyBalls());
     EdgeDetector spindexMode = new EdgeDetector(()-> transfer.toggleSpindexMode());
     EdgeDetector spindexManualLeftRE = new EdgeDetector(()-> transfer.spindexLeft());
-    EdgeDetector spindexManualFE = new EdgeDetector(()-> transfer.spindexZero());
+    EdgeDetector spindexManualFE = new EdgeDetector(()-> transfer.spindexZero(), true);
     EdgeDetector spindexManualRightRE = new EdgeDetector(()-> transfer.spindexRight());
 
     //---------------- Constructor ----------------
