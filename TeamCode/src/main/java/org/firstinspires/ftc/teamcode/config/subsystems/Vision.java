@@ -95,6 +95,26 @@ public class Vision implements Subsystem{
         return latest.getFiducialResults().get(0).getFiducialId();
     }
 
+    /** Choose the obelisk face (21/22/23) whose yaw is most directly facing the robot. */
+    public int getFieldFacingObeliskId() {
+        if (!hasTarget() || latest.getFiducialResults().isEmpty()) {
+            return getCurrentTagId();
+        }
+        double bestScore = Double.MAX_VALUE;
+        int bestId = -1;
+        for (LLResultTypes.FiducialResult f : latest.getFiducialResults()) {
+            int id = f.getFiducialId();
+            if (id != 21 && id != 22 && id != 23) continue;
+            Pose3D p = f.getTargetPoseRobotSpace();
+            double yaw = Math.abs(p.getOrientation().getYaw(AngleUnit.DEGREES));
+            if (yaw < bestScore) {
+                bestScore = yaw;
+                bestId = id;
+            }
+        }
+        return (bestId != -1) ? bestId : getCurrentTagId();
+    }
+
     public double getDistanceInches()
     {
 //        if (hasTarget())
