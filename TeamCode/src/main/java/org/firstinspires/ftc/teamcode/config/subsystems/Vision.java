@@ -55,6 +55,18 @@ public class Vision implements Subsystem{
 
     public boolean hasTarget() { return latest != null && latest.isValid(); }
 
+    /** True if any fiducial in the current frame matches tagId; tagId < 0 accepts any target. */
+    public boolean seesTag(int tagId) {
+        if (tagId < 0) return hasTarget();
+        if (!hasTarget() || latest.getFiducialResults().isEmpty()) return false;
+        for (LLResultTypes.FiducialResult f : latest.getFiducialResults()) {
+            if (f.getFiducialId() == tagId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /*
     Note: Limelight is mounted 90 degrees counterclockwise, therefore
     get tx returns ty

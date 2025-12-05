@@ -32,7 +32,7 @@ public class AutoPoses {
     double robotLength = 15.25;
 
     //Starting Poses
-    public Pose blueCloseStartPose = poseDeg(48 + robotWidth/2, robotLength/2, 180); //TODO use actual pose
+    public Pose blueCloseStartPose = poseDeg(16, 114, 0);
     public Pose blueFarStartPose = poseDeg(48 + robotWidth/2, robotLength/2, 180);
     public Pose redCloseStartPose = Mirror(blueCloseStartPose);
     public Pose redFarStartPose = Mirror(blueFarStartPose);
