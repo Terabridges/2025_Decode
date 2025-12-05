@@ -16,8 +16,8 @@ public class DriveControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector slowModeRE = new EdgeDetector( () -> drive.toggleSlowMode());
-    EdgeDetector toggleFieldCentric = new EdgeDetector(()-> drive.toggleFieldCentric());
-    EdgeDetector resetIMU = new EdgeDetector(()-> drive.resetPinpointIMU());
+//    EdgeDetector toggleFieldCentric = new EdgeDetector(()-> drive.toggleFieldCentric());
+//    EdgeDetector resetIMU = new EdgeDetector(()-> drive.resetPinpointIMU());
 
 
     //---------------- Constructor ----------------
@@ -36,48 +36,49 @@ public class DriveControl implements Control {
 
 
     //---------------- Interface Methods ----------------
+
+//    if (drive.useFieldCentric){
+//        drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x);
+//    } else {
+
     @Override
     public void update(){
 
         slowModeRE.update(gp1.dpad_down);
-        resetIMU.update(gp1.right_stick_button);
-        toggleFieldCentric.update(gp1.left_stick_button);
+//        resetIMU.update(gp1.right_stick_button);
+//        toggleFieldCentric.update(gp1.left_stick_button);
 
         if(drive.manualDrive){
-            if (drive.useFieldCentric){
-                drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x);
-            } else {
-                double max;
-                // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
-                double axial = -gp1.left_stick_y;  // Note: pushing stick forward gives negative value
-                double lateral = gp1.left_stick_x;
-                double yaw = gp1.right_stick_x;
-                // Combine the joystick requests for each axis-motion to determine each wheel's power.
-                // Set up a variable for each drive wheel to save the power level for telemetry.
-                double leftFrontPower = axial + lateral + yaw;
-                double rightFrontPower = axial - lateral - yaw;
-                double leftBackPower = axial - lateral + yaw;
-                double rightBackPower = axial + lateral - yaw;
-                // Normalize the values so no wheel power exceeds 100%
-                // This ensures that the robot maintains the desired motion.
-                max = Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower));
-                max = Math.max(max, Math.abs(leftBackPower));
-                max = Math.max(max, Math.abs(rightBackPower));
-                if (max > 1.0) {
-                    leftFrontPower /= max;
-                    rightFrontPower /= max;
-                    leftBackPower /= max;
-                    rightBackPower /= max;
-                }
-                drive.setDrivePowers(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
+            double max;
+            // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
+            double axial = -gp1.left_stick_y;  // Note: pushing stick forward gives negative value
+            double lateral = gp1.left_stick_x;
+            double yaw = gp1.right_stick_x;
+            // Combine the joystick requests for each axis-motion to determine each wheel's power.
+            // Set up a variable for each drive wheel to save the power level for telemetry.
+            double leftFrontPower = axial + lateral + yaw;
+            double rightFrontPower = axial - lateral - yaw;
+            double leftBackPower = axial - lateral + yaw;
+            double rightBackPower = axial + lateral - yaw;
+            // Normalize the values so no wheel power exceeds 100%
+            // This ensures that the robot maintains the desired motion.
+            max = Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower));
+            max = Math.max(max, Math.abs(leftBackPower));
+            max = Math.max(max, Math.abs(rightBackPower));
+            if (max > 1.0) {
+                leftFrontPower /= max;
+                rightFrontPower /= max;
+                leftBackPower /= max;
+                rightBackPower /= max;
             }
+            drive.setDrivePowers(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
         }
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Slow Mode?", drive.useSlowMode);
-        telemetry.addData("Use Field Centric?", drive.useFieldCentric);
-        telemetry.addData("Heading", drive.pinpoint.getHeading(AngleUnit.RADIANS));
+//        telemetry.addData("Use Field Centric?", drive.useFieldCentric);
+//        telemetry.addData("Heading", drive.pinpoint.getHeading(AngleUnit.RADIANS));
     }
 }
