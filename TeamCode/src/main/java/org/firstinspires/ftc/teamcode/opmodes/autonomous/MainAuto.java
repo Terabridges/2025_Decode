@@ -125,11 +125,21 @@ class MainAuto extends OpMode {
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        if (robot.getVoltage() > 12.6){
-            intakeSpeed = 0.215;
-        } else {
-            intakeSpeed = 0.215;
+        if (range == Range.LONG_RANGE) {
+            if (robot.getVoltage() > 12.6){
+                intakeSpeed = 0.19;
+            } else {
+                intakeSpeed = 0.195;
+            }
         }
+        else {
+            if (robot.getVoltage() > 12.6){
+                intakeSpeed = 0.19;
+            } else {
+                intakeSpeed = 0.195;
+            }
+        }
+
 
         if (robot != null && robot.shooter != null) {
             int tagId = (alliance == Alliance.BLUE) ? 20 : 24;
@@ -830,7 +840,7 @@ class MainAuto extends OpMode {
             robot.shooter.useTurretLock = false;
             coarseTurretAimAtObelisk();
         }
-        else {
+        else if (activeState == AutoStates.GO_TO_SHOOT || activeState == AutoStates.COMPLETE_SHOOT) { //IF BREAKS STUFF, SWITCH BACK TO JUST "ELSE"
             if (robot.shooter.hasDesiredTarget) {
                 robot.shooter.useTurretLock = true;
             }

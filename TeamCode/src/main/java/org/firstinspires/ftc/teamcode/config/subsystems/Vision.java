@@ -27,7 +27,7 @@ public class Vision implements Subsystem{
     public String allianceColor = GlobalVariables.allianceColor;
     public double lastTx = 0;
     public double lastTy = 0;
-    public double lastDistance = 0;
+    public double lastDistance = 100;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {

@@ -52,8 +52,9 @@ public class AutoPoses {
     // SCORE POSES
     // ========================
     public Pose scoreCB = poseDeg(48, 96, 70);
+    public Pose scoreCBFAKE = poseDeg(48, 96, 290);
     public Pose scoreLB = poseDeg(48 + robotWidth/2, 14.5, 230);
-    public Pose scoreCR = Mirror(scoreCB);
+    public Pose scoreCR = Mirror(scoreCBFAKE);
     public Pose scoreLR = Mirror(scoreLB);
 
     //TODO add a secondary score pose if need to save time (Closer to middle row, top of close triangle)
@@ -68,8 +69,8 @@ public class AutoPoses {
     // RELEASE (lever) POSES
     // ========================
 
-    public Pose releaseGoToCloseB = poseDeg(20, 75, 180);
-    public Pose releaseCompleteCloseB = poseDeg(16, 75, 180);
+    public Pose releaseGoToCloseB = poseDeg(20, 78, 180);
+    public Pose releaseCompleteCloseB = poseDeg(14, 78, 180);
     public Pose releaseGoToCloseR = Mirror(releaseGoToCloseB);
     public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseB);
 
@@ -93,17 +94,19 @@ public class AutoPoses {
     // Row 1
     public Pose pick1StartLB = poseDeg(24, 16 + offsetLong, 180); //TODO fix this
     public Pose pick1StartCB = poseDeg(intakeStart, 84 + offsetClose, 180 + offsetHeading);
-    public Pose pick1StartCR = Mirror(pick1StartCB);
+    public Pose pick1StartCBFake = poseDeg(intakeStart, 84 + offsetClose, 180 - offsetHeading);
+    public Pose pick1StartCR = Mirror(pick1StartCBFake);
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
-    public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180);
+    public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180 + 3);
     public Pose pick2StartCB = poseDeg(intakeStart, 60 + offsetClose, 180 + offsetHeading);
-    public Pose pick2StartCR = Mirror(pick2StartCB);
+    public Pose pick2StartCBFake = poseDeg(intakeStart, 60 + offsetClose, 180 + offsetHeading);
+    public Pose pick2StartCR = Mirror(pick2StartCBFake);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
     // Row 3
-    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offsetLong - 6, 180);
+    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offsetLong - 6, 180 + 5);
     public Pose pick3StartCB = poseDeg(intakeStart, 36 + offsetClose, 180 + offsetHeading);
     public Pose pick3StartCR = Mirror(pick3StartCB);
     public Pose pick3StartLR = Mirror(pick3StartLB);
@@ -118,22 +121,23 @@ public class AutoPoses {
     // PICKUP END POSES
     // ========================
     double intakeEnd = 24.5;
+    double offsetEnd = -1;
 
     // Row 1
     public Pose pick1EndLB = poseDeg(16, 16 + offsetLong, 180); //TODO fix this
-    public Pose pick1EndCB = poseDeg(intakeEnd, 84, 180);
+    public Pose pick1EndCB = poseDeg(intakeEnd+offsetEnd, 84, 180);
     public Pose pick1EndCR = Mirror(pick1EndCB);
     public Pose pick1EndLR = Mirror(pick1EndLB);
 
     // Row 2
     public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offsetLong, 180);
-    public Pose pick2EndCB = poseDeg(intakeEnd, 60, 180);
+    public Pose pick2EndCB = poseDeg(intakeEnd+offsetEnd, 60, 180);
     public Pose pick2EndCR = Mirror(pick2EndCB);
     public Pose pick2EndLR = Mirror(pick2EndLB);
 
     // Row 3
     public Pose pick3EndLB = poseDeg(intakeEnd, 60 + offsetLong -1, 180);
-    public Pose pick3EndCB = poseDeg(intakeEnd, 36, 180);
+    public Pose pick3EndCB = poseDeg(intakeEnd+offsetEnd, 36, 180);
     public Pose pick3EndCR = Mirror(pick3EndCB);
     public Pose pick3EndLR = Mirror(pick3EndLB);
 
