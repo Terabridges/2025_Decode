@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.config.control;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
@@ -15,6 +16,9 @@ public class DriveControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector slowModeRE = new EdgeDetector( () -> drive.toggleSlowMode());
+    EdgeDetector toggleFieldCentric = new EdgeDetector(()-> drive.toggleFieldCentric());
+    EdgeDetector resetIMU = new EdgeDetector(()-> drive.resetPinpointIMU());
+
 
     //---------------- Constructor ----------------
     public DriveControl(Drive drive, Gamepad gp1, Gamepad gp2){
@@ -36,6 +40,8 @@ public class DriveControl implements Control {
     public void update(){
 
         slowModeRE.update(gp1.dpad_down);
+        resetIMU.update(gp1.right_stick_button);
+        toggleFieldCentric.update(gp1.left_stick_button);
 
         if(drive.manualDrive){
             if (drive.useFieldCentric){
@@ -72,5 +78,6 @@ public class DriveControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Slow Mode?", drive.useSlowMode);
         telemetry.addData("Use Field Centric?", drive.useFieldCentric);
+        telemetry.addData("Heading", drive.pinpoint.getHeading(AngleUnit.RADIANS));
     }
 }

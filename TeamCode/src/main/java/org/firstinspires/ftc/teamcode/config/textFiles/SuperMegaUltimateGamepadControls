@@ -15,8 +15,8 @@ LStX: Strafe
 LStY: Movement
 RStX: Turning
 RStY: Turning
-LStCl:
-RStCl:
+LStCl: Reset Heading
+RStCl: Toggle Field Centric
 Back:
 Start:
 
