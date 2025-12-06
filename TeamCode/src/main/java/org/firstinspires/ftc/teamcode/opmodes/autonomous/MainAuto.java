@@ -195,6 +195,9 @@ class MainAuto extends OpMode {
         autoMachine.start();
         robot.toInit();
         shootAllMachine.start();
+        if (range == Range.CLOSE_RANGE) {
+            robot.shooter.hoodOffset -= 0.045;
+        }
     }
 
     @Override
@@ -478,6 +481,8 @@ class MainAuto extends OpMode {
             return;
         }
 
+        robot.intake.spinnerMacro = true;
+        robot.intake.spinnerMacroTarget = 0.95;
         robot.shooter.shooterShoot = true;
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(GoToScore);
@@ -766,7 +771,7 @@ class MainAuto extends OpMode {
                 return new Pose(0, 144, Math.toRadians(90));
             }
             else if (preloadComplete && (range == Range.CLOSE_RANGE)){
-                return new Pose(0, 144, Math.toRadians(90));
+                return new Pose(0-5, 144, Math.toRadians(90));
             }
             else {
                 return new Pose (0, 0, 0);
@@ -840,15 +845,18 @@ class MainAuto extends OpMode {
         if (activeState == AutoStates.ACQUIRE_MOTIF) {
             robot.shooter.useTurretLock = false;
             coarseTurretAimAtObelisk();
+            telemetry.addData("Obelisk Aim", true);
         }
-        else if (activeState == AutoStates.GO_TO_SHOOT || activeState == AutoStates.COMPLETE_SHOOT) { //IF BREAKS STUFF, SWITCH BACK TO JUST "ELSE"
-            if (robot.shooter.hasDesiredTarget) {
-                robot.shooter.useTurretLock = true;
-            }
-            else {
-                robot.shooter.useTurretLock = false;
-                coarseTurretAimAtGoal();
-            }
+//        else if (activeState == AutoStates.GO_TO_SHOOT || activeState == AutoStates.COMPLETE_SHOOT) { //IF BREAKS STUFF, SWITCH BACK TO JUST "ELSE"
+        else if (robot.shooter.hasDesiredTarget) {
+            robot.shooter.useTurretLock = true;
+            telemetry.addData("Lock Aim", true);
+        }
+        else {
+            robot.shooter.useTurretLock = false;
+            robot.shooter.turretLockController.reset();
+            coarseTurretAimAtGoal();
+            telemetry.addData("Goal Aim", true);
         }
     }
 }

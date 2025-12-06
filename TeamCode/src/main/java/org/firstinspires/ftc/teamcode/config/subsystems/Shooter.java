@@ -66,7 +66,7 @@ public class Shooter implements Subsystem {
     //---------PID------
     public PIDController turretLockController;
     double p1 = 0.01, i1 = 0.012, d1 = 0.00005;
-    double inteTolerance1 = 6.0;
+    double inteTolerance1 = 7.0;
     double deadband1 = 0;
     double maxPow1 = 0.15;
     public double turretPower1, error1;
@@ -161,6 +161,7 @@ public class Shooter implements Subsystem {
 
     public void toggleTurretLock() {
         useTurretLock = !useTurretLock;
+        turretLockController.reset();
     }
 
     // Angle helpers
@@ -397,19 +398,19 @@ public class Shooter implements Subsystem {
         } else if (useTurretLock && hasDesiredTarget) {
             double lockPower = setTurretLockPID(0.0);
             double pos = getTurretPos();
-            if (lockPower > 0) {
-                if (pos <= lowerLimit) {
-                    lockPower = 0.0;
-                } else if (pos <= 130) {
-                    lockPower *= limitTurretPower(130, 30);
-                }
-            } else if (lockPower < 0) {
-                if (pos >= upperLimit) {
-                    lockPower = 0.0;
-                } else if (pos >= 240) {
-                    lockPower *= limitTurretPower(240, 340);
-                }
-            }
+//            if (lockPower > 0) {
+//                if (pos <= lowerLimit) {
+//                    lockPower = 0.0;
+//                } else if (pos <= 130) {
+//                    lockPower *= limitTurretPower(130, 30);
+//                }
+//            } else if (lockPower < 0) {
+//                if (pos >= upperLimit) {
+//                    lockPower = 0.0;
+//                } else if (pos >= 240) {
+//                    lockPower *= limitTurretPower(240, 340);
+//                }
+//            }
             setTurretPower(lockPower);
         } else if (useTurretPID) {
             setTurretPower(setTurretPID(turretTarget));

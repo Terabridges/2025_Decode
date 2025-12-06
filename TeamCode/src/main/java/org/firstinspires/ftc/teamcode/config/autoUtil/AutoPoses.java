@@ -70,7 +70,7 @@ public class AutoPoses {
     // ========================
 
     public Pose releaseGoToCloseB = poseDeg(20, 78, 180);
-    public Pose releaseCompleteCloseB = poseDeg(14, 78, 180);
+    public Pose releaseCompleteCloseB = poseDeg(15, 78, 180);
     public Pose releaseGoToCloseR = Mirror(releaseGoToCloseB);
     public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseB);
 
@@ -89,7 +89,7 @@ public class AutoPoses {
     double intakeStart = 43.5;
     double offsetLong = -1.5;
     double offsetClose = 5;
-    double offsetHeading = -7;
+    double offsetHeading = -10;
 
     // Row 1
     public Pose pick1StartLB = poseDeg(24, 16 + offsetLong, 180); //TODO fix this
