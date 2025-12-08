@@ -79,7 +79,7 @@ public class AutoPoses {
     // ========================
     // Close-side park is nearer the scoring area; long-side park is farther.
     public Pose leaveCB = poseDeg(36, 84, 70); //70 or 0
-    public Pose leaveLB = poseDeg(48, 36, 230); //230 or 0
+    public Pose leaveLB = poseDeg(15, 15, 230); //230 or 0
     public Pose leaveCR = Mirror(leaveCB);
     public Pose leaveLR = Mirror(leaveLB);
 

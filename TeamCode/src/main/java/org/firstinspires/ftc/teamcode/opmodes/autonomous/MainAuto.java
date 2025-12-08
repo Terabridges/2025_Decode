@@ -133,16 +133,16 @@ class MainAuto extends OpMode {
 
         if (range == Range.LONG_RANGE) {
             if (robot.getVoltage() > 12.6){
-                intakeSpeed = 0.195;
+                intakeSpeed = 0.18;
             } else {
-                intakeSpeed = 0.21;
+                intakeSpeed = 0.2;
             }
         }
         else {
             if (robot.getVoltage() > 12.6){
-                intakeSpeed = 0.195;
+                intakeSpeed = 0.18;
             } else {
-                intakeSpeed = 0.21;
+                intakeSpeed = 0.2;
             }
         }
 
@@ -310,7 +310,12 @@ class MainAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                .transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
+                .transition(this::motifAcquiredOrTimedOut, AutoStates.WAIT)
+                //.transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
+                //.transitionTimed(4, AutoStates.GO_TO_SHOOT)
+
+                .state(AutoStates.WAIT)
+                .transitionTimed(4, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
@@ -765,7 +770,7 @@ class MainAuto extends OpMode {
                 return new Pose(0-1.25, 144, Math.toRadians(90));
             }
             else if (preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(0+10, 144, Math.toRadians(90));
+                return new Pose(0+5, 144, Math.toRadians(90));
             }
             else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
                 return new Pose(0, 144, Math.toRadians(90));
