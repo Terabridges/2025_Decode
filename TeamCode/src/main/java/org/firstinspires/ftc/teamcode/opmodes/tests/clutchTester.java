@@ -13,7 +13,6 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
-@Disabled
 @Configurable
 @TeleOp(name="clutchTester", group="Test")
 public class clutchTester extends LinearOpMode {
@@ -22,9 +21,14 @@ public class clutchTester extends LinearOpMode {
     public Gamepad currentGamepad1 = new Gamepad();
     public Gamepad previousGamepad1 = new Gamepad();
     public Transfer transfer;
-    public static double transferUp = 0.42;
-    public static double transferDown = 0.55;
+    public static double transferUp = 0.05;
+    public static double transferDown = 0.85;
 
+//    double clutchUp = 0.05;
+//    double clutchBarelyDown = 0.35;
+//    double clutchDown = 0.45;
+//    double clutchDownFar = 0.85;
+    //just added 0.1 to all
     @Override
     public void runOpMode(){
 

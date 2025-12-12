@@ -68,7 +68,7 @@ public class Shooter implements Subsystem {
     double p1 = 0.01, i1 = 0.012, d1 = 0.00005;
     double inteTolerance1 = 7.0;
     double deadband1 = 0;
-    double maxPow1 = 0.15;
+    double maxPow1 = 0.125; //0.15;
     public double turretPower1, error1;
     double lowThresh = 0.01;
     double minPow = 0.07;

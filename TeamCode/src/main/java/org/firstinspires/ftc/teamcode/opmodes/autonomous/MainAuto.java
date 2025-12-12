@@ -196,7 +196,7 @@ class MainAuto extends OpMode {
         robot.toInit();
         shootAllMachine.start();
         if (range == Range.CLOSE_RANGE) {
-            robot.shooter.hoodOffset -= 0.045;
+            robot.shooter.hoodOffset -= 0; //0.045;
         }
     }
 
@@ -310,8 +310,8 @@ class MainAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                .transition(this::motifAcquiredOrTimedOut, AutoStates.WAIT)
-                //.transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
+                //.transition(this::motifAcquiredOrTimedOut, AutoStates.WAIT)
+                .transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
                 //.transitionTimed(4, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.WAIT)

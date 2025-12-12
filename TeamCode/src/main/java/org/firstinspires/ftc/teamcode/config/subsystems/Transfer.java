@@ -24,10 +24,10 @@ public class Transfer implements Subsystem{
     public boolean useSpindexPID = true;
     public double spindexManualPow = 0;
     public boolean isClutchDown = false;
-    double clutchUp = 0.05;
-    double clutchBarelyDown = 0.35;
-    double clutchDown = 0.45;
-    double clutchDownFar = 0.85; //0.82;
+    double clutchUp = 0.15;
+    double clutchBarelyDown = 0.32; //0.45;
+    double clutchDown = 0.55;
+    double clutchDownFar = 0.9;
     int ball = 180;
 
     PIDController spindexController;
@@ -217,12 +217,13 @@ public class Transfer implements Subsystem{
 //            ballColor = "none";
 //        }
 
-        if (colorDistance < 1.92 && previousColorDistance > 1.92){
+        //previous distance values: 1.92
+        if (colorDistance < 1.55 && previousColorDistance > 1.55){
             colorTimer.reset();
             ballDetected = true;
         }
 
-        if (colorDistance > 1.92){
+        if (colorDistance > 1.55){
             ballDetected = false;
             ballColor = "none";
         }
