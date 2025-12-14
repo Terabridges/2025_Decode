@@ -90,6 +90,7 @@ public class MainTeleop extends LinearOpMode {
     public double spinTime = 2.75;
     public double spinUpTimeout = 1.75;
     int fromRed = -90;
+    private boolean turretAimAssist = false;
 
     public StateMachine shootAllMachine;
     public StateMachine clutchSuperMachine;
@@ -166,6 +167,22 @@ public class MainTeleop extends LinearOpMode {
             robot.drive.manualDrive = driverActive || !followerBusy;
             // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
             follower.update();
+            // Toggle turret auto-aim with GP1 dpad_up
+            if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
+                turretAimAssist = !turretAimAssist;
+                if (!turretAimAssist) {
+                    robot.shooter.useTurretLock = false;
+                    robot.shooter.turretLockController.reset();
+                }
+            }
+            if (turretAimAssist) {
+                updateTurretAimTeleop(robot);
+            }
+
+            // Quick reset: GP2 B seeds follower pose to field center facing goals.
+            if (currentGamepad2.b && !previousGamepad2.b) {
+                follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
+            }
             robot.update();
             controlsUpdate();
             stateMachinesUpdate();
@@ -212,6 +229,7 @@ public class MainTeleop extends LinearOpMode {
             c.addTelemetry(telemetry);
         }
         telemetry.addData("Shooting State", shootAllMachine.getState());
+        telemetry.addData("Turret Auto Aim", turretAimAssist);
         telemetry.update();
     }
 
@@ -497,5 +515,37 @@ public class MainTeleop extends LinearOpMode {
                 })
 
                 .build();
+    }
+
+    /** TeleOp aim logic: lock when vision has the target, otherwise coarse aim at the goal. */
+    private void updateTurretAimTeleop(Robot robot) {
+        if (robot == null || robot.shooter == null || follower == null) return;
+
+        if (robot.shooter.hasDesiredTarget) {
+            robot.shooter.useTurretLock = true;
+        } else {
+            robot.shooter.useTurretLock = false;
+            robot.shooter.turretLockController.reset();
+            coarseTurretAimAtGoalTeleop(robot);
+        }
+    }
+
+    private void coarseTurretAimAtGoalTeleop(Robot robot) {
+        Pose robotPose = follower.getPose();
+        Pose target = getGoalPoseTeleop();
+        if (robotPose == null || target == null) return;
+        robot.shooter.aimTurretAtFieldPose(
+                robotPose.getX(),
+                robotPose.getY(),
+                robotPose.getHeading(),
+                target.getX(),
+                target.getY());
+    }
+
+    private Pose getGoalPoseTeleop() {
+        boolean blue = GlobalVariables.allianceColor.equalsIgnoreCase("blue");
+        return blue
+                ? new Pose(0, 144, Math.toRadians(90))
+                : new Pose(144, 144, Math.toRadians(90));
     }
 }
