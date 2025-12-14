@@ -131,6 +131,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Queue;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @SuppressWarnings("WeakerAccess")
@@ -172,6 +173,9 @@ public class FtcRobotControllerActivity extends Activity
 
   protected FtcRobotControllerService controllerService;
   protected NetworkType networkType;
+
+  // Embedded logs web server (serves UI and files under app external files ftc_saved_logs)
+  protected LogWebServer logsServer;
 
   protected FtcEventLoop eventLoop;
   protected Queue<UsbDevice> receivedUsbAttachmentNotifications;
@@ -444,6 +448,20 @@ public class FtcRobotControllerActivity extends Activity
     super.onResume();
     RobotLog.vv(TAG, "onResume()");
 
+    // Start embedded logs web server so the logs UI is available anytime the activity is running
+    try {
+      if (logsServer == null) logsServer = new LogWebServer(this, 8081);
+      logsServer.start();
+    } catch (Exception e) { RobotLog.logStacktrace(e); }
+
+    // Informational log with likely access URL
+    try {
+      WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+      int ip = wm.getConnectionInfo().getIpAddress();
+      final String ipStr = String.format(Locale.US, "%d.%d.%d.%d", (ip & 0xff), (ip >> 8 & 0xff), (ip >> 16 & 0xff), (ip >> 24 & 0xff));
+      RobotLog.vv(TAG, "Logs UI available at http://%s:8081/", ipStr);
+    } catch (Exception e) { RobotLog.logStacktrace(e); }
+
     // In case the user just got back from fixing their clock, refresh ClockWarningSource
     ClockWarningSource.getInstance().onPossibleRcClockUpdate();
   }
@@ -466,6 +484,9 @@ public class FtcRobotControllerActivity extends Activity
   protected void onDestroy() {
     super.onDestroy();
     RobotLog.vv(TAG, "onDestroy()");
+
+    // Stop embedded server
+    try { if (logsServer != null) logsServer.stop(); } catch (Exception e) { RobotLog.logStacktrace(e); }
 
     shutdownRobot();  // Ensure the robot is put away to bed
     if (callback != null) callback.close();

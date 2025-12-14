@@ -129,3 +129,19 @@ Note: Some names start with "Team" and others start with "team".  This is intent
 5)  Add:    include ':Team0417' to the "/settings.gradle" file.
     
 6)  Open up Android Studios and clean out any old files by using the menu to "Build/Clean Project""
+
+## JsonLogger & Logs Web UI
+
+This project includes a small JSON logger utility and an embedded web UI served from the
+robot controller (Control Hub). Features:
+
+- `JsonLogger` (in `config.utility`) — build structured JSON logs (metadata, tables, events) and save them to the
+    device under `Android/data/<package>/files/ftc_saved_logs/`.
+- An embedded HTTP server runs in the robot controller and serves a small frontend at port 8081.
+    When the Control Hub is running, connect your computer to the Control Hub WiFi and open
+    `http://<control-hub-ip>:8081/` to browse and download saved logs.
+
+Usage notes:
+- Create a logger in an OpMode with `new JsonLogger(hardwareMap.appContext, "MySession")`.
+- Logs are saved automatically when you call `save()` on the logger.
+- The web UI lists all files in the `ftc_saved_logs` directory and provides download links.
