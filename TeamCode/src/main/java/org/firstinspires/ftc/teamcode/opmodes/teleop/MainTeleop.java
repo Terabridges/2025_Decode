@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
+
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,6 +16,7 @@ import org.firstinspires.ftc.teamcode.config.control.IntakeControl;
 import org.firstinspires.ftc.teamcode.config.control.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.TransferControl;
 import org.firstinspires.ftc.teamcode.config.control.VisionControl;
+import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -94,6 +98,7 @@ public class MainTeleop extends LinearOpMode {
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
+        FollowerManager.getFollower(hardwareMap, new Pose());
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -152,6 +157,15 @@ public class MainTeleop extends LinearOpMode {
 
         while (opModeIsActive()){
             gamepadUpdate();
+            // If driver moves sticks, give control to driver; otherwise let Pedro run if busy.
+            boolean driverActive = Math.abs(currentGamepad1.left_stick_x) > 0.1
+                    || Math.abs(currentGamepad1.left_stick_y) > 0.1
+                    || Math.abs(currentGamepad1.right_stick_x) > 0.1;
+            boolean followerBusy = follower.isBusy();
+
+            robot.drive.manualDrive = driverActive || !followerBusy;
+            // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
+            follower.update();
             robot.update();
             controlsUpdate();
             stateMachinesUpdate();

@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
 
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.drawCurrent;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.drawCurrentAndHistory;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.follower;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.telemetryM;
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.drawCurrent;
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.drawCurrentAndHistory;
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.telemetryM;
 
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
