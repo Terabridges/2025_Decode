@@ -41,6 +41,10 @@ public class Drive implements Subsystem{
         rightFront = map.get(DcMotor.class, "right_front");
         leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 //        pinpoint = map.get(GoBildaPinpointDriver.class, "pinpoint");
 //        pinpoint.setOffsets(-1.527559, 5.70866, DistanceUnit.INCH);
 //        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);

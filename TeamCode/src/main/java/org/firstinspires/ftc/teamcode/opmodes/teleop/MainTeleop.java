@@ -91,6 +91,7 @@ public class MainTeleop extends LinearOpMode {
     public double spinUpTimeout = 1.75;
     int fromRed = -90;
     private boolean turretAimAssist = false;
+    private boolean holdingForShoot = false;
 
     public StateMachine shootAllMachine;
     public StateMachine clutchSuperMachine;
@@ -163,8 +164,19 @@ public class MainTeleop extends LinearOpMode {
                     || Math.abs(currentGamepad1.left_stick_y) > 0.1
                     || Math.abs(currentGamepad1.right_stick_x) > 0.1;
             boolean followerBusy = follower.isBusy();
+            boolean shooting = shootAllMachine.getState() != shootStates.INIT;
+            boolean holdDuringShoot = shooting && !driverActive;
 
-            robot.drive.manualDrive = driverActive || !followerBusy;
+            if (holdDuringShoot && !holdingForShoot) {
+                // Freeze pose using follower hold instead of zeroing power.
+                follower.holdPoint(follower.getPose());
+                holdingForShoot = true;
+            } else if ((!shooting || driverActive) && holdingForShoot) {
+                follower.breakFollowing();
+                holdingForShoot = false;
+            }
+
+            robot.drive.manualDrive = driverActive || (!followerBusy && !holdingForShoot);
             // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
             follower.update();
             // Toggle turret auto-aim with GP1 dpad_up
