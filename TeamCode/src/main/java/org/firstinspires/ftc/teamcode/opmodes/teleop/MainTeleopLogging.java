@@ -24,10 +24,8 @@ import org.psilynx.psikit.core.rlog.RLOGWriter;
 import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
 import org.psilynx.psikit.ftc.PsiKitOpMode;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 @TeleOp(name="MainTeleOpLogging", group="TeleOp")
@@ -103,7 +101,7 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
 
         psiKitSetup();
         Logger.addDataReceiver(new RLOGServer());
-        String filename = this.getClass().getSimpleName() + "_log_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".rlog";
+        String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()) + ".rlog";
         Logger.addDataReceiver(new RLOGWriter(filename));
         Logger.recordMetadata("some metadata", "string value");
         Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
