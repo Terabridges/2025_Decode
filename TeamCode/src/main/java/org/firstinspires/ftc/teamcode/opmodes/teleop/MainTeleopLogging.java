@@ -18,6 +18,9 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
@@ -30,6 +33,10 @@ import java.util.List;
 
 @TeleOp(name="MainTeleOpLogging", group="TeleOp")
 public class MainTeleopLogging extends PsiKitLinearOpMode {
+
+    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
+    private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
+    private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -176,6 +183,10 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
             Logger.periodicBeforeUser();
             double beforeUserEnd = Logger.getTimestamp();
             //processHardwareInputs();
+
+            driverStationLogger.log(gamepad1, gamepad2);
+            motorLogger.logAll(hardwareMap);
+            pinpointLogger.logAll(hardwareMap);
 
             gamepadUpdate();
             robot.update();

@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous;
 
 
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.drawCurrent;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.drawCurrentAndHistory;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.follower;
-import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAuto.telemetryM;
+import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAutoPsiLog.drawCurrent;
+import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAutoPsiLog.drawCurrentAndHistory;
+import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAutoPsiLog.follower;
+import static org.firstinspires.ftc.teamcode.opmodes.autonomous.SelectableAutoPsiLog.telemetryM;
 
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -27,12 +27,21 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitPedroFollowerPoseLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 import org.psilynx.psikit.ftc.PsiKitOpMode;
 
 class MainAutoLogging extends PsiKitOpMode {
+
+    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
+    private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
+    private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
+    private final PsiKitPedroFollowerPoseLogger pedroPoseLogger = new PsiKitPedroFollowerPoseLogger("/Odometry/PedroFollowerPose");
 
     //Path Gen
     public Pose startPose;
@@ -119,7 +128,8 @@ class MainAutoLogging extends PsiKitOpMode {
     public void psiKit_init() {
 
         Logger.addDataReceiver(new RLOGServer());
-        Logger.addDataReceiver(new RLOGWriter("log.rlog"));
+        String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()) + ".rlog";
+        Logger.addDataReceiver(new RLOGWriter(filename));
 
         Logger.recordMetadata("some metadata", "string value");
         Logger.start();
@@ -193,6 +203,12 @@ class MainAutoLogging extends PsiKitOpMode {
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetryM.update(telemetry);
         follower.update();
+
+        driverStationLogger.log(gamepad1, gamepad2);
+        motorLogger.logAll(hardwareMap);
+        pinpointLogger.logAll(hardwareMap);
+        pedroPoseLogger.log(follower);
+
         drawCurrent();
     }
 
@@ -211,6 +227,10 @@ class MainAutoLogging extends PsiKitOpMode {
     @Override
     public void psiKit_loop() {
         follower.update();
+        pedroPoseLogger.log(follower);
+        driverStationLogger.log(gamepad1, gamepad2);
+        motorLogger.logAll(hardwareMap);
+        pinpointLogger.logAll(hardwareMap);
         updateTurretAim();
 
         robot.update();
