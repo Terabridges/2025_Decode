@@ -1,209 +1,269 @@
 package org.firstinspires.ftc.teamcode.config.utility;
 
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer.Optimum;
-import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.fitting.leastsquares.*;
+import org.apache.commons.math3.linear.*;
+import org.apache.commons.math3.optim.SimpleValueChecker;
 import org.apache.commons.math3.util.Pair;
+import org.apache.commons.math3.analysis.MultivariateFunction;
+import org.apache.commons.math3.optim.InitialGuess;
+import org.apache.commons.math3.optim.MaxEval;
+import org.apache.commons.math3.optim.PointValuePair;
+import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
+import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 
 public class ShootingAlgorithm {
 
-    private double thetaMin;
-    private double thetaMax;
-
-    private double vMax;
-
-    public ShootingAlgorithm(double thetaMin, double thetaMax, double vMax) {
-        this.thetaMin = thetaMin;
-        this.thetaMax = thetaMax;
-        this.vMax = vMax;
-    }
-
-    // datatype to store best (theta, v)
     public static class ShotSolution {
-        public final double theta; // radians
-        public final double v;     // muzzle speed (units consistent with data)
+        public final double theta;
+        public final double v;
+        public final double rSquared;  // NEW: R² value
+        public final double rss;        // NEW: residual sum of squares
+        public final double tss;        // NEW: total sum of squares
 
+        public ShotSolution(double theta, double v, double rSquared, double rss, double tss) {
+            this.theta = theta;
+            this.v = v;
+            this.rSquared = rSquared;
+            this.rss = rss;
+            this.tss = tss;
+        }
+
+        // Backward compatibility
         public ShotSolution(double theta, double v) {
-            this.theta = theta; this.v = v;
+            this(theta, v, Double.NaN, Double.NaN, Double.NaN);
         }
     }
 
-    // --- Regression-based solver -------------------------------------------------
-    // Use the Desmos model
-    //   l1 = -g/2 * ((d - p1) / (v * cos(s)))^2 + v * sin(s) * ((d - p1) / (v * cos(s))) + u
-    // where s in radians, v positive. We fit (s, v) to a provided dataset {p1_i, l1_i}
-    // using a coarse grid search followed by Levenberg-Marquardt refinement.
-
     /**
-     * Find best shot parameters (theta, v) by fitting the regression model to the
-     * provided table of (p1, l1) points for a given launcher distance d and gravity g.
-     *
-     * Units: ensure d, p1, l1 and g are in consistent units (e.g., feet and ft/s^2, or meters and m/s^2).
-     *
-     * @param d distance from launcher to front wall of goal (same units as p1)
-     * @param g gravity (positive scalar, same length/time^2 units as p1 and l1)
-     * @param p1 array of x-values from table (same units as d)
-     * @param l1 array of y-values from table (same units as d/p1)
-     * @param thetaMin lower bound for angle (radians)
-     * @param thetaMax upper bound for angle (radians)
-     * @param vMin lower bound for speed (must be > 0)
-     * @param vMax upper bound for speed
-     * @param gridThetaSteps coarse grid steps for angle
-     * @param gridVSteps coarse grid steps for speed
-     * @return ShotSolution or null if inputs invalid / no feasible solution
+     * Enhanced regression-based shot solver with multiple strategies and R² calculation.
+     * 
+     * @param d distance from launcher to goal front wall
+     * @param g gravity constant
+     * @param p1 array of x positions (relative to goal)
+     * @param l1 array of y positions (heights)
+     * @param thetaMin minimum angle (radians)
+     * @param thetaMax maximum angle (radians)
+     * @param vMin minimum velocity
+     * @param vMax maximum velocity
+     * @param gridStepsTheta grid resolution for theta (increased default recommended)
+     * @param gridStepsV grid resolution for velocity (increased default recommended)
+     * @return ShotSolution with theta, v, and R² value
      */
     public static ShotSolution findBestShotFromTable(
-            final double d, final double g,
-            final double[] p1, final double[] l1,
-            final double thetaMin, final double thetaMax,
-            final double vMin, final double vMax,
-            final int gridThetaSteps, final int gridVSteps
-    ) {
-        if (p1 == null || l1 == null) return null;
-        if (p1.length != l1.length || p1.length < 1) return null;
-        final int n = p1.length;
+            double d, double g, double[] p1, double[] l1,
+            double thetaMin, double thetaMax, double vMin, double vMax,
+            int gridStepsTheta, int gridStepsV) {
 
-        // Coarse grid search to get a robust initial guess
-        double bestS = thetaMin;
-        double bestV = Math.max(vMin, Math.min(vMax, (vMin + vMax) / 2.0));
-        double bestError = Double.POSITIVE_INFINITY;
-        for (int i = 0; i <= gridThetaSteps; i++) {
-            double t = (double)i / (double)gridThetaSteps;
-            double s = thetaMin + t * (thetaMax - thetaMin);
-            for (int j = 0; j <= gridVSteps; j++) {
-                double u = (double)j / (double)gridVSteps;
-                double v = vMin + u * (vMax - vMin);
-                double err = 0.0;
-                for (int k = 0; k < n; k++) {
-                    double pred = predictY(d, p1[k], s, v, g);
-                    double r = pred - l1[k];
-                    err += r*r;
+        if (p1 == null || l1 == null || p1.length != l1.length || p1.length == 0) {
+            return null;
+        }
+
+        int n = p1.length;
+
+        // Calculate mean for R² computation
+        double meanL1 = 0.0;
+        for (double val : l1) {
+            meanL1 += val;
+        }
+        meanL1 /= n;
+
+        // Strategy 1: Fine grid search (increased resolution)
+        double bestTheta = Double.NaN;
+        double bestV = Double.NaN;
+        double bestRSS = Double.POSITIVE_INFINITY;
+
+        int fineGridTheta = Math.max(gridStepsTheta * 5, 100); // 5x finer or at least 100
+        int fineGridV = Math.max(gridStepsV * 5, 100);
+
+        for (int iTheta = 0; iTheta <= fineGridTheta; iTheta++) {
+            double theta = thetaMin + iTheta * (thetaMax - thetaMin) / fineGridTheta;
+            for (int iV = 0; iV <= fineGridV; iV++) {
+                double v = vMin + iV * (vMax - vMin) / fineGridV;
+
+                double rss = 0.0;
+                boolean valid = true;
+                for (int i = 0; i < n; i++) {
+                    double pred = predictY(d, g, p1[i], theta, v);
+                    if (Double.isNaN(pred) || Double.isInfinite(pred)) {
+                        valid = false;
+                        break;
+                    }
+                    double residual = l1[i] - pred;
+                    rss += residual * residual;
                 }
-                if (err < bestError) {
-                    bestError = err; bestS = s; bestV = v;
+
+                if (valid && rss < bestRSS) {
+                    bestRSS = rss;
+                    bestTheta = theta;
+                    bestV = v;
                 }
             }
         }
 
-        // Local refinement using Levenberg-Marquardt
-        final double[] target = new double[n];
-        for (int i = 0; i < n; i++) target[i] = l1[i];
+        if (Double.isNaN(bestTheta)) {
+            return null; // No valid solution found in grid
+        }
 
-        MultivariateJacobianFunction model = new MultivariateJacobianFunction() {
-            @Override
-            public org.apache.commons.math3.util.Pair<org.apache.commons.math3.linear.RealVector, org.apache.commons.math3.linear.RealMatrix> value(org.apache.commons.math3.linear.RealVector point) {
-                double s = point.getEntry(0);
-                double v = point.getEntry(1);
-                double[] value = new double[n];
-                double[][] jac = new double[n][2];
-                for (int i = 0; i < n; i++) {
-                    double pi = p1[i];
-                    double pred = predictY(d, pi, s, v, g);
-                    value[i] = pred;
-                    // partials
-                    double[] jw = jacobianY(d, pi, s, v, g);
-                    jac[i][0] = jw[0]; // d/ds
-                    jac[i][1] = jw[1]; // d/dv
-                }
-                RealVector valVec = new ArrayRealVector(value);
-                RealMatrix jacMat = new Array2DRowRealMatrix(jac);
-                return org.apache.commons.math3.util.Pair.create(valVec, jacMat);
+        // Strategy 2: Refine with Nelder-Mead simplex (derivative-free, robust)
+        final double finalD = d;
+        final double finalG = g;
+        final double finalMeanL1 = meanL1;
+
+        MultivariateFunction objectiveFunction = params -> {
+            double theta = params[0];
+            double v = params[1];
+
+            // Enforce bounds
+            if (theta < thetaMin || theta > thetaMax || v < vMin || v > vMax) {
+                return Double.POSITIVE_INFINITY;
             }
+
+            double rss = 0.0;
+            for (int i = 0; i < n; i++) {
+                double pred = predictY(finalD, finalG, p1[i], theta, v);
+                if (Double.isNaN(pred) || Double.isInfinite(pred)) {
+                    return Double.POSITIVE_INFINITY;
+                }
+                double residual = l1[i] - pred;
+                rss += residual * residual;
+            }
+            return rss;
         };
 
-        LeastSquaresBuilder builder = new LeastSquaresBuilder()
-                .start(new double[]{bestS, bestV})
-                .model(model)
-                .target(new ArrayRealVector(target))
-                .maxEvaluations(2000)
-                .maxIterations(2000);
-
-        Optimum optimum = null;
         try {
-            Optimum opt = new LevenbergMarquardtOptimizer().optimize(builder.build());
-            optimum = opt;
-        } catch (Exception ex) {
-            // optimizer failed — we'll fall back to coarse-grid best
-            optimum = null;
+            SimplexOptimizer optimizer = new SimplexOptimizer(1e-12, 1e-12); // Very tight tolerances
+            PointValuePair result = optimizer.optimize(
+                    new MaxEval(10000),
+                    new ObjectiveFunction(objectiveFunction),
+                    GoalType.MINIMIZE,
+                    new InitialGuess(new double[]{bestTheta, bestV}),
+                    new NelderMeadSimplex(2, 0.001) // Small initial simplex
+            );
+
+            double[] optimized = result.getPoint();
+            bestTheta = optimized[0];
+            bestV = optimized[1];
+            bestRSS = result.getValue();
+
+        } catch (Exception e) {
+            // If Nelder-Mead fails, use grid search result
+            System.err.println("Nelder-Mead refinement failed, using grid search result: " + e.getMessage());
         }
 
-        if (optimum != null) {
-            double sOpt = optimum.getPoint().getEntry(0);
-            double vOpt = optimum.getPoint().getEntry(1);
-            // enforce bounds
-            if (sOpt < thetaMin) sOpt = thetaMin;
-            if (sOpt > thetaMax) sOpt = thetaMax;
-            if (vOpt < vMin) vOpt = vMin;
-            if (vOpt > vMax) vOpt = vMax;
-            return new ShotSolution(sOpt, vOpt);
-        } else {
-            // coarse grid fallback
-            return new ShotSolution(bestS, bestV);
+        // Strategy 3: Final polish with Levenberg-Marquardt
+        try {
+            LeastSquaresProblem lsp = new LeastSquaresBuilder()
+                    .start(new double[]{bestTheta, bestV})
+                    .model(new MultivariateJacobianFunction() {
+                        @Override
+                        public Pair<RealVector, RealMatrix> value(RealVector point) {
+                            double theta = point.getEntry(0);
+                            double v = point.getEntry(1);
+                            return jacobianY(finalD, finalG, p1, l1, theta, v);
+                        }
+                    })
+                    .target(l1)
+                    .lazyEvaluation(false)
+                    .maxEvaluations(10000)
+                    .maxIterations(10000)
+                    .checker(new SimpleValueChecker(1e-12, 1e-12)) // Very tight tolerances
+                    .build();
+
+            LeastSquaresOptimizer.Optimum optimum = new LevenbergMarquardtOptimizer().optimize(lsp);
+            RealVector sol = optimum.getPoint();
+            double finalTheta = sol.getEntry(0);
+            double finalV = sol.getEntry(1);
+
+            // Validate bounds
+            if (finalTheta >= thetaMin && finalTheta <= thetaMax && finalV >= vMin && finalV <= vMax) {
+                bestTheta = finalTheta;
+                bestV = finalV;
+                bestRSS = optimum.getRMS() * optimum.getRMS() * n; // RMS to RSS
+            }
+        } catch (Exception e) {
+            // If LM fails, use Nelder-Mead/grid result
+            System.err.println("LM refinement failed, using previous result: " + e.getMessage());
         }
-    }
 
-    // predict y using the regression model for a single sample
-    private static double predictY(double d, double p1, double s, double v, double g) {
-        double delta = d - p1;
-        double cosS = Math.cos(s);
-        double sinS = Math.sin(s);
-        if (v <= 0 || Math.abs(cosS) < 1e-12) return Double.NaN;
-        double t = delta / (v * cosS);
-        return -0.5 * g * t * t + v * sinS * t;
-    }
+        // Calculate R²
+        double tss = 0.0;
+        for (double val : l1) {
+            double diff = val - meanL1;
+            tss += diff * diff;
+        }
 
-    // jacobian: returns [d/ds, d/dv]
-    private static double[] jacobianY(double d, double p1, double s, double v, double g) {
-        double delta = d - p1;
-        double cosS = Math.cos(s);
-        double sinS = Math.sin(s);
-        if (v <= 0 || Math.abs(cosS) < 1e-12) return new double[]{0.0, 0.0};
-        double t = delta / (v * cosS);
-        // dt/dv = -t / v
-        double dt_dv = -t / v;
-        // dt/ds = t * tan(s)
-        double dt_ds = t * Math.tan(s);
+        double rSquared = (tss > 0) ? 1.0 - (bestRSS / tss) : 1.0;
 
-        // pred = -g/2 * t^2 + v*sin(s) * t
-        // d/dv: -g * t * dt_dv + sin(s)*t + v*sin(s)*dt_dv
-        double d_dv = -g * t * dt_dv + sinS * t + v * sinS * dt_dv;
-        // Simplify: often reduces, but keep explicit
-
-        // d/ds: -g * t * dt_ds + v*cos(s)*t + v*sin(s)*dt_ds
-        double d_ds = -g * t * dt_ds + v * cosS * t + v * sinS * dt_ds;
-
-        return new double[]{d_ds, d_dv};
+        return new ShotSolution(bestTheta, bestV, rSquared, bestRSS, tss);
     }
 
     /**
-     * Convert velocity (ft/s) to RPM using a linear calibration.
-     * Assumes a linear relationship: RPM = (v * 60) / (2 * π * r)
-     * where r is the radius of the wheel in feet.
-     * @param v velocity in ft/s
-     * @param r radius of the wheel in feet
-     * */
-    public static double velocityToRPM(double v, double r) {
-        if (r <= 0) return 0.0;
-        return (v * 60.0) / (2.0 * Math.PI * r);
+     * Predict y (height) given parameters.
+     */
+    private static double predictY(double d, double g, double p1Val, double theta, double v) {
+        double cosTheta = Math.cos(theta);
+        double sinTheta = Math.sin(theta);
+        if (Math.abs(cosTheta) < 1e-12 || v < 1e-12) {
+            return Double.NaN;
+        }
+        double dx = d - p1Val;
+        double t = dx / (v * cosTheta);
+        if (t < 0) {
+            return Double.NaN;
+        }
+        return -0.5 * g * t * t + v * sinTheta * t;
     }
 
-    /*
-     Example usage:
-        // Suppose you have data table arrays p1 and l1 loaded from CSV (units consistent with d and g)
-        double[] p1 = {1.0, 2.0, 3.0};
-        double[] l1 = {2.4, 2.1, 1.8};
-        double d = 10.0;        // distance to front wall (same units)
-        double g = 32.174;      // ft/s^2 if using feet
-        ShotSolution sol = findBestShotFromTable(d, g, p1, l1, Math.toRadians(45), Math.toRadians(70), 5.0, 50.0, 20, 20);
-        if (sol != null) {
-            // sol.theta (radians), sol.v (units consistent with data)
-        }
-    */
+    /**
+     * Compute residuals and Jacobian matrix for LM.
+     */
+    private static Pair<RealVector, RealMatrix> jacobianY(
+            double d, double g, double[] p1, double[] l1, double theta, double v) {
 
+        int n = p1.length;
+        double[] residuals = new double[n];
+        double[][] jac = new double[n][2];
+
+        double cosTheta = Math.cos(theta);
+        double sinTheta = Math.sin(theta);
+        double cos2 = cosTheta * cosTheta;
+        double vCos = v * cosTheta;
+
+        for (int i = 0; i < n; i++) {
+            double dx = d - p1[i];
+            if (Math.abs(vCos) < 1e-12) {
+                residuals[i] = 0;
+                jac[i][0] = 0;
+                jac[i][1] = 0;
+                continue;
+            }
+
+            double t = dx / vCos;
+            double pred = -0.5 * g * t * t + v * sinTheta * t;
+            residuals[i] = l1[i] - pred;
+
+            // Partial derivatives
+            double dt_dtheta = dx * sinTheta / (v * cos2);
+            double dt_dv = -dx / (v * v * cosTheta);
+
+            double dPred_dtheta = -g * t * dt_dtheta + v * Math.cos(theta) * t + v * sinTheta * dt_dtheta;
+            double dPred_dv = -g * t * dt_dv + sinTheta * t + v * sinTheta * dt_dv;
+
+            jac[i][0] = -dPred_dtheta; // negative because residual = observed - predicted
+            jac[i][1] = -dPred_dv;
+        }
+
+        return Pair.create(MatrixUtils.createRealVector(residuals), MatrixUtils.createRealMatrix(jac));
+    }
+
+    /**
+     * Convert velocity (ft/s) to RPM.
+     */
+    public static double velocityToRPM(double velocity) {
+        double wheelDiameter = 4.0 / 12.0; // 4 inches in feet
+        double wheelCircumference = Math.PI * wheelDiameter;
+        return (velocity / wheelCircumference) * 60.0;
+    }
 }
