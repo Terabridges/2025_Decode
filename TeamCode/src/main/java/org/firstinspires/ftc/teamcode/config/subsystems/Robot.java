@@ -95,7 +95,7 @@ public class Robot {
     private static final class MissingVoltageSensor implements VoltageSensor {
         @Override
         public double getVoltage() {
-            return Double.NaN;
+            return 12.0;
         }
 
         @Override

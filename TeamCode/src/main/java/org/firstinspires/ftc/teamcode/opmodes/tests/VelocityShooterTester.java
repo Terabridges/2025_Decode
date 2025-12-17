@@ -46,7 +46,14 @@ public class VelocityShooterTester extends LinearOpMode {
 
         vision = new Vision(hardwareMap);
         shooter = new Shooter(hardwareMap, vision);
-        battery = hardwareMap.voltageSensor.iterator().next();
+        java.util.Iterator<VoltageSensor> vsIt = hardwareMap.voltageSensor.iterator();
+        if (vsIt.hasNext()) {
+            battery = vsIt.next();
+        } else {
+            battery = null;
+            telemetry.addData("Warning","No VoltageSensor found; voltage reporting disabled");
+            telemetry.update();
+        }
 
         waitForStart();
         while (opModeIsActive()){

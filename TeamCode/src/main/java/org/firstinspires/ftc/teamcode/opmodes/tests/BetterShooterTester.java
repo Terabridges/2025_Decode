@@ -71,7 +71,14 @@ public class BetterShooterTester extends LinearOpMode {
         shooterController.setTolerance(50.0, 500.0);
         shooterController.setIntegrationBounds(-150.0, 150.0);
 
-        battery = hardwareMap.voltageSensor.iterator().next();
+        java.util.Iterator<VoltageSensor> vsIt = hardwareMap.voltageSensor.iterator();
+        if (vsIt.hasNext()) {
+            battery = vsIt.next();
+        } else {
+            battery = null;
+            telemetry.addData("Warning","No VoltageSensor found; voltage reporting disabled");
+            telemetry.update();
+        }
 
         waitForStart();
         while (opModeIsActive()){
@@ -108,7 +115,7 @@ public class BetterShooterTester extends LinearOpMode {
 
     public double setShooterPID(double targetRPM) {
 
-        double v = battery.getVoltage();
+        double v = (battery != null) ? battery.getVoltage() : 12.0;
         shooterController.setPID(p, i, d);
         powerFF = kS + (kV * targetRPM);
         powerFF *= (12.0 / Math.max(8.0, v));
