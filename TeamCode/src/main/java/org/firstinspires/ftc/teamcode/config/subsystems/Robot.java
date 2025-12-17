@@ -48,7 +48,14 @@ public class Robot {
         this.gp1 = gp1;
         this.gp2 = gp2;
 
-        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        java.util.Iterator<VoltageSensor> vsIt = hardwareMap.voltageSensor.iterator();
+        if (vsIt.hasNext()) {
+            voltageSensor = vsIt.next();
+        } else {
+            voltageSensor = null;
+            telemetry.addData("Warning","No VoltageSensor found; voltage reporting disabled");
+            telemetry.update();
+        }
     }
     public Robot(HardwareMap hardwareMap, Telemetry telemetry){
         this(hardwareMap, telemetry, null, null, false);
@@ -59,7 +66,7 @@ public class Robot {
     }
 
     public double getVoltage(){
-        return voltageSensor.getVoltage();
+        return voltageSensor != null ? voltageSensor.getVoltage() : 12.0;
     }
 
     //---------------- Interface Methods ----------------
