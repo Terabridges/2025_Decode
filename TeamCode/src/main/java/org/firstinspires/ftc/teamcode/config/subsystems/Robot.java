@@ -8,6 +8,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class Robot {
@@ -48,7 +49,7 @@ public class Robot {
         this.gp1 = gp1;
         this.gp2 = gp2;
 
-        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        voltageSensor = findVoltageSensor(hardwareMap);
     }
     public Robot(HardwareMap hardwareMap, Telemetry telemetry){
         this(hardwareMap, telemetry, null, null, false);
@@ -59,7 +60,73 @@ public class Robot {
     }
 
     public double getVoltage(){
+        if (voltageSensor == null) {
+            voltageSensor = findVoltageSensor(hardwareMap);
+        }
         return voltageSensor.getVoltage();
+    }
+
+    private static VoltageSensor findVoltageSensor(HardwareMap hardwareMap) {
+        if (hardwareMap == null) {
+            return new MissingVoltageSensor();
+        }
+
+        try {
+            List<VoltageSensor> sensors = hardwareMap.getAll(VoltageSensor.class);
+            if (sensors != null && !sensors.isEmpty()) {
+                return sensors.get(0);
+            }
+        } catch (Exception ignored) {
+            // Some HardwareMap wrappers may throw here; fall through.
+        }
+
+        try {
+            Iterator<VoltageSensor> it = hardwareMap.voltageSensor.iterator();
+            if (it != null && it.hasNext()) {
+                return it.next();
+            }
+        } catch (Exception ignored) {
+            // Fall through.
+        }
+
+        return new MissingVoltageSensor();
+    }
+
+    private static final class MissingVoltageSensor implements VoltageSensor {
+        @Override
+        public double getVoltage() {
+            return Double.NaN;
+        }
+
+        @Override
+        public Manufacturer getManufacturer() {
+            return Manufacturer.Unknown;
+        }
+
+        @Override
+        public String getDeviceName() {
+            return "MissingVoltageSensor";
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return "";
+        }
+
+        @Override
+        public int getVersion() {
+            return 0;
+        }
+
+        @Override
+        public void resetDeviceConfigurationForOpMode() {
+            // no-op
+        }
+
+        @Override
+        public void close() {
+            // no-op
+        }
     }
 
     //---------------- Interface Methods ----------------

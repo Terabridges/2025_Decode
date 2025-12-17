@@ -39,8 +39,8 @@ public final class PsiKitDriverStationLogger {
 
         joystick0.updateFrom(gamepad1);
         joystick1.updateFrom(gamepad2);
-        Logger.processInputs("/DriverStation/Joystick0", joystick0);
-        Logger.processInputs("/DriverStation/Joystick1", joystick1);
+        Logger.processInputs("DriverStation/Joystick0", joystick0);
+        Logger.processInputs("DriverStation/Joystick1", joystick1);
     }
 
     private LoggableInputs asLoggableGamepad1(Gamepad gamepad) {

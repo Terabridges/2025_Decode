@@ -105,37 +105,40 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
 
     @Override
     public void runOpMode(){
+        // If the prior OpMode was force-stopped, PsiKit may still be "running".
+        // Clean up so each run produces a fresh file and frees port 5800.
+        try { Logger.end(); } catch (Exception ignored) {}
+        Logger.reset();
 
         psiKitSetup();
         Logger.addDataReceiver(new RLOGServer());
-        String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()) + ".rlog";
+        String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new java.util.Date()) + ".rlog";
         Logger.addDataReceiver(new RLOGWriter(filename));
         Logger.recordMetadata("some metadata", "string value");
         Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
-        Logger.periodicAfterUser(0, 0);
 
+        try {
+            Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
 
-        Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
+            driveControl = new DriveControl(robot, gamepad1, gamepad2);
+            intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
+            shooterControl = new ShooterControl(robot, gamepad1, gamepad2);
+            transferControl = new TransferControl(robot, gamepad1, gamepad2);
+            visionControl = new VisionControl(robot, gamepad1, gamepad2);
 
-        driveControl = new DriveControl(robot, gamepad1, gamepad2);
-        intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
-        shooterControl = new ShooterControl(robot, gamepad1, gamepad2);
-        transferControl = new TransferControl(robot, gamepad1, gamepad2);
-        visionControl = new VisionControl(robot, gamepad1, gamepad2);
+            controls = new ArrayList<>(Arrays.asList(intakeControl, shooterControl, transferControl, driveControl, visionControl));
 
-        controls = new ArrayList<>(Arrays.asList(intakeControl, shooterControl, transferControl, driveControl, visionControl));
+            currentGamepad1 = new Gamepad();
+            previousGamepad1 = new Gamepad();
 
-        currentGamepad1 = new Gamepad();
-        previousGamepad1 = new Gamepad();
+            currentGamepad2 = new Gamepad();
+            previousGamepad2 = new Gamepad();
 
-        currentGamepad2 = new Gamepad();
-        previousGamepad2 = new Gamepad();
+            shootAllMachine = getShootAllMachine(robot);
+            clutchSuperMachine = getClutchSuperMachine(robot);
+            resetMachine = getSpindexResetMachine(robot);
 
-        shootAllMachine = getShootAllMachine(robot);
-        clutchSuperMachine = getClutchSuperMachine(robot);
-        resetMachine = getSpindexResetMachine(robot);
-
-        robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
 //        while (!getPsiKitIsStarted()){
 //            //processHardwareInputs();
@@ -170,28 +173,27 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
 //            Logger.periodicAfterUser(0.0, 0.0);
 //        }
 
-        waitForStart();
+            waitForStart();
 
-        robot.toInit();
-        shootAllMachine.start();
-        clutchSuperMachine.start();
-        resetMachine.start();
+            robot.toInit();
+            shootAllMachine.start();
+            clutchSuperMachine.start();
+            resetMachine.start();
 
-        while (!getPsiKitIsStopRequested()){
+            while (opModeIsActive()){
+                double beforeUserStart = Logger.getTimestamp();
+                Logger.periodicBeforeUser();
+                processHardwareInputs();
+                double beforeUserEnd = Logger.getTimestamp();
 
-            double beforeUserStart = Logger.getTimestamp();
-            Logger.periodicBeforeUser();
-            double beforeUserEnd = Logger.getTimestamp();
-            //processHardwareInputs();
+                driverStationLogger.log(gamepad1, gamepad2);
+                motorLogger.logAll(hardwareMap);
+                pinpointLogger.logAll(hardwareMap);
 
-            driverStationLogger.log(gamepad1, gamepad2);
-            motorLogger.logAll(hardwareMap);
-            pinpointLogger.logAll(hardwareMap);
-
-            gamepadUpdate();
-            robot.update();
-            controlsUpdate();
-            stateMachinesUpdate();
+                gamepadUpdate();
+                robot.update();
+                controlsUpdate();
+                stateMachinesUpdate();
 
 
             //Stop everything
@@ -230,15 +232,17 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
             Logger.recordOutput("OpMode/example", 2.0);
             Logger.recordOutput("spindexPos", robot.transfer.spindex.getCurrentPosition());
             Logger.recordOutput("visionError", robot.vision.getTx());
-            double afterUserStart = Logger.getTimestamp();
-            Logger.periodicAfterUser(
-                    afterUserStart - beforeUserEnd,
-                    beforeUserEnd - beforeUserStart
-            );
+                double afterUserStart = Logger.getTimestamp();
+                Logger.periodicAfterUser(
+                        afterUserStart - beforeUserEnd,
+                        beforeUserEnd - beforeUserStart
+                );
 
+                idle();
+            }
+        } finally {
+            try { Logger.end(); } catch (Exception ignored) {}
         }
-        Logger.end();
-        super.stop();
     }
 
     public void controlsUpdate() {

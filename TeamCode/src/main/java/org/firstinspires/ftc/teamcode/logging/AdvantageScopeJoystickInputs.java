@@ -11,117 +11,82 @@ import org.psilynx.psikit.core.LoggableInputs;
  * <p>Keys under {@code /DriverStation/JoystickN/...} populate AdvantageScope's Joysticks tab.
  */
 public final class AdvantageScopeJoystickInputs implements LoggableInputs {
+    private static final int BUTTON_COUNT = 12;
 
-    // Axes
-    public double leftX;
-    public double leftY;
-    public double rightX;
-    public double rightY;
-
-    // Triggers (0..1)
-    public double leftTrigger;
-    public double rightTrigger;
-
-    // Buttons
-    public boolean a;
-    public boolean b;
-    public boolean x;
-    public boolean y;
-
-    public boolean leftBumper;
-    public boolean rightBumper;
-
-    public boolean back;
-    public boolean start;
-
-    public boolean leftStick;
-    public boolean rightStick;
+    // Matches AdvantageKit/WPILib "DriverStation/JoystickN" schema
+    private final double[] axisValues = new double[6];
+    private final boolean[] buttonValues = new boolean[BUTTON_COUNT];
+    private final int[] povs = new int[1];
 
     public void updateFrom(Gamepad gamepad) {
         if (gamepad == null) {
-            leftX = 0.0;
-            leftY = 0.0;
-            rightX = 0.0;
-            rightY = 0.0;
-            leftTrigger = 0.0;
-            rightTrigger = 0.0;
-            a = b = x = y = false;
-            leftBumper = rightBumper = false;
-            back = start = false;
-            leftStick = rightStick = false;
+            for (int i = 0; i < axisValues.length; i++) {
+                axisValues[i] = 0.0;
+            }
+            for (int i = 0; i < buttonValues.length; i++) {
+                buttonValues[i] = false;
+            }
+            povs[0] = -1;
             return;
         }
 
-        leftX = gamepad.left_stick_x;
-        leftY = gamepad.left_stick_y;
-        rightX = gamepad.right_stick_x;
-        rightY = gamepad.right_stick_y;
+        // Axes: LeftX, LeftY, LeftTrigger, RightTrigger, RightX, RightY
+        axisValues[0] = gamepad.left_stick_x;
+        axisValues[1] = gamepad.left_stick_y;
+        axisValues[2] = gamepad.left_trigger;
+        axisValues[3] = gamepad.right_trigger;
+        axisValues[4] = gamepad.right_stick_x;
+        axisValues[5] = gamepad.right_stick_y;
 
-        leftTrigger = gamepad.left_trigger;
-        rightTrigger = gamepad.right_trigger;
+        // Buttons (12)
+        // 0..9 are the typical Xbox-style set; the last two are FTC extras.
+        buttonValues[0] = gamepad.a;
+        buttonValues[1] = gamepad.b;
+        buttonValues[2] = gamepad.x;
+        buttonValues[3] = gamepad.y;
+        buttonValues[4] = gamepad.left_bumper;
+        buttonValues[5] = gamepad.right_bumper;
+        buttonValues[6] = gamepad.back;
+        buttonValues[7] = gamepad.start;
+        buttonValues[8] = gamepad.left_stick_button;
+        buttonValues[9] = gamepad.right_stick_button;
+        buttonValues[10] = gamepad.guide;
+        buttonValues[11] = gamepad.touchpad;
 
-        a = gamepad.a;
-        b = gamepad.b;
-        x = gamepad.x;
-        y = gamepad.y;
-
-        leftBumper = gamepad.left_bumper;
-        rightBumper = gamepad.right_bumper;
-
-        back = gamepad.back;
-        start = gamepad.start;
-
-        leftStick = gamepad.left_stick_button;
-        rightStick = gamepad.right_stick_button;
+        // POVs (dpad)
+        povs[0] =
+                gamepad.dpad_up ? 0 :
+                gamepad.dpad_right ? 90 :
+                gamepad.dpad_down ? 180 :
+                gamepad.dpad_left ? 270 :
+                -1;
     }
 
     @Override
     public void toLog(LogTable table) {
-        table.put("LeftX", leftX);
-        table.put("LeftY", leftY);
-        table.put("RightX", rightX);
-        table.put("RightY", rightY);
-
-        table.put("LeftTrigger", leftTrigger);
-        table.put("RightTrigger", rightTrigger);
-
-        table.put("A", a);
-        table.put("B", b);
-        table.put("X", x);
-        table.put("Y", y);
-
-        table.put("LeftBumper", leftBumper);
-        table.put("RightBumper", rightBumper);
-
-        table.put("Back", back);
-        table.put("Start", start);
-
-        table.put("LeftStick", leftStick);
-        table.put("RightStick", rightStick);
+        table.put("ButtonCount", BUTTON_COUNT);
+        table.put("ButtonValues", buttonValues);
+        table.put("AxisValues", axisValues);
+        table.put("POVs", povs);
     }
 
     @Override
     public void fromLog(LogTable table) {
-        leftX = table.get("LeftX", 0.0);
-        leftY = table.get("LeftY", 0.0);
-        rightX = table.get("RightX", 0.0);
-        rightY = table.get("RightY", 0.0);
+        double[] axes = table.get("AxisValues", new double[axisValues.length]);
+        int axesLen = Math.min(axes.length, axisValues.length);
+        for (int i = 0; i < axesLen; i++) {
+            axisValues[i] = axes[i];
+        }
 
-        leftTrigger = table.get("LeftTrigger", 0.0);
-        rightTrigger = table.get("RightTrigger", 0.0);
+        boolean[] buttons = table.get("ButtonValues", new boolean[buttonValues.length]);
+        int buttonsLen = Math.min(buttons.length, buttonValues.length);
+        for (int i = 0; i < buttonsLen; i++) {
+            buttonValues[i] = buttons[i];
+        }
 
-        a = table.get("A", false);
-        b = table.get("B", false);
-        x = table.get("X", false);
-        y = table.get("Y", false);
-
-        leftBumper = table.get("LeftBumper", false);
-        rightBumper = table.get("RightBumper", false);
-
-        back = table.get("Back", false);
-        start = table.get("Start", false);
-
-        leftStick = table.get("LeftStick", false);
-        rightStick = table.get("RightStick", false);
+        int[] pov = table.get("POVs", new int[povs.length]);
+        if (pov.length > 0) {
+            povs[0] = pov[0];
+        }
     }
 }
