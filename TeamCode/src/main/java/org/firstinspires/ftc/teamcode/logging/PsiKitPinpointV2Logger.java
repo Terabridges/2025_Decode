@@ -48,19 +48,14 @@ public final class PsiKitPinpointV2Logger {
             double yMeters = pose.getY(DistanceUnit.METER);
             double headingRad = pose.getHeading(AngleUnit.RADIANS);
 
-            device.pose2d.set(xMeters, yMeters, headingRad);
-            Logger.processInputs("/Odometry/" + device.name + "/Pose2d", device.pose2d);
-
-            // Represent as Pose3d at z=0 with a yaw-only quaternion about +Z.
-            device.pose3d.setTranslation(xMeters, yMeters, 0.0);
-            double halfYaw = headingRad * 0.5;
-            device.pose3d.setQuaternion(Math.cos(halfYaw), 0.0, 0.0, Math.sin(halfYaw));
-            Logger.processInputs("/Odometry/" + device.name + "/Pose3d", device.pose3d);
+            // Log Pose2d/Pose3d as struct fields so AdvantageScope can select the whole pose.
+            device.poses.set(xMeters, yMeters, headingRad);
+            Logger.processInputs("/Odometry/" + device.name, device.poses);
 
             // Convenience aliases when there's only one Pinpoint configured.
             if (cached.size() == 1) {
-                Logger.processInputs("/Odometry/RobotPose", device.pose2d);
-                Logger.processInputs("/Odometry/RobotPose3d", device.pose3d);
+                robotAliases.set(xMeters, yMeters, headingRad);
+                Logger.processInputs("/Odometry", robotAliases);
             }
         }
     }
@@ -90,12 +85,13 @@ public final class PsiKitPinpointV2Logger {
     private static final class NamedPinpoint {
         private final String name;
         private final GoBildaPinpointDriver pinpoint;
-        private final AdvantageScopePose2dInputs pose2d = new AdvantageScopePose2dInputs();
-        private final AdvantageScopePose3dInputs pose3d = new AdvantageScopePose3dInputs();
+        private final StructPoseInputs poses = new StructPoseInputs("Pose2d", "Pose3d");
 
         private NamedPinpoint(String name, GoBildaPinpointDriver pinpoint) {
             this.name = name;
             this.pinpoint = pinpoint;
         }
     }
+
+    private final StructPoseInputs robotAliases = new StructPoseInputs("RobotPose", "RobotPose3d");
 }

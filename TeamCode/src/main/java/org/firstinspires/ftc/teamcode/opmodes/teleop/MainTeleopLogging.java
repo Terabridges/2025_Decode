@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -18,25 +17,14 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
-import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
-import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.rlog.RLOGServer;
-import org.psilynx.psikit.core.rlog.RLOGWriter;
-import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
-import org.psilynx.psikit.ftc.PsiKitOpMode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 @TeleOp(name="MainTeleOpLogging", group="TeleOp")
-public class MainTeleopLogging extends PsiKitLinearOpMode {
-
-    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
-    private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
-    private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
+public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -105,19 +93,11 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
 
     @Override
     public void runOpMode(){
-        // If the prior OpMode was force-stopped, PsiKit may still be "running".
-        // Clean up so each run produces a fresh file and frees port 5800.
-        try { Logger.end(); } catch (Exception ignored) {}
-        Logger.reset();
-
-        psiKitSetup();
-        Logger.addDataReceiver(new RLOGServer());
-        String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new java.util.Date()) + ".rlog";
-        Logger.addDataReceiver(new RLOGWriter(filename));
-        Logger.recordMetadata("some metadata", "string value");
-        Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
+        final int rlogPort = 5802;  // using 5802 (default is 5800) to not conflict with limelight which uses 5800 and 5801
 
         try {
+            // Build robot + controls using the original FTC objects.
+            // PsiKit wrapping happens afterwards and is used for logging only.
             Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
 
             driveControl = new DriveControl(robot, gamepad1, gamepad2);
@@ -140,38 +120,43 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
 
             robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-//        while (!getPsiKitIsStarted()){
-//            //processHardwareInputs();
-//            Logger.periodicBeforeUser();
-//
-//            previousGamepad1.copy(currentGamepad1);
-//            currentGamepad1.copy(gamepad1);
-//
-//            if (currentGamepad1.a && !previousGamepad1.a){
-//                if(GlobalVariables.motif.equals("PPG")){
-//                    GlobalVariables.motif = "GPP";
-//                } else if(GlobalVariables.motif.equals("GPP")){
-//                    GlobalVariables.motif = "PGP";
-//                } else if(GlobalVariables.motif.equals("PGP")){
-//                    GlobalVariables.motif = "PPG";
-//                }
-//            }
-//
-//            if (currentGamepad1.b && !previousGamepad1.b){
-//                if(GlobalVariables.allianceColor.equals("red")){
-//                    GlobalVariables.allianceColor = "blue";
-//                } else if (GlobalVariables.allianceColor.equals("blue")){
-//                    GlobalVariables.allianceColor = "red";
-//                }
-//            }
-//
-//            telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
-//            telemetry.addData("Motif", GlobalVariables.motif);
-//            telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
-//            telemetry.update();
-//
-//            Logger.periodicAfterUser(0.0, 0.0);
-//        }
+            // Start PsiKit after hardware is constructed so robot setup sees the raw FTC
+            // hardwareMap and gamepad1/2. Priming ensures /HardwareMap/... logging still works.
+            captureRawFtcReferences();
+            startPsiKitLogging(rlogPort);
+
+       while (opModeInInit()){
+           Logger.periodicBeforeUser();
+           logPsiKitInputsOncePerLoop();
+
+           previousGamepad1.copy(currentGamepad1);
+           currentGamepad1.copy(gamepad1);
+
+           if (currentGamepad1.a && !previousGamepad1.a){
+               if(GlobalVariables.motif.equals("PPG")){
+                   GlobalVariables.motif = "GPP";
+               } else if(GlobalVariables.motif.equals("GPP")){
+                   GlobalVariables.motif = "PGP";
+               } else if(GlobalVariables.motif.equals("PGP")){
+                   GlobalVariables.motif = "PPG";
+               }
+           }
+
+           if (currentGamepad1.b && !previousGamepad1.b){
+               if(GlobalVariables.allianceColor.equals("red")){
+                   GlobalVariables.allianceColor = "blue";
+               } else if (GlobalVariables.allianceColor.equals("blue")){
+                   GlobalVariables.allianceColor = "red";
+               }
+           }
+
+           telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+           telemetry.addData("Motif", GlobalVariables.motif);
+           telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
+           telemetry.update();
+
+           Logger.periodicAfterUser(0.0, 0.0);
+       }
 
             waitForStart();
 
@@ -183,12 +168,10 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
             while (opModeIsActive()){
                 double beforeUserStart = Logger.getTimestamp();
                 Logger.periodicBeforeUser();
-                processHardwareInputs();
+                logPsiKitInputsOncePerLoop();
                 double beforeUserEnd = Logger.getTimestamp();
 
-                driverStationLogger.log(gamepad1, gamepad2);
-                motorLogger.logAll(hardwareMap);
-                pinpointLogger.logAll(hardwareMap);
+                logRawHardwareOncePerLoop();
 
                 gamepadUpdate();
                 robot.update();
@@ -241,7 +224,7 @@ public class MainTeleopLogging extends PsiKitLinearOpMode {
                 idle();
             }
         } finally {
-            try { Logger.end(); } catch (Exception ignored) {}
+            endPsiKitLogging();
         }
     }
 

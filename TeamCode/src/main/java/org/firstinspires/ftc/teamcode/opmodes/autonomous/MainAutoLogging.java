@@ -27,20 +27,11 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
-import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
 import org.firstinspires.ftc.teamcode.logging.PsiKitPedroFollowerPoseLogger;
-import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
+import org.firstinspires.ftc.teamcode.opmodes.logging.PsiKitLoggingOpMode;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.rlog.RLOGServer;
-import org.psilynx.psikit.core.rlog.RLOGWriter;
-import org.psilynx.psikit.ftc.PsiKitOpMode;
 
-class MainAutoLogging extends PsiKitOpMode {
-
-    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
-    private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
-    private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
+class MainAutoLogging extends PsiKitLoggingOpMode {
     private final PsiKitPedroFollowerPoseLogger pedroPoseLogger = new PsiKitPedroFollowerPoseLogger("/Odometry/PedroFollowerPose");
 
     //Path Gen
@@ -126,19 +117,14 @@ class MainAutoLogging extends PsiKitOpMode {
 
     @Override
     public void psiKit_init() {
-
-        Logger.addDataReceiver(new RLOGServer());
-        String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()) + ".rlog";
-        Logger.addDataReceiver(new RLOGWriter(filename));
-
+        // Note: PsiKit logging (RLOGServer/RLOGWriter + wrapping/priming) is started by PsiKitLoggingOpMode.
         Logger.recordMetadata("some metadata", "string value");
-        Logger.start();
 
         if (range == Range.CLOSE_RANGE) {
-            robot = new Robot(hardwareMap, telemetry, false);
+            robot = new Robot(rawHardwareMap, telemetry, false);
         }
         else {
-            robot = new Robot(hardwareMap, telemetry, true);
+            robot = new Robot(rawHardwareMap, telemetry, true);
         }
 
         robot.drive.manualDrive = false;
@@ -205,8 +191,7 @@ class MainAutoLogging extends PsiKitOpMode {
         follower.update();
 
         driverStationLogger.log(gamepad1, gamepad2);
-        motorLogger.logAll(hardwareMap);
-        pinpointLogger.logAll(hardwareMap);
+        logRawHardwareOncePerLoop();
         pedroPoseLogger.log(follower);
 
         drawCurrent();
@@ -229,8 +214,7 @@ class MainAutoLogging extends PsiKitOpMode {
         follower.update();
         pedroPoseLogger.log(follower);
         driverStationLogger.log(gamepad1, gamepad2);
-        motorLogger.logAll(hardwareMap);
-        pinpointLogger.logAll(hardwareMap);
+        logRawHardwareOncePerLoop();
         updateTurretAim();
 
         robot.update();
