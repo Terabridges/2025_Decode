@@ -10,7 +10,7 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
@@ -28,10 +28,12 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.logging.PsiKitPedroFollowerPoseLogger;
-import org.firstinspires.ftc.teamcode.opmodes.logging.PsiKitLoggingOpMode;
+import org.firstinspires.ftc.teamcode.opmodes.logging.PsiKitSession;
 import org.psilynx.psikit.core.Logger;
 
-class MainAutoLogging extends PsiKitLoggingOpMode {
+class MainAutoLogging extends LinearOpMode {
+
+    private final PsiKitSession psiKit = new PsiKitSession();
     private final PsiKitPedroFollowerPoseLogger pedroPoseLogger = new PsiKitPedroFollowerPoseLogger("/Odometry/PedroFollowerPose");
 
     //Path Gen
@@ -116,15 +118,60 @@ class MainAutoLogging extends PsiKitLoggingOpMode {
     public double spinUpTimeout = 1.75;
 
     @Override
+    public void runOpMode() {
+        final int rlogPort = 5802;
+
+        psiKit.captureRawFtcReferences(this);
+
+        try {
+            // Build robot/hardware using original FTC objects.
+            psiKit_init();
+
+            // Enable PsiKit wrapping + priming + RLOG after robot construction.
+            psiKit.start(this, rlogPort);
+
+            while (opModeInInit() && !isStopRequested()) {
+                Logger.periodicBeforeUser();
+                psiKit.logPsiKitInputsOncePerLoop(this);
+                psiKit.logRawHardwareOncePerLoop();
+                psiKit_init_loop();
+                Logger.periodicAfterUser(0.0, 0.0);
+                idle();
+            }
+
+            if (!Logger.isReplay()) {
+                waitForStart();
+            }
+            if (isStopRequested()) {
+                return;
+            }
+
+            psiKit_start();
+
+            while (opModeIsActive() && !isStopRequested()) {
+                Logger.periodicBeforeUser();
+                psiKit.logPsiKitInputsOncePerLoop(this);
+                psiKit.logRawHardwareOncePerLoop();
+                psiKit_loop();
+                Logger.periodicAfterUser(0.0, 0.0);
+                idle();
+            }
+
+            psiKit_stop();
+        } finally {
+            psiKit.end();
+        }
+    }
+
     public void psiKit_init() {
         // Note: PsiKit logging (RLOGServer/RLOGWriter + wrapping/priming) is started by PsiKitLoggingOpMode.
         Logger.recordMetadata("some metadata", "string value");
 
         if (range == Range.CLOSE_RANGE) {
-            robot = new Robot(rawHardwareMap, telemetry, false);
+            robot = new Robot(psiKit.getRawHardwareMap(), telemetry, false);
         }
         else {
-            robot = new Robot(rawHardwareMap, telemetry, true);
+            robot = new Robot(psiKit.getRawHardwareMap(), telemetry, true);
         }
 
         robot.drive.manualDrive = false;
@@ -184,20 +231,15 @@ class MainAutoLogging extends PsiKitLoggingOpMode {
         robot.transfer.numBalls = 3;
     }
 
-    @Override
     public void psiKit_init_loop() {
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetryM.update(telemetry);
         follower.update();
-
-        driverStationLogger.log(gamepad1, gamepad2);
-        logRawHardwareOncePerLoop();
         pedroPoseLogger.log(follower);
 
         drawCurrent();
     }
 
-    @Override
     public void psiKit_start() {
         stopRequested = false;
 
@@ -209,12 +251,9 @@ class MainAutoLogging extends PsiKitLoggingOpMode {
         }
     }
 
-    @Override
     public void psiKit_loop() {
         follower.update();
         pedroPoseLogger.log(follower);
-        driverStationLogger.log(gamepad1, gamepad2);
-        logRawHardwareOncePerLoop();
         updateTurretAim();
 
         robot.update();
@@ -254,10 +293,8 @@ class MainAutoLogging extends PsiKitLoggingOpMode {
         Logger.recordOutput("OpMode/example", 2.0);
     }
 
-    @Override
     public void psiKit_stop(){
-        Logger.end();
-        super.stop();
+        // No-op: PsiKitSession closes Logger in finally.
     }
 
     private void buildPath(PathRequest request) {

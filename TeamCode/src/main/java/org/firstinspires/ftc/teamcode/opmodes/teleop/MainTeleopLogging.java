@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.sfdev.assembly.state.StateMachine;
@@ -17,6 +18,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.opmodes.logging.PsiKitSession;
 import org.psilynx.psikit.core.Logger;
 
 import java.util.ArrayList;
@@ -24,7 +26,9 @@ import java.util.Arrays;
 import java.util.List;
 
 @TeleOp(name="MainTeleOpLogging", group="TeleOp")
-public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
+public class MainTeleopLogging extends LinearOpMode {
+
+    private final PsiKitSession psiKit = new PsiKitSession();
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -95,6 +99,8 @@ public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
     public void runOpMode(){
         final int rlogPort = 5802;  // using 5802 (default is 5800) to not conflict with limelight which uses 5800 and 5801
 
+        psiKit.captureRawFtcReferences(this);
+
         try {
             // Build robot + controls using the original FTC objects.
             // PsiKit wrapping happens afterwards and is used for logging only.
@@ -122,12 +128,11 @@ public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
 
             // Start PsiKit after hardware is constructed so robot setup sees the raw FTC
             // hardwareMap and gamepad1/2. Priming ensures /HardwareMap/... logging still works.
-            captureRawFtcReferences();
-            startPsiKitLogging(rlogPort);
+            psiKit.start(this, rlogPort);
 
        while (opModeInInit()){
            Logger.periodicBeforeUser();
-           logPsiKitInputsOncePerLoop();
+           psiKit.logPsiKitInputsOncePerLoop(this);
 
            previousGamepad1.copy(currentGamepad1);
            currentGamepad1.copy(gamepad1);
@@ -158,7 +163,9 @@ public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
            Logger.periodicAfterUser(0.0, 0.0);
        }
 
-            waitForStart();
+            if (!Logger.isReplay()) {
+                waitForStart();
+            }
 
             robot.toInit();
             shootAllMachine.start();
@@ -168,10 +175,10 @@ public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
             while (opModeIsActive()){
                 double beforeUserStart = Logger.getTimestamp();
                 Logger.periodicBeforeUser();
-                logPsiKitInputsOncePerLoop();
+                psiKit.logPsiKitInputsOncePerLoop(this);
                 double beforeUserEnd = Logger.getTimestamp();
 
-                logRawHardwareOncePerLoop();
+                psiKit.logRawHardwareOncePerLoop();
 
                 gamepadUpdate();
                 robot.update();
@@ -224,7 +231,7 @@ public class MainTeleopLogging extends PsiKitLoggingLinearOpMode {
                 idle();
             }
         } finally {
-            endPsiKitLogging();
+            psiKit.end();
         }
     }
 
