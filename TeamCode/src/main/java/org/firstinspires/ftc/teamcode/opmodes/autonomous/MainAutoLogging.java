@@ -27,14 +27,14 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.firstinspires.ftc.teamcode.logging.PsiKitPedroFollowerPoseLogger;
-import org.firstinspires.ftc.teamcode.opmodes.logging.PsiKitSession;
+import org.psilynx.psikit.ftc.PedroFollowerPoseLogger;
+import org.psilynx.psikit.ftc.FtcLoggingSession;
 import org.psilynx.psikit.core.Logger;
 
 class MainAutoLogging extends LinearOpMode {
 
-    private final PsiKitSession psiKit = new PsiKitSession();
-    private final PsiKitPedroFollowerPoseLogger pedroPoseLogger = new PsiKitPedroFollowerPoseLogger("/Odometry/PedroFollowerPose");
+    private final FtcLoggingSession psiKit = new FtcLoggingSession();
+    private final PedroFollowerPoseLogger pedroPoseLogger = new PedroFollowerPoseLogger("/Odometry/PedroFollowerPose");
 
     //Path Gen
     public Pose startPose;
@@ -121,19 +121,17 @@ class MainAutoLogging extends LinearOpMode {
     public void runOpMode() {
         final int rlogPort = 5802;
 
-        psiKit.captureRawFtcReferences(this);
-
         try {
-            // Build robot/hardware using original FTC objects.
-            psiKit_init();
-
-            // Enable PsiKit wrapping + priming + RLOG after robot construction.
+            // Start PsiKit first so the OpMode's hardwareMap is wrapped.
+            // This is required for /HardwareMap/... and /HardwareMap/_manifest to populate.
             psiKit.start(this, rlogPort);
+
+            // Build robot/hardware using the wrapped HardwareMap.
+            psiKit_init();
 
             while (opModeInInit() && !isStopRequested()) {
                 Logger.periodicBeforeUser();
-                psiKit.logPsiKitInputsOncePerLoop(this);
-                psiKit.logRawHardwareOncePerLoop();
+                psiKit.logOncePerLoop(this);
                 psiKit_init_loop();
                 Logger.periodicAfterUser(0.0, 0.0);
                 idle();
@@ -150,8 +148,7 @@ class MainAutoLogging extends LinearOpMode {
 
             while (opModeIsActive() && !isStopRequested()) {
                 Logger.periodicBeforeUser();
-                psiKit.logPsiKitInputsOncePerLoop(this);
-                psiKit.logRawHardwareOncePerLoop();
+                psiKit.logOncePerLoop(this);
                 psiKit_loop();
                 Logger.periodicAfterUser(0.0, 0.0);
                 idle();
@@ -164,14 +161,14 @@ class MainAutoLogging extends LinearOpMode {
     }
 
     public void psiKit_init() {
-        // Note: PsiKit logging (RLOGServer/RLOGWriter + wrapping/priming) is started by PsiKitLoggingOpMode.
+        // Note: PsiKit logging (RLOGServer/RLOGWriter + wrapping/priming) is started by FtcLoggingSession.
         Logger.recordMetadata("some metadata", "string value");
 
         if (range == Range.CLOSE_RANGE) {
-            robot = new Robot(psiKit.getRawHardwareMap(), telemetry, false);
+            robot = new Robot(hardwareMap, telemetry, false);
         }
         else {
-            robot = new Robot(psiKit.getRawHardwareMap(), telemetry, true);
+            robot = new Robot(hardwareMap, telemetry, true);
         }
 
         robot.drive.manualDrive = false;
@@ -294,7 +291,7 @@ class MainAutoLogging extends LinearOpMode {
     }
 
     public void psiKit_stop(){
-        // No-op: PsiKitSession closes Logger in finally.
+        // No-op: FtcLoggingSession closes Logger in finally.
     }
 
     private void buildPath(PathRequest request) {

@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.sfdev.assembly.state.StateMachine;
@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.firstinspires.ftc.teamcode.opmodes.logging.PsiKitSession;
+import org.psilynx.psikit.ftc.FtcLoggingSession;
 import org.psilynx.psikit.core.Logger;
 
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import java.util.List;
 @TeleOp(name="MainTeleOpLogging", group="TeleOp")
 public class MainTeleopLogging extends LinearOpMode {
 
-    private final PsiKitSession psiKit = new PsiKitSession();
+    private final FtcLoggingSession psiKit = new FtcLoggingSession();
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -99,11 +99,12 @@ public class MainTeleopLogging extends LinearOpMode {
     public void runOpMode(){
         final int rlogPort = 5802;  // using 5802 (default is 5800) to not conflict with limelight which uses 5800 and 5801
 
-        psiKit.captureRawFtcReferences(this);
-
         try {
-            // Build robot + controls using the original FTC objects.
-            // PsiKit wrapping happens afterwards and is used for logging only.
+            // Start PsiKit first so the OpMode's hardwareMap is wrapped.
+            // This is required for /HardwareMap/... and /HardwareMap/_manifest to populate.
+            psiKit.start(this, rlogPort);
+
+            // Build robot + controls using the wrapped hardwareMap.
             Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
 
             driveControl = new DriveControl(robot, gamepad1, gamepad2);
@@ -126,13 +127,11 @@ public class MainTeleopLogging extends LinearOpMode {
 
             robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-            // Start PsiKit after hardware is constructed so robot setup sees the raw FTC
-            // hardwareMap and gamepad1/2. Priming ensures /HardwareMap/... logging still works.
-            psiKit.start(this, rlogPort);
+            // PsiKit already started above.
 
        while (opModeInInit()){
            Logger.periodicBeforeUser();
-           psiKit.logPsiKitInputsOncePerLoop(this);
+           psiKit.logOncePerLoop(this);
 
            previousGamepad1.copy(currentGamepad1);
            currentGamepad1.copy(gamepad1);
@@ -175,10 +174,10 @@ public class MainTeleopLogging extends LinearOpMode {
             while (opModeIsActive()){
                 double beforeUserStart = Logger.getTimestamp();
                 Logger.periodicBeforeUser();
-                psiKit.logPsiKitInputsOncePerLoop(this);
+                psiKit.logOncePerLoop(this);
                 double beforeUserEnd = Logger.getTimestamp();
 
-                psiKit.logRawHardwareOncePerLoop();
+                // Pinpoint is logged from psiKit.logOncePerLoop when enabled.
 
                 gamepadUpdate();
                 robot.update();

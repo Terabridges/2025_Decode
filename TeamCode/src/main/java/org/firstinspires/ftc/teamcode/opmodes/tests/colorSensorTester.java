@@ -9,6 +9,7 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
@@ -54,7 +55,11 @@ public class colorSensorTester extends LinearOpMode {
             red = colors.red;
             green = colors.green;
             blue = colors.blue;
-            distance = transfer.colorSensor.getDistance(DistanceUnit.INCH);
+            if (transfer.colorSensor instanceof DistanceSensor) {
+                distance = ((DistanceSensor) transfer.colorSensor).getDistance(DistanceUnit.INCH);
+            } else {
+                distance = Double.POSITIVE_INFINITY;
+            }
 
 //            if (distance < 1.92){
 //                ballDetected = true;
