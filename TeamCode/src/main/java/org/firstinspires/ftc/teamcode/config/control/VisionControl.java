@@ -1,10 +1,5 @@
 package org.firstinspires.ftc.teamcode.config.control;
-
-import com.qualcomm.robotcore.hardware.Gamepad;
-
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
-import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
@@ -12,20 +7,14 @@ public class VisionControl implements Control {
 
     //---------------- Software ----------------
     Vision vision;
-    Gamepad gp1;
-    Gamepad gp2;
-    Robot robot;
+    GamepadView gp1;
+    GamepadView gp2;
 
     //---------------- Constructor ----------------
-    public VisionControl(Vision vision, Gamepad gp1, Gamepad gp2){
+    public VisionControl(Vision vision, GamepadView gp1, GamepadView gp2){
         this.vision = vision;
         this.gp1 = gp1;
         this.gp2 = gp2;
-    }
-
-    public VisionControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        this(robot.vision, gp1, gp2);
-        this.robot = robot;
     }
 
     //---------------- Methods ----------------
@@ -38,7 +27,7 @@ public class VisionControl implements Control {
     }
 
     @Override
-    public void addTelemetry(Telemetry telemetry){
+    public void addTelemetry(TelemetrySink telemetry){
         telemetry.addData("Vision Error", vision.getTx());
         telemetry.addData("Distance", vision.getDistanceInches());
         telemetry.addData("Alliance Color", GlobalVariables.allianceColor);

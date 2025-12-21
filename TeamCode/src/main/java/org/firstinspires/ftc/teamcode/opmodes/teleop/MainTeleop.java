@@ -9,10 +9,14 @@ import com.sfdev.assembly.state.StateMachineBuilder;
 
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.DriveControl;
+import org.firstinspires.ftc.teamcode.config.control.GamepadView;
 import org.firstinspires.ftc.teamcode.config.control.IntakeControl;
 import org.firstinspires.ftc.teamcode.config.control.ShooterControl;
+import org.firstinspires.ftc.teamcode.config.control.TelemetrySink;
 import org.firstinspires.ftc.teamcode.config.control.TransferControl;
 import org.firstinspires.ftc.teamcode.config.control.VisionControl;
+import org.firstinspires.ftc.teamcode.config.control.ftc.FtcGamepadView;
+import org.firstinspires.ftc.teamcode.config.control.ftc.FtcTelemetrySink;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -32,6 +36,8 @@ public class MainTeleop extends LinearOpMode {
     public TransferControl transferControl;
     public VisionControl visionControl;
     public List<Control> controls;
+
+    public TelemetrySink telemetrySink;
 
     public Gamepad currentGamepad1;
     public Gamepad previousGamepad1;
@@ -95,11 +101,15 @@ public class MainTeleop extends LinearOpMode {
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
 
-        driveControl = new DriveControl(robot, gamepad1, gamepad2);
-        intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
-        shooterControl = new ShooterControl(robot, gamepad1, gamepad2);
-        transferControl = new TransferControl(robot, gamepad1, gamepad2);
-        visionControl = new VisionControl(robot, gamepad1, gamepad2);
+        GamepadView gp1View = new FtcGamepadView(gamepad1);
+        GamepadView gp2View = new FtcGamepadView(gamepad2);
+        telemetrySink = new FtcTelemetrySink(telemetry);
+
+        driveControl = new DriveControl(robot.drive, gp1View, gp2View);
+        intakeControl = new IntakeControl(robot.intake, gp1View, gp2View);
+        shooterControl = new ShooterControl(robot.shooter, gp1View, gp2View);
+        transferControl = new TransferControl(robot.transfer, gp1View, gp2View);
+        visionControl = new VisionControl(robot.vision, gp1View, gp2View);
 
         controls = new ArrayList<>(Arrays.asList(intakeControl, shooterControl, transferControl, driveControl, visionControl));
 
@@ -195,7 +205,7 @@ public class MainTeleop extends LinearOpMode {
     public void controlsUpdate() {
         for (Control c : controls) {
             c.update();
-            c.addTelemetry(telemetry);
+            c.addTelemetry(telemetrySink);
         }
         telemetry.addData("Shooting State", shootAllMachine.getState());
         telemetry.update();

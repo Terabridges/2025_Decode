@@ -13,6 +13,10 @@ import org.firstinspires.ftc.teamcode.config.control.IntakeControl;
 import org.firstinspires.ftc.teamcode.config.control.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.TransferControl;
 import org.firstinspires.ftc.teamcode.config.control.VisionControl;
+import org.firstinspires.ftc.teamcode.config.control.TelemetrySink;
+import org.firstinspires.ftc.teamcode.config.control.GamepadView;
+import org.firstinspires.ftc.teamcode.config.control.ftc.FtcGamepadView;
+import org.firstinspires.ftc.teamcode.config.control.ftc.FtcTelemetrySink;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -36,6 +40,8 @@ public class MainTeleopLogging extends LinearOpMode {
     public TransferControl transferControl;
     public VisionControl visionControl;
     public List<Control> controls;
+
+    private TelemetrySink telemetrySink;
 
     public Gamepad currentGamepad1;
     public Gamepad previousGamepad1;
@@ -97,21 +103,22 @@ public class MainTeleopLogging extends LinearOpMode {
 
     @Override
     public void runOpMode(){
-        final int rlogPort = 5802;  // using 5802 (default is 5800) to not conflict with limelight which uses 5800 and 5801
 
         try {
             // Start PsiKit first so the OpMode's hardwareMap is wrapped.
-            // This is required for /HardwareMap/... and /HardwareMap/_manifest to populate.
-            psiKit.start(this, rlogPort);
+            psiKit.start(this, 5802);  // using 5802 (default is 5800) to not conflict with limelight which uses 5800 and 5801
 
-            // Build robot + controls using the wrapped hardwareMap.
             Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
 
-            driveControl = new DriveControl(robot, gamepad1, gamepad2);
-            intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
-            shooterControl = new ShooterControl(robot, gamepad1, gamepad2);
-            transferControl = new TransferControl(robot, gamepad1, gamepad2);
-            visionControl = new VisionControl(robot, gamepad1, gamepad2);
+            GamepadView gp1View = new FtcGamepadView(gamepad1);
+            GamepadView gp2View = new FtcGamepadView(gamepad2);
+            telemetrySink = new FtcTelemetrySink(telemetry);
+
+            driveControl = new DriveControl(robot.drive, gp1View, gp2View);
+            intakeControl = new IntakeControl(robot.intake, gp1View, gp2View);
+            shooterControl = new ShooterControl(robot.shooter, gp1View, gp2View);
+            transferControl = new TransferControl(robot.transfer, gp1View, gp2View);
+            visionControl = new VisionControl(robot.vision, gp1View, gp2View);
 
             controls = new ArrayList<>(Arrays.asList(intakeControl, shooterControl, transferControl, driveControl, visionControl));
 
@@ -127,7 +134,6 @@ public class MainTeleopLogging extends LinearOpMode {
 
             robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-            // PsiKit already started above.
 
        while (opModeInInit()){
            Logger.periodicBeforeUser();
@@ -237,7 +243,7 @@ public class MainTeleopLogging extends LinearOpMode {
     public void controlsUpdate() {
         for (Control c : controls) {
             c.update();
-            c.addTelemetry(telemetry);
+            c.addTelemetry(telemetrySink);
         }
         telemetry.addData("Shooting State", shootAllMachine.getState());
         telemetry.update();

@@ -32,6 +32,7 @@ proguard/
 
 # Log Files
 *.log
+*.rlog
 
 # Local crash/log dumps (not source)
 chub_crash*.txt

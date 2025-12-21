@@ -162,7 +162,6 @@ class MainAutoLogging extends LinearOpMode {
 
     public void psiKit_init() {
         // Note: PsiKit logging (RLOGServer/RLOGWriter + wrapping/priming) is started by FtcLoggingSession.
-        Logger.recordMetadata("some metadata", "string value");
 
         if (range == Range.CLOSE_RANGE) {
             robot = new Robot(hardwareMap, telemetry, false);

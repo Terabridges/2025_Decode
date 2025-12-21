@@ -5,3 +5,46 @@ java {
     sourceCompatibility JavaVersion.VERSION_11
     targetCompatibility JavaVersion.VERSION_11
 }
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.psilynx.psikit:core:0.1.0-beta2'
+}
+
+// Compile only the desktop-safe pieces of TeamCode (no FTC/Android SDK types).
+sourceSets {
+    main {
+        java {
+            srcDir '../TeamCode/src/main/java'
+            // Also include sandboxlib's own desktop harness sources.
+            include 'org/firstinspires/ftc/teamcode/desktop/**'
+            include 'org/firstinspires/ftc/teamcode/config/subsystems/Subsystem.java'
+            include 'org/firstinspires/ftc/teamcode/config/subsystems/Drive.java'
+            include 'org/firstinspires/ftc/teamcode/config/subsystems/io/DriveIO.java'
+            include 'org/firstinspires/ftc/teamcode/config/control/Control.java'
+            include 'org/firstinspires/ftc/teamcode/config/control/GamepadView.java'
+            include 'org/firstinspires/ftc/teamcode/config/control/TelemetrySink.java'
+            include 'org/firstinspires/ftc/teamcode/config/control/MecanumDriveMath.java'
+            include 'org/firstinspires/ftc/teamcode/config/control/DriveControl.java'
+            include 'org/firstinspires/ftc/teamcode/config/utility/EdgeDetector.java'
+        }
+    }
+}
+
+tasks.register('runDriveReplay', JavaExec) {
+    group = 'application'
+    description = 'Runs the desktop Drive replay harness (pass -Plog=path/to.rlog)'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.firstinspires.ftc.teamcode.desktop.DriveReplayMain'
+    if (project.hasProperty('log')) {
+        def logPath = project.property('log').toString()
+        def logFile = file(logPath)
+        if (!logFile.exists()) {
+            logFile = rootProject.file(logPath)
+        }
+        args logFile.absolutePath
+    }
+}
