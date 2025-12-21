@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.ShooterAuto;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
+import org.firstinspires.ftc.teamcode.config.subsystems.io.DriveIOFtc;
 
 //@Disabled
 @Configurable
@@ -50,7 +51,7 @@ public class LockTester extends LinearOpMode {
 
         vision = new Vision(hardwareMap);
         shooter = new Shooter(hardwareMap, vision);
-        drive = new Drive(hardwareMap);
+        drive = new Drive(new DriveIOFtc(hardwareMap));
         vision.toInit();
         shooter.toInit();
         drive.toInit();

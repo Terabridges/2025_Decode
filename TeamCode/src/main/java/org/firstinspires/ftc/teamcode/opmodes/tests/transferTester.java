@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.config.subsystems.io.DriveIOFtc;
 
 @Disabled
 @Configurable
@@ -42,7 +43,7 @@ public class transferTester extends LinearOpMode {
         );
         transfer = new Transfer(hardwareMap);
         intake = new Intake(hardwareMap);
-        drive = new Drive(hardwareMap);
+        drive = new Drive(new DriveIOFtc(hardwareMap));
         transfer.spindex.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         waitForStart();
@@ -122,10 +123,8 @@ public class transferTester extends LinearOpMode {
                 leftBackPower /= max;
                 rightBackPower /= max;
             }
-            drive.leftFront.setPower(leftFrontPower);
-            drive.rightFront.setPower(rightFrontPower);
-            drive.leftBack.setPower(leftBackPower);
-            drive.rightBack.setPower(rightBackPower);
+            drive.setDrivePowers(leftFrontPower, rightFrontPower, leftBackPower, rightBackPower);
+            drive.update();
 
             joinedTelemetry.addData("Spindex Pos", transfer.spindex.getCurrentPosition());
             joinedTelemetry.addData("Spindex Pow", transfer.spindex.getPower());

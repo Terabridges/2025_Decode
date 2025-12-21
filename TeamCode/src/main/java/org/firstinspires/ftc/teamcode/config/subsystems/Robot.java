@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.firstinspires.ftc.teamcode.config.subsystems.io.DriveIOFtc;
+
 public class Robot {
 
     //---------------- Objects ----------------
@@ -39,7 +41,7 @@ public class Robot {
         this.telemetry = telemetry;
 
         vision = new Vision(hardwareMap);
-        drive = new Drive(hardwareMap);
+        drive = new Drive(new DriveIOFtc(hardwareMap));
         intake = new Intake(hardwareMap);
         shooter = autoMode ? new ShooterAuto(hardwareMap, vision) : new Shooter(hardwareMap, vision);
         transfer = new Transfer(hardwareMap);

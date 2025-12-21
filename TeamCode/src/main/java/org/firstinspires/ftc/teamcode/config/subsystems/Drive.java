@@ -1,23 +1,11 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.IMU;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.config.subsystems.io.DriveIO;
 
 public class Drive implements Subsystem{
 
-    //---------------- Hardware ----------------
-    public DcMotor leftBack;
-    public DcMotor rightBack;
-    public DcMotor leftFront;
-    public DcMotor rightFront;
-//    public GoBildaPinpointDriver pinpoint;
+    private final DriveIO io;
+    private final DriveIO.Inputs inputs = new DriveIO.Inputs();
 
     //---------------- Software ----------------
     public boolean manualDrive = true;
@@ -34,18 +22,8 @@ public class Drive implements Subsystem{
 
 
     //---------------- Constructor ----------------
-    public Drive(HardwareMap map) {
-        leftBack = map.get(DcMotor.class, "left_back");
-        rightBack = map.get(DcMotor.class, "right_back");
-        leftFront = map.get(DcMotor.class, "left_front");
-        rightFront = map.get(DcMotor.class, "right_front");
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-//        pinpoint = map.get(GoBildaPinpointDriver.class, "pinpoint");
-//        pinpoint.setOffsets(-1.527559, 5.70866, DistanceUnit.INCH);
-//        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-//        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-//        pinpoint.resetPosAndIMU();
+    public Drive(DriveIO io) {
+        this.io = io;
     }
 
     //---------------- Methods ----------------
@@ -123,7 +101,7 @@ public class Drive implements Subsystem{
     @Override
     public void update(){
 
-//        pinpoint.update();
+        io.updateInputs(inputs);
 
         speed = (useSlowMode ? SLOW_MULT : FAST_MULT);
         if(manualDrive){
@@ -131,10 +109,7 @@ public class Drive implements Subsystem{
             rightFrontPow*=speed;
             leftBackPow*=speed;
             rightBackPow*=speed;
-            leftFront.setPower(leftFrontPow);
-            rightFront.setPower(rightFrontPow);
-            leftBack.setPower(leftBackPow);
-            rightBack.setPower(rightBackPow);
+            io.setMotorPowers(leftFrontPow, rightFrontPow, leftBackPow, rightBackPow);
         }
     }
 
