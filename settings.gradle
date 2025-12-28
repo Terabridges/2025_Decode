@@ -9,14 +9,17 @@ pluginManagement {
 def psiKitDirFromProp = (System.getProperty('psikitDir') ?: '').trim()
 def psiKitDirFromEnv = (System.getenv('PSIKIT_DIR') ?: '').trim()
 def psiKitDirCandidate = psiKitDirFromProp ? file(psiKitDirFromProp)
-		: (psiKitDirFromEnv ? file(psiKitDirFromEnv) : file("../../psilynx/PsiKit"))
+		: (psiKitDirFromEnv ? file(psiKitDirFromEnv) : null)
 
-// Include PsiKit for normal dependency resolution (composite build) when available.
-if (psiKitDirCandidate.exists()) {
-	includeBuild(psiKitDirCandidate)
-} else {
-	println("[PsiKit] Composite build not found at: ${psiKitDirCandidate}. " +
-			"Skipping includeBuild. To enable, set -DpsikitDir=PATH or env PSIKIT_DIR.")
+// PsiKit composite build is opt-in to avoid accidentally overriding published artifacts
+// with a stale local PsiKit checkout on another machine.
+if (psiKitDirCandidate != null) {
+	if (psiKitDirCandidate.exists()) {
+		includeBuild(psiKitDirCandidate)
+	} else {
+		println("[PsiKit] Composite build not found at: ${psiKitDirCandidate}. " +
+				"Skipping includeBuild. To enable, set -DpsikitDir=PATH or env PSIKIT_DIR.")
+	}
 }
 
 include ':FtcRobotController'
