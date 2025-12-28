@@ -27,14 +27,13 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.psilynx.psikit.ftc.PedroFollowerPoseLogger;
 import org.psilynx.psikit.ftc.FtcLoggingSession;
 import org.psilynx.psikit.core.Logger;
 
 class MainAutoLogging extends LinearOpMode {
 
     private final FtcLoggingSession psiKit = new FtcLoggingSession();
-    private final PedroFollowerPoseLogger pedroPoseLogger = new PedroFollowerPoseLogger("/Odometry/PedroFollowerPose");
+    // PedroFollowerPoseLogger no longer exists in current PsiKit.
 
     //Path Gen
     public Pose startPose;
@@ -231,7 +230,7 @@ class MainAutoLogging extends LinearOpMode {
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetryM.update(telemetry);
         follower.update();
-        pedroPoseLogger.log(follower);
+        // pedroPoseLogger.log(follower);
 
         drawCurrent();
     }
@@ -249,7 +248,7 @@ class MainAutoLogging extends LinearOpMode {
 
     public void psiKit_loop() {
         follower.update();
-        pedroPoseLogger.log(follower);
+        // pedroPoseLogger.log(follower);
         updateTurretAim();
 
         robot.update();

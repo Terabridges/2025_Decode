@@ -32,9 +32,7 @@ public class PsiKitAdvantageScopeMinimal extends LinearOpMode {
                 Logger.periodicAfterUser(0.0, 0.0);
             }
 
-            if (!Logger.isReplay()) {
-                waitForStart();
-            }
+            waitForStart();
 
             int loopCount = 0;
 
