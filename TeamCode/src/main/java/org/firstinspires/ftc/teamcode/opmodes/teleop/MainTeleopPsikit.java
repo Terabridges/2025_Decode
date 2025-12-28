@@ -93,7 +93,7 @@ public class MainTeleopPsikit extends LinearOpMode {
         try {
             // Start PsiKit first so the OpMode's hardwareMap (and gamepads) are wrapped.
             // AdvantageScope defaults to port 5800. Set to 0 to disable the server.
-            psiKit.start(this, 5800);
+            psiKit.start(this, 5802);
 
             final Robot robot;
             try {
