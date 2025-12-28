@@ -69,7 +69,7 @@ public class ShooterControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Turret Lock?", shooter.useTurretLock);
         telemetry.addData("Target RPM", shooter.targetRPM);
-        telemetry.addData("Current RPM", shooter.getShooterRPM());
+        telemetry.addData("RPM Tgt / Cur", "%.1f / %.1f", shooter.targetRPM, shooter.getShooterRPM());
         telemetry.addData("Motif", GlobalVariables.motif);
         telemetry.addData("Hood Offset", shooter.hoodOffset);
         telemetry.addData("RPM Offset", shooter.RPMOffset);
