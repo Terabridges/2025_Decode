@@ -11,7 +11,7 @@
       "degrees": 90
     }
   ],
-  "position": [0, 0, 0.051],
+  "position": [0, 0, 0.01],
   "cameras": [
     {
       "name": "Front Camera",
