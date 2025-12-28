@@ -168,9 +168,7 @@ public class MainTeleopLogging extends LinearOpMode {
            Logger.periodicAfterUser(0.0, 0.0);
        }
 
-            if (!Logger.isReplay()) {
-                waitForStart();
-            }
+            waitForStart();
 
             robot.toInit();
             shootAllMachine.start();

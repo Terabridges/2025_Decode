@@ -40,3 +40,89 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.12.1'
 }
+
+// PC runner (no JUnit) for replaying an OpMode from a .rlog.
+// Usage (PowerShell):
+//   .\gradlew.bat :TeamCode:runPsiKitReplay --no-daemon --rerun-tasks \
+//     -PpsikitReplayOpMode=org.firstinspires.ftc.teamcode.psikit.ReplayCliSmokeOpMode \
+//     -PpsikitReplayLog="C:\\path with spaces\\file.rlog"
+afterEvaluate {
+    def unitTestTask = tasks.findByName('testDebugUnitTest')
+    if (unitTestTask != null) {
+        tasks.register('runPsiKitReplay', JavaExec) {
+            group = 'verification'
+            description = 'Run PsiKit replay from a PC (CLI, no JUnit).'
+
+            // Build the same classes/resources the unit test task would use, but don't run tests.
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.PsiKitReplayCliMain'
+            standardInput = System.in
+
+            // Allow passing values via Gradle properties to avoid Windows quoting issues.
+            // These map to the same -D properties PsiKit uses internally.
+            def pOpMode = project.findProperty('psikitReplayOpMode')
+            def pLog = project.findProperty('psikitReplayLog')
+            def pWriteOut = project.findProperty('psikitReplayWriteOutput')
+            def pOutDir = project.findProperty('psikitReplayOutputDir')
+
+            if (pOpMode != null) {
+                systemProperty 'psikitReplayOpMode', pOpMode.toString()
+            }
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pWriteOut != null) {
+                systemProperty 'psikitReplayWriteOutput', pWriteOut.toString()
+            }
+            if (pOutDir != null) {
+                systemProperty 'psikitReplayOutputDir', pOutDir.toString()
+            }
+        }
+
+        // Robolectric runner (runs real OpModes that touch Android/FTC SDK APIs).
+        // This executes ONLY PsiKitReplayCliRunnerTest, but behaves like a CLI via properties.
+        tasks.register('runPsiKitReplayRobolectric', Test) {
+            group = 'verification'
+            description = 'Run PsiKit replay under Robolectric (supports Android/FTC SDK dependencies).'
+
+            dependsOn(unitTestTask.dependsOn)
+            testClassesDirs = unitTestTask.testClassesDirs
+            classpath = unitTestTask.classpath
+
+            // Only run the CLI runner test.
+            filter {
+                includeTestsMatching 'org.firstinspires.ftc.teamcode.psikit.PsiKitReplayCliRunnerTest'
+            }
+
+            // Enable mock hardwareMap behavior during replay (needed for most real OpModes).
+            // NOTE: This is required for OpModes that construct subsystems from hardwareMap.
+            systemProperty 'psikitReplayMockHardwareMap', 'true'
+
+            // Pass through the same Gradle properties used by runPsiKitReplay.
+            def pOpMode = project.findProperty('psikitReplayOpMode')
+            def pLog = project.findProperty('psikitReplayLog')
+            def pWriteOut = project.findProperty('psikitReplayWriteOutput')
+            def pOutDir = project.findProperty('psikitReplayOutputDir')
+
+            if (pOpMode != null) {
+                systemProperty 'psikitReplayOpMode', pOpMode.toString()
+            }
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pWriteOut != null) {
+                systemProperty 'psikitReplayWriteOutput', pWriteOut.toString()
+            }
+            if (pOutDir != null) {
+                systemProperty 'psikitReplayOutputDir', pOutDir.toString()
+            }
+
+            // Make output easier to follow when used like a CLI.
+            testLogging {
+                events 'passed', 'failed', 'skipped', 'standardOut', 'standardError'
+                showStandardStreams = true
+            }
+        }
+    }
+}
