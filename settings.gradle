@@ -1,3 +1,15 @@
+pluginManagement {
+	includeBuild("../../psilynx/PsiKit")
+	repositories {
+		gradlePluginPortal()
+		google()
+		mavenCentral()
+	}
+}
+
+// Also include PsiKit for normal dependency resolution (composite build).
+includeBuild("../../psilynx/PsiKit")
+
 include ':FtcRobotController'
 include ':TeamCode'
 include ':sandboxlib'

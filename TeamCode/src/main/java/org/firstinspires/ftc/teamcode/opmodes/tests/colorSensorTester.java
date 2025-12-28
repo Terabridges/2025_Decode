@@ -54,7 +54,7 @@ public class colorSensorTester extends LinearOpMode {
             red = colors.red;
             green = colors.green;
             blue = colors.blue;
-            distance = transfer.colorSensor.getDistance(DistanceUnit.INCH);
+            distance = transfer.distanceSensor.getDistance(DistanceUnit.INCH);
 
 //            if (distance < 1.92){
 //                ballDetected = true;

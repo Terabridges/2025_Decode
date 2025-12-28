@@ -1,4 +1,5 @@
 repositories {
+    mavenLocal() // For testing locally-built PsiKit
     mavenCentral()
     google() // Needed for androidx
     maven { url = "https://maven.pedropathing.com/" }

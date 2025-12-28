@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -17,7 +18,8 @@ public class Transfer implements Subsystem{
     //---------------- Hardware ----------------
     public DcMotor spindex;
     public Servo clutch;
-    public RevColorSensorV3 colorSensor;
+    public NormalizedColorSensor colorSensor;
+    public DistanceSensor distanceSensor;
     Util util;
 
     //---------------- Software ----------------
@@ -62,7 +64,10 @@ public class Transfer implements Subsystem{
     public Transfer(HardwareMap map) {
         spindex = map.get(DcMotor.class, "spindex");
         clutch = map.get(Servo.class, "clutch");
-        colorSensor = map.get(RevColorSensorV3.class, "color_sensor");
+        // Use interfaces instead of the concrete RevColorSensorV3 class.
+        // This keeps replay (mock hardware) working and still supports the real sensor on-robot.
+        colorSensor = map.get(NormalizedColorSensor.class, "color_sensor");
+        distanceSensor = map.get(DistanceSensor.class, "color_sensor");
         spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         spindexController = new PIDController(p, i, d);
@@ -203,7 +208,7 @@ public class Transfer implements Subsystem{
         green = colors.green;
         blue = colors.blue;
         previousColorDistance = colorDistance;
-        colorDistance = colorSensor.getDistance(DistanceUnit.INCH);
+        colorDistance = distanceSensor.getDistance(DistanceUnit.INCH);
 
 //        if (colorDistance < 1.92){
 //            ballDetected = true;
