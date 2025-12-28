@@ -1,5 +1,16 @@
 pluginManagement {
-	includeBuild("../../psilynx/PsiKit")
+	def psiKitDirFromProp = (System.getProperty('psikitDir') ?: '').trim()
+	def psiKitDirFromEnv = (System.getenv('PSIKIT_DIR') ?: '').trim()
+	def psiKitDirCandidate = psiKitDirFromProp ? file(psiKitDirFromProp)
+			: (psiKitDirFromEnv ? file(psiKitDirFromEnv) : file("../../psilynx/PsiKit"))
+	def includePsiKitComposite = psiKitDirCandidate.exists()
+
+	if (includePsiKitComposite) {
+		includeBuild(psiKitDirCandidate)
+	} else {
+		println("[PsiKit] Composite build not found at: ${psiKitDirCandidate}. " +
+				"Skipping includeBuild. To enable, set -DpsikitDir=PATH or env PSIKIT_DIR.")
+	}
 	repositories {
 		gradlePluginPortal()
 		google()
@@ -7,8 +18,14 @@ pluginManagement {
 	}
 }
 
-// Also include PsiKit for normal dependency resolution (composite build).
-includeBuild("../../psilynx/PsiKit")
+// Also include PsiKit for normal dependency resolution (composite build) when available.
+def psiKitDirFromProp = (System.getProperty('psikitDir') ?: '').trim()
+def psiKitDirFromEnv = (System.getenv('PSIKIT_DIR') ?: '').trim()
+def psiKitDirCandidate = psiKitDirFromProp ? file(psiKitDirFromProp)
+		: (psiKitDirFromEnv ? file(psiKitDirFromEnv) : file("../../psilynx/PsiKit"))
+if (psiKitDirCandidate.exists()) {
+	includeBuild(psiKitDirCandidate)
+}
 
 include ':FtcRobotController'
 include ':TeamCode'
