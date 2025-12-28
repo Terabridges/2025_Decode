@@ -32,6 +32,7 @@ proguard/
 
 # Log Files
 *.log
+chub*.txt
 
 # Android Studio Navigation editor temp files
 .navigation/
