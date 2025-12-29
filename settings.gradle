@@ -15,7 +15,10 @@ if (psiKitDirFromProp) {
 if (psiKitDirFromEnv) {
 	psiKitCandidates.add(file(psiKitDirFromEnv))
 }
-// Default relative location for this monorepo layout.
+// Default relative locations for common monorepo layouts.
+// - 2025_Decode sibling of psilynx (e.g. C:\Code\2025_Decode + C:\Code\psilynx\PsiKit)
+psiKitCandidates.add(file("../psilynx/PsiKit"))
+// - 2025_Decode under TeraBridges (e.g. C:\Code\TeraBridges\2025_Decode + C:\Code\psilynx\PsiKit)
 psiKitCandidates.add(file("../../psilynx/PsiKit"))
 
 def psiKitDirCandidate = psiKitCandidates.find { it.exists() }
