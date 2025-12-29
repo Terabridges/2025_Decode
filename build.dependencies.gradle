@@ -1,5 +1,10 @@
 repositories {
-    mavenLocal() // For testing locally-built PsiKit
+    // mavenLocal is opt-in to avoid accidentally using stale local artifacts.
+    // Enable with: -DuseMavenLocal=true
+    def useMavenLocal = ((System.getProperty('useMavenLocal') ?: 'false').toString()).toBoolean()
+    if (useMavenLocal) {
+        mavenLocal() // For testing locally-built PsiKit
+    }
     mavenCentral()
     google() // Needed for androidx
     maven { url = "https://maven.pedropathing.com/" }

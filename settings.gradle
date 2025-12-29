@@ -8,18 +8,20 @@ pluginManagement {
 
 def psiKitDirFromProp = (System.getProperty('psikitDir') ?: '').trim()
 def psiKitDirFromEnv = (System.getenv('PSIKIT_DIR') ?: '').trim()
-def psiKitDirCandidate = psiKitDirFromProp ? file(psiKitDirFromProp)
-		: (psiKitDirFromEnv ? file(psiKitDirFromEnv) : null)
+def psiKitDirCandidate = psiKitDirFromProp
+		? file(psiKitDirFromProp)
+		: (psiKitDirFromEnv
+				? file(psiKitDirFromEnv)
+				: file("../../psilynx/PsiKit"))
 
-// PsiKit composite build is opt-in to avoid accidentally overriding published artifacts
-// with a stale local PsiKit checkout on another machine.
-if (psiKitDirCandidate != null) {
-	if (psiKitDirCandidate.exists()) {
-		includeBuild(psiKitDirCandidate)
-	} else {
-		println("[PsiKit] Composite build not found at: ${psiKitDirCandidate}. " +
-				"Skipping includeBuild. To enable, set -DpsikitDir=PATH or env PSIKIT_DIR.")
-	}
+// Include PsiKit via composite build when available. This repo's TeamCode includes PsiKit-backed
+// OpModes/tests, so builds will typically require PsiKit sources unless using a compatible
+// published artifact.
+if (psiKitDirCandidate.exists()) {
+	includeBuild(psiKitDirCandidate)
+} else {
+	println("[PsiKit] Composite build not found at: ${psiKitDirCandidate}. " +
+			"Set -DpsikitDir=PATH or env PSIKIT_DIR to point at your PsiKit checkout.")
 }
 
 include ':FtcRobotController'
