@@ -8,19 +8,25 @@ pluginManagement {
 
 def psiKitDirFromProp = (System.getProperty('psikitDir') ?: '').trim()
 def psiKitDirFromEnv = (System.getenv('PSIKIT_DIR') ?: '').trim()
-def psiKitDirCandidate = psiKitDirFromProp
-		? file(psiKitDirFromProp)
-		: (psiKitDirFromEnv
-				? file(psiKitDirFromEnv)
-				: file("../../psilynx/PsiKit"))
+def psiKitCandidates = []
+if (psiKitDirFromProp) {
+	psiKitCandidates.add(file(psiKitDirFromProp))
+}
+if (psiKitDirFromEnv) {
+	psiKitCandidates.add(file(psiKitDirFromEnv))
+}
+// Default relative location for this monorepo layout.
+psiKitCandidates.add(file("../../psilynx/PsiKit"))
+
+def psiKitDirCandidate = psiKitCandidates.find { it.exists() }
 
 // Include PsiKit via composite build when available. This repo's TeamCode includes PsiKit-backed
 // OpModes/tests, so builds will typically require PsiKit sources unless using a compatible
 // published artifact.
-if (psiKitDirCandidate.exists()) {
+if (psiKitDirCandidate != null) {
 	includeBuild(psiKitDirCandidate)
 } else {
-	println("[PsiKit] Composite build not found at: ${psiKitDirCandidate}. " +
+	println("[PsiKit] Composite build not found. Tried: " + psiKitCandidates.join(', ') + ". " +
 			"Set -DpsikitDir=PATH or env PSIKIT_DIR to point at your PsiKit checkout.")
 }
 
