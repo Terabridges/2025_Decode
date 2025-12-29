@@ -11,6 +11,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
@@ -37,9 +38,16 @@ import org.psilynx.psikit.ftc.FtcLoggingSession;
  * This class is intentionally not annotated; it is meant to be constructed by a selectable wrapper
  * OpMode that remains DS-visible.
  */
-class MainAutoPsikit extends LinearOpMode {
+class MainAutoPsikit extends OpMode {
 
     private final FtcLoggingSession psiKit = new FtcLoggingSession();
+    private boolean psiKitStarted = false;
+    private final LinearOpMode psiKitAdapter = new LinearOpMode() {
+        @Override
+        public void runOpMode() {
+            // Adapter for PsiKit logging; never run directly.
+        }
+    };
 
     //Path Gen
     public Pose startPose;
@@ -123,46 +131,65 @@ class MainAutoPsikit extends LinearOpMode {
     public double spinUpTimeout = 1.75;
 
     @Override
-    public void runOpMode() {
+    public void init() {
         final int rlogPort = 5802;
+        syncPsiKitAdapter();
+        psiKit.start(psiKitAdapter, rlogPort);
+        psiKitStarted = true;
+        copyPsiKitAdapterBack();
 
-        try {
-            psiKit.start(this, rlogPort);
+        // Ensure the global follower/telemetry singleton is initialized under the wrapped hardwareMap.
+        FollowerManager.getFollower(hardwareMap, startPose);
 
-            // Ensure the global follower/telemetry singleton is initialized under the wrapped hardwareMap.
-            FollowerManager.getFollower(hardwareMap, startPose);
+        psiKit_init();
+    }
 
-            psiKit_init();
+    @Override
+    public void init_loop() {
+        syncPsiKitAdapter();
+        Logger.periodicBeforeUser();
+        psiKit.logOncePerLoop(psiKitAdapter);
+        copyPsiKitAdapterBack();
+        psiKit_init_loop();
+        Logger.periodicAfterUser(0.0, 0.0);
+    }
 
-            while (opModeInInit() && !isStopRequested()) {
-                Logger.periodicBeforeUser();
-                psiKit.logOncePerLoop(this);
-                psiKit_init_loop();
-                Logger.periodicAfterUser(0.0, 0.0);
-                idle();
-            }
+    @Override
+    public void start() {
+        psiKit_start();
+    }
 
-            if (!Logger.isReplay()) {
-                waitForStart();
-            }
-            if (isStopRequested()) {
-                return;
-            }
+    @Override
+    public void loop() {
+        syncPsiKitAdapter();
+        Logger.periodicBeforeUser();
+        psiKit.logOncePerLoop(psiKitAdapter);
+        copyPsiKitAdapterBack();
+        psiKit_loop();
+        Logger.periodicAfterUser(0.0, 0.0);
+    }
 
-            psiKit_start();
-
-            while (opModeIsActive() && !isStopRequested()) {
-                Logger.periodicBeforeUser();
-                psiKit.logOncePerLoop(this);
-                psiKit_loop();
-                Logger.periodicAfterUser(0.0, 0.0);
-                idle();
-            }
-
-            psiKit_stop();
-        } finally {
+    @Override
+    public void stop() {
+        psiKit_stop();
+        if (psiKitStarted) {
             psiKit.end();
+            psiKitStarted = false;
         }
+    }
+
+    private void syncPsiKitAdapter() {
+        psiKitAdapter.gamepad1 = gamepad1;
+        psiKitAdapter.gamepad2 = gamepad2;
+        psiKitAdapter.telemetry = telemetry;
+        psiKitAdapter.hardwareMap = hardwareMap;
+    }
+
+    private void copyPsiKitAdapterBack() {
+        hardwareMap = psiKitAdapter.hardwareMap;
+        telemetry = psiKitAdapter.telemetry;
+        gamepad1 = psiKitAdapter.gamepad1;
+        gamepad2 = psiKitAdapter.gamepad2;
     }
 
     private void psiKit_init() {
