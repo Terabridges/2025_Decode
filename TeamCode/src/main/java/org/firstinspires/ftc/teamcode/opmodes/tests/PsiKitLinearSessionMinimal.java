@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.FtcLoggingSession;
 
-@TeleOp(name = "PsiKit AdvantageScope Minimal", group = "Test")
-public class PsiKitAdvantageScopeMinimal extends LinearOpMode {
+@TeleOp(name = "PsiKit Linear Session Minimal", group = "Test")
+public class PsiKitLinearSessionMinimal extends LinearOpMode {
 
     private final FtcLoggingSession psiKit = new FtcLoggingSession();
 
@@ -18,15 +18,22 @@ public class PsiKitAdvantageScopeMinimal extends LinearOpMode {
             // AdvantageScope defaults to port 5800.
             // If another device (e.g., Limelight) is already using 5800/5801, change this port
             // and update the port in AdvantageScope to match.
-            psiKit.start(this, 5800);
+            psiKit.start(this, 5802);
+
+            telemetry.addLine("PsiKit logging active (LinearOpMode + FtcLoggingSession).");
+            telemetry.addLine("Start this OpMode, move sticks, press buttons.");
+            telemetry.addLine("Log file: /sdcard/FIRST/PsiKit/<OpMode>_log_<timestamp>.rlog");
+            telemetry.update();
+
+            int loopCount = 0;
 
             while (opModeInInit()) {
                 Logger.periodicBeforeUser();
                 psiKit.logOncePerLoop(this);
 
-                telemetry.addLine("PsiKit logging active.");
-                telemetry.addLine("Start this OpMode, move sticks, press buttons.");
-                telemetry.addLine("Log file: /sdcard/FIRST/PsiKit/<OpMode>_log_<timestamp>.rlog");
+
+                telemetry.addData("Status", "INIT");
+                telemetry.addData("LoopCount", loopCount);
                 telemetry.update();
 
                 Logger.periodicAfterUser(0.0, 0.0);
@@ -34,7 +41,7 @@ public class PsiKitAdvantageScopeMinimal extends LinearOpMode {
 
             waitForStart();
 
-            int loopCount = 0;
+            loopCount = 0;
 
             while (opModeIsActive()) {
                 double beforeUserStart = Logger.getTimestamp();
@@ -47,6 +54,12 @@ public class PsiKitAdvantageScopeMinimal extends LinearOpMode {
                 // USER CODE GOES HERE (read gamepads, update subsystems, etc.)
 
                 Logger.recordOutput("Example/LoopCount", loopCount++);
+                Logger.recordOutput("Example/Gamepad1LeftY", (double) gamepad1.left_stick_y);
+
+                telemetry.addData("Status", "RUN");
+                telemetry.addData("LoopCount", loopCount);
+                telemetry.update();
+
 
                 double afterUserStart = Logger.getTimestamp();
                 Logger.periodicAfterUser(

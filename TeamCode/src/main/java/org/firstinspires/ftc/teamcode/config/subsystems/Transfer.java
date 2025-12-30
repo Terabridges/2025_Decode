@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -12,6 +13,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.ftc.wrappers.ColorDistanceSensorWrapper;
 
 public class Transfer implements Subsystem{
 
@@ -64,10 +66,23 @@ public class Transfer implements Subsystem{
     public Transfer(HardwareMap map) {
         spindex = map.get(DcMotor.class, "spindex");
         clutch = map.get(Servo.class, "clutch");
-        // Use interfaces instead of the concrete RevColorSensorV3 class.
-        // This keeps replay (mock hardware) working and still supports the real sensor on-robot.
+
+        // Use interfaces so PsiKit can return its wrapper (cached reads, replay friendliness).
+        // The underlying hardware is still RevColorSensorV3.
         colorSensor = map.get(NormalizedColorSensor.class, "color_sensor");
-        distanceSensor = map.get(DistanceSensor.class, "color_sensor");
+        if (colorSensor instanceof DistanceSensor) {
+            distanceSensor = (DistanceSensor) colorSensor;
+        } else {
+            distanceSensor = map.get(DistanceSensor.class, "color_sensor");
+        }
+
+        // Performance: avoid reading color over I2C when nothing is near the sensor.
+        // We already gate logic at 1.55 in; set the wrapper to match.
+        if (colorSensor instanceof ColorDistanceSensorWrapper) {
+            ((ColorDistanceSensorWrapper) colorSensor).setColorReadDistanceMetersThreshold(
+                DistanceUnit.METER.fromUnit(DistanceUnit.INCH, 1.55)
+            );
+        }
         spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         spindexController = new PIDController(p, i, d);
@@ -203,12 +218,17 @@ public class Transfer implements Subsystem{
     }
 
     public void setColorValues(){
-        colors = colorSensor.getNormalizedColors();
-        red = colors.red;
-        green = colors.green;
-        blue = colors.blue;
         previousColorDistance = colorDistance;
         colorDistance = distanceSensor.getDistance(DistanceUnit.INCH);
+
+        // Only bother consuming color when we're close enough that it matters.
+        // (The PsiKit wrapper may also skip sampling color when far away.)
+        if (colorDistance < 1.55 || ballDetected) {
+            colors = colorSensor.getNormalizedColors();
+            red = colors.red;
+            green = colors.green;
+            blue = colors.blue;
+        }
 
 //        if (colorDistance < 1.92){
 //            ballDetected = true;

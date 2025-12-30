@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.FtcLoggingSession;
+import org.psilynx.psikit.ftc.wrappers.MotorWrapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,6 +95,9 @@ public class MainTeleopPsikit extends LinearOpMode {
             // Start PsiKit first so the OpMode's hardwareMap (and gamepads) are wrapped.
             // AdvantageScope defaults to port 5800. Set to 0 to disable the server.
             psiKit.start(this, 5802);
+
+            // Only the flywheel motors need encoder velocity; drivetrain motors don't.
+            MotorWrapper.setVelocityLoggedMotors("fly_left", "fly_right");
 
             final Robot robot;
             try {

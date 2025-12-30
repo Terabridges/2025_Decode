@@ -10,7 +10,6 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
@@ -28,8 +27,8 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.ftc.FtcLoggingSession;
+import org.psilynx.psikit.ftc.PsiKitIterativeOpMode;
+import org.psilynx.psikit.ftc.wrappers.MotorWrapper;
 
 /**
  * PsiKit-instrumented version of MainAuto.
@@ -37,9 +36,14 @@ import org.psilynx.psikit.ftc.FtcLoggingSession;
  * This class is intentionally not annotated; it is meant to be constructed by a selectable wrapper
  * OpMode that remains DS-visible.
  */
-class MainAutoPsikit extends LinearOpMode {
+class MainAutoPsikit extends PsiKitIterativeOpMode {
 
-    private final FtcLoggingSession psiKit = new FtcLoggingSession();
+    private static final int RLOG_PORT = 5802;
+
+    @Override
+    protected int getRlogPort() {
+        return RLOG_PORT;
+    }
 
     //Path Gen
     public Pose startPose;
@@ -123,49 +127,13 @@ class MainAutoPsikit extends LinearOpMode {
     public double spinUpTimeout = 1.75;
 
     @Override
-    public void runOpMode() {
-        final int rlogPort = 5802;
+    protected void onPsiKitInit() {
+        // Only the flywheel motors need encoder velocity; drivetrain motors don't.
+        MotorWrapper.setVelocityLoggedMotors("fly_left", "fly_right");
 
-        try {
-            psiKit.start(this, rlogPort);
+        // Ensure the global follower/telemetry singleton is initialized under the wrapped hardwareMap.
+        FollowerManager.getFollower(hardwareMap, startPose);
 
-            // Ensure the global follower/telemetry singleton is initialized under the wrapped hardwareMap.
-            FollowerManager.getFollower(hardwareMap, startPose);
-
-            psiKit_init();
-
-            while (opModeInInit() && !isStopRequested()) {
-                Logger.periodicBeforeUser();
-                psiKit.logOncePerLoop(this);
-                psiKit_init_loop();
-                Logger.periodicAfterUser(0.0, 0.0);
-                idle();
-            }
-
-            if (!Logger.isReplay()) {
-                waitForStart();
-            }
-            if (isStopRequested()) {
-                return;
-            }
-
-            psiKit_start();
-
-            while (opModeIsActive() && !isStopRequested()) {
-                Logger.periodicBeforeUser();
-                psiKit.logOncePerLoop(this);
-                psiKit_loop();
-                Logger.periodicAfterUser(0.0, 0.0);
-                idle();
-            }
-
-            psiKit_stop();
-        } finally {
-            psiKit.end();
-        }
-    }
-
-    private void psiKit_init() {
         if (range == Range.CLOSE_RANGE) {
             robot = new Robot(hardwareMap, telemetry, false);
         }
@@ -230,14 +198,16 @@ class MainAutoPsikit extends LinearOpMode {
         robot.transfer.numBalls = 3;
     }
 
-    private void psiKit_init_loop() {
+    @Override
+    protected void onPsiKitInitLoop() {
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetryM.update(telemetry);
         follower.update();
         drawCurrent();
     }
 
-    private void psiKit_start() {
+    @Override
+    protected void onPsiKitStart() {
         stopRequested = false;
 
         autoMachine.start();
@@ -248,7 +218,12 @@ class MainAutoPsikit extends LinearOpMode {
         }
     }
 
-    private void psiKit_loop() {
+    @Override
+    protected void onPsiKitLoop() {
+        if (stopRequested) {
+            return;
+        }
+
         follower.update();
         updateTurretAim();
 
@@ -287,7 +262,8 @@ class MainAutoPsikit extends LinearOpMode {
 //        }
     }
 
-    private void psiKit_stop() {
+    @Override
+    protected void onPsiKitStop() {
         // no-op
     }
 
