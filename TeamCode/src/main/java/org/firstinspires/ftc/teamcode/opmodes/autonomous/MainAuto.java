@@ -139,9 +139,9 @@ class MainAuto extends OpMode {
         }
         else {
             if (robot.getVoltage() > 12.55){
-                intakeSpeed = 0.18;
+                intakeSpeed = 0.18; //.18
             } else {
-                intakeSpeed = 0.205;
+                intakeSpeed = 0.205; //.205
             }
         }
 
@@ -197,6 +197,10 @@ class MainAuto extends OpMode {
         follower.update();
         updateTurretAim();
 
+//        if (!(activeState == AutoStates.GO_TO_PICKUP || activeState == AutoStates.COMPLETE_PICKUP)){
+//            updateTurretAim();
+//        }
+
         robot.update();
         autoMachine.update();
         shootAllMachine.update();
@@ -244,14 +248,14 @@ class MainAuto extends OpMode {
 
         switch (request) {
             case GO_TO_PICKUP:
-                GoToPickup = buildLinearPathHoldHeading(currentPose, ap.getPickupStart(alliance, range, currentRowIndex), true);
+                GoToPickup = buildLinearPath(currentPose, ap.getPickupStart(alliance, range, currentRowIndex), true);
                 break;
             case PICKUP:
-                Pickup = buildLinearPathHoldHeading(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
+                Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), false);
+                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), true);
                 break;
             case GO_TO_LOAD:
                 GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);
@@ -635,27 +639,6 @@ class MainAuto extends OpMode {
             chain = follower.pathBuilder()
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .build();
-        }
-        return chain;
-    }
-
-    public PathChain buildLinearPathHoldHeading(Pose start, Pose end, boolean smoothEnd) {
-        double holdHeading = end.getHeading();
-        PathChain chain;
-        if (smoothEnd) {
-            chain = follower.pathBuilder()
-                    .addPath(new BezierLine(start, end))
-                    .setLinearHeadingInterpolation(holdHeading, holdHeading)
-                    .setBrakingStart(0.75)
-                    .setBrakingStrength(0.85)
-                    .build();
-        }
-        else
-        {
-            chain = follower.pathBuilder()
-                    .addPath(new BezierLine(start, end))
-                    .setLinearHeadingInterpolation(holdHeading, holdHeading)
                     .build();
         }
         return chain;
