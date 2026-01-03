@@ -71,7 +71,6 @@ class MainAuto extends OpMode {
     private Robot robot;
 
     //Other Variables
-    private final boolean skipEdgeRows = true;
     private int rowsToRun = 0;
     private int rowsCompleted = 0;
     private int currentRowIndex = 0;
@@ -82,7 +81,7 @@ class MainAuto extends OpMode {
     private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
     private final ElapsedTime motifTimer = new ElapsedTime();
     private int acquiredMotifId = -1;
-    private static final int MAX_ROWS = 4;
+    private static final int MAX_ROWS = 3;
     private final ElapsedTime stateTimer = new ElapsedTime();
     private final ElapsedTime shotDelayTimer = new ElapsedTime();
 
@@ -158,13 +157,6 @@ class MainAuto extends OpMode {
         }
 
         rowsToRun = Math.min(resolveRowsForMode(mode), MAX_ROWS);
-        if (skipEdgeRows) {
-            if (range == Range.LONG_RANGE && rowsToRun > 0) {
-                rowsToRun = Math.max(0, rowsToRun - 1); // skip row 1 on far side
-            } else if (range == Range.CLOSE_RANGE && rowsToRun == MAX_ROWS) {
-                rowsToRun = MAX_ROWS - 1; // skip row 4 on close side
-            }
-        }
         rowsCompleted = 0;
         currentRowIndex = 0;
         preloadComplete = false;
@@ -284,8 +276,6 @@ class MainAuto extends OpMode {
                 return 2;
             case THREE_ROW:
                 return 3;
-            case FOUR_ROW:
-                return 4;
             case MOVE_ONLY:
             case PRELOAD_ONLY:
             default:
@@ -293,15 +283,8 @@ class MainAuto extends OpMode {
         }
     }
 
-    /** Maps the logical row count to the actual row index, respecting any skipped edge rows. */
+    /** Maps the logical row count to the row index in the pose tables. */
     private int mapRowIndex(int logicalCount) {
-        if (!skipEdgeRows) {
-            return logicalCount;
-        }
-        if (range == Range.LONG_RANGE) {
-            return logicalCount + 1; // skip row 1 (index 0) on far side
-        }
-        // close side: skip row 4 (index 3) by limiting rowsToRun; mapping stays the same
         return logicalCount;
     }
 
@@ -411,16 +394,17 @@ class MainAuto extends OpMode {
 
     private int getCurrentShotIndex() {
         int idx = preloadComplete ? mapRowIndex(rowsCompleted) : 0;
-        return Math.min(idx, 4); // clamp to known rows
+        return Math.min(idx, MAX_ROWS);
     }
 
     private Range getScoreRangeForShotIndex(int shotIndex) {
         if (shotPlan == ShotPlan.CLOSEST_POINT) {
             boolean useClose;
             if (range == Range.LONG_RANGE) {
-                // For far start, switch to close aiming once we reach field row 3+
+                // Far start: preload + row1 far, row2+ close.
                 useClose = shotIndex >= 2;
             } else {
+                // Close start: preload + rows1-2 close, row3+ far.
                 useClose = shotIndex <= 2;
             }
             return useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
@@ -442,10 +426,10 @@ class MainAuto extends OpMode {
             return range;
         }
         if (range == Range.LONG_RANGE) {
-            // Far start: rows 0-2 leave long, rows 3-4 leave close.
-            return (shotIndex <= 2) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
+            // Far start: preload + row1 leave long, row2+ leave close.
+            return (shotIndex <= 1) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
         }
-        // Close start: rows 0-2 leave close, rows 3-4 leave long.
+        // Close start: preload + rows1-2 leave close, row3+ leave long.
         return (shotIndex <= 2) ? Range.CLOSE_RANGE : Range.LONG_RANGE;
     }
 

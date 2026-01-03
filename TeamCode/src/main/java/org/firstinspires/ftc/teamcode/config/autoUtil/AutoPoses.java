@@ -91,12 +91,10 @@ public class AutoPoses {
     double offsetClose = 5;
     double offsetHeading = -10;
 
-    // Row 1
-    public Pose pick1StartLB = poseDeg(24, 16 + offsetLong, 180); //TODO fix this
+    // Row 1 (close side)
     public Pose pick1StartCB = poseDeg(intakeStart-0.75, 84 + offsetClose, 180 + offsetHeading);
     public Pose pick1StartCBFake = poseDeg(intakeStart-2, 84 + offsetClose, 180 - offsetHeading);
     public Pose pick1StartCR = Mirror(pick1StartCBFake);
-    public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
     public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180 + 3);
@@ -111,10 +109,8 @@ public class AutoPoses {
     public Pose pick3StartCR = Mirror(pick3StartCB);
     public Pose pick3StartLR = Mirror(pick3StartLB);
 
-    // Row 4 (NOT USED)
+    // Row 4 (long side)
     public Pose pick4StartLB = poseDeg(intakeStart, 84, 180);
-    public Pose pick4StartCB = poseDeg(24, 16, 180);
-    public Pose pick4StartCR = Mirror(pick4StartCB);
     public Pose pick4StartLR = Mirror(pick4StartLB);
 
     // ========================
@@ -123,11 +119,9 @@ public class AutoPoses {
     double intakeEnd = 24.5;
     double offsetEnd = -1;
 
-    // Row 1
-    public Pose pick1EndLB = poseDeg(16, 16 + offsetLong, 180); //TODO fix this
+    // Row 1 (close side)
     public Pose pick1EndCB = poseDeg(intakeEnd+offsetEnd, 84, 180);
     public Pose pick1EndCR = Mirror(pick1EndCB);
-    public Pose pick1EndLR = Mirror(pick1EndLB);
 
     // Row 2
     public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offsetLong, 180);
@@ -141,10 +135,8 @@ public class AutoPoses {
     public Pose pick3EndCR = Mirror(pick3EndCB);
     public Pose pick3EndLR = Mirror(pick3EndLB);
 
-    // Row 4
+    // Row 4 (long side)
     public Pose pick4EndLB = poseDeg(intakeEnd, 84, 180);
-    public Pose pick4EndCB = poseDeg(16, 16, 180); //TODO fix this
-    public Pose pick4EndCR = Mirror(pick4EndCB);
     public Pose pick4EndLR = Mirror(pick4EndLB);
 
      /* =========================
@@ -158,8 +150,8 @@ public class AutoPoses {
 
     public Pose[] load = new Pose[2];                  // [Alliance]
     public Pose[][] score = new Pose[2][2];            // [Alliance][Range]
-    public Pose[][][] pickupStart = new Pose[2][2][4]; // [Alliance][Range][RowIndex]
-    public Pose[][][] pickupEnd = new Pose[2][2][4];   // [Alliance][Range][RowIndex]
+    public Pose[][][] pickupStart = new Pose[2][2][3]; // [Alliance][Range][RowIndex]
+    public Pose[][][] pickupEnd = new Pose[2][2][3];   // [Alliance][Range][RowIndex]
     public Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
     public Pose[][] releaseGoTo = new Pose[2][2];      // [Alliance][Range]
     public Pose[][] releaseComplete = new Pose[2][2];  // [Alliance][Range]
@@ -179,47 +171,39 @@ public class AutoPoses {
         score[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = scoreCR;
         score[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = scoreLR;
 
-        // --- Pickup Start (rows = index 0..3) ---
+        // --- Pickup Start (index 0..2; close rows 1-3, long rows 2-4) ---
         // Blue
         pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick1StartLB;
+        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2StartLB;
         pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick2StartLB;
+        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3StartLB;
         pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick3StartLB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][3] = pick4StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][3]  = pick4StartLB;
+        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4StartLB;
 
         // Red
         pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick1StartLR;
+        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2StartLR;
         pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick2StartLR;
+        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3StartLR;
         pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick3StartLR;
-        pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][3] = pick4StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][3]  = pick4StartLR;
+        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4StartLR;
 
         // --- Pickup End ---
         // Blue
         pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick1EndLB;
+        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2EndLB;
         pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick2EndLB;
+        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3EndLB;
         pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick3EndLB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][3] = pick4EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][3]  = pick4EndLB;
+        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4EndLB;
 
         // Red
         pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick1EndLR;
+        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2EndLR;
         pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick2EndLR;
+        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3EndLR;
         pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick3EndLR;
-        pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][3] = pick4EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][3]  = pick4EndLR;
+        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4EndLR;
 
         // --- Leave ---
         leave[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = leaveCB;
@@ -252,13 +236,13 @@ public class AutoPoses {
 
     /** Returns the score pose for a given shot index using the "closest point" plan. */
     public Pose getClosestScore(Alliance a, Range selectedRange, int shotIndex) {
-        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3, 4 = row4
+        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3
         boolean useClose;
         if (selectedRange == Range.LONG_RANGE) {
-            // Preload, row1, row2 = long; row3+, close
+            // Preload + row1 = long; row2+ = close
             useClose = shotIndex >= 2;
         } else {
-            // Preload, row1, row2 = close; row3+, long
+            // Preload + rows1-2 = close; row3+ = long
             useClose = shotIndex <= 2;
         }
         Range r = useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
