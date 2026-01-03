@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -18,6 +20,13 @@ public class Drive implements Subsystem{
     public DcMotor leftFront;
     public DcMotor rightFront;
 //    public GoBildaPinpointDriver pinpoint;
+
+    /** REV hubs exposed as devices for telemetry/logging. */
+    public LynxModule controlHub;
+    public LynxModule expansionHub;
+
+    /** Control Hub IMU (configured in the RC config as "imu"). */
+    public IMU imu;
 
     //---------------- Software ----------------
     public boolean manualDrive = true;
@@ -45,6 +54,36 @@ public class Drive implements Subsystem{
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // Explicitly named hubs from the Robot Controller configuration.
+        controlHub = map.get(LynxModule.class, "Control Hub");
+        try {
+            expansionHub = map.get(LynxModule.class, "Expansion Hub");
+        } catch (IllegalArgumentException ignored) {
+            try {
+                expansionHub = map.get(LynxModule.class, "Expansion Hub 2");
+            } catch (IllegalArgumentException ignored2) {
+                expansionHub = null;
+            }
+        }
+
+        // Control Hub IMU (Expansion Hub has no IMU).
+        imu = map.get(IMU.class, "imu");
+        imu.initialize(new IMU.Parameters(
+                new RevHubOrientationOnRobot(
+                        RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
+                        RevHubOrientationOnRobot.UsbFacingDirection.UP
+                )
+        ));
+
+        // (Optional) bulk caching for better loop performance.
+        // IMPORTANT: PsiKit configures hubs to MANUAL and clears bulk cache once per loop.
+        // Do not override that here; only enable AUTO if caching is currently OFF.
+        for (LynxModule hub : map.getAll(LynxModule.class)) {
+            if (hub.getBulkCachingMode() == LynxModule.BulkCachingMode.OFF) {
+                hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+            }
+        }
 //        pinpoint = map.get(GoBildaPinpointDriver.class, "pinpoint");
 //        pinpoint.setOffsets(-1.527559, 5.70866, DistanceUnit.INCH);
 //        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);

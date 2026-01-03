@@ -131,6 +131,15 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
         // Only the flywheel motors need encoder velocity; drivetrain motors don't.
         MotorWrapper.setVelocityLoggedMotors("fly_left", "fly_right");
 
+        // Velocity reads can be expensive; sampling at ~50Hz is usually sufficient for logs.
+        MotorWrapper.velocityRefreshPeriodSec = 0.02;
+
+        // Drivetrain encoders are not used; skip encoder-related reads to reduce loop/log time.
+        MotorWrapper.setEncoderSkippedMotors(
+            "left_front", "left_back", "right_front", "right_back",
+            "spinner"
+        );
+
         // Ensure the global follower/telemetry singleton is initialized under the wrapped hardwareMap.
         FollowerManager.getFollower(hardwareMap, startPose);
 

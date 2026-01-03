@@ -10,6 +10,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.DriveControl;
 import org.firstinspires.ftc.teamcode.config.control.IntakeControl;
@@ -24,6 +26,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.FtcLoggingSession;
+import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.wrappers.MotorWrapper;
 
 import java.util.ArrayList;
@@ -34,6 +37,8 @@ import java.util.List;
 public class MainTeleopPsikit extends LinearOpMode {
 
     private final FtcLoggingSession psiKit = new FtcLoggingSession();
+
+    private Robot robot;
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -96,10 +101,31 @@ public class MainTeleopPsikit extends LinearOpMode {
             // AdvantageScope defaults to port 5800. Set to 0 to disable the server.
             psiKit.start(this, 5802);
 
+            // Fastest practical logging profile:
+            // - Avoids per-loop non-bulk motor readbacks (power/mode/etc.) while still logging
+            //   command-side values (safe for replay).
+            MotorWrapper.logProfile = MotorWrapper.LOG_PROFILE_FAST;
+
+            // Global non-bulk sampling throttle (IMU / I2C sensors / ADC-like reads).
+            // Skips reads and table writes in between; LogTable retains the last value.
+            FtcLogTuning.nonBulkReadPeriodSec = 1.25; // 4 Hz
+
+            // Prefetch Lynx bulk data once per hub each loop so the "first read" tax
+            // shows up under PsiKit/logTimes (us)/BulkPrefetch/... instead of a motor.
+            FtcLogTuning.prefetchBulkDataEachLoop = true;
+
             // Only the flywheel motors need encoder velocity; drivetrain motors don't.
             MotorWrapper.setVelocityLoggedMotors("fly_left", "fly_right");
 
-            final Robot robot;
+            // Velocity reads can be expensive; sampling at ~50Hz is usually sufficient for logs.
+            MotorWrapper.velocityRefreshPeriodSec = 0.02;
+
+            // Drivetrain encoders are not used; skip encoder-related reads to reduce loop/log time.
+                MotorWrapper.setEncoderSkippedMotors(
+                    "left_front", "left_back", "right_front", "right_back",
+                    "spinner"
+                );
+
             try {
                 robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
                 FollowerManager.getFollower(hardwareMap, new Pose());
@@ -149,19 +175,19 @@ public class MainTeleopPsikit extends LinearOpMode {
                 gamepadUpdate();
 
                 if (currentGamepad1.a && !previousGamepad1.a) {
-                    if (GlobalVariables.motif.equals("PPG")) {
+                    if(GlobalVariables.motif.equals("PPG")){
                         GlobalVariables.motif = "GPP";
-                    } else if (GlobalVariables.motif.equals("GPP")) {
+                    } else if(GlobalVariables.motif.equals("GPP")){
                         GlobalVariables.motif = "PGP";
-                    } else if (GlobalVariables.motif.equals("PGP")) {
+                    } else if(GlobalVariables.motif.equals("PGP")){
                         GlobalVariables.motif = "PPG";
                     }
                 }
 
-                if (currentGamepad1.b && !previousGamepad1.b) {
-                    if (GlobalVariables.allianceColor.equals("red")) {
+                if (currentGamepad1.b && !previousGamepad1.b){
+                    if(GlobalVariables.allianceColor.equals("red")){
                         GlobalVariables.allianceColor = "blue";
-                    } else if (GlobalVariables.allianceColor.equals("blue")) {
+                    } else if (GlobalVariables.allianceColor.equals("blue")){
                         GlobalVariables.allianceColor = "red";
                     }
                 }
@@ -239,7 +265,7 @@ public class MainTeleopPsikit extends LinearOpMode {
                 stateMachinesUpdate();
 
                 // Stop everything
-                if (currentGamepad2.right_stick_button && !previousGamepad2.right_stick_button) {
+                if(currentGamepad2.right_stick_button && !previousGamepad2.right_stick_button){
                     shootAllMachine.setState(shootStates.INIT);
                     clutchSuperMachine.setState(clutchStates.INIT);
                     resetMachine.setState(resetStates.INIT);
@@ -251,22 +277,22 @@ public class MainTeleopPsikit extends LinearOpMode {
                     robot.transfer.max = 0.4;
                 }
 
-                // Switch Alliance
-                if (currentGamepad2.left_bumper && !previousGamepad2.left_bumper) {
-                    if (GlobalVariables.allianceColor.equals("red")) {
+                //Switch Alliance
+                if(currentGamepad2.left_bumper && !previousGamepad2.left_bumper){
+                    if(GlobalVariables.allianceColor.equals("red")){
                         GlobalVariables.allianceColor = "blue";
-                    } else if (GlobalVariables.allianceColor.equals("blue")) {
+                    } else if (GlobalVariables.allianceColor.equals("blue")){
                         GlobalVariables.allianceColor = "red";
                     }
                 }
 
-                // Switch Motif
-                if (currentGamepad2.right_bumper && !previousGamepad2.right_bumper) {
-                    if (GlobalVariables.motif.equals("PPG")) {
+                //Switch Motif
+                if(currentGamepad2.right_bumper && !previousGamepad2.right_bumper){
+                    if(GlobalVariables.motif.equals("PPG")){
                         GlobalVariables.motif = "GPP";
-                    } else if (GlobalVariables.motif.equals("GPP")) {
+                    } else if(GlobalVariables.motif.equals("GPP")){
                         GlobalVariables.motif = "PGP";
-                    } else if (GlobalVariables.motif.equals("PGP")) {
+                    } else if(GlobalVariables.motif.equals("PGP")){
                         GlobalVariables.motif = "PPG";
                     }
                 }
