@@ -15,10 +15,12 @@ LStX: Strafe
 LStY: Movement
 RStX: Turning
 RStY: Turning
-LStBut: //Reset Heading
-RStBut: //Toggle Field Centric
-Back:
-Start:
+LStBut:
+RStBut:
+Back: Toggle Fast Transfer
+Start: Reset Heading
+PlayStation: Toggle Field Centric
+
 
 
 GAMEPAD 2:
@@ -40,5 +42,5 @@ RStX:
 RStY:
 LStBut: Reset Spindexer
 RStBut: Break from state machine
-Back:
+Back: Toggle Field Centric
 Start:

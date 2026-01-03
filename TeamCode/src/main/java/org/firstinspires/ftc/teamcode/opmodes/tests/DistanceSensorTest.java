@@ -9,7 +9,7 @@ public class DistanceSensorTest extends LinearOpMode {
 
     private AnalogInput distanceSensor;
     private double maxVolts = 3.3;
-    private double maxDistanceMM = 1000;
+    //private double maxDistanceMM = 1000;
 
     @Override
     public void runOpMode(){
@@ -21,10 +21,10 @@ public class DistanceSensorTest extends LinearOpMode {
         while (opModeIsActive()){
 
             double volts = distanceSensor.getVoltage();
-            double distance = (volts / maxVolts) * maxDistanceMM;
+            //double distance = (volts / maxVolts) * maxDistanceMM;
 
             telemetry.addData("Volts", volts);
-            telemetry.addData("Distance", distance);
+            //telemetry.addData("Distance", distance);
 
         }
 

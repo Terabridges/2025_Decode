@@ -134,7 +134,7 @@ class MainAuto extends OpMode {
             if (robot.getVoltage() > 12.55){
                 intakeSpeed = 0.18;
             } else {
-                intakeSpeed = 0.2;
+                intakeSpeed = 0.195;
             }
         }
         else {

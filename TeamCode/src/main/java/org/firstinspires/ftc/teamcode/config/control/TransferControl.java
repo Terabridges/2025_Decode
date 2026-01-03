@@ -21,6 +21,7 @@ public class TransferControl implements Control {
     EdgeDetector spindexManualLeftRE = new EdgeDetector(()-> transfer.spindexLeft());
     EdgeDetector spindexManualFE = new EdgeDetector(()-> transfer.spindexZero(), true);
     EdgeDetector spindexManualRightRE = new EdgeDetector(()-> transfer.spindexRight());
+    EdgeDetector toggleFastTransfer = new EdgeDetector(()-> transfer.toggleFastTransfer());
 
     //---------------- Constructor ----------------
     public TransferControl(Transfer transfer, Gamepad gp1, Gamepad gp2){
@@ -48,19 +49,22 @@ public class TransferControl implements Control {
         spindexManualFE.update(gp2.dpad_left);
         spindexManualRightRE.update(gp2.dpad_right);
         spindexManualFE.update(gp2.dpad_right);
+        toggleFastTransfer.update(gp1.back);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Balls", transfer.balls);
         telemetry.addData("Spindex Pos", transfer.spindex.getCurrentPosition());
-        telemetry.addData("Spindex Runmode", transfer.spindex.getMode());
-        telemetry.addData("ColorDistance", transfer.colorDistance);
+        telemetry.addData("FastTransfer", transfer.fastTransfer);
+        telemetry.addData("DistanceVolts", transfer.distanceVolts);
 
+//        telemetry.addData("Spindex Runmode", transfer.spindex.getMode());
+//        telemetry.addData("ColorDistance", transfer.colorDistance);
 
-        telemetry.addData("Green", transfer.colorSensor.getNormalizedColors().green);
-        telemetry.addData("Blue", transfer.colorSensor.getNormalizedColors().blue);
-        telemetry.addData("Red", transfer.colorSensor.getNormalizedColors().red);
+//        telemetry.addData("Green", transfer.colorSensor.getNormalizedColors().green);
+//        telemetry.addData("Blue", transfer.colorSensor.getNormalizedColors().blue);
+//        telemetry.addData("Red", transfer.colorSensor.getNormalizedColors().red);
 
 //        telemetry.addData("Ball Color", transfer.ballColor);
 //        telemetry.addData("Sees Red", transfer.isRed);

@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
@@ -18,6 +19,7 @@ public class Transfer implements Subsystem{
     public DcMotor spindex;
     public Servo clutch;
     public RevColorSensorV3 colorSensor;
+    public AnalogInput distanceSensor;
     Util util;
 
     //---------------- Software ----------------
@@ -58,12 +60,16 @@ public class Transfer implements Subsystem{
     public int desiredRotate = 1;
     public boolean isRed = false;
 
+    public boolean fastTransfer = false;
+    public double distanceVolts = 0;
+
     //---------------- Constructor ----------------
     public Transfer(HardwareMap map) {
         spindex = map.get(DcMotor.class, "spindex");
         clutch = map.get(Servo.class, "clutch");
         colorSensor = map.get(RevColorSensorV3.class, "color_sensor");
         spindex.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        distanceSensor = map.get(AnalogInput.class, "distance_sensor");
 
         spindexController = new PIDController(p, i, d);
         spindexController.setIntegrationBounds(-inteTolerance, inteTolerance);
@@ -229,13 +235,28 @@ public class Transfer implements Subsystem{
         }
 
         if(ballDetected){
-            if (colorTimer.seconds() > 0.03){
-                if (green > red && green > blue){
-                    ballColor = "green";
-                } else {
-                    ballColor = "purple";
-                }
+
+            if (green > red && green > blue) {
+                ballColor = "green";
+            } else {
+                ballColor = "purple";
             }
+
+//            if (!fastTransfer) {
+//                if (colorTimer.seconds() > 0.03) {
+//                    if (green > red && green > blue) {
+//                        ballColor = "green";
+//                    } else {
+//                        ballColor = "purple";
+//                    }
+//                }
+//            } else {
+//                if (green > red && green > blue) {
+//                    ballColor = "green";
+//                } else {
+//                    ballColor = "purple";
+//                }
+//            }
         }
 
         if (red > green && red > blue){
@@ -276,7 +297,9 @@ public class Transfer implements Subsystem{
 //    }
     //0 is no rotate, 1 is rotate left, 2 is rotate right
     public int rotateOrder(){
-        if (GlobalVariables.motif.equals("PPG")){
+        if (fastTransfer){
+            return 0;
+        } else if (GlobalVariables.motif.equals("PPG")){
             if(balls.equals("PPG")){
                 return 1;
             } else if (balls.equals("GPP")){
@@ -330,6 +353,14 @@ public class Transfer implements Subsystem{
         }
     }
 
+    public void updateDistanceSensor(){
+        distanceVolts = distanceSensor.getVoltage();
+    }
+
+    public void toggleFastTransfer(){
+        fastTransfer = !fastTransfer;
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
@@ -340,6 +371,7 @@ public class Transfer implements Subsystem{
 
     @Override
     public void update(){
+        updateDistanceSensor();
 
         if (useSpindexPID){
             setSpindexPow(setSpindexPID(spindexTarget));

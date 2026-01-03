@@ -16,8 +16,8 @@ public class DriveControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector slowModeRE = new EdgeDetector( () -> drive.toggleSlowMode());
-//    EdgeDetector toggleFieldCentric = new EdgeDetector(()-> drive.toggleFieldCentric());
-//    EdgeDetector resetIMU = new EdgeDetector(()-> drive.resetPinpointIMU());
+    EdgeDetector toggleFieldCentric = new EdgeDetector(()-> drive.toggleFieldCentric());
+    EdgeDetector resetHeading = new EdgeDetector(()-> drive.resetHeading());
 
 
     //---------------- Constructor ----------------
@@ -37,18 +37,17 @@ public class DriveControl implements Control {
 
     //---------------- Interface Methods ----------------
 
-//    if (drive.useFieldCentric){
-//        drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x);
-//    } else {
-
     @Override
     public void update(){
 
         slowModeRE.update(gp1.dpad_down);
-//        resetIMU.update(gp1.right_stick_button);
-//        toggleFieldCentric.update(gp1.left_stick_button);
+        resetHeading.update(gp1.start);
+        toggleFieldCentric.update(gp2.back);
 
-        if(drive.manualDrive){
+
+        if (drive.useFieldCentric){
+            drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x);
+        } else if(drive.manualDrive){
             double max;
             // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
             double axial = -gp1.left_stick_y;  // Note: pushing stick forward gives negative value
@@ -79,6 +78,6 @@ public class DriveControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Slow Mode?", drive.useSlowMode);
 //        telemetry.addData("Use Field Centric?", drive.useFieldCentric);
-//        telemetry.addData("Heading", drive.pinpoint.getHeading(AngleUnit.RADIANS));
+        telemetry.addData("Heading", (drive.getHeading() - drive.headingOffset));
     }
 }
