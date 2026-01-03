@@ -19,6 +19,12 @@ public class AutoPoses {
         return new Pose(x, y, Math.toRadians(headingDeg));
     }
 
+    private Pose offsetForward(Pose pose, double distance) {
+        double dx = distance * Math.cos(pose.getHeading());
+        double dy = distance * Math.sin(pose.getHeading());
+        return new Pose(pose.getX() + dx, pose.getY() + dy, pose.getHeading());
+    }
+
     public Pose Mirror(Pose bluePose) {
         double x = 144 - bluePose.getX();
         double y = bluePose.getY();
@@ -93,13 +99,13 @@ public class AutoPoses {
 
     // Row 1 (close side)
     public Pose pick1StartCB = poseDeg(intakeStart-0.75, 84 + offsetClose, 180 + offsetHeading);
-    public Pose pick1StartCBFake = poseDeg(intakeStart-2, 84 + offsetClose, 180 - offsetHeading);
+    public Pose pick1StartCBFake = poseDeg(intakeStart-2, 84 + offsetClose, 180); //BEFORE I WAS ADDING 10
     public Pose pick1StartCR = Mirror(pick1StartCBFake);
 
     // Row 2
     public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180 + 3);
     public Pose pick2StartCB = poseDeg(intakeStart, 60 + offsetClose, 180 + offsetHeading);
-    public Pose pick2StartCBFake = poseDeg(intakeStart - 3, 60 + offsetClose, 180 - 4);
+    public Pose pick2StartCBFake = poseDeg(intakeStart - 3, 60 + offsetClose, 180); //BEFORE I WAS ADDING 2
     public Pose pick2StartCR = Mirror(pick2StartCBFake);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
@@ -120,19 +126,21 @@ public class AutoPoses {
     double offsetEnd = -1;
 
     // Row 1 (close side)
-    public Pose pick1EndCB = poseDeg(intakeEnd+offsetEnd, 84, 180);
-    public Pose pick1EndCR = Mirror(pick1EndCB);
+    public Pose pick1EndCB = offsetForward(pick1StartCB, 20);
+    public Pose pick1EndCBFake = offsetForward(pick1StartCBFake, 20);
+    public Pose pick1EndCR = offsetForward(pick1StartCR, 20);
 
     // Row 2
     public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offsetLong, 180);
-    public Pose pick2EndCB = poseDeg(intakeEnd+offsetEnd, 60, 180);
-    public Pose pick2EndCR = Mirror(pick2EndCB);
+    public Pose pick2EndCB = offsetForward(pick2StartCB, 20);
+    public Pose pick2EndCBFake = offsetForward(pick2StartCBFake, 20);
+    public Pose pick2EndCR = offsetForward(pick2StartCR, 20);
     public Pose pick2EndLR = Mirror(pick2EndLB);
 
     // Row 3
     public Pose pick3EndLB = poseDeg(intakeEnd, 60 + offsetLong -1, 180);
-    public Pose pick3EndCB = poseDeg(intakeEnd+offsetEnd, 36, 180);
-    public Pose pick3EndCR = Mirror(pick3EndCB);
+    public Pose pick3EndCB = offsetForward(pick3StartCB, 20);
+    public Pose pick3EndCR = offsetForward(pick3StartCR, 20);
     public Pose pick3EndLR = Mirror(pick3EndLB);
 
     // Row 4 (long side)

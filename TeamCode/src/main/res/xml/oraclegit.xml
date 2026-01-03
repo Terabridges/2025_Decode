@@ -24,7 +24,7 @@
             <AnalogInput name="empty" port="2" />
             <AnalogInput name="intake_analog" port="3" />
             <DigitalDevice name="hood_switch" port="0" />
-            <goBILDAPinpoint name="pinpoint" port="0" bus="0" />
+            <goBILDAPinpoint name="pinpoint" port="0" bus="1" />
         </LynxModule>
     </LynxUsbDevice>
     <EthernetDevice

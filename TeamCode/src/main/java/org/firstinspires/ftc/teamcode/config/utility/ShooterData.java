@@ -26,11 +26,11 @@ public class ShooterData {
         RPMLUT.add( 33.6 ,3128);
         RPMLUT.add( 33.9 ,2858);
         RPMLUT.add( 34.05,3085);
-        RPMLUT.add( 35.7 ,3200);
-        RPMLUT.add( 43   ,3385);
-        RPMLUT.add( 44.2 ,3385);
-        RPMLUT.add( 52.67,3685);
-        RPMLUT.add( 53.7 ,3600);
+        RPMLUT.add( 35.7 ,3100); //3200
+        RPMLUT.add( 43   ,3290); //3385
+        RPMLUT.add( 44.2 ,3310); //3385
+        RPMLUT.add( 52.67,3600);
+        RPMLUT.add( 53.7 ,3610); //3600
         RPMLUT.add( 61.4 ,3685);
         RPMLUT.add( 63.9 ,3685);
         RPMLUT.add( 67.4 ,3987);

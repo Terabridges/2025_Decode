@@ -24,11 +24,10 @@ public class clutchTester extends LinearOpMode {
     public static double transferUp = 0.05;
     public static double transferDown = 0.85;
 
-//    double clutchUp = 0.05;
-//    double clutchBarelyDown = 0.35;
-//    double clutchDown = 0.45;
+//    double clutchUp = 0.17;
+//    double clutchBarelyDown = 0.29;
+//    double clutchDown = 0.5;
 //    double clutchDownFar = 0.85;
-    //just added 0.1 to all
     @Override
     public void runOpMode(){
 

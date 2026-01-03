@@ -119,7 +119,7 @@ class MainAuto extends OpMode {
             robot = new Robot(hardwareMap, telemetry, false);
         }
         else {
-            robot = new Robot(hardwareMap, telemetry, true);
+            robot = new Robot(hardwareMap, telemetry, false); //WAS TRUE
         }
 
         robot.drive.manualDrive = false;
@@ -131,17 +131,17 @@ class MainAuto extends OpMode {
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         if (range == Range.LONG_RANGE) {
-            if (robot.getVoltage() > 12.6){
+            if (robot.getVoltage() > 12.55){
                 intakeSpeed = 0.18;
             } else {
                 intakeSpeed = 0.2;
             }
         }
         else {
-            if (robot.getVoltage() > 12.6){
+            if (robot.getVoltage() > 12.55){
                 intakeSpeed = 0.18;
             } else {
-                intakeSpeed = 0.2;
+                intakeSpeed = 0.205;
             }
         }
 
@@ -244,10 +244,10 @@ class MainAuto extends OpMode {
 
         switch (request) {
             case GO_TO_PICKUP:
-                GoToPickup = buildLinearPath(currentPose, ap.getPickupStart(alliance, range, currentRowIndex), true);
+                GoToPickup = buildLinearPathHoldHeading(currentPose, ap.getPickupStart(alliance, range, currentRowIndex), true);
                 break;
             case PICKUP:
-                Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
+                Pickup = buildLinearPathHoldHeading(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
@@ -393,7 +393,8 @@ class MainAuto extends OpMode {
     }
 
     private int getCurrentShotIndex() {
-        int idx = preloadComplete ? mapRowIndex(rowsCompleted) : 0;
+        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3
+        int idx = preloadComplete ? (rowsCompleted + 1) : 0;
         return Math.min(idx, MAX_ROWS);
     }
 
@@ -547,7 +548,7 @@ class MainAuto extends OpMode {
         stateTimer.reset();
 
         // Park based on the range last used to score; fall back to the initially selected range.
-        int lastShotIdx = preloadComplete ? mapRowIndex(Math.max(0, rowsCompleted - 1)) : 0;
+        int lastShotIdx = preloadComplete ? Math.max(0, rowsCompleted) : 0;
         lastScoreRangeUsed = getLeaveRangeForShotIndex(lastShotIdx);
         buildPath(PathRequest.LEAVE);
         followPath(LeavePath);
@@ -625,7 +626,7 @@ class MainAuto extends OpMode {
             chain = follower.pathBuilder()
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .setBrakingStart(0.65)
+                    .setBrakingStart(0.75)
                     .setBrakingStrength(0.85)
                     .build();
         }
@@ -634,6 +635,27 @@ class MainAuto extends OpMode {
             chain = follower.pathBuilder()
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                    .build();
+        }
+        return chain;
+    }
+
+    public PathChain buildLinearPathHoldHeading(Pose start, Pose end, boolean smoothEnd) {
+        double holdHeading = end.getHeading();
+        PathChain chain;
+        if (smoothEnd) {
+            chain = follower.pathBuilder()
+                    .addPath(new BezierLine(start, end))
+                    .setLinearHeadingInterpolation(holdHeading, holdHeading)
+                    .setBrakingStart(0.75)
+                    .setBrakingStrength(0.85)
+                    .build();
+        }
+        else
+        {
+            chain = follower.pathBuilder()
+                    .addPath(new BezierLine(start, end))
+                    .setLinearHeadingInterpolation(holdHeading, holdHeading)
                     .build();
         }
         return chain;
@@ -767,10 +789,10 @@ class MainAuto extends OpMode {
             }
         } else {
             if (!preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(144+1.25, 144, Math.toRadians(90));
+                return new Pose(144-6, 144, Math.toRadians(90));
             }
             else if (preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(144-4, 144, Math.toRadians(90));
+                return new Pose(144-8, 144, Math.toRadians(90));
             }
             else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
                 return new Pose(144, 144, Math.toRadians(90));
