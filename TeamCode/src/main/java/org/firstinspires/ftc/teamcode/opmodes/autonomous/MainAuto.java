@@ -139,10 +139,10 @@ class MainAuto extends OpMode {
             }
         }
         else {
-            if (robot.getVoltage() > 12.6){
-                intakeSpeed = 0.18;
+            if (robot.getVoltage() > 12.55){
+                intakeSpeed = 0.18; //.18
             } else {
-                intakeSpeed = 0.2;
+                intakeSpeed = 0.205; //.205
             }
         }
 
@@ -205,6 +205,10 @@ class MainAuto extends OpMode {
         follower.update();
         updateTurretAim();
 
+//        if (!(activeState == AutoStates.GO_TO_PICKUP || activeState == AutoStates.COMPLETE_PICKUP)){
+//            updateTurretAim();
+//        }
+
         robot.update();
         autoMachine.update();
         shootAllMachine.update();
@@ -259,7 +263,7 @@ class MainAuto extends OpMode {
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), false);
+                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), true);
                 break;
             case GO_TO_LOAD:
                 GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);

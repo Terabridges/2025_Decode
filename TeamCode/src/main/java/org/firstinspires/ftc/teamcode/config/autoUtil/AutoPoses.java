@@ -69,10 +69,12 @@ public class AutoPoses {
     // RELEASE (lever) POSES
     // ========================
 
-    public Pose releaseGoToCloseB = poseDeg(20, 78, 180);
-    public Pose releaseCompleteCloseB = poseDeg(15, 78, 180);
-    public Pose releaseGoToCloseR = Mirror(releaseGoToCloseB);
-    public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseB);
+    public Pose releaseGoToCloseB = poseDeg(20, 76, 180);
+    public Pose releaseCompleteCloseB = poseDeg(14.25, 76, 180);
+    public Pose releaseGoToCloseBFake = poseDeg(20, 76, 180);
+    public Pose releaseCompleteCloseBFake = poseDeg(15, 76, 180);
+    public Pose releaseGoToCloseR = Mirror(releaseGoToCloseBFake);
+    public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseBFake);
 
     // ========================
     // LEAVE POSES
@@ -91,17 +93,16 @@ public class AutoPoses {
     double offsetClose = 5;
     double offsetHeading = -10;
 
-    // Row 1
-    public Pose pick1StartLB = poseDeg(24, 16 + offsetLong, 180); //TODO fix this
-    public Pose pick1StartCB = poseDeg(intakeStart-0.75, 84 + offsetClose, 180 + offsetHeading);
-    public Pose pick1StartCBFake = poseDeg(intakeStart-2, 84 + offsetClose, 180 - offsetHeading);
+    // Row 1 (close side)
+    public Pose pick1StartCB = poseDeg(intakeStart-1.5, 84 + offsetClose, 180 + offsetHeading);
+    public Pose pick1StartCBFake = poseDeg(intakeStart-3, 84 + offsetClose, 180 + 8); //BEFORE I WAS ADDING 10
     public Pose pick1StartCR = Mirror(pick1StartCBFake);
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
     // Row 2
     public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180 + 3);
-    public Pose pick2StartCB = poseDeg(intakeStart, 60 + offsetClose, 180 + offsetHeading);
-    public Pose pick2StartCBFake = poseDeg(intakeStart - 3, 60 + offsetClose, 180 - 4);
+    public Pose pick2StartCB = poseDeg(intakeStart-1.25, 60 + offsetClose, 180 + offsetHeading);
+    public Pose pick2StartCBFake = poseDeg(intakeStart - 3, 60 + offsetClose + 1.5, 180 + 8); //BEFORE I WAS ADDING 2
     public Pose pick2StartCR = Mirror(pick2StartCBFake);
     public Pose pick2StartLR = Mirror(pick2StartLB);
 
@@ -123,16 +124,16 @@ public class AutoPoses {
     double intakeEnd = 24.5;
     double offsetEnd = -1;
 
-    // Row 1
-    public Pose pick1EndLB = poseDeg(16, 16 + offsetLong, 180); //TODO fix this
+    // Row 1 (close side)
     public Pose pick1EndCB = poseDeg(intakeEnd+offsetEnd, 84, 180);
-    public Pose pick1EndCR = Mirror(pick1EndCB);
-    public Pose pick1EndLR = Mirror(pick1EndLB);
+    public Pose pick1EndCBFake = poseDeg(intakeEnd+offsetEnd-1, 84 + offsetClose, 180 + 8);
+    public Pose pick1EndCR = Mirror(pick1EndCBFake);
 
     // Row 2
     public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offsetLong, 180);
     public Pose pick2EndCB = poseDeg(intakeEnd+offsetEnd, 60, 180);
-    public Pose pick2EndCR = Mirror(pick2EndCB);
+    public Pose pick2EndCBFake = poseDeg(intakeEnd+offsetEnd-1, 60 + offsetClose, 180 + 2);
+    public Pose pick2EndCR = Mirror(pick2EndCBFake);
     public Pose pick2EndLR = Mirror(pick2EndLB);
 
     // Row 3

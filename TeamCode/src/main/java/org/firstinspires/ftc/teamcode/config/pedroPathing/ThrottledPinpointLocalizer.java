@@ -5,6 +5,7 @@ import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.FtcLogTuning;
 
 /**
@@ -38,7 +39,9 @@ public class ThrottledPinpointLocalizer extends PinpointLocalizer {
         double periodSec = FtcLogTuning.pinpointReadPeriodSec;
         if (periodSec <= 0.0 || secondsSince(lastUpdateNs) >= periodSec) {
             lastUpdateNs = System.nanoTime();
-            super.update();
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/FollowerUpdate/PinpointUpdate")) {
+                super.update();
+            }
         }
         // else: intentionally skip; PinpointLocalizer retains last pose/velocity.
     }
