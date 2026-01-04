@@ -103,7 +103,13 @@ public class MainTeleop extends LinearOpMode {
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        FollowerManager.getFollower(hardwareMap, new Pose());
+        boolean reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
+        if (reuseAutoFollower) {
+            FollowerManager.getFollower(hardwareMap);
+        } else {
+            FollowerManager.initFollower(hardwareMap, new Pose());
+        }
+        GlobalVariables.autoFollowerValid = false;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
