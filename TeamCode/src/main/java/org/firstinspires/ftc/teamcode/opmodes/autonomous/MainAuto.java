@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.ShotPlan;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
@@ -161,8 +162,8 @@ class MainAuto extends OpMode {
         currentRowIndex = 0;
         preloadComplete = false;
 
-        follower.setStartingPose(startPose);
-        follower.update();
+        FollowerManager.initFollower(hardwareMap, startPose);
+        GlobalVariables.autoFollowerValid = false;
 
         stateTimer.reset();
 
@@ -190,6 +191,14 @@ class MainAuto extends OpMode {
         if (range == Range.CLOSE_RANGE) {
             robot.shooter.hoodOffset -= 0; //0.045;
         }
+    }
+
+    @Override
+    public void stop() {
+        if (follower != null) {
+            follower.breakFollowing();
+        }
+        GlobalVariables.autoFollowerValid = (follower != null);
     }
 
     @Override
