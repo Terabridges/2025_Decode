@@ -84,8 +84,8 @@ public class Shooter implements Subsystem {
     public double turretRight = 0.85;
     public double turretLeft = -0.85;
     public double currentTurretPos;
-    double upperLimit = 340;
-    double lowerLimit = 30;
+    double upperLimit = 320; //340
+    double lowerLimit = 47; //30
     public boolean hasDesiredTarget = false;
     public double hoodOffset = 0;
     public double RPMOffset = 0;

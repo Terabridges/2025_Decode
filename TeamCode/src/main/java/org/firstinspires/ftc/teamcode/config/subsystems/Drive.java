@@ -121,14 +121,13 @@ public class Drive implements Subsystem{
     }
     public void resetHeading(){
         //headingOffset = follower.getHeading();
-        double ColorHeading = 0;
-        if (GlobalVariables.allianceColor.equals("red")){
-            ColorHeading = 0;
-        } else if (GlobalVariables.allianceColor.equals("blue")){
-            ColorHeading = Math.PI;
-        }
-        Pose zeroPose = new Pose(0, 0, ColorHeading);
-        follower.setPose(zeroPose);
+//        double ColorHeading = 0;
+//        if (GlobalVariables.allianceColor.equals("red")){
+//            ColorHeading = 0;
+//        } else if (GlobalVariables.allianceColor.equals("blue")){
+//            ColorHeading = Math.PI;
+//        }
+        follower.setPose(new Pose(72, 72, 0));
 
     }
 

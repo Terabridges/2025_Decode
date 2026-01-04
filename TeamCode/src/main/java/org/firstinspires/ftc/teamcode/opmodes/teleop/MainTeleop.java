@@ -107,7 +107,13 @@ public class MainTeleop extends LinearOpMode {
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {
-            FollowerManager.initFollower(hardwareMap, new Pose());
+//            double ColorHeading = 0;
+//            if (GlobalVariables.allianceColor.equals("red")){
+//                ColorHeading = 0;
+//            } else if (GlobalVariables.allianceColor.equals("blue")){
+//                ColorHeading = Math.PI;
+//            }
+            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, 0));
         }
         GlobalVariables.autoFollowerValid = false;
 

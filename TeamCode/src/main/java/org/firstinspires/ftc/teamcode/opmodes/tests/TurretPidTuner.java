@@ -12,7 +12,6 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
-@Disabled
 @Configurable
 @TeleOp(name = "TurretPidTuner", group = "Test")
 public class TurretPidTuner extends LinearOpMode {
