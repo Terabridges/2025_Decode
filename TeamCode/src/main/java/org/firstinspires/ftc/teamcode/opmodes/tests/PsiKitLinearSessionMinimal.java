@@ -44,12 +44,12 @@ public class PsiKitLinearSessionMinimal extends LinearOpMode {
             loopCount = 0;
 
             while (opModeIsActive()) {
-                double beforeUserStart = Logger.getTimestamp();
+                double beforeUserStart = Logger.getRealTimestamp();
 
                 Logger.periodicBeforeUser();
                 psiKit.logOncePerLoop(this);
 
-                double beforeUserEnd = Logger.getTimestamp();
+                double beforeUserEnd = Logger.getRealTimestamp();
 
                 // USER CODE GOES HERE (read gamepads, update subsystems, etc.)
 
@@ -61,7 +61,7 @@ public class PsiKitLinearSessionMinimal extends LinearOpMode {
                 telemetry.update();
 
 
-                double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
                 Logger.periodicAfterUser(
                         afterUserStart - beforeUserEnd,
                         beforeUserEnd - beforeUserStart

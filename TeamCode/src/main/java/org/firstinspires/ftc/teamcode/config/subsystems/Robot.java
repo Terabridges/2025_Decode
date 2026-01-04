@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.psilynx.psikit.core.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,8 +65,34 @@ public class Robot {
 
     //---------------- Interface Methods ----------------
     public void update() {
-        for (Subsystem s : subsystems) {
-            s.update();
+        if (drive != null) {
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate/Drive")) {
+                drive.update();
+            }
+        }
+
+        if (intake != null) {
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate/Intake")) {
+                intake.update();
+            }
+        }
+
+        if (shooter != null) {
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate/Shooter")) {
+                shooter.update();
+            }
+        }
+
+        if (transfer != null) {
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate/Transfer")) {
+                transfer.update();
+            }
+        }
+
+        if (vision != null) {
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate/Vision")) {
+                vision.update();
+            }
         }
     }
 

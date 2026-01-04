@@ -101,6 +101,11 @@ public class MainTeleopPsikit extends LinearOpMode {
             // AdvantageScope defaults to port 5800. Set to 0 to disable the server.
             psiKit.start(this, 5802);
 
+            // Pinpoint logging model: "normal hardware".
+            // PedroPathing owns pinpoint.update() via follower.update(); PsiKit only logs Pinpoint
+            // if user code accessed it via hardwareMap.get(...).
+            psiKit.enablePinpointOdometryLogging = false;
+
             // Fastest practical logging profile:
             // - Avoids per-loop non-bulk motor readbacks (power/mode/etc.) while still logging
             //   command-side values (safe for replay).
@@ -108,11 +113,30 @@ public class MainTeleopPsikit extends LinearOpMode {
 
             // Global non-bulk sampling throttle (IMU / I2C sensors / ADC-like reads).
             // Skips reads and table writes in between; LogTable retains the last value.
-            FtcLogTuning.nonBulkReadPeriodSec = 1.25; // 4 Hz
+            FtcLogTuning.nonBulkReadPeriodSec = 0.05; // .25 is 4 Hz
+
+            // For A/B timing tests: disable expensive sensors in PsiKit's background polling.
+            // - IMU is typically not needed when using Pinpoint for heading/pose.
+            // - Color sensor background polling can be expensive; if your robot code actually
+            //   uses it, PsiKit will still read on-demand via passthrough.
+            FtcLogTuning.logImu = false;
+            FtcLogTuning.processColorDistanceSensorsInBackground = false;
+
+            // Motor current reads are typically expensive (non-bulk Lynx transactions).
+            // Log them on a slow tier.
+            FtcLogTuning.logMotorCurrent = false;
+            FtcLogTuning.motorCurrentReadPeriodSec = 0.10; // 10 Hz
 
             // Prefetch Lynx bulk data once per hub each loop so the "first read" tax
             // shows up under PsiKit/logTimes (us)/BulkPrefetch/... instead of a motor.
             FtcLogTuning.prefetchBulkDataEachLoop = true;
+
+            // Pinpoint is a large fixed-cost I2C bulk read; throttle it to reduce FullCycleMS.
+            // NOTE: if your loop is ~50ms, a 20ms period won't skip anything. Use > loop period.
+            // Resilient across device/firmware: if minimal scope isn't supported, it's ignored.
+            FtcLogTuning.pinpointReadPeriodSec = 0.10; // 10 Hz
+            FtcLogTuning.pinpointLoggerCallsUpdate = false; // Pedro follower already calls pinpoint.update()
+            FtcLogTuning.pinpointUseMinimalBulkReadScope = true;
 
             // Only the flywheel motors need encoder velocity; drivetrain motors don't.
             MotorWrapper.setVelocityLoggedMotors("fly_left", "fly_right");
@@ -167,10 +191,14 @@ public class MainTeleopPsikit extends LinearOpMode {
             robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             while (opModeInInit()) {
-                double beforeUserStart = Logger.getTimestamp();
-                Logger.periodicBeforeUser();
-                psiKit.logOncePerLoop(this);
-                double beforeUserEnd = Logger.getTimestamp();
+                double beforeUserStart = Logger.getRealTimestamp();
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/LoggerPeriodicBeforeUser")) {
+                    Logger.periodicBeforeUser();
+                }
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/PsiKitLogOncePerLoop")) {
+                    psiKit.logOncePerLoop(this);
+                }
+                double beforeUserEnd = Logger.getRealTimestamp();
 
                 gamepadUpdate();
 
@@ -197,7 +225,7 @@ public class MainTeleopPsikit extends LinearOpMode {
                 telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
                 telemetry.update();
 
-                double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
                 Logger.periodicAfterUser(
                         afterUserStart - beforeUserEnd,
                         beforeUserEnd - beforeUserStart
@@ -214,10 +242,14 @@ public class MainTeleopPsikit extends LinearOpMode {
             resetMachine.start();
 
             while (opModeIsActive()) {
-                double beforeUserStart = Logger.getTimestamp();
-                Logger.periodicBeforeUser();
-                psiKit.logOncePerLoop(this);
-                double beforeUserEnd = Logger.getTimestamp();
+                double beforeUserStart = Logger.getRealTimestamp();
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/LoggerPeriodicBeforeUser")) {
+                    Logger.periodicBeforeUser();
+                }
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/PsiKitLogOncePerLoop")) {
+                    psiKit.logOncePerLoop(this);
+                }
+                double beforeUserEnd = Logger.getRealTimestamp();
 
                 // Copy gamepad state after PsiKit has applied replay controls (if replaying).
                 gamepadUpdate();
@@ -241,7 +273,9 @@ public class MainTeleopPsikit extends LinearOpMode {
 
                 robot.drive.manualDrive = driverActive || (!followerBusy && !holdingForShoot);
                 // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
-                follower.update();
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/FollowerUpdate")) {
+                    follower.update();
+                }
 
                 // Toggle turret auto-aim with GP1 dpad_up
                 if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
@@ -260,9 +294,17 @@ public class MainTeleopPsikit extends LinearOpMode {
                     follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
                 }
 
-                robot.update();
-                controlsUpdate();
-                stateMachinesUpdate();
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate")) {
+                    robot.update();
+                }
+
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/ControlsUpdate")) {
+                    controlsUpdate();
+                }
+
+                try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/StateMachinesUpdate")) {
+                    stateMachinesUpdate();
+                }
 
                 // Stop everything
                 if(currentGamepad2.right_stick_button && !previousGamepad2.right_stick_button){
@@ -297,7 +339,7 @@ public class MainTeleopPsikit extends LinearOpMode {
                     }
                 }
 
-                double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
                 Logger.periodicAfterUser(
                         afterUserStart - beforeUserEnd,
                         beforeUserEnd - beforeUserStart
@@ -314,16 +356,20 @@ public class MainTeleopPsikit extends LinearOpMode {
         int loopCount = 0;
 
         while (opModeInInit()) {
-            double beforeUserStart = Logger.getTimestamp();
-            Logger.periodicBeforeUser();
-            psiKit.logOncePerLoop(this);
-            double beforeUserEnd = Logger.getTimestamp();
+            double beforeUserStart = Logger.getRealTimestamp();
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/LoggerPeriodicBeforeUser")) {
+                Logger.periodicBeforeUser();
+            }
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/PsiKitLogOncePerLoop")) {
+                psiKit.logOncePerLoop(this);
+            }
+            double beforeUserEnd = Logger.getRealTimestamp();
 
             telemetry.addLine("Replay-only mode (hardware unavailable in JVM).");
             telemetry.addLine("PsiKit is replaying OpModeControls + DS inputs.");
             telemetry.update();
 
-            double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
             Logger.periodicAfterUser(
                     afterUserStart - beforeUserEnd,
                     beforeUserEnd - beforeUserStart
@@ -335,14 +381,18 @@ public class MainTeleopPsikit extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            double beforeUserStart = Logger.getTimestamp();
-            Logger.periodicBeforeUser();
-            psiKit.logOncePerLoop(this);
-            double beforeUserEnd = Logger.getTimestamp();
+            double beforeUserStart = Logger.getRealTimestamp();
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/LoggerPeriodicBeforeUser")) {
+                Logger.periodicBeforeUser();
+            }
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/PsiKitLogOncePerLoop")) {
+                psiKit.logOncePerLoop(this);
+            }
+            double beforeUserEnd = Logger.getRealTimestamp();
 
             Logger.recordOutput("ReplayOnly/LoopCount", loopCount++);
 
-            double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
             Logger.periodicAfterUser(
                     afterUserStart - beforeUserEnd,
                     beforeUserEnd - beforeUserStart
@@ -354,12 +404,22 @@ public class MainTeleopPsikit extends LinearOpMode {
 
     public void controlsUpdate() {
         for (Control c : controls) {
-            c.update();
-            c.addTelemetry(telemetry);
+            String name = c.getClass().getSimpleName();
+
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/ControlsUpdate/" + name + "/update")) {
+                c.update();
+            }
+
+            try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/ControlsUpdate/" + name + "/addTelemetry")) {
+                c.addTelemetry(telemetry);
+            }
         }
         telemetry.addData("Shooting State", shootAllMachine.getState());
         telemetry.addData("Turret Auto Aim", turretAimAssist);
-        telemetry.update();
+
+        try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/ControlsUpdate/telemetryUpdate")) {
+            telemetry.update();
+        }
     }
 
     public void gamepadUpdate() {

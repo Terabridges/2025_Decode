@@ -27,6 +27,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.PsiKitIterativeOpMode;
 import org.psilynx.psikit.ftc.wrappers.MotorWrapper;
 
@@ -128,6 +129,13 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
 
     @Override
     protected void onPsiKitInit() {
+        // Pinpoint is a large fixed-cost I2C bulk read; throttle it to reduce FullCycleMS.
+        // NOTE: if your loop is ~50ms, a 20ms period won't skip anything. Use > loop period.
+        // Resilient across device/firmware: if minimal scope isn't supported, it's ignored.
+        FtcLogTuning.pinpointReadPeriodSec = 0.10; // 10 Hz
+        FtcLogTuning.pinpointLoggerCallsUpdate = false; // Pedro follower/localizer calls pinpoint.update()
+        FtcLogTuning.pinpointUseMinimalBulkReadScope = true;
+
         // Only the flywheel motors need encoder velocity; drivetrain motors don't.
         MotorWrapper.setVelocityLoggedMotors("fly_left", "fly_right");
 

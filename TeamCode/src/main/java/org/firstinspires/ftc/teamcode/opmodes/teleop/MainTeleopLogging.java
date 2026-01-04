@@ -175,10 +175,10 @@ public class MainTeleopLogging extends LinearOpMode {
             resetMachine.start();
 
             while (opModeIsActive()){
-                double beforeUserStart = Logger.getTimestamp();
+                double beforeUserStart = Logger.getRealTimestamp();
                 Logger.periodicBeforeUser();
                 psiKit.logOncePerLoop(this);
-                double beforeUserEnd = Logger.getTimestamp();
+                double beforeUserEnd = Logger.getRealTimestamp();
 
                 // Pinpoint is logged from psiKit.logOncePerLoop when enabled.
 
@@ -224,7 +224,7 @@ public class MainTeleopLogging extends LinearOpMode {
             Logger.recordOutput("OpMode/example", 2.0);
             Logger.recordOutput("spindexPos", robot.transfer.spindex.getCurrentPosition());
             Logger.recordOutput("visionError", robot.vision.getTx());
-                double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
                 Logger.periodicAfterUser(
                         afterUserStart - beforeUserEnd,
                         beforeUserEnd - beforeUserStart

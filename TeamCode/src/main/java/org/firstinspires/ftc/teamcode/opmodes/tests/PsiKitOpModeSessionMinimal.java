@@ -48,12 +48,12 @@ public class PsiKitOpModeSessionMinimal extends OpMode {
 
     @Override
     public void loop() {
-        double beforeUserStart = Logger.getTimestamp();
+        double beforeUserStart = Logger.getRealTimestamp();
 
         Logger.periodicBeforeUser();
         psiKit.logOncePerLoop(this);
 
-        double beforeUserEnd = Logger.getTimestamp();
+        double beforeUserEnd = Logger.getRealTimestamp();
 
         // USER CODE GOES HERE (read gamepads, update subsystems, etc.)
         Logger.recordOutput("Example/LoopCount", loopCount++);
@@ -63,7 +63,7 @@ public class PsiKitOpModeSessionMinimal extends OpMode {
         telemetry.addData("LoopCount", loopCount);
         telemetry.update();
 
-        double afterUserStart = Logger.getTimestamp();
+        double afterUserStart = Logger.getRealTimestamp();
         Logger.periodicAfterUser(
                 afterUserStart - beforeUserEnd,
                 beforeUserEnd - beforeUserStart

@@ -57,10 +57,9 @@ public class TransferControl implements Control {
         telemetry.addData("Spindex Runmode", transfer.spindex.getMode());
         telemetry.addData("ColorDistance", transfer.colorDistance);
 
-
-        telemetry.addData("Green", transfer.colorSensor.getNormalizedColors().green);
-        telemetry.addData("Blue", transfer.colorSensor.getNormalizedColors().blue);
-        telemetry.addData("Red", transfer.colorSensor.getNormalizedColors().red);
+        telemetry.addData("Green", transfer.getGreen());
+        telemetry.addData("Blue", transfer.getBlue());
+        telemetry.addData("Red", transfer.getRed());
 
 //        telemetry.addData("Ball Color", transfer.ballColor);
 //        telemetry.addData("Sees Red", transfer.isRed);

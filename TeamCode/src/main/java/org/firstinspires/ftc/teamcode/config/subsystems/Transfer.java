@@ -270,6 +270,18 @@ public class Transfer implements Subsystem{
         }
     }
 
+    public float getRed() {
+        return red;
+    }
+
+    public float getGreen() {
+        return green;
+    }
+
+    public float getBlue() {
+        return blue;
+    }
+
     //1 is left, 2 is right, 3 is skip one left then left, 4 is skip one right then right, 5 is skip one left then right
 //    public int rotateOrder(){
 //        if (motif.equals("PPG")){

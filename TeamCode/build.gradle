@@ -81,6 +81,34 @@ afterEvaluate {
             }
         }
 
+        // PC runner (no JUnit) to summarize a .rlog into CSV stats for selected prefixes.
+        // Usage (PowerShell):
+        //   .\gradlew.bat :TeamCode:runRlogSummary --no-daemon --rerun-tasks \
+        //     -PpsikitReplayLog="C:\\path\\file.rlog" \
+        //     -PsummaryPrefixes="Bench/,PsiKit/sessionTimes (us)/,PsiKit/logTimes (us)/"
+        tasks.register('runRlogSummary', JavaExec) {
+            group = 'verification'
+            description = 'Summarize an RLOG file into CSV stats (PC CLI).'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.RlogSummaryCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pPrefixes = project.findProperty('summaryPrefixes')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pPrefixes != null) {
+                systemProperty 'summaryPrefixes', pPrefixes.toString()
+            }
+            def pKeyContains = project.findProperty('summaryKeyContains')
+            if (pKeyContains != null) {
+                systemProperty 'summaryKeyContains', pKeyContains.toString()
+            }
+        }
+
         // Robolectric runner (runs real OpModes that touch Android/FTC SDK APIs).
         // This executes ONLY PsiKitReplayCliRunnerTest, but behaves like a CLI via properties.
         tasks.register('runPsiKitReplayRobolectric', Test) {

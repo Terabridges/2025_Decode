@@ -43,9 +43,9 @@ public class PsiKitLinearOpModeMinimal extends PsiKitLinearOpMode {
             int loopCount = 0;
 
             while (opModeIsActive() && !isStopRequested()) {
-                double beforeUserStart = Logger.getTimestamp();
+                double beforeUserStart = Logger.getRealTimestamp();
                 Logger.periodicBeforeUser();
-                double beforeUserEnd = Logger.getTimestamp();
+                double beforeUserEnd = Logger.getRealTimestamp();
 
                 processHardwareInputs();
 
@@ -56,7 +56,7 @@ public class PsiKitLinearOpModeMinimal extends PsiKitLinearOpMode {
                 telemetry.addData("LoopCount", loopCount);
                 telemetry.update();
 
-                double afterUserStart = Logger.getTimestamp();
+                double afterUserStart = Logger.getRealTimestamp();
                 Logger.periodicAfterUser(
                         afterUserStart - beforeUserEnd,
                         beforeUserEnd - beforeUserStart
