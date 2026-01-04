@@ -78,6 +78,6 @@ public class DriveControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Slow Mode?", drive.useSlowMode);
 //        telemetry.addData("Use Field Centric?", drive.useFieldCentric);
-        telemetry.addData("Heading", (drive.getHeading() - drive.headingOffset));
+        telemetry.addData("Heading", drive.getHeading());
     }
 }

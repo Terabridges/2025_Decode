@@ -11,8 +11,11 @@ import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
+
+import android.graphics.Color;
 
 public class Drive implements Subsystem{
 
@@ -117,7 +120,16 @@ public class Drive implements Subsystem{
         return follower.getHeading();
     }
     public void resetHeading(){
-        headingOffset = follower.getHeading();
+        //headingOffset = follower.getHeading();
+        double ColorHeading = 0;
+        if (GlobalVariables.allianceColor.equals("red")){
+            ColorHeading = 0;
+        } else if (GlobalVariables.allianceColor.equals("blue")){
+            ColorHeading = Math.PI;
+        }
+        Pose zeroPose = new Pose(0, 0, ColorHeading);
+        follower.setPose(zeroPose);
+
     }
 
     //---------------- Interface Methods ----------------
