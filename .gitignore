@@ -80,3 +80,5 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 # lint/reports/
+/doc/ftc-2.0.4-sources
+doc/ftc-2.0.4-sources.jar
