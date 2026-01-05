@@ -201,9 +201,10 @@ public class MainTeleop extends LinearOpMode {
                 updateTurretAimTeleop(robot);
             }
 
-            // Quick reset: GP2 B seeds follower pose to field center facing goals.
+            // Relocalize: GP2 B uses Limelight to correct follower pose.
             if (currentGamepad2.b && !previousGamepad2.b) {
-                follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
+                boolean relocalized = robot.relocalizeFollowerFromLimelight(follower);
+                telemetry.addData("Relocalize", relocalized ? "OK" : "FAILED");
             }
             robot.update();
             controlsUpdate();

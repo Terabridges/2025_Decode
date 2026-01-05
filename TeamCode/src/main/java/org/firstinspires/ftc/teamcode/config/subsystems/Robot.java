@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +32,12 @@ public class Robot {
     public Vision vision;
 
     public List<Subsystem> subsystems;
+
+    // Relocalization gating defaults (tune as needed)
+    public double relocalizeMaxAmbiguity = 0.2;
+    public double relocalizeMaxHeadingErrorDeg = 15.0;
+    public double relocalizeMaxPositionErrorIn = 18.0;
+    public double relocalizeMaxSpeedInPerSec = 3.0;
 
     //---------------- Constructors ----------------
     public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2){
@@ -74,5 +84,49 @@ public class Robot {
         for (Subsystem s : subsystems) {
             s.toInit();
         }
+    }
+
+    public boolean relocalizeFollowerFromLimelight(Follower follower) {
+        if (follower == null || vision == null) {
+            return false;
+        }
+        if (!vision.hasTarget()) {
+            return false;
+        }
+        Pose3D botPose = vision.getBotPoseMT2();
+        if (botPose == null) {
+            return false;
+        }
+        double ambiguity = vision.getBestPoseAmbiguity();
+        if (ambiguity > relocalizeMaxAmbiguity) {
+            return false;
+        }
+        double xIn = botPose.getPosition().x * 39.3701;
+        double yIn = botPose.getPosition().y * 39.3701;
+        double headingRad = botPose.getOrientation().getYaw(AngleUnit.RADIANS);
+
+        Pose currentPose = follower.getPose();
+        double positionError = Math.hypot(xIn - currentPose.getX(), yIn - currentPose.getY());
+        if (positionError > relocalizeMaxPositionErrorIn) {
+            return false;
+        }
+        double headingErrorRad = smallestAngleDiff(headingRad, currentPose.getHeading());
+        if (Math.toDegrees(Math.abs(headingErrorRad)) > relocalizeMaxHeadingErrorDeg) {
+            return false;
+        }
+        double speed = follower.getVelocity().getMagnitude();
+        if (speed > relocalizeMaxSpeedInPerSec) {
+            return false;
+        }
+
+        follower.setPose(new Pose(xIn, yIn, headingRad));
+        return true;
+    }
+
+    private static double smallestAngleDiff(double a, double b) {
+        double diff = a - b;
+        while (diff > Math.PI) diff -= 2.0 * Math.PI;
+        while (diff < -Math.PI) diff += 2.0 * Math.PI;
+        return diff;
     }
 }

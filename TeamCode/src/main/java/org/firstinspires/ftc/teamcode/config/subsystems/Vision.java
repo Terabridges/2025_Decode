@@ -189,6 +189,27 @@ public class Vision implements Subsystem{
         return 0.0;
     }
 
+    public Pose3D getBotPoseMT2() {
+        if (hasTarget()) {
+            return latest.getBotpose_MT2();
+        }
+        return null;
+    }
+
+    public double getBestPoseAmbiguity() {
+        if (!hasTarget() || latest.getFiducialResults().isEmpty()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double best = Double.POSITIVE_INFINITY;
+        for (LLResultTypes.FiducialResult f : latest.getFiducialResults()) {
+            double ambiguity = f.getPoseAmbiguity();
+            if (ambiguity < best) {
+                best = ambiguity;
+            }
+        }
+        return best;
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
