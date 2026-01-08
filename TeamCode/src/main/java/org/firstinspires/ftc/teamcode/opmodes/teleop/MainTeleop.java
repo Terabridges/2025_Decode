@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
@@ -97,10 +98,24 @@ public class MainTeleop extends LinearOpMode {
     public StateMachine clutchSuperMachine;
     public StateMachine resetMachine;
 
+    public ElapsedTime loopTimer = new ElapsedTime();
+
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        FollowerManager.getFollower(hardwareMap, new Pose());
+        boolean reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
+        if (reuseAutoFollower) {
+            FollowerManager.getFollower(hardwareMap);
+        } else {
+//            double ColorHeading = 0;
+//            if (GlobalVariables.allianceColor.equals("red")){
+//                ColorHeading = 0;
+//            } else if (GlobalVariables.allianceColor.equals("blue")){
+//                ColorHeading = Math.PI;
+//            }
+            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, 0));
+        }
+        GlobalVariables.autoFollowerValid = false;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -158,6 +173,7 @@ public class MainTeleop extends LinearOpMode {
         resetMachine.start();
 
         while (opModeIsActive()){
+
             gamepadUpdate();
             // If driver moves sticks, give control to driver; otherwise let Pedro run if busy.
             boolean driverActive = Math.abs(currentGamepad1.left_stick_x) > 0.1
@@ -242,6 +258,8 @@ public class MainTeleop extends LinearOpMode {
         }
         telemetry.addData("Shooting State", shootAllMachine.getState());
         telemetry.addData("Turret Auto Aim", turretAimAssist);
+        telemetry.addData("Loop ms", loopTimer.milliseconds());
+        loopTimer.reset();
         telemetry.update();
     }
 
