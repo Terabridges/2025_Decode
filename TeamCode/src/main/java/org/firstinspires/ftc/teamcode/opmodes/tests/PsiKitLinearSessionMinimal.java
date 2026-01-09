@@ -31,12 +31,12 @@ public class PsiKitLinearSessionMinimal extends LinearOpMode {
                 Logger.periodicBeforeUser();
                 psiKit.logOncePerLoop(this);
 
-
                 telemetry.addData("Status", "INIT");
                 telemetry.addData("LoopCount", loopCount);
                 telemetry.update();
 
                 Logger.periodicAfterUser(0.0, 0.0);
+                idle();
             }
 
             waitForStart();
@@ -59,7 +59,6 @@ public class PsiKitLinearSessionMinimal extends LinearOpMode {
                 telemetry.addData("Status", "RUN");
                 telemetry.addData("LoopCount", loopCount);
                 telemetry.update();
-
 
                 double afterUserStart = Logger.getRealTimestamp();
                 Logger.periodicAfterUser(

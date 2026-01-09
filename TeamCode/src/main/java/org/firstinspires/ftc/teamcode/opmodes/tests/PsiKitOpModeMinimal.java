@@ -8,12 +8,11 @@ import org.psilynx.psikit.ftc.PsiKitIterativeOpMode;
 @TeleOp(name = "PsiKit Iterative Base Minimal", group = "Test")
 public class PsiKitOpModeMinimal extends PsiKitIterativeOpMode {
 
-    private static final int RLOG_PORT = 5802;
     private int loopCount = 0;
 
     @Override
     protected int getRlogPort() {
-        return RLOG_PORT;
+        return 5802;  // this overrides port to use 5802 (default is 5800) to not conflict with limelight which uses 5800 and 5801
     }
 
     @Override

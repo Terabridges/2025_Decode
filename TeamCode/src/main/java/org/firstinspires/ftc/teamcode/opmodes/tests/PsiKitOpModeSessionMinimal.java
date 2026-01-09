@@ -12,17 +12,13 @@ public class PsiKitOpModeSessionMinimal extends OpMode {
     private static final int RLOG_PORT = 5802;  //AdvantageScope defaults to port 5800, but many devices (e.g. Limelight) use 5800/5801
 
     private final FtcLoggingSession psiKit = new FtcLoggingSession();
-    private boolean psiKitStarted = false;
 
     private int loopCount = 0;
 
     @Override
     public void init() {
         // Start PsiKit first so the OpMode's hardwareMap + gamepads are wrapped.
-        if (!psiKitStarted) {
-            psiKit.start(this, RLOG_PORT);
-            psiKitStarted = true;
-        }
+        psiKit.start(this, RLOG_PORT);
 
         telemetry.addLine("PsiKit logging active (OpMode + FtcLoggingSession).");
         telemetry.addLine("Log file: /sdcard/FIRST/PsiKit/<OpMode>_log_<timestamp>.rlog");
@@ -76,7 +72,6 @@ public class PsiKitOpModeSessionMinimal extends OpMode {
             // No-op for user code.
         } finally {
             psiKit.end();
-            psiKitStarted = false;
         }
     }
 }

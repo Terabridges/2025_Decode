@@ -84,7 +84,6 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
     private Robot robot;
 
     //Other Variables
-    private final boolean skipEdgeRows = true;
     private int rowsToRun = 0;
     private int rowsCompleted = 0;
     private int currentRowIndex = 0;
@@ -95,7 +94,7 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
     private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
     private final ElapsedTime motifTimer = new ElapsedTime();
     private int acquiredMotifId = -1;
-    private static final int MAX_ROWS = 4;
+    private static final int MAX_ROWS = 3;
     private final ElapsedTime stateTimer = new ElapsedTime();
     private final ElapsedTime shotDelayTimer = new ElapsedTime();
 
@@ -155,7 +154,7 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
             robot = new Robot(hardwareMap, telemetry, false);
         }
         else {
-            robot = new Robot(hardwareMap, telemetry, true);
+            robot = new Robot(hardwareMap, telemetry, false); //WAS TRUE
         }
 
         robot.drive.manualDrive = false;
@@ -167,17 +166,17 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         if (range == Range.LONG_RANGE) {
-            if (robot.getVoltage() > 12.6){
+            if (robot.getVoltage() > 12.55){
                 intakeSpeed = 0.18;
             } else {
-                intakeSpeed = 0.2;
+                intakeSpeed = 0.195;
             }
         }
         else {
-            if (robot.getVoltage() > 12.6){
-                intakeSpeed = 0.18;
+            if (robot.getVoltage() > 12.55){
+                intakeSpeed = 0.18; //.18
             } else {
-                intakeSpeed = 0.2;
+                intakeSpeed = 0.205; //.205
             }
         }
 
@@ -193,19 +192,12 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
         }
 
         rowsToRun = Math.min(resolveRowsForMode(mode), MAX_ROWS);
-        if (skipEdgeRows) {
-            if (range == Range.LONG_RANGE && rowsToRun > 0) {
-                rowsToRun = Math.max(0, rowsToRun - 1); // skip row 1 on far side
-            } else if (range == Range.CLOSE_RANGE && rowsToRun == MAX_ROWS) {
-                rowsToRun = MAX_ROWS - 1; // skip row 4 on close side
-            }
-        }
         rowsCompleted = 0;
         currentRowIndex = 0;
         preloadComplete = false;
 
-        follower.setStartingPose(startPose);
-        follower.update();
+        FollowerManager.initFollower(hardwareMap, startPose);
+        GlobalVariables.autoFollowerValid = false;
 
         stateTimer.reset();
 
@@ -233,6 +225,14 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
         if (range == Range.CLOSE_RANGE) {
             robot.shooter.hoodOffset -= 0; //0.045;
         }
+    }
+
+    @Override
+    protected void onPsiKitStop() {
+        if (follower != null) {
+            follower.breakFollowing();
+        }
+        GlobalVariables.autoFollowerValid = (follower != null);
     }
 
     @Override
@@ -279,11 +279,6 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
 //        }
     }
 
-    @Override
-    protected void onPsiKitStop() {
-        // no-op
-    }
-
     private void buildPath(PathRequest request) {
         if (follower == null) {
             return;
@@ -303,7 +298,7 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), false);
+                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), true);
                 break;
             case GO_TO_LOAD:
                 GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);
@@ -328,8 +323,6 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
                 return 2;
             case THREE_ROW:
                 return 3;
-            case FOUR_ROW:
-                return 4;
             case MOVE_ONLY:
             case PRELOAD_ONLY:
             default:
@@ -337,15 +330,8 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
         }
     }
 
-    /** Maps the logical row count to the actual row index, respecting any skipped edge rows. */
+    /** Maps the logical row count to the row index in the pose tables. */
     private int mapRowIndex(int logicalCount) {
-        if (!skipEdgeRows) {
-            return logicalCount;
-        }
-        if (range == Range.LONG_RANGE) {
-            return logicalCount + 1; // skip row 1 (index 0) on far side
-        }
-        // close side: skip row 4 (index 3) by limiting rowsToRun; mapping stays the same
         return logicalCount;
     }
 
@@ -454,17 +440,19 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
     }
 
     private int getCurrentShotIndex() {
-        int idx = preloadComplete ? mapRowIndex(rowsCompleted) : 0;
-        return Math.min(idx, 4); // clamp to known rows
+        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3
+        int idx = preloadComplete ? (rowsCompleted + 1) : 0;
+        return Math.min(idx, MAX_ROWS);
     }
 
     private Range getScoreRangeForShotIndex(int shotIndex) {
         if (shotPlan == ShotPlan.CLOSEST_POINT) {
             boolean useClose;
             if (range == Range.LONG_RANGE) {
-                // For far start, switch to close aiming once we reach field row 3+
+                // Far start: preload + row1 far, row2+ close.
                 useClose = shotIndex >= 2;
             } else {
+                // Close start: preload + rows1-2 close, row3+ far.
                 useClose = shotIndex <= 2;
             }
             return useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
@@ -486,10 +474,10 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
             return range;
         }
         if (range == Range.LONG_RANGE) {
-            // Far start: rows 0-2 leave long, rows 3-4 leave close.
-            return (shotIndex <= 2) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
+            // Far start: preload + row1 leave long, row2+ leave close.
+            return (shotIndex <= 1) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
         }
-        // Close start: rows 0-2 leave close, rows 3-4 leave long.
+        // Close start: preload + rows1-2 leave close, row3+ leave long.
         return (shotIndex <= 2) ? Range.CLOSE_RANGE : Range.LONG_RANGE;
     }
 
@@ -607,7 +595,7 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
         stateTimer.reset();
 
         // Park based on the range last used to score; fall back to the initially selected range.
-        int lastShotIdx = preloadComplete ? mapRowIndex(Math.max(0, rowsCompleted - 1)) : 0;
+        int lastShotIdx = preloadComplete ? Math.max(0, rowsCompleted) : 0;
         lastScoreRangeUsed = getLeaveRangeForShotIndex(lastShotIdx);
         buildPath(PathRequest.LEAVE);
         followPath(LeavePath);
@@ -685,7 +673,7 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
             chain = follower.pathBuilder()
                     .addPath(new BezierLine(start, end))
                     .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .setBrakingStart(0.65)
+                    .setBrakingStart(0.75)
                     .setBrakingStrength(0.85)
                     .build();
         }
@@ -827,10 +815,10 @@ class MainAutoPsikit extends PsiKitIterativeOpMode {
             }
         } else {
             if (!preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(144+1.25, 144, Math.toRadians(90));
+                return new Pose(144-6, 144, Math.toRadians(90));
             }
             else if (preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(144-4, 144, Math.toRadians(90));
+                return new Pose(144-8, 144, Math.toRadians(90));
             }
             else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
                 return new Pose(144, 144, Math.toRadians(90));

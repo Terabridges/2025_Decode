@@ -1,74 +1,50 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
+import com.qualcomm.robotcore.eventloop.opmode.PsiKitLinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.rlog.RLOGWriter;
-import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
 
-@TeleOp(name = "PsiKit Linear Base Minimal", group = "Test")
+@TeleOp(name = "PsiKit Linear OpMode Minimal", group = "Test")
 public class PsiKitLinearOpModeMinimal extends PsiKitLinearOpMode {
 
     @Override
-    public void runOpMode() {
-        try {
-            // IMPORTANT: PsiKit wraps `hardwareMap` and `gamepad1/2` in `psiKitSetup()`.
-            // Any `hardwareMap.get(...)` calls MUST happen after setup.
-            psiKitSetup();
+    public int getRlogPort() {
+        // If another device (e.g., Limelight) is already using port 5800/5801, this will change it
+        // Update the port in AdvantageScope prefs.json to match.
+        // If you are ok with AdvantageScope default of port 5800, you can omit this override.
+        return 5802;
+    }
 
-            String filename = this.getClass().getSimpleName()
-                    + "_log_"
-                    + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new java.util.Date())
-                    + ".rlog";
-            Logger.addDataReceiver(new RLOGWriter(filename));
+    @Override
+    public void runOpMode() throws InterruptedException {
+        telemetry.addLine("PsiKit logging active (PsiKitLinearOpMode).\n");
+        telemetry.addLine("Start this OpMode, move sticks, press buttons.");
+        telemetry.addLine("Log file: /sdcard/FIRST/PsiKit/<OpMode>_log_<timestamp>.rlog");
+        telemetry.addLine("Note: Use opModeIsActive()/opModeInInit() loops (not isStopRequested()).");
+        telemetry.update();
 
-            Logger.start();
+        int loopCount = 0;
 
-            // INIT loop
-            while (opModeInInit() && !isStopRequested()) {
-                Logger.periodicBeforeUser();
-                processHardwareInputs();
+        while (opModeInInit()) {
+            telemetry.addData("Status", "INIT");
+            telemetry.addData("LoopCount", loopCount);
+            telemetry.update();
+            idle();
+        }
 
-                telemetry.addLine("PsiKit logging active (PsiKitLinearOpMode base).");
-                telemetry.addLine("Press START to begin.");
-                telemetry.addLine("Log file: /sdcard/FIRST/PsiKit/<OpMode>_log_<timestamp>.rlog");
-                telemetry.update();
+        waitForStart();
 
-                Logger.periodicAfterUser(0.0, 0.0);
-                idle();
-            }
+        loopCount = 0;
+        while (opModeIsActive()) {
+            // USER CODE GOES HERE (read gamepads, update subsystems, etc.)
 
-            waitForStart();
+            Logger.recordOutput("Example/LoopCount", loopCount++);
+            Logger.recordOutput("Example/Gamepad1LeftY", (double) gamepad1.left_stick_y);
 
-            int loopCount = 0;
-
-            while (opModeIsActive() && !isStopRequested()) {
-                double beforeUserStart = Logger.getRealTimestamp();
-                Logger.periodicBeforeUser();
-                double beforeUserEnd = Logger.getRealTimestamp();
-
-                processHardwareInputs();
-
-                // USER CODE GOES HERE
-                Logger.recordOutput("Example/LoopCount", loopCount++);
-                Logger.recordOutput("Example/Gamepad1LeftY", (double) gamepad1.left_stick_y);
-
-                telemetry.addData("LoopCount", loopCount);
-                telemetry.update();
-
-                double afterUserStart = Logger.getRealTimestamp();
-                Logger.periodicAfterUser(
-                        afterUserStart - beforeUserEnd,
-                        beforeUserEnd - beforeUserStart
-                );
-
-                idle();
-            }
-        } finally {
-            try {
-                Logger.end();
-            } catch (Throwable ignored) {
-            }
+            telemetry.addData("Status", "RUN");
+            telemetry.addData("LoopCount", loopCount);
+            telemetry.update();
         }
     }
 }
