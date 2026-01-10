@@ -96,6 +96,7 @@ public class AutoPoses {
     // Row 1 (close side)
     public Pose pick1StartCB = poseDeg(intakeStart-1.5, 84 + offsetClose, 180 + offsetHeading);
     public Pose pick1StartCBFake = poseDeg(intakeStart-3, 84 + offsetClose, 180 + 8); //BEFORE I WAS ADDING 10
+    public Pose pick1StartLB = poseDeg(intakeStart + 1, 15 + offsetLong, 180);
     public Pose pick1StartCR = Mirror(pick1StartCBFake);
     public Pose pick1StartLR = Mirror(pick1StartLB);
 
@@ -127,7 +128,9 @@ public class AutoPoses {
     // Row 1 (close side)
     public Pose pick1EndCB = poseDeg(intakeEnd+offsetEnd, 84, 180);
     public Pose pick1EndCBFake = poseDeg(intakeEnd+offsetEnd-1, 84 + offsetClose, 180 + 8);
+    public Pose pick1EndLB = poseDeg(intakeEnd, 15 + offsetLong, 180);
     public Pose pick1EndCR = Mirror(pick1EndCBFake);
+    public Pose pick1EndLR = Mirror(pick1EndLB);
 
     // Row 2
     public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offsetLong, 180);
