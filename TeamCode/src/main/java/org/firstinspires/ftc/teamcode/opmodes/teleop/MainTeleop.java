@@ -107,13 +107,10 @@ public class MainTeleop extends LinearOpMode {
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {
-//            double ColorHeading = 0;
-//            if (GlobalVariables.allianceColor.equals("red")){
-//                ColorHeading = 0;
-//            } else if (GlobalVariables.allianceColor.equals("blue")){
-//                ColorHeading = Math.PI;
-//            }
-            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, 0));
+            double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
+                    ? Math.PI
+                    : 0.0;
+            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, allianceHeading));
         }
         GlobalVariables.autoFollowerValid = false;
 
@@ -136,6 +133,14 @@ public class MainTeleop extends LinearOpMode {
         resetMachine = getSpindexResetMachine(robot);
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
+                ? Math.PI
+                : 0.0;
+        if (reuseAutoFollower) {
+            robot.drive.setFieldCentricOffset(allianceHeading);
+        } else {
+            robot.drive.clearFieldCentricOffset();
+        }
 
         while (opModeInInit()){
             previousGamepad1.copy(currentGamepad1);
@@ -209,7 +214,11 @@ public class MainTeleop extends LinearOpMode {
 
             // Quick reset: GP2 B seeds follower pose to field center facing goals.
             if (currentGamepad2.b && !previousGamepad2.b) {
-                follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
+                double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
+                        ? Math.PI
+                        : 0.0;
+                follower.setStartingPose(new Pose(72, 72, allianceHeading));
+                robot.drive.clearFieldCentricOffset();
             }
             robot.update();
             controlsUpdate();

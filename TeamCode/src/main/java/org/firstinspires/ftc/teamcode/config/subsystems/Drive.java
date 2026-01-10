@@ -70,6 +70,14 @@ public class Drive implements Subsystem{
         useFieldCentric = !useFieldCentric;
     }
 
+    public void setFieldCentricOffset(double headingRad) {
+        headingOffset = AngleUnit.normalizeRadians(headingRad);
+    }
+
+    public void clearFieldCentricOffset() {
+        headingOffset = 0.0;
+    }
+
     public void driveFieldRelative(double forward, double right, double rotate) {
         // First, convert direction being asked to drive to polar coordinates
         double theta = Math.atan2(forward, right);
@@ -120,14 +128,12 @@ public class Drive implements Subsystem{
         return follower.getHeading();
     }
     public void resetHeading(){
-        //headingOffset = follower.getHeading();
-//        double ColorHeading = 0;
-//        if (GlobalVariables.allianceColor.equals("red")){
-//            ColorHeading = 0;
-//        } else if (GlobalVariables.allianceColor.equals("blue")){
-//            ColorHeading = Math.PI;
-//        }
-        follower.setPose(new Pose(72, 72, 0));
+        double allianceHeading = 0.0;
+        if (GlobalVariables.allianceColor.equalsIgnoreCase("blue")) {
+            allianceHeading = Math.PI;
+        }
+        follower.setPose(new Pose(72, 72, allianceHeading));
+        clearFieldCentricOffset();
 
     }
 
