@@ -214,15 +214,15 @@ public class MainTeleop extends LinearOpMode {
 
             // Quick reset: GP2 B seeds follower pose to field center facing goals.
             if (currentGamepad2.b && !previousGamepad2.b) {
-                double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
+                double resetHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
                         ? Math.PI
                         : 0.0;
-                follower.setStartingPose(new Pose(72, 72, allianceHeading));
+                follower.setStartingPose(new Pose(72, 72, resetHeading));
                 robot.drive.clearFieldCentricOffset();
             }
-            robot.update();
             controlsUpdate();
             stateMachinesUpdate();
+            robot.update();
 
 
             //Stop everything
