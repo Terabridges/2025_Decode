@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.psikit;
 
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.junit.Test;
@@ -7,9 +8,8 @@ import org.junit.runner.RunWith;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.rlog.RLOGReplay;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
-import org.psilynx.psikit.ftc.DriverStationLogger;
-import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
-import org.psilynx.psikit.ftc.Replay;
+import org.psilynx.psikit.ftc.FtcLoggingSession;
+import org.psilynx.psikit.ftc.wrappers.GamepadWrapper;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -39,8 +39,36 @@ public class PsiKitReplayTest {
         Path logPath = resolveReplayLogPath();
         RLOGReplay replaySource = new RLOGReplay(logPath.toString());
 
-        Replay replay = new Replay(new ReplayOpMode(), replaySource);
-        replay.run();
+        // Allow replay to install a mock/wrapped HardwareMap for hardwareMap.get(...).
+        System.setProperty("psikitReplayMockHardwareMap", "true");
+
+        // Reset between runs so loopCount reflects only this test.
+        ReplayOpMode.loopCount = 0;
+
+        ReplayOpMode opMode = new ReplayOpMode();
+        opMode.hardwareMap = null;
+        opMode.gamepad1 = new GamepadWrapper(null);
+        opMode.gamepad2 = new GamepadWrapper(null);
+
+        FtcLoggingSession session = new FtcLoggingSession();
+        session.start(opMode, 0, "", "/sdcard/FIRST/PsiKit/", replaySource);
+        Logger.periodicAfterUser(0.0, 0.0);
+
+        try {
+            final double startTs = Logger.getTimestamp();
+            while (Logger.getTimestamp() < startTs + 5.0) {
+                Logger.periodicBeforeUser();
+                session.logOncePerLoop(opMode);
+
+                // USER CODE WOULD RUN HERE
+                // (read gamepads / update subsystems / record outputs)
+                ReplayOpMode.loopCount++;
+
+                Logger.periodicAfterUser(0.0, 0.0);
+            }
+        } finally {
+            session.end();
+        }
 
         // Basic sanity: the OpMode should have advanced through at least one loop.
         if (ReplayOpMode.loopCount <= 0) {
@@ -125,38 +153,15 @@ public class PsiKitReplayTest {
     }
 
     @TeleOp(name = "PsiKit Replay Test", group = "Test")
-    public static class ReplayOpMode extends PsiKitLinearOpMode {
-
-        private final DriverStationLogger dsLogger = new DriverStationLogger();
+    public static class ReplayOpMode extends OpMode {
         static volatile int loopCount = 0;
 
         @Override
-        public void runOpMode() {
-            psiKitSetup();
+        public void init() {
+        }
 
-            Logger.start();
-            Logger.periodicAfterUser(0.0, 0.0);
-
-            waitForStart();
-
-            // Replay for a short, fixed time window relative to the log's start time.
-            final double startTs = Logger.getTimestamp();
-            while (Logger.getTimestamp() < startTs + 5.0) {
-                Logger.periodicBeforeUser();
-
-                // Update wrapped hardware state (if any devices are accessed).
-                processHardwareInputs();
-
-                // Replay Driver Station inputs in AdvantageScope Joysticks schema.
-                dsLogger.log(gamepad1, gamepad2);
-
-                // USER CODE WOULD RUN HERE
-                // (read gamepads / update subsystems / record outputs)
-
-                loopCount++;
-
-                Logger.periodicAfterUser(0.0, 0.0);
-            }
+        @Override
+        public void loop() {
         }
     }
 }
