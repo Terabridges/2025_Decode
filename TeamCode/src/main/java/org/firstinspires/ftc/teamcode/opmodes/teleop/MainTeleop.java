@@ -427,7 +427,10 @@ public class MainTeleop extends LinearOpMode {
                 .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN1)
 
                 .state(shootStates.CLUTCHDOWN1)
-                .onEnter(()->transfer.setClutchDownFar())
+                .onEnter(()->{
+                    transfer.setClutchDownFar();
+                    shooter.useTurretPID = false;
+                })
                 .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
                 .onExit(()->transfer.setClutchBarelyDown())
 
@@ -467,6 +470,7 @@ public class MainTeleop extends LinearOpMode {
                     transfer.emptyBalls();
                     intake.spinnerMacro = false;
                     transfer.max = 0.4;
+                    shooter.useTurretPID = true;
                 })
 
                 .build();

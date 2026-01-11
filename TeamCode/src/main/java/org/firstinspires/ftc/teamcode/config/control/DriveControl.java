@@ -52,7 +52,7 @@ public class DriveControl implements Control {
             if (GlobalVariables.allianceColor.equals("red")) {
                 drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x); //Correct
             } else if (GlobalVariables.allianceColor.equals("blue")) {
-                drive.driveFieldRelative(gp1.left_stick_y, -gp1.left_stick_x, -gp1.right_stick_x); //Inverted
+                drive.driveFieldRelative(gp1.left_stick_y, -gp1.left_stick_x, gp1.right_stick_x); //Inverted
             }
         } else if(drive.manualDrive){
             double max;

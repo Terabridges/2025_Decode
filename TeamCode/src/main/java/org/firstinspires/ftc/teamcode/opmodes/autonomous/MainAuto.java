@@ -715,7 +715,10 @@ class MainAuto extends OpMode {
                 .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN1)
 
                 .state(shootStates.CLUTCHDOWN1)
-                .onEnter(()->transfer.setClutchDownFar())
+                .onEnter(()-> {
+                    transfer.setClutchDownFar();
+                    shooter.useTurretPID = false;
+                })
                 .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
                 .onExit(()->transfer.setClutchBarelyDown())
 
@@ -756,6 +759,7 @@ class MainAuto extends OpMode {
                     intake.spinnerMacro = false;
                     transfer.max = 0.4;
                     shootingComplete = true;
+                    shooter.useTurretPID = true;
                 })
 
                 .build();
