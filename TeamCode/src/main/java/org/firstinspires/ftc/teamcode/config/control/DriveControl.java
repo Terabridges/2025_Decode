@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.control;
 
+import android.provider.Settings;
+
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -7,6 +9,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class DriveControl implements Control {
 
@@ -46,7 +49,11 @@ public class DriveControl implements Control {
 
 
         if (drive.useFieldCentric){
-            drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x);
+            if (GlobalVariables.allianceColor.equals("red")) {
+                drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x); //Correct
+            } else if (GlobalVariables.allianceColor.equals("blue")) {
+                drive.driveFieldRelative(gp1.left_stick_y, -gp1.left_stick_x, -gp1.right_stick_x); //Inverted
+            }
         } else if(drive.manualDrive){
             double max;
             // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
