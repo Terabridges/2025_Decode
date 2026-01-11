@@ -103,16 +103,7 @@ public class MainTeleop extends LinearOpMode {
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        boolean reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
-        if (reuseAutoFollower) {
-            FollowerManager.getFollower(hardwareMap);
-        } else {
-            double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
-                    ? Math.PI
-                    : 0.0;
-            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, allianceHeading));
-        }
-        GlobalVariables.autoFollowerValid = false;
+        boolean reuseAutoFollower = true;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -133,14 +124,6 @@ public class MainTeleop extends LinearOpMode {
         resetMachine = getSpindexResetMachine(robot);
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
-                ? Math.PI
-                : 0.0;
-        if (reuseAutoFollower) {
-            robot.drive.setFieldCentricOffset(allianceHeading);
-        } else {
-            robot.drive.clearFieldCentricOffset();
-        }
 
         while (opModeInInit()){
             previousGamepad1.copy(currentGamepad1);
@@ -164,10 +147,40 @@ public class MainTeleop extends LinearOpMode {
                 }
             }
 
+            if (currentGamepad1.x && !previousGamepad1.x) {
+                reuseAutoFollower = !reuseAutoFollower;
+            }
+
             telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+            telemetry.addData("Press X to toggle auto pose reuse.", "");
             telemetry.addData("Motif", GlobalVariables.motif);
             telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
+            telemetry.addData("Reuse Auto Pose", reuseAutoFollower);
             telemetry.update();
+        }
+
+        boolean canReuseAutoFollower = reuseAutoFollower
+                && GlobalVariables.autoFollowerValid
+                && FollowerManager.follower != null;
+        if (canReuseAutoFollower) {
+            FollowerManager.getFollower(hardwareMap);
+        } else {
+            reuseAutoFollower = false;
+            double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
+                    ? Math.PI
+                    : 0.0;
+            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, allianceHeading));
+        }
+        GlobalVariables.autoFollowerValid = false;
+
+        double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
+                ? Math.PI
+                : 0.0;
+        if (reuseAutoFollower && follower != null) {
+            double offset = follower.getHeading() - allianceHeading;
+            robot.drive.setFieldCentricOffset(offset);
+        } else {
+            robot.drive.clearFieldCentricOffset();
         }
 
         waitForStart();
@@ -213,10 +226,8 @@ public class MainTeleop extends LinearOpMode {
 
             // Quick reset: GP2 B seeds follower pose to field center facing goals.
             if (currentGamepad2.b && !previousGamepad2.b) {
-                double resetHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
-                        ? Math.PI
-                        : 0.0;
-                follower.setStartingPose(new Pose(72, 72, resetHeading));
+                double resetHeading = follower.getHeading() - robot.drive.headingOffset;
+                follower.setPose(new Pose(72, 72, resetHeading));
                 robot.drive.clearFieldCentricOffset();
             }
             controlsUpdate();

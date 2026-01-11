@@ -236,27 +236,27 @@ public class Transfer implements Subsystem{
 
         if(ballDetected){
 
-            if (green > red && green > blue) {
-                ballColor = "green";
-            } else {
-                ballColor = "purple";
-            }
-
-//            if (!fastTransfer) {
-//                if (colorTimer.seconds() > 0.03) {
-//                    if (green > red && green > blue) {
-//                        ballColor = "green";
-//                    } else {
-//                        ballColor = "purple";
-//                    }
-//                }
+//            if (green > red && green > blue) {
+//                ballColor = "green";
 //            } else {
-//                if (green > red && green > blue) {
-//                    ballColor = "green";
-//                } else {
-//                    ballColor = "purple";
-//                }
+//                ballColor = "purple";
 //            }
+
+            if (!fastTransfer) {
+                if (colorTimer.seconds() > 0.03) {
+                    if (green > red && green > blue) {
+                        ballColor = "green";
+                    } else {
+                        ballColor = "purple";
+                    }
+                }
+            } else {
+                if (green > red && green > blue) {
+                    ballColor = "green";
+                } else {
+                    ballColor = "purple";
+                }
+            }
         }
 
         if (red > green && red > blue){
