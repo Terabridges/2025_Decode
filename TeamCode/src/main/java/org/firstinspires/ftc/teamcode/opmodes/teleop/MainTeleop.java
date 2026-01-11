@@ -204,8 +204,7 @@ public class MainTeleop extends LinearOpMode {
             if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
                 turretAimAssist = !turretAimAssist;
                 if (!turretAimAssist) {
-                    robot.shooter.useTurretLock = false;
-                    robot.shooter.turretLockController.reset();
+                    robot.shooter.disableAutomaticTurret();
                 }
             }
             if (turretAimAssist) {

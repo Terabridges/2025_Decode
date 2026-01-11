@@ -41,21 +41,29 @@ public class ShooterControl implements Control {
     @Override
     public void update(){
         toggleShooter.update(gp1.y);
+        boolean manualActive = false;
         if (gp1.right_trigger > 0.05){
+            manualActive = true;
             shooter.manualTurret = true;
             shooter.turretManualPow = gp1.right_trigger/2;
         } else if (gp1.left_trigger > 0.05){
+            manualActive = true;
             shooter.manualTurret = true;
             shooter.turretManualPow = -gp1.left_trigger /2;
         } else if (gp2.right_trigger > 0.05){
+            manualActive = true;
             shooter.manualTurret = true;
             shooter.turretManualPow = gp2.right_trigger/2;
         } else if (gp2.left_trigger > 0.05){
+            manualActive = true;
             shooter.manualTurret = true;
             shooter.turretManualPow = -gp2.left_trigger /2;
         } else {
             shooter.manualTurret = false;
             shooter.turretManualPow = 0;
+        }
+        if (manualActive) {
+            shooter.disableAutomaticTurret();
         }
 
         bumpUpHoodOffset.update(gp2.y);

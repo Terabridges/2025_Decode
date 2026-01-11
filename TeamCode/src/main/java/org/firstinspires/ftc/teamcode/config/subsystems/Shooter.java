@@ -164,6 +164,13 @@ public class Shooter implements Subsystem {
         turretLockController.reset();
     }
 
+    public void disableAutomaticTurret() {
+        useTurretLock = false;
+        useTurretPID = false;
+        turretLockController.reset();
+        turretController.reset();
+    }
+
     // Angle helpers
     private double wrapDeg(double deg) {
         return ((deg + 180) % 360 + 360) % 360 - 180;
