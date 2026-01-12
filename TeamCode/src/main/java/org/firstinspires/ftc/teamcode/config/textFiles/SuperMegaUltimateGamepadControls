@@ -43,4 +43,4 @@ RStY:
 LStBut: Reset Spindexer
 RStBut: Break from state machine
 Back: Toggle Field Centric
-Start:
+Start: Toggle Large Offset

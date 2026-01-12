@@ -92,6 +92,8 @@ public class Shooter implements Subsystem {
     public double hoodOffset = 0;
     public double RPMOffset = 0;
 
+    public boolean largeOffset = false;
+
     //---------------- Constructor ----------------!
     public Shooter(HardwareMap map, Vision vision) {
         turret = map.get(CRServo.class, "turret");
@@ -365,11 +367,23 @@ public class Shooter implements Subsystem {
     }
 
     public void bumpUpRPMOffset(){
-        RPMOffset += 25;
+        if (largeOffset){
+            RPMOffset += 500;
+        } else {
+            RPMOffset += 25;
+        }
     }
 
     public void bumpDownRPMOffset(){
-        RPMOffset -= 25;
+        if (largeOffset) {
+            RPMOffset -= 500;
+        } else {
+            RPMOffset -= 25;
+        }
+    }
+
+    public void toggleLargeOffset(){
+        largeOffset = !largeOffset;
     }
 
     //---------------- Interface Methods ----------------!

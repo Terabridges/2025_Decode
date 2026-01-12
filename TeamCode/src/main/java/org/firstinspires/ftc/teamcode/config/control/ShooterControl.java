@@ -20,6 +20,7 @@ public class ShooterControl implements Control {
     EdgeDetector bumpDownHoodOffset = new EdgeDetector(()-> shooter.bumpDownHoodOffset());
     EdgeDetector bumpUpRPMOffset = new EdgeDetector(()-> shooter.bumpUpRPMOffset());
     EdgeDetector bumpDownRPMOffset = new EdgeDetector(()-> shooter.bumpDownRPMOffset());
+    EdgeDetector toggleLargeOffset = new EdgeDetector(()-> shooter.toggleLargeOffset());
 
 
     //---------------- Constructor ----------------
@@ -70,7 +71,7 @@ public class ShooterControl implements Control {
         bumpDownHoodOffset.update(gp2.a);
         bumpUpRPMOffset.update(gp2.dpad_up);
         bumpDownRPMOffset.update(gp2.dpad_down);
-
+        toggleLargeOffset.update(gp2.start);
     }
 
     @Override
