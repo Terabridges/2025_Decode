@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -14,6 +15,7 @@ import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
+//@Configurable
 public class Shooter implements Subsystem {
 
     //---------------- Hardware ----------------!
@@ -65,13 +67,13 @@ public class Shooter implements Subsystem {
 
     //---------PID------
     public PIDController turretLockController;
-    double p1 = 0.01, i1 = 0.012, d1 = 0.00005;
+    double p1 = 0.01, i1 = 0.011, d1 = 0.00005; //i = 0.012
     double inteTolerance1 = 7.0;
     double deadband1 = 0;
-    double maxPow1 = 0.125; //0.15;
+    double maxPow1 = 0.085; //0.125;
     public double turretPower1, error1;
-    double lowThresh = 0.01;
-    double minPow = 0.07;
+    double lowThresh = 0.009; // 0.01
+    double minPow = 0.06; //0.07
 
     public PIDController turretController;
     double p2 = 0.006, i2 = 0.005, d2 = 0.0;

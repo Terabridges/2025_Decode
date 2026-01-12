@@ -71,7 +71,7 @@ public class AutoPoses {
 
     public Pose releaseGoToCloseB = poseDeg(20, 76, 180);
     public Pose releaseCompleteCloseB = poseDeg(14.25, 76, 180);
-    public Pose releaseGoToCloseBFake = poseDeg(20, 76, 180);
+    public Pose releaseGoToCloseBFake = poseDeg(20, 77.5, 180);
     public Pose releaseCompleteCloseBFake = poseDeg(15, 76, 180);
     public Pose releaseGoToCloseR = Mirror(releaseGoToCloseBFake);
     public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseBFake);
@@ -80,8 +80,8 @@ public class AutoPoses {
     // LEAVE POSES
     // ========================
     // Close-side park is nearer the scoring area; long-side park is farther.
-    public Pose leaveCB = poseDeg(36, 84, 70); //70 or 0
-    public Pose leaveLB = poseDeg(15, 15, 230); //230 or 0
+    public Pose leaveCB = poseDeg(36, 84, 180);
+    public Pose leaveLB = poseDeg(15, 15, 180);
     public Pose leaveCR = Mirror(leaveCB);
     public Pose leaveLR = Mirror(leaveLB);
 

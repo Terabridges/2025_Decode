@@ -131,21 +131,40 @@ class MainAuto extends OpMode {
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        if (range == Range.LONG_RANGE) {
-            if (robot.getVoltage() > 12.55){
-                intakeSpeed = 0.18;
-            } else {
-                intakeSpeed = 0.195;
+        if (alliance == Alliance.RED)
+        {
+            if (range == Range.LONG_RANGE) {
+                if (robot.getVoltage() > 12.55){
+                    intakeSpeed = 0.18;
+                } else {
+                    intakeSpeed = 0.195;
+                }
+            }
+            else {
+                if (robot.getVoltage() > 12.55){
+                    intakeSpeed = 0.18 + 0.04; //.18
+                } else {
+                    intakeSpeed = 0.205 + 0.03; //.205
+                }
             }
         }
-        else {
-            if (robot.getVoltage() > 12.55){
-                intakeSpeed = 0.18; //.18
-            } else {
-                intakeSpeed = 0.205; //.205
+        else
+        {
+            if (range == Range.LONG_RANGE) {
+                if (robot.getVoltage() > 12.55){
+                    intakeSpeed = 0.18;
+                } else {
+                    intakeSpeed = 0.195;
+                }
+            }
+            else {
+                if (robot.getVoltage() > 12.55){
+                    intakeSpeed = 0.18; //.18
+                } else {
+                    intakeSpeed = 0.205; //.205
+                }
             }
         }
-
 
         if (robot != null && robot.shooter != null) {
             int tagId = (alliance == Alliance.BLUE) ? 20 : 24;
@@ -710,6 +729,7 @@ class MainAuto extends OpMode {
                 .state(shootStates.SPIN1)
                 .onEnter(()-> {
                     transfer.ballLeftSmall();
+                    shooter.hoodOffset -= 0.06;
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
                 .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN1)
@@ -725,6 +745,7 @@ class MainAuto extends OpMode {
                 .state(shootStates.SPIN2)
                 .onEnter(()-> {
                     transfer.ballLeft();
+                    shooter.hoodOffset += 0.06;
                 })
                 .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN2)
                 .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN2)

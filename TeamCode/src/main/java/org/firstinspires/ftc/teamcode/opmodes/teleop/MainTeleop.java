@@ -103,7 +103,7 @@ public class MainTeleop extends LinearOpMode {
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        boolean reuseAutoFollower = true;
+        boolean reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -147,25 +147,16 @@ public class MainTeleop extends LinearOpMode {
                 }
             }
 
-            if (currentGamepad1.x && !previousGamepad1.x) {
-                reuseAutoFollower = !reuseAutoFollower;
-            }
-
             telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
-            telemetry.addData("Press X to toggle auto pose reuse.", "");
             telemetry.addData("Motif", GlobalVariables.motif);
             telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
             telemetry.addData("Reuse Auto Pose", reuseAutoFollower);
             telemetry.update();
         }
 
-        boolean canReuseAutoFollower = reuseAutoFollower
-                && GlobalVariables.autoFollowerValid
-                && FollowerManager.follower != null;
-        if (canReuseAutoFollower) {
+        if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {
-            reuseAutoFollower = false;
             double allianceHeading = GlobalVariables.allianceColor.equalsIgnoreCase("blue")
                     ? Math.PI
                     : 0.0;
