@@ -32,6 +32,8 @@ import org.psilynx.psikit.ftc.wrappers.MotorWrapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 @TeleOp(name = "MainTeleOp PsiKit", group = "TeleOp")
 public class MainTeleopPsikit extends LinearOpMode {
@@ -158,7 +160,9 @@ public class MainTeleopPsikit extends LinearOpMode {
                 // some hardware devices don't have mock wrappers available. Keep replay usable
                 // by falling back to a minimal loop that still logs/replays DS + OpModeControls.
                 if (Logger.isReplay()) {
-                    runReplayOnlyLoop();
+                    // Record the exception later from inside the replay-only loop. In practice,
+                    // Logger.recordOutput can throw here if the logging session isn't fully running yet.
+                    runReplayOnlyLoop(t);
                     return;
                 }
                 throw t;
@@ -352,14 +356,21 @@ public class MainTeleopPsikit extends LinearOpMode {
         }
     }
 
-    private void runReplayOnlyLoop() {
+    private void runReplayOnlyLoop(Throwable replayInitFailure) {
         int loopCount = 0;
+        boolean recordedInitFailure = false;
 
         while (opModeInInit()) {
             double beforeUserStart = Logger.getRealTimestamp();
             try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/LoggerPeriodicBeforeUser")) {
                 Logger.periodicBeforeUser();
             }
+
+            if (!recordedInitFailure && replayInitFailure != null) {
+                recordedInitFailure = true;
+                recordReplayInitFailure(replayInitFailure);
+            }
+
             try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/PsiKitLogOncePerLoop")) {
                 psiKit.logOncePerLoop(this);
             }
@@ -385,6 +396,12 @@ public class MainTeleopPsikit extends LinearOpMode {
             try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/LoggerPeriodicBeforeUser")) {
                 Logger.periodicBeforeUser();
             }
+
+            if (!recordedInitFailure && replayInitFailure != null) {
+                recordedInitFailure = true;
+                recordReplayInitFailure(replayInitFailure);
+            }
+
             try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/LogPeriodicBreakdownMS/PsiKitLogOncePerLoop")) {
                 psiKit.logOncePerLoop(this);
             }
@@ -402,6 +419,34 @@ public class MainTeleopPsikit extends LinearOpMode {
         }
     }
 
+    private static void recordReplayInitFailure(Throwable t) {
+        try {
+            // Numeric flag so we can verify via summary tooling.
+            Logger.recordOutput("LoggedRobot/ReplayInitExceptionPresent", 1);
+            Logger.recordOutput("LoggedRobot/ReplayInitExceptionType", t.getClass().getName());
+            Logger.recordOutput("LoggedRobot/ReplayInitExceptionMessage", String.valueOf(t.getMessage()));
+            Logger.recordOutput("LoggedRobot/ReplayInitExceptionStack", stackTraceSummary(t));
+        } catch (Throwable ignored) {
+            // Best-effort logging; never block replay.
+        }
+    }
+
+    private static String stackTraceSummary(Throwable t) {
+        try {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            t.printStackTrace(pw);
+            pw.flush();
+            String s = sw.toString();
+            final int maxChars = 8000;
+            if (s.length() > maxChars) {
+                return s.substring(0, maxChars) + "\n... (truncated)";
+            }
+            return s;
+        } catch (Throwable ignored) {
+            return t.toString();
+        }
+    }
     public void controlsUpdate() {
         for (Control c : controls) {
             String name = c.getClass().getSimpleName();
