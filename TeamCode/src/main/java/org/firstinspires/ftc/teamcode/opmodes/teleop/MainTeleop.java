@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.PsiKitLinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -24,12 +25,21 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
+import org.psilynx.psikit.ftc.FtcLogTuning;
+import org.psilynx.psikit.ftc.PedroFollowerOdometryLogger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 @TeleOp(name="MainTeleOp", group="TeleOp")
-public class MainTeleop extends LinearOpMode {
+public class MainTeleop extends PsiKitLinearOpMode {
+
+    @Override
+    protected boolean enablePinpointOdometryLogging() {
+        // Canonical odometry comes from Pedro follower pose, not Pinpoint driver pose.
+        return false;
+    }
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -99,6 +109,23 @@ public class MainTeleop extends LinearOpMode {
     public StateMachine resetMachine;
 
     public ElapsedTime loopTimer = new ElapsedTime();
+
+    @Override
+    public int getRlogPort() {
+        // If another device (e.g., Limelight) is already using port 5800/5801, this will change it
+        // Update the port in AdvantageScope prefs.json to match.
+        // If you are ok with AdvantageScope default of port 5800, you can omit this override.
+        return 5802;
+    }
+
+    @Override
+    protected void onPsiKitConfigureLogging() {
+        // Ensure Pinpoint is updated by PedroPathing only (Follower.update()), not also by the logger.
+        // This avoids double-update behavior which can make odometry/logging look wrong.
+        FtcLogTuning.pinpointLoggerCallsUpdate = false;
+        // 0.0 means "no throttling"; set > 0 to trade update rate for loop time.
+        FtcLogTuning.pinpointReadPeriodSec = 0.0;
+    }
 
     @Override
     public void runOpMode(){
@@ -195,6 +222,10 @@ public class MainTeleop extends LinearOpMode {
             robot.drive.manualDrive = driverActive || (!followerBusy && !holdingForShoot);
             // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
             follower.update();
+
+            // Canonical odometry for AdvantageScope: Center/Rotated Pose2d from Pedro follower.
+            Pose p = follower.getPose();
+            PedroFollowerOdometryLogger.log("follower", p.getX(), p.getY(), p.getHeading());
             // Toggle turret auto-aim with GP1 dpad_up
             if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
                 turretAimAssist = !turretAimAssist;
@@ -209,7 +240,11 @@ public class MainTeleop extends LinearOpMode {
 
             // Quick reset: GP2 B seeds follower pose to field center facing goals.
             if (currentGamepad2.b && !previousGamepad2.b) {
-                follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
+                // NOTE: setStartingPose() is intended only before movement; at runtime use setPose().
+                // This resets the underlying localizer (e.g., Pinpoint) so logging/odometry jump immediately.
+                follower.breakFollowing();
+                follower.setPose(new Pose(72, 72, Math.toRadians(90)));
+                holdingForShoot = false;
             }
             robot.update();
             controlsUpdate();

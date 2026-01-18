@@ -27,6 +27,7 @@ import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.FtcLoggingSession;
 import org.psilynx.psikit.ftc.FtcLogTuning;
+import org.psilynx.psikit.ftc.PedroFollowerOdometryLogger;
 import org.psilynx.psikit.ftc.wrappers.MotorWrapper;
 
 import java.util.ArrayList;
@@ -281,6 +282,10 @@ public class MainTeleopPsikit extends LinearOpMode {
                     follower.update();
                 }
 
+                // Canonical odometry for AdvantageScope: Center/Rotated Pose2d from Pedro follower.
+                Pose p = follower.getPose();
+                PedroFollowerOdometryLogger.log("follower", p.getX(), p.getY(), p.getHeading());
+
                 // Toggle turret auto-aim with GP1 dpad_up
                 if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
                     turretAimAssist = !turretAimAssist;
@@ -295,7 +300,11 @@ public class MainTeleopPsikit extends LinearOpMode {
 
                 // Quick reset: GP2 B seeds follower pose to field center facing goals.
                 if (currentGamepad2.b && !previousGamepad2.b) {
-                    follower.setStartingPose(new Pose(72, 72, Math.toRadians(90)));
+                    // NOTE: setStartingPose() is intended only before movement; at runtime use setPose().
+                    // This resets the underlying localizer (e.g., Pinpoint) so logging/odometry jump immediately.
+                    follower.breakFollowing();
+                    follower.setPose(new Pose(72, 72, Math.toRadians(90)));
+                    holdingForShoot = false;
                 }
 
                 try (Logger.TimedBlock ignored = Logger.timeMs("LoggedRobot/UserSectionMS/RobotUpdate")) {
