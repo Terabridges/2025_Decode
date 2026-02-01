@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<Robot type="FirstInspires-FTC">
+    <LynxUsbDevice name="Control Hub Portal" serialNumber="(embedded)" parentModuleAddress="173">
+        <LynxModule name="Expansion Hub 2" port="2">
+            <goBILDA5201SeriesMotor name="left_front" port="0" />
+            <goBILDA5201SeriesMotor name="right_front" port="1" />
+            <goBILDA5201SeriesMotor name="intake" port="2" />
+            <goBILDA5201SeriesMotor name="base" port="3" />
+            <Servo name="light1" port="0" />
+            <Servo name="light2" port="1" />
+            <Servo name="light3" port="2" />
+            <AnalogInput name="distance3" port="0" />
+            <AnalogInput name="distance1" port="2" />
+            <AnalogInput name="distance2" port="3" />
+        </LynxModule>
+        <LynxModule name="Control Hub" port="173">
+            <goBILDA5201SeriesMotor name="left_back" port="0" />
+            <goBILDA5201SeriesMotor name="right_back" port="1" />
+            <goBILDA5201SeriesMotor name="fly_left" port="2" />
+            <goBILDA5201SeriesMotor name="fly_right" port="3" />
+            <ContinuousRotationServo name="spindexL" port="0" />
+            <ContinuousRotationServo name="spindexR" port="1" />
+            <ContinuousRotationServo name="turretL" port="2" />
+            <ContinuousRotationServo name="turretR" port="3" />
+            <Servo name="clutch" port="4" />
+            <Servo name="hood" port="5" />
+            <AnalogInput name="turretAnalog" port="0" />
+            <AnalogInput name="spindexAnalog" port="1" />
+            <AnalogInput name="distance4" port="2" />
+            <goBILDAPinpoint name="pinpoint" port="0" bus="0" />
+            <RevColorSensorV3 name="color1" port="0" bus="1" />
+            <RevColorSensorV3 name="color2" port="0" bus="2" />
+            <RevColorSensorV3 name="color3" port="0" bus="3" />
+        </LynxModule>
+    </LynxUsbDevice>
+</Robot>
