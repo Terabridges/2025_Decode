@@ -8,6 +8,8 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
+
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configurable
+@PsiKitAutoLog
 @Autonomous(name = "MainAuto", group = "Auto")
 public class SelectableAuto extends SelectableOpMode
 {

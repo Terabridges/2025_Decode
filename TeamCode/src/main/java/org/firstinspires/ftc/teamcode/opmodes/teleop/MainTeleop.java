@@ -3,13 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
 
 import com.pedropathing.geometry.Pose;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
+
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.DriveControl;
@@ -29,7 +31,11 @@ import java.util.Arrays;
 import java.util.List;
 
 @TeleOp(name="MainTeleOp", group="TeleOp")
-public class MainTeleop extends LinearOpMode {
+@PsiKitAutoLog
+public class MainTeleop extends OpMode {
+
+    private Robot robot;
+    private boolean reuseAutoFollower;
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;
@@ -101,9 +107,9 @@ public class MainTeleop extends LinearOpMode {
     public ElapsedTime loopTimer = new ElapsedTime();
 
     @Override
-    public void runOpMode(){
-        Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        boolean reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
+    public void init() {
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
+        reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -115,7 +121,6 @@ public class MainTeleop extends LinearOpMode {
 
         currentGamepad1 = new Gamepad();
         previousGamepad1 = new Gamepad();
-
         currentGamepad2 = new Gamepad();
         previousGamepad2 = new Gamepad();
 
@@ -124,36 +129,40 @@ public class MainTeleop extends LinearOpMode {
         resetMachine = getSpindexResetMachine(robot);
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        loopTimer.reset();
+    }
 
-        while (opModeInInit()){
-            previousGamepad1.copy(currentGamepad1);
-            currentGamepad1.copy(gamepad1);
+    @Override
+    public void init_loop() {
+        gamepadUpdate();
 
-            if (currentGamepad1.a && !previousGamepad1.a){
-                if(GlobalVariables.motif.equals("PPG")){
-                    GlobalVariables.motif = "GPP";
-                } else if(GlobalVariables.motif.equals("GPP")){
-                    GlobalVariables.motif = "PGP";
-                } else if(GlobalVariables.motif.equals("PGP")){
-                    GlobalVariables.motif = "PPG";
-                }
+        if (currentGamepad1.a && !previousGamepad1.a) {
+            if (GlobalVariables.motif.equals("PPG")) {
+                GlobalVariables.motif = "GPP";
+            } else if (GlobalVariables.motif.equals("GPP")) {
+                GlobalVariables.motif = "PGP";
+            } else if (GlobalVariables.motif.equals("PGP")) {
+                GlobalVariables.motif = "PPG";
             }
-
-            if (currentGamepad1.b && !previousGamepad1.b){
-                if(GlobalVariables.allianceColor.equals("red")){
-                    GlobalVariables.allianceColor = "blue";
-                } else if (GlobalVariables.allianceColor.equals("blue")){
-                    GlobalVariables.allianceColor = "red";
-                }
-            }
-
-            telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
-            telemetry.addData("Motif", GlobalVariables.motif);
-            telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
-            telemetry.addData("Reuse Auto Pose", reuseAutoFollower);
-            telemetry.update();
         }
 
+        if (currentGamepad1.b && !previousGamepad1.b) {
+            if (GlobalVariables.allianceColor.equals("red")) {
+                GlobalVariables.allianceColor = "blue";
+            } else if (GlobalVariables.allianceColor.equals("blue")) {
+                GlobalVariables.allianceColor = "red";
+            }
+        }
+
+        telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+        telemetry.addData("Motif", GlobalVariables.motif);
+        telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
+        telemetry.addData("Reuse Auto Pose", reuseAutoFollower);
+        telemetry.update();
+    }
+
+    @Override
+    public void start() {
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {
@@ -174,91 +183,104 @@ public class MainTeleop extends LinearOpMode {
             robot.drive.clearFieldCentricOffset();
         }
 
-        waitForStart();
-
         robot.toInit();
         shootAllMachine.start();
         clutchSuperMachine.start();
         resetMachine.start();
 
-        while (opModeIsActive()){
+        loopTimer.reset();
+    }
 
-            gamepadUpdate();
-            // If driver moves sticks, give control to driver; otherwise let Pedro run if busy.
-            boolean driverActive = Math.abs(currentGamepad1.left_stick_x) > 0.1
-                    || Math.abs(currentGamepad1.left_stick_y) > 0.1
-                    || Math.abs(currentGamepad1.right_stick_x) > 0.1;
-            boolean followerBusy = follower.isBusy();
-            boolean shooting = shootAllMachine.getState() != shootStates.INIT;
-            boolean holdDuringShoot = shooting && !driverActive;
+    @Override
+    public void loop() {
+        gamepadUpdate();
 
-            if (holdDuringShoot && !holdingForShoot) {
-                // Freeze pose using follower hold instead of zeroing power.
-                follower.holdPoint(follower.getPose());
-                holdingForShoot = true;
-            } else if ((!shooting || driverActive) && holdingForShoot) {
-                follower.breakFollowing();
-                holdingForShoot = false;
-            }
+        // If driver moves sticks, give control to driver; otherwise let Pedro run if busy.
+        boolean driverActive = Math.abs(currentGamepad1.left_stick_x) > 0.1
+                || Math.abs(currentGamepad1.left_stick_y) > 0.1
+                || Math.abs(currentGamepad1.right_stick_x) > 0.1;
+        boolean followerBusy = follower != null && follower.isBusy();
+        boolean shooting = shootAllMachine.getState() != shootStates.INIT;
+        boolean holdDuringShoot = shooting && !driverActive;
 
-            robot.drive.manualDrive = driverActive || (!followerBusy && !holdingForShoot);
-            // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
+        if (holdDuringShoot && !holdingForShoot && follower != null) {
+            // Freeze pose using follower hold instead of zeroing power.
+            follower.holdPoint(follower.getPose());
+            holdingForShoot = true;
+        } else if ((!shooting || driverActive) && holdingForShoot && follower != null) {
+            follower.breakFollowing();
+            holdingForShoot = false;
+        }
+
+        robot.drive.manualDrive = driverActive || (!followerBusy && !holdingForShoot);
+
+        // Always update to keep pose fresh; manual drive will overwrite any motor commands when active.
+        if (follower != null) {
             follower.update();
-            // Toggle turret auto-aim with GP1 dpad_up
-            if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
-                turretAimAssist = !turretAimAssist;
-                if (!turretAimAssist) {
-                    robot.shooter.disableAutomaticTurret();
-                }
-            }
-            if (turretAimAssist) {
-                updateTurretAimTeleop(robot);
-            }
+        }
 
-            // Quick reset: GP2 B seeds follower pose to field center facing goals.
-            if (currentGamepad2.b && !previousGamepad2.b) {
-                double resetHeading = follower.getHeading() - robot.drive.headingOffset;
-                follower.setPose(new Pose(72, 72, resetHeading));
-                robot.drive.clearFieldCentricOffset();
-            }
-            controlsUpdate();
-            stateMachinesUpdate();
-            robot.update();
-
-
-            //Stop everything
-            if(currentGamepad2.right_stick_button && !previousGamepad2.right_stick_button){
-                shootAllMachine.setState(shootStates.INIT);
-                clutchSuperMachine.setState(clutchStates.INIT);
-                resetMachine.setState(resetStates.INIT);
-                robot.intake.spinnerMacroTarget = 0;
-                robot.shooter.shooterShoot = false;
-                robot.transfer.isDetecting = true;
-                robot.transfer.emptyBalls();
-                robot.intake.spinnerMacro = false;
-                robot.transfer.max = 0.4;
-            }
-
-            //Switch Alliance
-            if(currentGamepad2.left_bumper && !previousGamepad2.left_bumper){
-                if(GlobalVariables.allianceColor.equals("red")){
-                    GlobalVariables.allianceColor = "blue";
-                } else if (GlobalVariables.allianceColor.equals("blue")){
-                    GlobalVariables.allianceColor = "red";
-                }
-            }
-
-            //Switch Motif
-            if(currentGamepad2.right_bumper && !previousGamepad2.right_bumper){
-                if(GlobalVariables.motif.equals("PPG")){
-                    GlobalVariables.motif = "GPP";
-                } else if(GlobalVariables.motif.equals("GPP")){
-                    GlobalVariables.motif = "PGP";
-                } else if(GlobalVariables.motif.equals("PGP")){
-                    GlobalVariables.motif = "PPG";
-                }
+        // Toggle turret auto-aim with GP1 dpad_up
+        if (currentGamepad1.dpad_up && !previousGamepad1.dpad_up) {
+            turretAimAssist = !turretAimAssist;
+            if (!turretAimAssist) {
+                robot.shooter.disableAutomaticTurret();
             }
         }
+        if (turretAimAssist) {
+            updateTurretAimTeleop(robot);
+        }
+
+        // Quick reset: GP2 B seeds follower pose to field center facing goals.
+        if (currentGamepad2.b && !previousGamepad2.b && follower != null) {
+            double resetHeading = follower.getHeading() - robot.drive.headingOffset;
+            follower.setPose(new Pose(72, 72, resetHeading));
+            robot.drive.clearFieldCentricOffset();
+        }
+
+        controlsUpdate();
+        stateMachinesUpdate();
+        robot.update();
+
+        //Stop everything
+        if (currentGamepad2.right_stick_button && !previousGamepad2.right_stick_button) {
+            shootAllMachine.setState(shootStates.INIT);
+            clutchSuperMachine.setState(clutchStates.INIT);
+            resetMachine.setState(resetStates.INIT);
+            robot.intake.spinnerMacroTarget = 0;
+            robot.shooter.shooterShoot = false;
+            robot.transfer.isDetecting = true;
+            robot.transfer.emptyBalls();
+            robot.intake.spinnerMacro = false;
+            robot.transfer.max = 0.4;
+        }
+
+        //Switch Alliance
+        if (currentGamepad2.left_bumper && !previousGamepad2.left_bumper) {
+            if (GlobalVariables.allianceColor.equals("red")) {
+                GlobalVariables.allianceColor = "blue";
+            } else if (GlobalVariables.allianceColor.equals("blue")) {
+                GlobalVariables.allianceColor = "red";
+            }
+        }
+
+        //Switch Motif
+        if (currentGamepad2.right_bumper && !previousGamepad2.right_bumper) {
+            if (GlobalVariables.motif.equals("PPG")) {
+                GlobalVariables.motif = "GPP";
+            } else if (GlobalVariables.motif.equals("GPP")) {
+                GlobalVariables.motif = "PGP";
+            } else if (GlobalVariables.motif.equals("PGP")) {
+                GlobalVariables.motif = "PPG";
+            }
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (follower != null) {
+            follower.breakFollowing();
+        }
+        holdingForShoot = false;
     }
 
     public void controlsUpdate() {

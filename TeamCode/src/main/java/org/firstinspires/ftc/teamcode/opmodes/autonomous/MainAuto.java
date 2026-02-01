@@ -17,6 +17,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
+
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPoses;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
@@ -32,6 +34,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.opmodes.teleop.MainTeleop;
 
+@PsiKitAutoLog
 class MainAuto extends OpMode {
 
     //Path Gen
