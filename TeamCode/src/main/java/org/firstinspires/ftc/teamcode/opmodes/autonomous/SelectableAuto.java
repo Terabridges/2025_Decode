@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configurable
-@PsiKitAutoLog
+@PsiKitAutoLog(rlogPort = 5902)
 @Autonomous(name = "MainAuto", group = "Auto")
 public class SelectableAuto extends SelectableOpMode
 {
