@@ -7,11 +7,14 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareDevice;
 
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 @TeleOp(name = "MotorAndServoTester", group = "Test")
+@PsiKitAutoLog(rlogPort = 5902)
 public class MotorAndServoTester extends LinearOpMode {
 
     private List<DcMotor> motors = new ArrayList<>();
