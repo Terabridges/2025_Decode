@@ -8,6 +8,34 @@ This GitHub repository contains the source code that is used to build an Android
 ## Requirements
 To use this Android Studio project, you will need Android Studio Ladybug (2024.2) or later.
 
+### Local PsiKit + Android SDK setup (TeraBridges)
+
+This repo can be configured to use a locally cloned PsiKit (composite build). In that setup, Gradle evaluates *both* builds (this repo and the included PsiKit repo), so your machine needs an Android SDK path that Gradle can discover.
+
+Recommended (no special files needed):
+- Set an environment variable `ANDROID_SDK_ROOT` (or `ANDROID_HOME`) to your Android SDK folder.
+- Do **not** commit `local.properties` (it is intentionally ignored by git).
+
+Windows examples:
+
+- PowerShell (current terminal only):
+
+`$env:ANDROID_SDK_ROOT = "C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk"`
+
+- Command Prompt (current terminal only):
+
+`set ANDROID_SDK_ROOT=C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk`
+
+- Persist for future terminals (Command Prompt):
+
+`setx ANDROID_SDK_ROOT "C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk"`
+
+Note: `setx` does not update the current terminal; open a new terminal (or restart Android Studio) after running it.
+
+If you don't want to set an env var, you can instead create a `local.properties` file locally in each repo with:
+
+`sdk.dir=...`
+
 To program your robot in Blocks or OnBot Java, you do not need Android Studio.
 
 ## Getting Started
