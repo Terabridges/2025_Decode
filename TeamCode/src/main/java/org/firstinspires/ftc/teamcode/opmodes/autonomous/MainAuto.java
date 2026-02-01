@@ -34,7 +34,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.opmodes.teleop.MainTeleop;
 
-@PsiKitAutoLog(rlogPort = 5902)
+@PsiKitAutoLog(rlogPort = 5802)
 class MainAuto extends OpMode {
 
     //Path Gen

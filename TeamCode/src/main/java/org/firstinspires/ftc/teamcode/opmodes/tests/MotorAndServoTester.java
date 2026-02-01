@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 @TeleOp(name = "MotorAndServoTester", group = "Test")
-@PsiKitAutoLog(rlogPort = 5902)
+@PsiKitAutoLog(rlogPort = 5802)
 public class MotorAndServoTester extends LinearOpMode {
 
     private List<DcMotor> motors = new ArrayList<>();

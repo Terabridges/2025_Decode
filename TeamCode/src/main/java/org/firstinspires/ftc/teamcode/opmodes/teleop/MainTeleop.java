@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @TeleOp(name="MainTeleOp", group="TeleOp")
-@PsiKitAutoLog(rlogPort = 5902)
+@PsiKitAutoLog(rlogPort = 5802)
 public class MainTeleop extends OpMode {
 
     private Robot robot;
