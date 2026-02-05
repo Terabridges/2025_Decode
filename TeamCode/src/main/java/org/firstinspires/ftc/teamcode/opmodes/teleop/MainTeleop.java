@@ -34,6 +34,9 @@ import java.util.List;
 @PsiKitAutoLog(rlogPort = 5802)
 public class MainTeleop extends OpMode {
 
+    /** If true, TeleOp will always reset the follower on start instead of reusing Auto's. */
+    public static boolean RESET_FOLLOWER_ON_START = false;
+
     private Robot robot;
     private boolean reuseAutoFollower;
 
@@ -109,7 +112,9 @@ public class MainTeleop extends OpMode {
     @Override
     public void init() {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        reuseAutoFollower = GlobalVariables.autoFollowerValid && FollowerManager.follower != null;
+        reuseAutoFollower = !RESET_FOLLOWER_ON_START
+                && GlobalVariables.autoFollowerValid
+                && FollowerManager.follower != null;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -135,6 +140,9 @@ public class MainTeleop extends OpMode {
     @Override
     public void init_loop() {
         gamepadUpdate();
+        reuseAutoFollower = !RESET_FOLLOWER_ON_START
+                && GlobalVariables.autoFollowerValid
+                && FollowerManager.follower != null;
 
         if (currentGamepad1.a && !previousGamepad1.a) {
             if (GlobalVariables.motif.equals("PPG")) {
@@ -154,15 +162,24 @@ public class MainTeleop extends OpMode {
             }
         }
 
+        if (currentGamepad1.y && !previousGamepad1.y) {
+            RESET_FOLLOWER_ON_START = !RESET_FOLLOWER_ON_START;
+        }
+
         telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+        telemetry.addData("Press Y to toggle follower reset on start.", "");
         telemetry.addData("Motif", GlobalVariables.motif);
         telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
         telemetry.addData("Reuse Auto Pose", reuseAutoFollower);
+        telemetry.addData("Reset Follower On Start", RESET_FOLLOWER_ON_START);
         telemetry.update();
     }
 
     @Override
     public void start() {
+        reuseAutoFollower = !RESET_FOLLOWER_ON_START
+                && GlobalVariables.autoFollowerValid
+                && FollowerManager.follower != null;
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {

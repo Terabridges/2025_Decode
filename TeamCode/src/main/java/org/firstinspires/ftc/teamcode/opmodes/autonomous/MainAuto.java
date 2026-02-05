@@ -6,11 +6,8 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.telemetryM;
 
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -19,57 +16,62 @@ import com.sfdev.assembly.state.StateMachineBuilder;
 
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
+import org.firstinspires.ftc.teamcode.config.autoUtil.AutoIntakeSpeed;
+import org.firstinspires.ftc.teamcode.config.autoUtil.AutoMotifTracker;
+import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPathLibrary;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPoses;
+import org.firstinspires.ftc.teamcode.config.autoUtil.AutoShootMachine;
+import org.firstinspires.ftc.teamcode.config.autoUtil.AutoTurretAim;
+import org.firstinspires.ftc.teamcode.config.autoUtil.ReleaseWaiter;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.ShotPlan;
-import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
-import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.firstinspires.ftc.teamcode.opmodes.teleop.MainTeleop;
 
 @PsiKitAutoLog(rlogPort = 5802)
 class MainAuto extends OpMode {
 
-    //Path Gen
-    public Pose startPose;
-    private final AutoPoses ap = new AutoPoses();
-    private PathChain GoToPickup, Pickup, GoToScore, GoToLoad, LeavePath, ReleaseGoToPath, ReleaseCompletePath;
-    double intakeSpeed = 0.25;
+    // Pathing
+    private final AutoPoses poses = new AutoPoses();
+    private final AutoPathLibrary pathLibrary = new AutoPathLibrary(poses);
+    private final Pose startPose;
+    private PathChain goToPickupPath;
+    private PathChain pickupPath;
+    private PathChain goToScorePath;
+    private PathChain leavePath;
+    private PathChain releaseGoToPath;
+    private PathChain releaseCompletePath;
+    private double intakeSpeed = 0.25;
+    private final AutoIntakeSpeed intakeSpeedModel = new AutoIntakeSpeed(
+            -0.02, 0.47, 0.18, 0.24, -0.01, 0.01);
 
     //Enums
+    private static final int MAX_ROWS = 3;
+    private static final double SHOOT_ACTION_SECONDS = 10.0;
+    private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
+    private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
+    private static final int TAG_BLUE = 20;
+    private static final int TAG_RED = 24;
+    private static final double RELEASE_IDLE_SECONDS = 1.0;
+    private static final double RELEASE_TIMEOUT_SECONDS = 2.25;
+
     private final Alliance alliance;
     private final Range range;
     private final Mode mode;
     private final ShotPlan shotPlan;
     private final boolean releaseAfterClosePickup;
     private Range lastScoreRangeUsed;
-    private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, GO_TO_LOAD, RELEASE_GO_TO, RELEASE_COMPLETE, LEAVE }
-
-    public enum shootStates {
-        INIT,
-        PRESPIN,
-        CLUTCHDOWN,
-        WAIT1,
-        SPIN,
-        SPIN1,
-        CLUTCHDOWN1,
-        SPIN2,
-        CLUTCHDOWN2,
-        SPIN3,
-        WAIT2
-    }
+    private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, RELEASE_GO_TO, RELEASE_COMPLETE, LEAVE }
 
     //State machine
     private StateMachine autoMachine;
     private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
-    private StateMachine shootAllMachine;
+    private AutoShootMachine shootMachine;
+    private AutoTurretAim turretAim;
 
     //Robot and subsystems
     private Robot robot;
@@ -78,21 +80,12 @@ class MainAuto extends OpMode {
     private int rowsToRun = 0;
     private int rowsCompleted = 0;
     private int currentRowIndex = 0;
-    private boolean stopRequested = false;
     private boolean preloadComplete = false;
-    private static final double SHOOT_ACTION_SECONDS = 10.0;
-    private static final double MOTIF_ACQUIRE_TIMEOUT = 2.0;
-    private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
-    private final ElapsedTime motifTimer = new ElapsedTime();
+    private AutoMotifTracker motifTracker;
     private int acquiredMotifId = -1;
-    private static final int MAX_ROWS = 3;
     private final ElapsedTime stateTimer = new ElapsedTime();
-    private final ElapsedTime shotDelayTimer = new ElapsedTime();
-
-    boolean startShooting = false;
-    boolean shootingComplete = false;
-    private double shotDelaySeconds = 0.5;
-    private double releaseIdleTimestamp = -1.0;
+    private final ElapsedTime shootTimer = new ElapsedTime();
+    private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
 
     MainAuto(Alliance alliance, Range range, Mode mode) {
         this(alliance, range, mode, ShotPlan.ALL_SELECTED);
@@ -109,7 +102,7 @@ class MainAuto extends OpMode {
         this.shotPlan = shotPlan;
         this.releaseAfterClosePickup = releaseAfterClosePickup;
         this.lastScoreRangeUsed = range;
-        startPose = ap.findStartPose(alliance, range);
+        startPose = poses.findStartPose(alliance, range);
     }
 
     public double clutchDownTime = 0.1;
@@ -119,58 +112,22 @@ class MainAuto extends OpMode {
 
     @Override
     public void init() {
-        if (range == Range.CLOSE_RANGE) {
-            robot = new Robot(hardwareMap, telemetry, false);
-        }
-        else {
-            robot = new Robot(hardwareMap, telemetry, false); //WAS TRUE
-        }
+        robot = new Robot(hardwareMap, telemetry, false);
 
         robot.drive.manualDrive = false;
 
-        shootAllMachine = getShootAllMachine(robot);
+        shootMachine = new AutoShootMachine(robot, clutchDownTime, clutchDownFarTime, spinTime, spinUpTimeout);
+        turretAim = new AutoTurretAim(robot, poses, alliance, range, telemetry);
+        motifTracker = new AutoMotifTracker(robot, alliance, range, MOTIF_ACQUIRE_TIMEOUT);
 
         autoMachine = buildAutoMachine();
 
         robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        if (alliance == Alliance.RED)
-        {
-            if (range == Range.LONG_RANGE) {
-                if (robot.getVoltage() > 12.55){
-                    intakeSpeed = 0.18;
-                } else {
-                    intakeSpeed = 0.195;
-                }
-            }
-            else {
-                if (robot.getVoltage() > 12.55){
-                    intakeSpeed = 0.18 + 0.04; //.18
-                } else {
-                    intakeSpeed = 0.205 + 0.03; //.205
-                }
-            }
-        }
-        else
-        {
-            if (range == Range.LONG_RANGE) {
-                if (robot.getVoltage() > 12.55){
-                    intakeSpeed = 0.18;
-                } else {
-                    intakeSpeed = 0.195;
-                }
-            }
-            else {
-                if (robot.getVoltage() > 12.55){
-                    intakeSpeed = 0.18; //.18
-                } else {
-                    intakeSpeed = 0.205; //.205
-                }
-            }
-        }
+        intakeSpeed = intakeSpeedModel.compute(robot.getVoltage(), alliance, range);
 
         if (robot != null && robot.shooter != null) {
-            int tagId = (alliance == Alliance.BLUE) ? 20 : 24;
+            int tagId = (alliance == Alliance.BLUE) ? TAG_BLUE : TAG_RED;
             robot.shooter.setRequiredTagId(tagId);
             if(alliance == Alliance.BLUE) {
                 GlobalVariables.allianceColor = "blue";
@@ -205,14 +162,9 @@ class MainAuto extends OpMode {
 
     @Override
     public void start() {
-        stopRequested = false;
-
         autoMachine.start();
         robot.toInit();
-        shootAllMachine.start();
-        if (range == Range.CLOSE_RANGE) {
-            robot.shooter.hoodOffset -= 0; //0.045;
-        }
+        shootMachine.start();
     }
 
     @Override
@@ -226,15 +178,11 @@ class MainAuto extends OpMode {
     @Override
     public void loop() {
         follower.update();
-        updateTurretAim();
-
-//        if (!(activeState == AutoStates.GO_TO_PICKUP || activeState == AutoStates.COMPLETE_PICKUP)){
-//            updateTurretAim();
-//        }
+        turretAim.updateAim(activeState, preloadComplete);
 
         robot.update();
         autoMachine.update();
-        shootAllMachine.update();
+        shootMachine.update();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetry.addData("Auto Action", getActionMessage());
@@ -248,7 +196,7 @@ class MainAuto extends OpMode {
         telemetry.addData("Ball List", robot.transfer.balls);
         telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
         telemetry.addData("Vision Error", robot.vision.getTx());
-        telemetry.addData("ShootAll State", shootAllMachine.getState());
+        telemetry.addData("ShootAll State", shootMachine.getState());
         telemetry.addData("Turret Pow", robot.shooter.turret.getPower());
         telemetry.addData("Is turret Tx In range?", Math.abs(robot.vision.getTx()) < 3);
         telemetry.addData("Voltage", robot.getVoltage());
@@ -259,12 +207,6 @@ class MainAuto extends OpMode {
         telemetry.update();
 
         drawCurrentAndHistory();
-
-        // Auto ends after we reach the final state and finish the park path.
-//        if (!stopRequested && activeState == AutoStates.LEAVE && followerIdle()) {
-//            stopRequested = true;
-//            requestOpModeStop();
-//        }
     }
 
     private void buildPath(PathRequest request) {
@@ -279,26 +221,23 @@ class MainAuto extends OpMode {
 
         switch (request) {
             case GO_TO_PICKUP:
-                GoToPickup = buildLinearPath(currentPose, ap.getPickupStart(alliance, range, currentRowIndex), true);
+                goToPickupPath = pathLibrary.goToPickup(currentPose, alliance, range, currentRowIndex);
                 break;
             case PICKUP:
-                Pickup = buildLinearPath(currentPose, ap.getPickupEnd(alliance, range, currentRowIndex), false);
+                pickupPath = pathLibrary.pickup(currentPose, alliance, range, currentRowIndex);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                GoToScore = buildLinearPath(currentPose, getScorePoseForCurrentShot(), true);
-                break;
-            case GO_TO_LOAD:
-                GoToLoad = buildLinearPath(currentPose, ap.getLoad(alliance), false);
+                goToScorePath = pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
                 break;
             case RELEASE_GO_TO:
-                ReleaseGoToPath = buildLinearPath(currentPose, ap.getReleaseGoTo(alliance, range), false);
+                releaseGoToPath = pathLibrary.releaseGoTo(currentPose, alliance, range);
                 break;
             case RELEASE_COMPLETE:
-                ReleaseCompletePath = buildLinearPath(currentPose, ap.getReleaseComplete(alliance, range), false);
+                releaseCompletePath = pathLibrary.releaseComplete(currentPose, alliance, range);
                 break;
             case LEAVE:
-                LeavePath = buildLinearPath(currentPose, ap.getLeave(alliance, lastScoreRangeUsed), false);
+                leavePath = pathLibrary.leave(currentPose, alliance, lastScoreRangeUsed);
                 break;
         }
     }
@@ -328,12 +267,7 @@ class MainAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                //.transition(this::motifAcquiredOrTimedOut, AutoStates.WAIT)
                 .transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
-                //.transitionTimed(4, AutoStates.GO_TO_SHOOT)
-
-                .state(AutoStates.WAIT)
-                .transitionTimed(4, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
@@ -343,8 +277,8 @@ class MainAuto extends OpMode {
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && !shouldStartNextCycle(), AutoStates.LEAVE)
+                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && !shouldStartNextCycle(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
@@ -373,49 +307,19 @@ class MainAuto extends OpMode {
     private void onEnterAcquireMotif() {
         setActiveState(AutoStates.ACQUIRE_MOTIF);
 
-        motifTimer.reset();
-        stateTimer.reset();
+        motifTracker.reset();
+        resetStateTimer();
 
-        coarseTurretAimAtObelisk();
+        turretAim.aimAtObelisk();
     }
 
     private boolean motifAcquiredOrTimedOut() {
-        boolean acquired = false;
-        if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
-            acquired = robot.shooter.vision.seesTag(21)
-                    || robot.shooter.vision.seesTag(22)
-                    || robot.shooter.vision.seesTag(23);
-        }
-        return acquired || motifTimer.seconds() >= MOTIF_ACQUIRE_TIMEOUT;
+        return motifTracker.hasMotifOrTimedOut();
     }
 
     private void onExitAcquireMotif() {
-        if (robot != null && robot.shooter != null && robot.shooter.vision != null) {
-            // Determine motif ID. On short side, infer correct face from which tags are visible.
-            if (range == Range.CLOSE_RANGE && !preloadComplete) {
-                int seenId = robot.shooter.vision.getCurrentTagId();
-                if (alliance == Alliance.BLUE) {
-                    // Blue: subtract 1, except 21 -> 23
-                    acquiredMotifId = (seenId == 21) ? 23 : (seenId - 1);
-                } else {
-                    // Red: add 1, except 23 -> 21
-                    acquiredMotifId = (seenId == 23) ? 21 : (seenId + 1);
-                }
-            } else {
-                acquiredMotifId = robot.shooter.vision.getCurrentTagId();
-            }
-            boolean validMotif = acquiredMotifId == 21 || acquiredMotifId == 22 || acquiredMotifId == 23;
-            robot.shooter.setMotifTagId(validMotif ? acquiredMotifId : -1);
-            if(validMotif){
-                if(acquiredMotifId == 21){
-                    GlobalVariables.motif = "GPP";
-                } else if (acquiredMotifId == 22){
-                    GlobalVariables.motif = "PGP";
-                } else if (acquiredMotifId == 23){
-                    GlobalVariables.motif = "PPG";
-                }
-            }
-        }
+        motifTracker.resolveMotif(preloadComplete);
+        acquiredMotifId = motifTracker.getAcquiredMotifId();
     }
 
     private boolean stateTimedOut() {
@@ -424,7 +328,7 @@ class MainAuto extends OpMode {
 
     private boolean shootTimedOut()
     {
-        return stateTimer.seconds() >= SHOOT_ACTION_SECONDS;
+        return shootTimer.seconds() >= SHOOT_ACTION_SECONDS;
     }
 
     private int getCurrentShotIndex() {
@@ -470,7 +374,7 @@ class MainAuto extends OpMode {
     }
 
     private Pose getScorePoseForCurrentShot() {
-        Pose base = ap.getScore(alliance, getScoreRangeForCurrentShot());
+        Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
         return base;
     }
 
@@ -500,26 +404,27 @@ class MainAuto extends OpMode {
     private void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
 
-        stateTimer.reset();
+        resetStateTimer();
 
         if (!preloadComplete && !shouldShootPreload()) {
             return;
         }
 
+        // Start spin-up early so we arrive ready to shoot.
         robot.intake.spinnerMacro = true;
         robot.intake.spinnerMacroTarget = 0.95;
         robot.shooter.shooterShoot = true;
+        robot.shooter.useTurretLock = true;
         buildPath(PathRequest.GO_TO_SCORE);
-        followPath(GoToScore);
+        followPath(goToScorePath);
     }
 
     private void onEnterCompleteShoot() {
         setActiveState(AutoStates.COMPLETE_SHOOT);
 
-        stateTimer.reset();
-        shotDelayTimer.reset();
-
-        startShooting = true;
+        resetStateTimer();
+        shootTimer.reset();
+        shootMachine.requestShoot();
     }
 
 
@@ -531,27 +436,27 @@ class MainAuto extends OpMode {
         } else {
             rowsCompleted = Math.min(rowsCompleted + 1, MAX_ROWS);
         }
-        shootingComplete = false;
+        shootMachine.clearShootingComplete();
     }
 
     private void onEnterGoToPickup() {
         setActiveState(AutoStates.GO_TO_PICKUP);
 
-        stateTimer.reset();
+        resetStateTimer();
 
         refreshCurrentRowIndex();
         buildPath(PathRequest.GO_TO_PICKUP);
-        followPath(GoToPickup);
+        followPath(goToPickupPath);
     }
 
     private void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
 
-        stateTimer.reset();
+        resetStateTimer();
 
         buildPath(PathRequest.PICKUP);
         robot.intake.spinnerIn();
-        followPath(Pickup, intakeSpeed);
+        followPath(pickupPath, intakeSpeed);
     }
 
     private void onExitCompletePickup() {
@@ -561,32 +466,32 @@ class MainAuto extends OpMode {
     private void onEnterGoToRelease() {
         setActiveState(AutoStates.GO_TO_RELEASE);
 
-        stateTimer.reset();
+        resetStateTimer();
 
         buildPath(PathRequest.RELEASE_GO_TO);
-        followPath(ReleaseGoToPath);
+        followPath(releaseGoToPath);
     }
 
     private void onEnterCompleteRelease() {
         setActiveState(AutoStates.COMPLETE_RELEASE);
 
-        stateTimer.reset();
-        releaseIdleTimestamp = -1.0;
+        resetStateTimer();
+        releaseWaiter.reset();
 
         buildPath(PathRequest.RELEASE_COMPLETE);
-        followPath(ReleaseCompletePath, 0.35);
+        followPath(releaseCompletePath, 0.35);
     }
 
     private void onEnterLeave() {
         setActiveState(AutoStates.LEAVE);
 
-        stateTimer.reset();
+        resetStateTimer();
 
         // Park based on the range last used to score; fall back to the initially selected range.
         int lastShotIdx = preloadComplete ? Math.max(0, rowsCompleted) : 0;
         lastScoreRangeUsed = getLeaveRangeForShotIndex(lastShotIdx);
         buildPath(PathRequest.LEAVE);
-        followPath(LeavePath);
+        followPath(leavePath);
     }
 
     private void refreshCurrentRowIndex() {
@@ -624,10 +529,6 @@ class MainAuto extends OpMode {
         return closeSide && modeAllows && justFinishedFirstRow && releaseAfterClosePickup;
     }
 
-    private boolean hasPendingRows() {
-        return rowsCompleted < rowsToRun;
-    }
-
     /** Determines if another row remains after the current shot completes. */
     private boolean shouldStartNextCycle() {
         if (!preloadComplete) {
@@ -642,7 +543,7 @@ class MainAuto extends OpMode {
         if (!preloadComplete && !shouldShootPreload()) {
             return true;
         }
-        return shootingComplete;
+        return shootMachine.isShootingComplete();
 
         //TODO get a boolean from shooter subsystem
     }
@@ -655,239 +556,14 @@ class MainAuto extends OpMode {
         return !preloadComplete && !shouldShootPreload();
     }
 
-    public PathChain buildLinearPath(Pose start, Pose end, boolean smoothEnd) {
-        PathChain chain;
-        if (smoothEnd) {
-            chain = follower.pathBuilder()
-                    .addPath(new BezierLine(start, end))
-                    .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .setBrakingStart(0.75)
-                    .setBrakingStrength(0.85)
-                    .build();
-        }
-        else
-        {
-            chain = follower.pathBuilder()
-                    .addPath(new BezierLine(start, end))
-                    .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .build();
-        }
-        return chain;
+    private void resetStateTimer() {
+        stateTimer.reset();
     }
 
-    public PathChain buildCurvedPath(Pose start, Pose control, Pose end) {
-        return follower.pathBuilder()
-                .addPath(new BezierCurve(start, control, end))
-                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .build();
-    }
-
-    //.transition(()->(startShooting && shooter.hasDesiredTarget), shootStates.PRESPIN)
-    //startShooting = false;
-    //shootingComplete = true;
-    public StateMachine getShootAllMachine (Robot robot){
-        Shooter shooter = robot.shooter;
-        Transfer transfer = robot.transfer;
-        Intake intake = robot.intake;
-        return new StateMachineBuilder()
-                .state(shootStates.INIT)
-                .transition(() -> (startShooting && shooter.hasDesiredTarget && Math.abs(robot.vision.getTx()) < 6), shootStates.PRESPIN)
-
-                .state(shootStates.PRESPIN)
-                .onEnter(()-> {
-                    startShooting = false;
-                    intake.spinnerMacro = true;
-                    intake.spinnerMacroTarget = 0.95;
-                    shooter.shooterShoot = true;
-                    transfer.isDetecting = false;
-                    if(transfer.desiredRotate == 1){
-                        transfer.ballLeft();
-                    } else if (transfer.desiredRotate == 2){
-                        transfer.ballRight();
-                    }
-                })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN)
-                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN)
-
-                .state(shootStates.CLUTCHDOWN)
-                .onEnter(()-> {
-                    transfer.max = 0.275;
-                    transfer.setClutchBarelyDown();
-                })
-                .transitionTimed(clutchDownTime, shootStates.WAIT1)
-
-                .state(shootStates.WAIT1)
-                .transition(()-> shooter.isFarShot(), shootStates.SPIN1)
-                .transition(() -> !shooter.isFarShot(), shootStates.SPIN)
-
-                .state(shootStates.SPIN)
-                .onEnter(()->{
-                    transfer.max = 0.2;
-                    transfer.ballLeft();
-                    transfer.ballLeft();
-                })
-                .transition(()-> transfer.spindexAtTarget(), shootStates.SPIN3)
-                .transitionTimed(spinTime, shootStates.SPIN3)
-
-                .state(shootStates.SPIN1)
-                .onEnter(()-> {
-                    transfer.ballLeftSmall();
-                    shooter.hoodOffset -= 0.06;
-                })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN1)
-                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN1)
-
-                .state(shootStates.CLUTCHDOWN1)
-                .onEnter(()-> {
-                    transfer.setClutchDownFar();
-                    shooter.useTurretPID = false;
-                })
-                .transitionTimed(clutchDownFarTime, shootStates.SPIN2)
-                .onExit(()->transfer.setClutchBarelyDown())
-
-                .state(shootStates.SPIN2)
-                .onEnter(()-> {
-                    transfer.ballLeft();
-                    shooter.hoodOffset += 0.06;
-                })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.CLUTCHDOWN2)
-                .transitionTimed(spinUpTimeout, shootStates.CLUTCHDOWN2)
-
-                .state(shootStates.CLUTCHDOWN2)
-                .onEnter(()->transfer.setClutchDownFar())
-                .transitionTimed(clutchDownFarTime, shootStates.SPIN3)
-                .onExit(()-> {
-                    transfer.setClutchBarelyDown();
-                    transfer.ballRightSmall();
-                })
-
-                .state(shootStates.SPIN3)
-                .onEnter(()-> {
-                    transfer.max = 0.275;
-                    transfer.ballLeftSmall();
-                    transfer.ballLeft();
-                })
-                .transition(()-> transfer.spindexAtTarget() && shooter.isAtRPM(), shootStates.WAIT2)
-                .transitionTimed(spinUpTimeout, shootStates.WAIT2)
-                .onExit(()-> transfer.setClutchDownFar())
-
-                .state(shootStates.WAIT2)
-                .transitionTimed(clutchDownFarTime, shootStates.INIT)
-                .onExit(()->{
-                    transfer.setClutchUp();
-                    transfer.ballRightSmall();
-                    intake.spinnerMacroTarget = 0;
-                    shooter.shooterShoot = false;
-                    transfer.isDetecting = true;
-                    transfer.emptyBalls();
-                    intake.spinnerMacro = false;
-                    transfer.max = 0.4;
-                    shootingComplete = true;
-                    shooter.useTurretPID = true;
-                })
-
-                .build();
-    }
-
-    /** Returns the static goal pose in field (Pedro) coordinates. */
-    private Pose getGoalPose() {
-        if (alliance == Alliance.BLUE) {
-            if (!preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(0-1.25, 144, Math.toRadians(90));
-            }
-            else if (preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(0+5, 144, Math.toRadians(90));
-            }
-            else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
-                return new Pose(0, 144, Math.toRadians(90));
-            }
-            else if (preloadComplete && (range == Range.CLOSE_RANGE)){
-                return new Pose(0-5, 144, Math.toRadians(90));
-            }
-            else {
-                return new Pose (0, 0, 0);
-            }
-        } else {
-            if (!preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(144-6, 144, Math.toRadians(90));
-            }
-            else if (preloadComplete && (range == Range.LONG_RANGE)) {
-                return new Pose(144-8, 144, Math.toRadians(90));
-            }
-            else if (!preloadComplete && (range == Range.CLOSE_RANGE)) {
-                return new Pose(144, 144, Math.toRadians(90));
-            }
-            else if (preloadComplete && (range == Range.CLOSE_RANGE)){
-                return new Pose(144, 144, Math.toRadians(90));
-            }
-            else {
-                return new Pose (0, 0, 0);
-            }
-        }
-    }
-
-    /** Returns the obelisk pose in field coordinates (adjust if field measurements change). */
-    private Pose getObeliskPose() {
-        // Placeholder: aim near the alliance goal area; update to the true obelisk location if different.
-        return new Pose(72, 144, Math.toRadians(90));
-    }
-
-    /** Shared coarse aim helper to point turret from current pose toward a field target. */
-    private void coarseTurretAimAt(Pose target) {
-        if (robot == null || follower == null || robot.shooter == null) return;
-        Pose robotPose = follower.getPose();
-        if (robotPose == null || target == null) return;
-        robot.shooter.aimTurretAtFieldPose(
-                robotPose.getX(),
-                robotPose.getY(),
-                robotPose.getHeading(),
-                target.getX(),
-                target.getY());
-    }
-
-    /** Point turret toward the goal using chassis pose (coarse aim). */
-    private void coarseTurretAimAtGoal() {
-        coarseTurretAimAt(getGoalPose());
-    }
-
-    /** Point turret toward the obelisk using chassis pose (coarse aim). */
-    private void coarseTurretAimAtObelisk() {
-        coarseTurretAimAt(getObeliskPose());
-    }
 
     /** Waits 1s after the release path finishes before advancing. */
     private boolean releaseWaitDone() {
-        if (stateTimedOut()) return true;
-        boolean idle = followerIdle();
-        double now = stateTimer.seconds();
-        if (idle) {
-            if (releaseIdleTimestamp < 0.0) {
-                releaseIdleTimestamp = now;
-            }
-            return (now - releaseIdleTimestamp) >= 1.0;
-        }
-        // not idle yet; reset marker
-        releaseIdleTimestamp = -1.0;
-        return false;
+        return releaseWaiter.isDone(followerIdle(), RELEASE_TIMEOUT_SECONDS);
     }
 
-    /** Keep turret target refreshed while driving */
-    private void updateTurretAim() {
-        if (activeState == AutoStates.ACQUIRE_MOTIF) {
-            robot.shooter.useTurretLock = false;
-            coarseTurretAimAtObelisk();
-            telemetry.addData("Obelisk Aim", true);
-        }
-//        else if (activeState == AutoStates.GO_TO_SHOOT || activeState == AutoStates.COMPLETE_SHOOT) { //IF BREAKS STUFF, SWITCH BACK TO JUST "ELSE"
-        else if (robot.shooter.hasDesiredTarget) {
-            robot.shooter.useTurretLock = true;
-            telemetry.addData("Lock Aim", true);
-        }
-        else {
-            robot.shooter.useTurretLock = false;
-            robot.shooter.turretLockController.reset();
-            coarseTurretAimAtGoal();
-            telemetry.addData("Goal Aim", true);
-        }
-    }
 }

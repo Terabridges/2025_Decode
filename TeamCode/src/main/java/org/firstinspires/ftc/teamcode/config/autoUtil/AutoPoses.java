@@ -9,33 +9,213 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 
 public class AutoPoses {
-
-    // ---- index helpers ----
-    private static int rIdx(Range r) {
-        return (r == Range.CLOSE_RANGE) ? 0 : 1;   // 0 = close, 1 = long
-    }
+    private static final double FIELD_SIZE = 144.0;
+    private static final double ROBOT_WIDTH = 14.5;
+    private static final double ROBOT_LENGTH = 15.25;
+    private static final double INTAKE_START_X = 43.5;
+    private static final double INTAKE_END_X = 24.5;
+    private static final double GOAL_Y = 144.0;
+    private static final double GOAL_HEADING_DEG = 90.0;
+    private static final double OBELISK_X = 72.0;
+    private static final double OBELISK_Y = 144.0;
+    private static final double OBELISK_HEADING_DEG = 90.0;
 
     private Pose poseDeg(double x, double y, double headingDeg) {
         return new Pose(x, y, Math.toRadians(headingDeg));
     }
 
     public Pose Mirror(Pose bluePose) {
-        double x = 144 - bluePose.getX();
+        double x = FIELD_SIZE - bluePose.getX();
         double y = bluePose.getY();
         double h = normalizeRadians(Math.PI - bluePose.getHeading());
         return new Pose(x, y, h);
     }
 
-    //------------------ POSES ------------------
+    private Pose offsetPose(Pose basePose, double dx, double dy, double dHeadingDeg) {
+        double x = basePose.getX() + dx;
+        double y = basePose.getY() + dy;
+        double h = Math.toDegrees(basePose.getHeading()) + dHeadingDeg;
+        return poseDeg(x, y, h);
+    }
 
-    double robotWidth = 14.5;
-    double robotLength = 15.25;
+    public Pose baseToBlue(Pose basePose) {
+        return basePose;
+    }
 
-    //Starting Poses
-    public Pose blueCloseStartPose = poseDeg(24 + robotWidth/2, 144 - robotLength/2, 0);
-    public Pose blueFarStartPose = poseDeg(48 + robotWidth/2, robotLength/2, 180);
-    public Pose redCloseStartPose = Mirror(blueCloseStartPose);
-    public Pose redFarStartPose = Mirror(blueFarStartPose);
+    public Pose baseToBlue(Pose basePose, double dx, double dy, double dHeadingDeg) {
+        return offsetPose(basePose, dx, dy, dHeadingDeg);
+    }
+
+    public Pose baseToRed(Pose basePose) {
+        return Mirror(basePose);
+    }
+
+    public Pose baseToRed(Pose basePose, double dx, double dy, double dHeadingDeg) {
+        return Mirror(offsetPose(basePose, dx, dy, dHeadingDeg));
+    }
+
+    //------------------ BASE POSES (BLUE SIDE COORDS) ------------------
+    public final Base base = new Base();
+
+    public class Base {
+        // Starting Poses
+        public final Pose closeStart = poseDeg(24 + ROBOT_WIDTH / 2, FIELD_SIZE - ROBOT_LENGTH / 2, 0);
+        public final Pose farStart = poseDeg(48 + ROBOT_WIDTH / 2, ROBOT_LENGTH / 2, 180);
+
+        // ========================
+        // SCORE POSES
+        // ========================
+        public final Pose scoreClose = poseDeg(48, 96, 70);
+        public final Pose scoreLong = poseDeg(48 + ROBOT_WIDTH / 2, 14.5, 230);
+
+        //TODO add a secondary score pose if need to save time (Closer to middle row, top of close triangle)
+
+        // ========================
+        // LOAD POSES
+        // ========================
+        public final Pose load = poseDeg(ROBOT_WIDTH / 2, ROBOT_LENGTH / 2, 90);
+
+        // ========================
+        // GOAL / OBELISK POSES
+        // ========================
+        public final Pose goalLongPreload = poseDeg(-1.25, GOAL_Y, GOAL_HEADING_DEG);
+        public final Pose goalLongPost = poseDeg(5.0, GOAL_Y, GOAL_HEADING_DEG);
+        public final Pose goalClosePreload = poseDeg(0.0, GOAL_Y, GOAL_HEADING_DEG);
+        public final Pose goalClosePost = poseDeg(-5.0, GOAL_Y, GOAL_HEADING_DEG);
+        public final Pose obelisk = poseDeg(OBELISK_X, OBELISK_Y, OBELISK_HEADING_DEG);
+
+        // ========================
+        // RELEASE (lever) POSES
+        // ========================
+        public final Pose releaseGoToClose = poseDeg(20, 76, 180);
+        public final Pose releaseCompleteClose = poseDeg(14.25, 76, 180);
+
+        // ========================
+        // LEAVE POSES
+        // ========================
+        // Close-side park is nearer the scoring area; long-side park is farther.
+        public final Pose leaveClose = poseDeg(36, 84, 180);
+        public final Pose leaveLong = poseDeg(15, 15, 180);
+
+        // ========================
+        // PICKUP START POSES
+        // ========================
+        // Row 1 (close side)
+        public final Pose pick1StartClose = poseDeg(INTAKE_START_X, 84, 180);
+
+        // Row 2
+        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 36, 180);
+        public final Pose pick2StartClose = poseDeg(INTAKE_START_X, 60, 180);
+
+        // Row 3
+        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 60, 180);
+        public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, 180);
+
+        // Row 4 (long side)
+        public final Pose pick4StartLong = poseDeg(INTAKE_START_X, 84, 180);
+
+        // ========================
+        // PICKUP END POSES
+        // ========================
+        // Row 1 (close side)
+        public final Pose pick1EndClose = poseDeg(INTAKE_END_X, 84, 180);
+
+        // Row 2
+        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 36, 180);
+        public final Pose pick2EndClose = poseDeg(INTAKE_END_X, 60, 180);
+
+        // Row 3
+        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 60, 180);
+        public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, 180);
+
+        // Row 4 (long side)
+        public final Pose pick4EndLong = poseDeg(INTAKE_END_X, 84, 180);
+    }
+
+    // ------------------------
+    // DERIVED POSES (BLUE/RED)
+    // ------------------------
+    public Pose blueCloseStartPose = baseToBlue(base.closeStart);
+    public Pose blueFarStartPose = baseToBlue(base.farStart);
+    public Pose redCloseStartPose = baseToRed(base.closeStart);
+    public Pose redFarStartPose = baseToRed(base.farStart);
+
+    public Pose scoreCB = baseToBlue(base.scoreClose);
+    public Pose scoreLB = baseToBlue(base.scoreLong);
+    public Pose scoreCR = baseToRed(base.scoreClose);
+    public Pose scoreLR = baseToRed(base.scoreLong);
+
+    public Pose loadB = baseToBlue(base.load);
+    public Pose loadR = baseToRed(base.load);
+
+    public Pose releaseGoToCloseB = baseToBlue(base.releaseGoToClose);
+    public Pose releaseCompleteCloseB = baseToBlue(base.releaseCompleteClose);
+    public Pose releaseGoToCloseR = baseToRed(base.releaseGoToClose);
+    public Pose releaseCompleteCloseR = baseToRed(base.releaseCompleteClose);
+
+    public Pose leaveCB = baseToBlue(base.leaveClose);
+    public Pose leaveLB = baseToBlue(base.leaveLong);
+    public Pose leaveCR = baseToRed(base.leaveClose);
+    public Pose leaveLR = baseToRed(base.leaveLong);
+
+    public Pose pick1StartCB = baseToBlue(base.pick1StartClose);
+    public Pose pick1StartCR = baseToRed(base.pick1StartClose);
+
+    public Pose pick2StartLB = baseToBlue(base.pick2StartLong);
+    public Pose pick2StartCB = baseToBlue(base.pick2StartClose);
+    public Pose pick2StartCR = baseToRed(base.pick2StartClose);
+    public Pose pick2StartLR = baseToRed(base.pick2StartLong);
+
+    public Pose pick3StartLB = baseToBlue(base.pick3StartLong);
+    public Pose pick3StartCB = baseToBlue(base.pick3StartClose);
+    public Pose pick3StartCR = baseToRed(base.pick3StartClose);
+    public Pose pick3StartLR = baseToRed(base.pick3StartLong);
+
+    public Pose pick4StartLB = baseToBlue(base.pick4StartLong);
+    public Pose pick4StartLR = baseToRed(base.pick4StartLong);
+
+    public Pose pick1EndCB = baseToBlue(base.pick1EndClose);
+    public Pose pick1EndCR = baseToRed(base.pick1EndClose);
+
+    public Pose pick2EndLB = baseToBlue(base.pick2EndLong);
+    public Pose pick2EndCB = baseToBlue(base.pick2EndClose);
+    public Pose pick2EndCR = baseToRed(base.pick2EndClose);
+    public Pose pick2EndLR = baseToRed(base.pick2EndLong);
+
+    public Pose pick3EndLB = baseToBlue(base.pick3EndLong);
+    public Pose pick3EndCB = baseToBlue(base.pick3EndClose);
+    public Pose pick3EndCR = baseToRed(base.pick3EndClose);
+    public Pose pick3EndLR = baseToRed(base.pick3EndLong);
+
+    public Pose pick4EndLB = baseToBlue(base.pick4EndLong);
+    public Pose pick4EndLR = baseToRed(base.pick4EndLong);
+
+    public Pose getGoalPose(Alliance alliance, Range range, boolean preloadComplete) {
+        Pose basePose;
+        if (range == Range.LONG_RANGE) {
+            basePose = preloadComplete ? base.goalLongPost : base.goalLongPreload;
+        } else {
+            basePose = preloadComplete ? base.goalClosePost : base.goalClosePreload;
+        }
+
+        if (alliance == Alliance.BLUE) {
+            return baseToBlue(basePose);
+        }
+
+        double redDx;
+        if (range == Range.LONG_RANGE) {
+            redDx = preloadComplete ? 3.0 : 7.25;
+        } else {
+            redDx = preloadComplete ? 5.0 : 0.0;
+        }
+        return baseToRed(basePose, redDx, 0.0, 0.0);
+    }
+
+    public Pose getObeliskPose(Alliance alliance) {
+        return (alliance == Alliance.BLUE)
+                ? baseToBlue(base.obelisk)
+                : baseToRed(base.obelisk);
+    }
 
     public Pose findStartPose(Alliance a, Range r) {
         switch (a) {
@@ -48,101 +228,6 @@ public class AutoPoses {
         }
     }
 
-    // ========================
-    // SCORE POSES
-    // ========================
-    public Pose scoreCB = poseDeg(48, 96, 70);
-    public Pose scoreCBFAKE = poseDeg(48, 96, 290);
-    public Pose scoreLB = poseDeg(48 + robotWidth/2, 14.5, 230);
-    public Pose scoreCR = Mirror(scoreCBFAKE);
-    public Pose scoreLR = Mirror(scoreLB);
-
-    //TODO add a secondary score pose if need to save time (Closer to middle row, top of close triangle)
-
-    // ========================
-    // LOAD POSES
-    // ========================
-    public Pose loadB = poseDeg(robotWidth/2, robotLength/2, 90);
-    public Pose loadR = Mirror(loadB);
-
-    // ========================
-    // RELEASE (lever) POSES
-    // ========================
-
-    public Pose releaseGoToCloseB = poseDeg(20, 76, 180);
-    public Pose releaseCompleteCloseB = poseDeg(14.25, 76, 180);
-    public Pose releaseGoToCloseBFake = poseDeg(20, 77.5, 180);
-    public Pose releaseCompleteCloseBFake = poseDeg(15, 76, 180);
-    public Pose releaseGoToCloseR = Mirror(releaseGoToCloseBFake);
-    public Pose releaseCompleteCloseR = Mirror(releaseCompleteCloseBFake);
-
-    // ========================
-    // LEAVE POSES
-    // ========================
-    // Close-side park is nearer the scoring area; long-side park is farther.
-    public Pose leaveCB = poseDeg(36, 84, 180);
-    public Pose leaveLB = poseDeg(15, 15, 180);
-    public Pose leaveCR = Mirror(leaveCB);
-    public Pose leaveLR = Mirror(leaveLB);
-
-    // ========================
-    // PICKUP START POSES
-    // ========================
-    double intakeStart = 43.5;
-    double offsetLong = -1.5;
-    double offsetClose = 5;
-    double offsetHeading = -10;
-
-    // Row 1 (close side)
-    public Pose pick1StartCB = poseDeg(intakeStart-1.5, 84 + offsetClose, 180 + offsetHeading);
-    public Pose pick1StartCBFake = poseDeg(intakeStart-3, 84 + offsetClose, 180 + 8); //BEFORE I WAS ADDING 10
-    public Pose pick1StartCR = Mirror(pick1StartCBFake);
-
-    // Row 2
-    public Pose pick2StartLB = poseDeg(intakeStart+1, 36 + offsetLong - 4.5, 180 + 3);
-    public Pose pick2StartCB = poseDeg(intakeStart-1.25, 60 + offsetClose, 180 + offsetHeading);
-    public Pose pick2StartCBFake = poseDeg(intakeStart - 3, 60 + offsetClose + 1.5, 180 + 8); //BEFORE I WAS ADDING 2
-    public Pose pick2StartCR = Mirror(pick2StartCBFake);
-    public Pose pick2StartLR = Mirror(pick2StartLB);
-
-    // Row 3
-    public Pose pick3StartLB = poseDeg(intakeStart+1, 60 + offsetLong - 6, 180 + 5);
-    public Pose pick3StartCB = poseDeg(intakeStart, 36 + offsetClose, 180 + offsetHeading);
-    public Pose pick3StartCR = Mirror(pick3StartCB);
-    public Pose pick3StartLR = Mirror(pick3StartLB);
-
-    // Row 4 (long side)
-    public Pose pick4StartLB = poseDeg(intakeStart, 84, 180);
-    public Pose pick4StartLR = Mirror(pick4StartLB);
-
-    // ========================
-    // PICKUP END POSES
-    // ========================
-    double intakeEnd = 24.5;
-    double offsetEnd = -1;
-
-    // Row 1 (close side)
-    public Pose pick1EndCB = poseDeg(intakeEnd+offsetEnd, 84, 180);
-    public Pose pick1EndCBFake = poseDeg(intakeEnd+offsetEnd-1, 84 + offsetClose, 180 + 8);
-    public Pose pick1EndCR = Mirror(pick1EndCBFake);
-
-    // Row 2
-    public Pose pick2EndLB = poseDeg(intakeEnd, 36 + offsetLong, 180);
-    public Pose pick2EndCB = poseDeg(intakeEnd+offsetEnd, 60, 180);
-    public Pose pick2EndCBFake = poseDeg(intakeEnd+offsetEnd-1, 60 + offsetClose, 180 + 2);
-    public Pose pick2EndCR = Mirror(pick2EndCBFake);
-    public Pose pick2EndLR = Mirror(pick2EndLB);
-
-    // Row 3
-    public Pose pick3EndLB = poseDeg(intakeEnd, 60 + offsetLong -1, 180);
-    public Pose pick3EndCB = poseDeg(intakeEnd+offsetEnd, 36, 180);
-    public Pose pick3EndCR = Mirror(pick3EndCB);
-    public Pose pick3EndLR = Mirror(pick3EndLB);
-
-    // Row 4 (long side)
-    public Pose pick4EndLB = poseDeg(intakeEnd, 84, 180);
-    public Pose pick4EndLR = Mirror(pick4EndLB);
-
      /* =========================
        STRUCTURED ARRAYS
        =========================
@@ -152,13 +237,13 @@ public class AutoPoses {
        pickupEnd[alliance][range][rowIndex]
        ========================= */
 
-    public Pose[] load = new Pose[2];                  // [Alliance]
-    public Pose[][] score = new Pose[2][2];            // [Alliance][Range]
-    public Pose[][][] pickupStart = new Pose[2][2][3]; // [Alliance][Range][RowIndex]
-    public Pose[][][] pickupEnd = new Pose[2][2][3];   // [Alliance][Range][RowIndex]
-    public Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
-    public Pose[][] releaseGoTo = new Pose[2][2];      // [Alliance][Range]
-    public Pose[][] releaseComplete = new Pose[2][2];  // [Alliance][Range]
+    public final Pose[] load = new Pose[2];                  // [Alliance]
+    public final Pose[][] score = new Pose[2][2];            // [Alliance][Range]
+    public final Pose[][][] pickupStart = new Pose[2][2][3]; // [Alliance][Range][RowIndex]
+    public final Pose[][][] pickupEnd = new Pose[2][2][3];   // [Alliance][Range][RowIndex]
+    public final Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
+    public final Pose[][] releaseGoTo = new Pose[2][2];      // [Alliance][Range]
+    public final Pose[][] releaseComplete = new Pose[2][2];  // [Alliance][Range]
 
 
     /* =========================
@@ -166,65 +251,93 @@ public class AutoPoses {
        ========================= */
     public AutoPoses() {
         // --- Load ---
-        load[Alliance.BLUE.ordinal()] = loadB;
-        load[Alliance.RED.ordinal()]  = loadR;
+        setLoad(Alliance.BLUE, loadB);
+        setLoad(Alliance.RED, loadR);
 
         // --- Score ---
-        score[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = scoreCB;
-        score[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = scoreLB;
-        score[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = scoreCR;
-        score[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = scoreLR;
+        setScore(Alliance.BLUE, Range.CLOSE_RANGE, scoreCB);
+        setScore(Alliance.BLUE, Range.LONG_RANGE, scoreLB);
+        setScore(Alliance.RED, Range.CLOSE_RANGE, scoreCR);
+        setScore(Alliance.RED, Range.LONG_RANGE, scoreLR);
 
         // --- Pickup Start (index 0..2; close rows 1-3, long rows 2-4) ---
         // Blue
-        pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2StartLB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3StartLB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3StartCB;
-        pickupStart[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4StartLB;
+        setPickupStart(Alliance.BLUE, Range.CLOSE_RANGE, 0, pick1StartCB);
+        setPickupStart(Alliance.BLUE, Range.LONG_RANGE, 0, pick2StartLB);
+        setPickupStart(Alliance.BLUE, Range.CLOSE_RANGE, 1, pick2StartCB);
+        setPickupStart(Alliance.BLUE, Range.LONG_RANGE, 1, pick3StartLB);
+        setPickupStart(Alliance.BLUE, Range.CLOSE_RANGE, 2, pick3StartCB);
+        setPickupStart(Alliance.BLUE, Range.LONG_RANGE, 2, pick4StartLB);
 
         // Red
-        pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2StartLR;
-        pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3StartLR;
-        pickupStart[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3StartCR;
-        pickupStart[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4StartLR;
+        setPickupStart(Alliance.RED, Range.CLOSE_RANGE, 0, pick1StartCR);
+        setPickupStart(Alliance.RED, Range.LONG_RANGE, 0, pick2StartLR);
+        setPickupStart(Alliance.RED, Range.CLOSE_RANGE, 1, pick2StartCR);
+        setPickupStart(Alliance.RED, Range.LONG_RANGE, 1, pick3StartLR);
+        setPickupStart(Alliance.RED, Range.CLOSE_RANGE, 2, pick3StartCR);
+        setPickupStart(Alliance.RED, Range.LONG_RANGE, 2, pick4StartLR);
 
         // --- Pickup End ---
         // Blue
-        pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2EndLB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3EndLB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3EndCB;
-        pickupEnd[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4EndLB;
+        setPickupEnd(Alliance.BLUE, Range.CLOSE_RANGE, 0, pick1EndCB);
+        setPickupEnd(Alliance.BLUE, Range.LONG_RANGE, 0, pick2EndLB);
+        setPickupEnd(Alliance.BLUE, Range.CLOSE_RANGE, 1, pick2EndCB);
+        setPickupEnd(Alliance.BLUE, Range.LONG_RANGE, 1, pick3EndLB);
+        setPickupEnd(Alliance.BLUE, Range.CLOSE_RANGE, 2, pick3EndCB);
+        setPickupEnd(Alliance.BLUE, Range.LONG_RANGE, 2, pick4EndLB);
 
         // Red
-        pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][0] = pick1EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][0]  = pick2EndLR;
-        pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][1] = pick2EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][1]  = pick3EndLR;
-        pickupEnd[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()][2] = pick3EndCR;
-        pickupEnd[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()][2]  = pick4EndLR;
+        setPickupEnd(Alliance.RED, Range.CLOSE_RANGE, 0, pick1EndCR);
+        setPickupEnd(Alliance.RED, Range.LONG_RANGE, 0, pick2EndLR);
+        setPickupEnd(Alliance.RED, Range.CLOSE_RANGE, 1, pick2EndCR);
+        setPickupEnd(Alliance.RED, Range.LONG_RANGE, 1, pick3EndLR);
+        setPickupEnd(Alliance.RED, Range.CLOSE_RANGE, 2, pick3EndCR);
+        setPickupEnd(Alliance.RED, Range.LONG_RANGE, 2, pick4EndLR);
 
         // --- Leave ---
-        leave[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = leaveCB;
-        leave[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = leaveLB;
-        leave[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = leaveCR;
-        leave[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = leaveLR;
+        setLeave(Alliance.BLUE, Range.CLOSE_RANGE, leaveCB);
+        setLeave(Alliance.BLUE, Range.LONG_RANGE, leaveLB);
+        setLeave(Alliance.RED, Range.CLOSE_RANGE, leaveCR);
+        setLeave(Alliance.RED, Range.LONG_RANGE, leaveLR);
 
         // --- Release lever (only defined for close side; long side mirrors close defaults) ---
-        releaseGoTo[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = releaseGoToCloseB;
-        releaseGoTo[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = releaseGoToCloseB; // not used, but set for completeness
-        releaseGoTo[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = releaseGoToCloseR;
-        releaseGoTo[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = releaseGoToCloseR;
+        setReleaseGoTo(Alliance.BLUE, Range.CLOSE_RANGE, releaseGoToCloseB);
+        setReleaseGoTo(Alliance.BLUE, Range.LONG_RANGE, releaseGoToCloseB); // not used, but set for completeness
+        setReleaseGoTo(Alliance.RED, Range.CLOSE_RANGE, releaseGoToCloseR);
+        setReleaseGoTo(Alliance.RED, Range.LONG_RANGE, releaseGoToCloseR);
 
-        releaseComplete[Alliance.BLUE.ordinal()][Range.CLOSE_RANGE.ordinal()] = releaseCompleteCloseB;
-        releaseComplete[Alliance.BLUE.ordinal()][Range.LONG_RANGE.ordinal()]  = releaseCompleteCloseB;
-        releaseComplete[Alliance.RED.ordinal()][Range.CLOSE_RANGE.ordinal()]  = releaseCompleteCloseR;
-        releaseComplete[Alliance.RED.ordinal()][Range.LONG_RANGE.ordinal()]   = releaseCompleteCloseR;
+        setReleaseComplete(Alliance.BLUE, Range.CLOSE_RANGE, releaseCompleteCloseB);
+        setReleaseComplete(Alliance.BLUE, Range.LONG_RANGE, releaseCompleteCloseB);
+        setReleaseComplete(Alliance.RED, Range.CLOSE_RANGE, releaseCompleteCloseR);
+        setReleaseComplete(Alliance.RED, Range.LONG_RANGE, releaseCompleteCloseR);
+    }
+
+    private void setLoad(Alliance a, Pose pose) {
+        load[a.ordinal()] = pose;
+    }
+
+    private void setScore(Alliance a, Range r, Pose pose) {
+        score[a.ordinal()][r.ordinal()] = pose;
+    }
+
+    private void setPickupStart(Alliance a, Range r, int rowIndex, Pose pose) {
+        pickupStart[a.ordinal()][r.ordinal()][rowIndex] = pose;
+    }
+
+    private void setPickupEnd(Alliance a, Range r, int rowIndex, Pose pose) {
+        pickupEnd[a.ordinal()][r.ordinal()][rowIndex] = pose;
+    }
+
+    private void setLeave(Alliance a, Range r, Pose pose) {
+        leave[a.ordinal()][r.ordinal()] = pose;
+    }
+
+    private void setReleaseGoTo(Alliance a, Range r, Pose pose) {
+        releaseGoTo[a.ordinal()][r.ordinal()] = pose;
+    }
+
+    private void setReleaseComplete(Alliance a, Range r, Pose pose) {
+        releaseComplete[a.ordinal()][r.ordinal()] = pose;
     }
 
     /* =========================
