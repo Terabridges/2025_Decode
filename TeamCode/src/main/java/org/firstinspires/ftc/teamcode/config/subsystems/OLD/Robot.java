@@ -1,15 +1,10 @@
-package org.firstinspires.ftc.teamcode.config.subsystems;
+package org.firstinspires.ftc.teamcode.config.subsystems.OLD;
 
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Intake;
-import org.firstinspires.ftc.teamcode.config.subsystems.Other.Drive;
-import org.firstinspires.ftc.teamcode.config.subsystems.Other.Lift;
-import org.firstinspires.ftc.teamcode.config.subsystems.Other.Other;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,17 +15,18 @@ public class Robot {
     //---------------- Objects ----------------
     private final HardwareMap hardwareMap;
     private final Telemetry telemetry;
-    private Gamepad gp1;
-    private Gamepad gp2;
-    private static VoltageSensor voltageSensor;
+    public Gamepad gp1;
+    public Gamepad gp2;
+    public static VoltageSensor voltageSensor;
 
     //---------------- Subsystems ----------------
+    public Drive drive;
+    public Intake intake;
+    public Shooter shooter;
+    public Transfer transfer;
+    public Vision vision;
 
-    private Intake intake;
-    private Outtake outtake;
-    private Other other;
-
-    public List<org.firstinspires.ftc.teamcode.config.subsystems.Subsystem> subsystems;
+    public List<Subsystem> subsystems;
 
     //---------------- Constructors ----------------
     public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2){
@@ -41,11 +37,13 @@ public class Robot {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
 
+        vision = new Vision(hardwareMap);
+        drive = new Drive(hardwareMap);
         intake = new Intake(hardwareMap);
-        outtake = new Outtake(hardwareMap);
-        other = new Other(hardwareMap);
+        shooter = autoMode ? new ShooterAuto(hardwareMap, vision) : new Shooter(hardwareMap, vision);
+        transfer = new Transfer(hardwareMap);
 
-        subsystems = new ArrayList<>(Arrays.asList(intake, outtake, other));
+        subsystems = new ArrayList<>(Arrays.asList(drive, intake, shooter, transfer, vision));
 
         this.gp1 = gp1;
         this.gp2 = gp2;
@@ -66,7 +64,7 @@ public class Robot {
 
     //---------------- Interface Methods ----------------
     public void update() {
-        for (org.firstinspires.ftc.teamcode.config.subsystems.Subsystem s : subsystems) {
+        for (Subsystem s : subsystems) {
             s.update();
         }
     }
