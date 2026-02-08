@@ -35,7 +35,7 @@ import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 @PsiKitAutoLog(rlogPort = 5802)
 class MainAuto extends OpMode {
 
-    // Pathing
+    // ===== Pathing Configuration =====
     private final AutoPoses poses = new AutoPoses();
     private final AutoPathLibrary pathLibrary = new AutoPathLibrary(poses);
     private final Pose startPose;
@@ -49,7 +49,7 @@ class MainAuto extends OpMode {
     private final AutoIntakeSpeed intakeSpeedModel = new AutoIntakeSpeed(
             -0.02, 0.47, 0.18, 0.24, -0.01, 0.01);
 
-    //Enums
+    // ===== Constants =====
     private static final int MAX_ROWS = 3;
     private static final double SHOOT_ACTION_SECONDS = 10.0;
     private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
@@ -67,16 +67,16 @@ class MainAuto extends OpMode {
     private Range lastScoreRangeUsed;
     private enum PathRequest { GO_TO_PICKUP, PICKUP, GO_TO_SCORE, RELEASE_GO_TO, RELEASE_COMPLETE, LEAVE }
 
-    //State machine
+    // ===== State Machine =====
     private StateMachine autoMachine;
     private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
     private AutoShootMachine shootMachine;
     private AutoTurretAim turretAim;
 
-    //Robot and subsystems
+    // ===== Robot and Subsystems =====
     private Robot robot;
 
-    //Other Variables
+    // ===== Runtime State =====
     private int rowsToRun = 0;
     private int rowsCompleted = 0;
     private int currentRowIndex = 0;
@@ -105,11 +105,13 @@ class MainAuto extends OpMode {
         startPose = poses.findStartPose(alliance, range);
     }
 
+    // ===== Shooter Timing Tuning =====
     public double clutchDownTime = 0.1;
     public double clutchDownFarTime = 0.3;
     public double spinTime = 2.75;
     public double spinUpTimeout = 1.75;
 
+    // ===== FTC OpMode Lifecycle =====
     @Override
     public void init() {
         robot = new Robot(hardwareMap, telemetry, false);
@@ -168,14 +170,6 @@ class MainAuto extends OpMode {
     }
 
     @Override
-    public void stop() {
-        if (follower != null) {
-            follower.breakFollowing();
-        }
-        GlobalVariables.autoFollowerValid = (follower != null);
-    }
-
-    @Override
     public void loop() {
         follower.update();
         turretAim.updateAim(activeState, preloadComplete);
@@ -209,39 +203,15 @@ class MainAuto extends OpMode {
         drawCurrentAndHistory();
     }
 
-    private void buildPath(PathRequest request) {
-        if (follower == null) {
-            return;
+    @Override
+    public void stop() {
+        if (follower != null) {
+            follower.breakFollowing();
         }
-
-        Pose currentPose = follower.getPose();
-        if (currentPose == null) {
-            return;
-        }
-
-        switch (request) {
-            case GO_TO_PICKUP:
-                goToPickupPath = pathLibrary.goToPickup(currentPose, alliance, range, currentRowIndex);
-                break;
-            case PICKUP:
-                pickupPath = pathLibrary.pickup(currentPose, alliance, range, currentRowIndex);
-                break;
-            case GO_TO_SCORE:
-                lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                goToScorePath = pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
-                break;
-            case RELEASE_GO_TO:
-                releaseGoToPath = pathLibrary.releaseGoTo(currentPose, alliance, range);
-                break;
-            case RELEASE_COMPLETE:
-                releaseCompletePath = pathLibrary.releaseComplete(currentPose, alliance, range);
-                break;
-            case LEAVE:
-                leavePath = pathLibrary.leave(currentPose, alliance, lastScoreRangeUsed);
-                break;
-        }
+        GlobalVariables.autoFollowerValid = (follower != null);
     }
 
+    // ===== State Machine Construction =====
     private int resolveRowsForMode(Mode mode) {
         switch (mode) {
             case ONE_ROW:
@@ -304,6 +274,7 @@ class MainAuto extends OpMode {
                 .build();
     }
 
+    // ===== State Machine Callbacks =====
     private void onEnterAcquireMotif() {
         setActiveState(AutoStates.ACQUIRE_MOTIF);
 
@@ -320,85 +291,6 @@ class MainAuto extends OpMode {
     private void onExitAcquireMotif() {
         motifTracker.resolveMotif(preloadComplete);
         acquiredMotifId = motifTracker.getAcquiredMotifId();
-    }
-
-    private boolean stateTimedOut() {
-        return stateTimer.seconds() >= STATE_TIMEOUT_SECONDS;
-    }
-
-    private boolean shootTimedOut()
-    {
-        return shootTimer.seconds() >= SHOOT_ACTION_SECONDS;
-    }
-
-    private int getCurrentShotIndex() {
-        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3
-        int idx = preloadComplete ? (rowsCompleted + 1) : 0;
-        return Math.min(idx, MAX_ROWS);
-    }
-
-    private Range getScoreRangeForShotIndex(int shotIndex) {
-        if (shotPlan == ShotPlan.CLOSEST_POINT) {
-            boolean useClose;
-            if (range == Range.LONG_RANGE) {
-                // Far start: preload + row1 far, row2+ close.
-                useClose = shotIndex >= 2;
-            } else {
-                // Close start: preload + rows1-2 close, row3+ far.
-                useClose = shotIndex <= 2;
-            }
-            return useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
-        }
-        return range;
-    }
-
-    private Range getScoreRangeForCurrentShot() {
-        int shotIndex = getCurrentShotIndex();
-        return getScoreRangeForShotIndex(shotIndex);
-    }
-
-    /**
-     * Range selection specifically for leave/park. For closest-point plans that switch to a close
-     * shot late in a far-start run, choose leave based on the last field row shot.
-     */
-    private Range getLeaveRangeForShotIndex(int shotIndex) {
-        if (shotPlan == ShotPlan.ALL_SELECTED) {
-            return range;
-        }
-        if (range == Range.LONG_RANGE) {
-            // Far start: preload + row1 leave long, row2+ leave close.
-            return (shotIndex <= 1) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
-        }
-        // Close start: preload + rows1-2 leave close, row3+ leave long.
-        return (shotIndex <= 2) ? Range.CLOSE_RANGE : Range.LONG_RANGE;
-    }
-
-    private Pose getScorePoseForCurrentShot() {
-        Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
-        return base;
-    }
-
-    private String getActionMessage() {
-        switch (activeState) {
-            case ACQUIRE_MOTIF:
-                return "Looking for motif tag";
-            case GO_TO_SHOOT:
-                return "Driving to score (row " + (rowsCompleted + 1) + ")";
-            case COMPLETE_SHOOT:
-                return "Shooting row " + (rowsCompleted + 1);
-            case GO_TO_PICKUP:
-                return "Driving to pickup row " + (rowsCompleted + 1);
-            case COMPLETE_PICKUP:
-                return "Intaking row " + (rowsCompleted + 1);
-            case GO_TO_RELEASE:
-                return "Driving to release lever";
-            case COMPLETE_RELEASE:
-                return "Releasing goal balls";
-            case LEAVE:
-                return "Parking / leave path";
-            default:
-                return "Idle";
-        }
     }
 
     private void onEnterGoToShoot() {
@@ -426,8 +318,6 @@ class MainAuto extends OpMode {
         shootTimer.reset();
         shootMachine.requestShoot();
     }
-
-
 
     private void onExitCompleteShoot() {
         if (!preloadComplete) {
@@ -494,6 +384,41 @@ class MainAuto extends OpMode {
         followPath(leavePath);
     }
 
+    // ===== Path Building =====
+    private void buildPath(PathRequest request) {
+        if (follower == null) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        if (currentPose == null) {
+            return;
+        }
+
+        switch (request) {
+            case GO_TO_PICKUP:
+                goToPickupPath = pathLibrary.goToPickup(currentPose, alliance, range, currentRowIndex);
+                break;
+            case PICKUP:
+                pickupPath = pathLibrary.pickup(currentPose, alliance, range, currentRowIndex);
+                break;
+            case GO_TO_SCORE:
+                lastScoreRangeUsed = getScoreRangeForCurrentShot();
+                goToScorePath = pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
+                break;
+            case RELEASE_GO_TO:
+                releaseGoToPath = pathLibrary.releaseGoTo(currentPose, alliance, range);
+                break;
+            case RELEASE_COMPLETE:
+                releaseCompletePath = pathLibrary.releaseComplete(currentPose, alliance, range);
+                break;
+            case LEAVE:
+                leavePath = pathLibrary.leave(currentPose, alliance, lastScoreRangeUsed);
+                break;
+        }
+    }
+
+    // ===== Row and Shot Planning =====
     private void refreshCurrentRowIndex() {
         int mapped = mapRowIndex(rowsCompleted);
         currentRowIndex = preloadComplete
@@ -501,6 +426,54 @@ class MainAuto extends OpMode {
                 : mapRowIndex(0);
     }
 
+    private int getCurrentShotIndex() {
+        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3
+        int idx = preloadComplete ? (rowsCompleted + 1) : 0;
+        return Math.min(idx, MAX_ROWS);
+    }
+
+    private Range getScoreRangeForShotIndex(int shotIndex) {
+        if (shotPlan == ShotPlan.CLOSEST_POINT) {
+            boolean useClose;
+            if (range == Range.LONG_RANGE) {
+                // Far start: preload + row1 far, row2+ close.
+                useClose = shotIndex >= 2;
+            } else {
+                // Close start: preload + rows1-2 close, row3+ far.
+                useClose = shotIndex <= 2;
+            }
+            return useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
+        }
+        return range;
+    }
+
+    private Range getScoreRangeForCurrentShot() {
+        int shotIndex = getCurrentShotIndex();
+        return getScoreRangeForShotIndex(shotIndex);
+    }
+
+    /**
+     * Range selection specifically for leave/park. For closest-point plans that switch to a close
+     * shot late in a far-start run, choose leave based on the last field row shot.
+     */
+    private Range getLeaveRangeForShotIndex(int shotIndex) {
+        if (shotPlan == ShotPlan.ALL_SELECTED) {
+            return range;
+        }
+        if (range == Range.LONG_RANGE) {
+            // Far start: preload + row1 leave long, row2+ leave close.
+            return (shotIndex <= 1) ? Range.LONG_RANGE : Range.CLOSE_RANGE;
+        }
+        // Close start: preload + rows1-2 leave close, row3+ leave long.
+        return (shotIndex <= 2) ? Range.CLOSE_RANGE : Range.LONG_RANGE;
+    }
+
+    private Pose getScorePoseForCurrentShot() {
+        Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
+        return base;
+    }
+
+    // ===== Follower Helpers =====
     private void followPath(PathChain path) {
         if (follower != null && path != null) {
             follower.followPath(path, true);
@@ -517,6 +490,7 @@ class MainAuto extends OpMode {
         return follower != null && !follower.isBusy();
     }
 
+    // ===== Decision Helpers =====
     private boolean shouldShootPreload() {
         return mode != Mode.MOVE_ONLY;
     }
@@ -539,6 +513,19 @@ class MainAuto extends OpMode {
         return nextCount < rowsToRun;
     }
 
+    private boolean shouldSkipShootPhase() {
+        return !preloadComplete && !shouldShootPreload();
+    }
+
+    // ===== State/Timer Helpers =====
+    private boolean stateTimedOut() {
+        return stateTimer.seconds() >= STATE_TIMEOUT_SECONDS;
+    }
+
+    private boolean shootTimedOut() {
+        return shootTimer.seconds() >= SHOOT_ACTION_SECONDS;
+    }
+
     private boolean shootActionComplete() {
         if (!preloadComplete && !shouldShootPreload()) {
             return true;
@@ -552,18 +539,37 @@ class MainAuto extends OpMode {
         activeState = state;
     }
 
-    private boolean shouldSkipShootPhase() {
-        return !preloadComplete && !shouldShootPreload();
-    }
-
     private void resetStateTimer() {
         stateTimer.reset();
     }
 
-
     /** Waits 1s after the release path finishes before advancing. */
     private boolean releaseWaitDone() {
         return releaseWaiter.isDone(followerIdle(), RELEASE_TIMEOUT_SECONDS);
+    }
+
+    // ===== Telemetry Helpers =====
+    private String getActionMessage() {
+        switch (activeState) {
+            case ACQUIRE_MOTIF:
+                return "Looking for motif tag";
+            case GO_TO_SHOOT:
+                return "Driving to score (row " + (rowsCompleted + 1) + ")";
+            case COMPLETE_SHOOT:
+                return "Shooting row " + (rowsCompleted + 1);
+            case GO_TO_PICKUP:
+                return "Driving to pickup row " + (rowsCompleted + 1);
+            case COMPLETE_PICKUP:
+                return "Intaking row " + (rowsCompleted + 1);
+            case GO_TO_RELEASE:
+                return "Driving to release lever";
+            case COMPLETE_RELEASE:
+                return "Releasing goal balls";
+            case LEAVE:
+                return "Parking / leave path";
+            default:
+                return "Idle";
+        }
     }
 
 }
