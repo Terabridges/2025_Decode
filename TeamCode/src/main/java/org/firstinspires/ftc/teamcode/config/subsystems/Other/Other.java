@@ -8,9 +8,9 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 public class Other implements Subsystem {
 
     //---------------- Hardware ----------------
-    private Drive drive;
-    private Lift lift;
-    private Lights lights;
+    public Drive drive;
+    public Lift lift;
+    public Lights lights;
 
     //---------------- Software ----------------
 

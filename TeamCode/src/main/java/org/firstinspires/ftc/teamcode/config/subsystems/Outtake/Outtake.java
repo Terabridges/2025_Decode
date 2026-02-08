@@ -8,9 +8,9 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 public class Outtake implements Subsystem {
 
     //---------------- Hardware ----------------
-    private Shooter shooter;
-    private Turret turret;
-    private Vision vision;
+    public Shooter shooter;
+    public Turret turret;
+    public Vision vision;
 
     //---------------- Software ----------------
 

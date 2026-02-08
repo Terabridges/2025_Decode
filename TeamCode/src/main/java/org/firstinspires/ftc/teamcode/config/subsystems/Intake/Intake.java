@@ -11,10 +11,10 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 public class Intake implements Subsystem {
 
     //---------------- Hardware ----------------
-    private DcMotor megaSpin;
-    private Spindex spindex;
-    private Spinner spinner;
-    private Clutch clutch;
+    public DcMotor megaSpin;
+    public Spindex spindex;
+    public Spinner spinner;
+    public Clutch clutch;
 
     //---------------- Software ----------------
 

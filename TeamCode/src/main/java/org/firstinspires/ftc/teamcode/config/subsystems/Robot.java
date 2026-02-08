@@ -26,9 +26,9 @@ public class Robot {
 
     //---------------- Subsystems ----------------
 
-    private Intake intake;
-    private Outtake outtake;
-    private Other other;
+    public Intake intake;
+    public Outtake outtake;
+    public Other other;
 
     public List<org.firstinspires.ftc.teamcode.config.subsystems.Subsystem> subsystems;
 
