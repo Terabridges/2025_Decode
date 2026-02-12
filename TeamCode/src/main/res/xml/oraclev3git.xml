@@ -24,8 +24,8 @@
             <ContinuousRotationServo name="turretR" port="3" />
             <Servo name="clutch" port="4" />
             <Servo name="hood" port="5" />
-            <AnalogInput name="turretAnalog" port="0" />
-            <AnalogInput name="spindexAnalog" port="1" />
+            <AnalogInput name="turretAnalog" port="1" />
+            <AnalogInput name="spindexAnalog" port="0" />
             <AnalogInput name="distance3" port="2" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="0" />
             <RevColorSensorV3 name="color1" port="0" bus="1" />
