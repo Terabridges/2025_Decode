@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
@@ -22,6 +21,7 @@ public class Spindex implements Subsystem {
     private RevColorSensorV3 backColor;
 
     //---------------- Software ----------------
+    private double commandedPower = 0.0;
 
 
     //---------------- Constructor ----------------
@@ -39,8 +39,21 @@ public class Spindex implements Subsystem {
 
     //---------------- Methods ----------------
     public void moveSpindexPow(double pow){
+        commandedPower = pow;
         spindexLeft.setPower(pow);
         spindexRight.setPower(pow);
+    }
+
+    public double getPositionDeg() {
+        return spindexEnc.getCurrentPosition();
+    }
+
+    public double getAnalogVoltage() {
+        return spindexEnc.getVoltage();
+    }
+
+    public double getCommandedPower() {
+        return commandedPower;
     }
 
     //---------------- Interface Methods ----------------
