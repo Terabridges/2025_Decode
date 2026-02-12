@@ -78,10 +78,8 @@ public class AutoPoses {
         // ========================
         // GOAL / OBELISK POSES
         // ========================
-        public final Pose goalLongPreload = poseDeg(-1.25, GOAL_Y, GOAL_HEADING_DEG);
-        public final Pose goalLongPost = poseDeg(5.0, GOAL_Y, GOAL_HEADING_DEG);
-        public final Pose goalClosePreload = poseDeg(0.0, GOAL_Y, GOAL_HEADING_DEG);
-        public final Pose goalClosePost = poseDeg(-5.0, GOAL_Y, GOAL_HEADING_DEG);
+        public final Pose goalBlueAnchor = poseDeg(0, GOAL_Y, GOAL_HEADING_DEG);
+        public final Pose goalRedAnchor = poseDeg(FIELD_SIZE, GOAL_Y, GOAL_HEADING_DEG);
         public final Pose obelisk = poseDeg(OBELISK_X, OBELISK_Y, OBELISK_HEADING_DEG);
 
         // ========================
@@ -191,24 +189,26 @@ public class AutoPoses {
     public Pose pick4EndLR = baseToRed(base.pick4EndLong);
 
     public Pose getGoalPose(Alliance alliance, Range range, boolean preloadComplete) {
-        Pose basePose;
-        if (range == Range.LONG_RANGE) {
-            basePose = preloadComplete ? base.goalLongPost : base.goalLongPreload;
-        } else {
-            basePose = preloadComplete ? base.goalClosePost : base.goalClosePreload;
-        }
+        Pose anchor = (alliance == Alliance.BLUE) ? base.goalBlueAnchor : base.goalRedAnchor;
+        double dx = getGoalDxOffset(alliance, range, preloadComplete);
+        return poseDeg(anchor.getX() + dx, anchor.getY(), GOAL_HEADING_DEG);
+    }
 
+    private double getGoalDxOffset(Alliance alliance, Range range, boolean preloadComplete) {
         if (alliance == Alliance.BLUE) {
-            return baseToBlue(basePose);
+            if (range == Range.LONG_RANGE) {
+                return preloadComplete ? 0 : 0; //Blue, long range
+            }
+            return preloadComplete ? 0 : 0; //Blue, close range
         }
-
-        double redDx;
-        if (range == Range.LONG_RANGE) {
-            redDx = preloadComplete ? 3.0 : 7.25;
-        } else {
-            redDx = preloadComplete ? 5.0 : 0.0;
+        else if (alliance == Alliance.RED)
+        {
+            if (range == Range.LONG_RANGE) {
+                return preloadComplete ? 0 : 0; //Red, long range
+            }
+            return preloadComplete ? 0.0 : 0.0; //Red, short range
         }
-        return baseToRed(basePose, redDx, 0.0, 0.0);
+        return 0.0;
     }
 
     public Pose getObeliskPose(Alliance alliance) {
@@ -349,21 +349,6 @@ public class AutoPoses {
 
     public Pose getScore(Alliance a, Range r) {
         return score[a.ordinal()][r.ordinal()];
-    }
-
-    /** Returns the score pose for a given shot index using the "closest point" plan. */
-    public Pose getClosestScore(Alliance a, Range selectedRange, int shotIndex) {
-        // shotIndex: 0 = preload, 1 = row1, 2 = row2, 3 = row3
-        boolean useClose;
-        if (selectedRange == Range.LONG_RANGE) {
-            // Preload + row1 = long; row2+ = close
-            useClose = shotIndex >= 2;
-        } else {
-            // Preload + rows1-2 = close; row3+ = long
-            useClose = shotIndex <= 2;
-        }
-        Range r = useClose ? Range.CLOSE_RANGE : Range.LONG_RANGE;
-        return getScore(a, r);
     }
 
     public Pose getPickupStart(Alliance a, Range r, int rowIndex) {

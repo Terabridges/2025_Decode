@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.config.subsystems.ShooterAuto;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 @Disabled
@@ -20,7 +19,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 public class LockAutoTester extends LinearOpMode {
 
     public Vision vision;
-    public ShooterAuto shooter;
+    public Shooter shooter;
     public Drive drive;
 
     public Gamepad currentGamepad1 = new Gamepad();
@@ -49,7 +48,7 @@ public class LockAutoTester extends LinearOpMode {
         );
 
         vision = new Vision(hardwareMap);
-        shooter = new ShooterAuto(hardwareMap, vision);
+        shooter = new Shooter(hardwareMap, vision);
         drive = new Drive(hardwareMap);
         vision.toInit();
         shooter.toInit();

@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.config.subsystems.ShooterAuto;
 import org.firstinspires.ftc.teamcode.config.subsystems.Vision;
 
 //@Disabled

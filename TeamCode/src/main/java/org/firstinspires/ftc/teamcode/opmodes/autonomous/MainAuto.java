@@ -114,7 +114,7 @@ class MainAuto extends OpMode {
     // ===== FTC OpMode Lifecycle =====
     @Override
     public void init() {
-        robot = new Robot(hardwareMap, telemetry, false);
+        robot = new Robot(hardwareMap, telemetry);
 
         robot.drive.manualDrive = false;
 
@@ -179,22 +179,22 @@ class MainAuto extends OpMode {
         shootMachine.update();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
-        telemetry.addData("Auto Action", getActionMessage());
-        telemetry.addData("State Time", "%.2f", stateTimer.seconds());
-        telemetry.addData("Current Row", currentRowIndex);
-        telemetry.addData("Current Motif ID", acquiredMotifId);
-        telemetry.addData("Target RPM", robot.shooter.targetRPM);
-        telemetry.addData("Current RPM", robot.shooter.getShooterRPM());
-        telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
-        telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
-        telemetry.addData("Ball List", robot.transfer.balls);
-        telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
-        telemetry.addData("Vision Error", robot.vision.getTx());
-        telemetry.addData("ShootAll State", shootMachine.getState());
-        telemetry.addData("Turret Pow", robot.shooter.turret.getPower());
-        telemetry.addData("Is turret Tx In range?", Math.abs(robot.vision.getTx()) < 3);
-        telemetry.addData("Voltage", robot.getVoltage());
-        telemetry.addData("Intake Speed", intakeSpeed);
+//        telemetry.addData("Auto Action", getActionMessage());
+//        telemetry.addData("State Time", "%.2f", stateTimer.seconds());
+//        telemetry.addData("Current Row", currentRowIndex);
+//        telemetry.addData("Current Motif ID", acquiredMotifId);
+//        telemetry.addData("Target RPM", robot.shooter.targetRPM);
+//        telemetry.addData("Current RPM", robot.shooter.getShooterRPM());
+//        telemetry.addData("Sees desired tag?", robot.shooter.hasDesiredTarget);
+//        telemetry.addData("Turret Lock", robot.shooter.useTurretLock);
+//        telemetry.addData("Ball List", robot.transfer.balls);
+//        telemetry.addData("Shoot Order Number", robot.transfer.rotateOrder());
+//        telemetry.addData("Vision Error", robot.vision.getTx());
+//        telemetry.addData("ShootAll State", shootMachine.getState());
+//        telemetry.addData("Turret Pow", robot.shooter.turret.getPower());
+//        telemetry.addData("Is turret Tx In range?", Math.abs(robot.vision.getTx()) < 3);
+//        telemetry.addData("Voltage", robot.getVoltage());
+//        telemetry.addData("Intake Speed", intakeSpeed);
 
 
         telemetryM.update(telemetry);
@@ -225,11 +225,6 @@ class MainAuto extends OpMode {
             default:
                 return 0;
         }
-    }
-
-    /** Maps the logical row count to the row index in the pose tables. */
-    private int mapRowIndex(int logicalCount) {
-        return logicalCount;
     }
 
     private StateMachine buildAutoMachine() {
@@ -420,10 +415,9 @@ class MainAuto extends OpMode {
 
     // ===== Row and Shot Planning =====
     private void refreshCurrentRowIndex() {
-        int mapped = mapRowIndex(rowsCompleted);
         currentRowIndex = preloadComplete
-                ? Math.max(0, Math.min(mapped, MAX_ROWS - 1))
-                : mapRowIndex(0);
+                ? Math.max(0, Math.min(rowsCompleted, MAX_ROWS - 1))
+                : 0;
     }
 
     private int getCurrentShotIndex() {
