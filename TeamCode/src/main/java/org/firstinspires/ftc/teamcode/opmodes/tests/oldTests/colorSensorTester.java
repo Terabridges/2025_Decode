@@ -13,7 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Transfer;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name="ColorSensorTester", group="Test")
 public class colorSensorTester extends LinearOpMode {
 

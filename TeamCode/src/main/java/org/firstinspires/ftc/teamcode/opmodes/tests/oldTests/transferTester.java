@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Transfer;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name="TransferTester", group="Test")
 public class transferTester extends LinearOpMode {
 

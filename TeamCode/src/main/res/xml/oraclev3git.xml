@@ -9,9 +9,9 @@
             <Servo name="light1" port="0" />
             <Servo name="light2" port="1" />
             <Servo name="light3" port="2" />
-            <AnalogInput name="distance3" port="0" />
-            <AnalogInput name="distance1" port="2" />
-            <AnalogInput name="distance2" port="3" />
+            <AnalogInput name="distance0" port="0" />
+            <AnalogInput name="distance1" port="1" />
+            <AnalogInput name="distance2" port="2" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
             <goBILDA5201SeriesMotor name="left_back" port="0" />
@@ -26,11 +26,13 @@
             <Servo name="hood" port="5" />
             <AnalogInput name="turretAnalog" port="0" />
             <AnalogInput name="spindexAnalog" port="1" />
-            <AnalogInput name="distance4" port="2" />
+            <AnalogInput name="distance3" port="2" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="0" />
             <RevColorSensorV3 name="color1" port="0" bus="1" />
             <RevColorSensorV3 name="color2" port="0" bus="2" />
             <RevColorSensorV3 name="color3" port="0" bus="3" />
         </LynxModule>
     </LynxUsbDevice>
+    <EthernetDevice
+        serialNumber="EthernetOverUsb:eth0:172.29.0.23" name="limelight" port="-1" ipAddress="172.29.0.1" />
 </Robot>

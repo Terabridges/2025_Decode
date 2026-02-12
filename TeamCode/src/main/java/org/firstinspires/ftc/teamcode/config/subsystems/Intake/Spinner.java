@@ -14,20 +14,24 @@ public class Spinner implements Subsystem {
     private AnalogInput frontInnerDistance;
     private AnalogInput backOuterDistance;
     private AnalogInput backInnerDistance;
+    public DcMotor megaSpin;
 
     //---------------- Software ----------------
 
 
     //---------------- Constructor ----------------
     public Spinner(HardwareMap map) {
-        frontOuterDistance = map.get(AnalogInput.class, "distance1");
-        frontInnerDistance = map.get(AnalogInput.class, "distance2");
-        backOuterDistance = map.get(AnalogInput.class, "distance4");
-        frontInnerDistance = map.get(AnalogInput.class, "distance3");
+        frontOuterDistance = map.get(AnalogInput.class, "distance0");
+        frontInnerDistance = map.get(AnalogInput.class, "distance1");
+        backOuterDistance = map.get(AnalogInput.class, "distance2");
+        backInnerDistance = map.get(AnalogInput.class, "distance3");
+        megaSpin = map.get(DcMotor.class, "intake");
     }
 
     //---------------- Methods ----------------
-
+    public void moveMegaSpinPow(double pow){
+        megaSpin.setPower(pow);
+    }
 
     //---------------- Interface Methods ----------------
     @Override

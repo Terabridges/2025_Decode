@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name = "FlywheelTester2Wheel")
 public class FlywheelTester2Wheel extends LinearOpMode {
 

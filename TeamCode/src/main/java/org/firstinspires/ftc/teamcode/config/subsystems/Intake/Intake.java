@@ -11,7 +11,6 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 public class Intake implements Subsystem {
 
     //---------------- Hardware ----------------
-    public DcMotor megaSpin;
     public Spindex spindex;
     public Spinner spinner;
     public Clutch clutch;
@@ -21,7 +20,6 @@ public class Intake implements Subsystem {
 
     //---------------- Constructor ----------------
     public Intake(HardwareMap map) {
-        megaSpin = map.get(DcMotor.class, "intake");
         spindex = new Spindex(map);
         spinner = new Spinner(map);
         clutch = new Clutch(map);

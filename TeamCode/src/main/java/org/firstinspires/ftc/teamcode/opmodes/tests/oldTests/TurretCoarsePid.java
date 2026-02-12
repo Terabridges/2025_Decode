@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Vision;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name="TurretCoarsePid", group="Test")
 public class TurretCoarsePid extends LinearOpMode {
 

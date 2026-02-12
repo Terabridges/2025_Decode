@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.OLD.ShooterAuto;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Vision;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name="LockAutoTester", group="Test")
 public class LockAutoTester extends LinearOpMode {
 

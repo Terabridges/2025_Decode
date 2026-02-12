@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Transfer;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name="spindexTester", group="Test")
 public class spindexTester extends LinearOpMode {
 

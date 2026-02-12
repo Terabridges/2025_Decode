@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Intake;
 
 @Disabled
-@Configurable
+//@Configurable
 @TeleOp(name="IntakeTuner", group="Test")
 public class IntakePIDTuner extends LinearOpMode {
 

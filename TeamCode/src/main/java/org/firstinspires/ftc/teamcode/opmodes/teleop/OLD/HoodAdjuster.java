@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop.OLD;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -8,6 +9,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Vision;
 
+@Disabled
 @Configurable
 @TeleOp(name="hoodAdjuster", group="TeleOp")
 public class HoodAdjuster extends LinearOpMode {
