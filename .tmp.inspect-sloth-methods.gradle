@@ -1,0 +1,9 @@
+allprojects {
+  tasks.matching { it.name == 'deploySloth' }.configureEach { t ->
+    println('CLASS=' + t.class.name)
+    def methods = t.class.methods.findAll { m -> m.name.toLowerCase().contains('adb') || m.name.toLowerCase().contains('deploy') }
+    methods.sort { a,b -> a.name <=> b.name }.each { m ->
+      println(m.name + '(' + m.parameterTypes*.simpleName.join(',') + ') -> ' + m.returnType.simpleName)
+    }
+  }
+}

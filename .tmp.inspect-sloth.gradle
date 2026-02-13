@@ -1,0 +1,7 @@
+allprojects {
+  tasks.matching { it.name == 'deploySloth' }.configureEach { t ->
+    println("TASK=" + t.path + " TYPE=" + t.class.name)
+    def names = t.properties.keySet().sort()
+    println("PROPS=" + names.join(','))
+  }
+}
