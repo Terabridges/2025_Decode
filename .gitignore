@@ -79,3 +79,12 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 # lint/reports/
+
+# Local editor/workflow files
+.vscode/tasks.json
+
+# Temporary extraction/dump artifacts (do not commit)
+local_chat_dump/
+doc/ftc-*-sources/
+doc/ftc-*-sources.jar
+chublog.txt
