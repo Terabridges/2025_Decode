@@ -1,0 +1,71 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Sloth: Deploy TeamCode (deploySloth)",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				":TeamCode:deploySloth",
+				"--no-daemon",
+				"--stacktrace"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": true
+			}
+		},
+		{
+			"label": "Sloth: Remove Remote + Deploy",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				":TeamCode:removeSlothRemote",
+				":TeamCode:deploySloth",
+				"--no-daemon",
+				"--stacktrace"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": true
+			}
+		},
+		{
+			"label": "Gradle: TeamCode assembleDebug (2025_Decode)",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				":TeamCode:assembleDebug",
+				"--no-daemon"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Gradle: TeamCode compileDebugJavaWithJavac (info)",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				":TeamCode:compileDebugJavaWithJavac",
+				"--no-daemon",
+				"--info",
+				"--stacktrace"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
