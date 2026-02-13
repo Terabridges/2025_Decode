@@ -49,8 +49,8 @@ public class Spindex implements Subsystem {
     public static double maxPower = 0.35; // 0.75;
 
     // kS application shaping (prevents kS from sustaining oscillations once moving)
-    public static double kSErrorFullDeg = 12; // deg error where kS is fully applied
-    public static double kSOmegaFullDegPerSec = 25; // deg/s below which kS is fully applied
+    public static double kSErrorFullDeg = 30; // deg error where kS is fully applied
+    public static double kSOmegaFullDegPerSec = 20; // deg/s below which kS is fully applied
 
     // Output limiting (helps when motors are geared for speed)
     public static double powerSlewPerSec = 8.0; // power units per second (0 disables)
@@ -58,10 +58,10 @@ public class Spindex implements Subsystem {
 
     // Small integral hold to eliminate steady-state error (off by default)
     // Integrates only near target and when moving slowly.
-    public static double kIHold = 0.006;               // power per (deg * sec)
+    public static double kIHold = 0.004;               // power per (deg * sec)
     public static double iZoneDeg = 25.0;              // only integrate when |error| <= this
     public static double iZoneOmegaDegPerSec = 150.0;  // only integrate when |omegaFilt| <= this
-    public static double iMaxPower = 0.12;             // clamp on integral contribution
+    public static double iMaxPower = 0.06;             // clamp on integral contribution
     public static double iLeakPerSec = 0.6;            // decay toward 0 when not integrating
     private double iPower = 0.0;
     private double lastIError = 0.0;
@@ -75,11 +75,11 @@ public class Spindex implements Subsystem {
 
     // Separate stop thresholds (when met, output is forced to 0).
     // Default matches prior behavior; tune stopTolDeg lower if you want smaller steady-state error.
-    public static double stopTolDeg = 1; // 5;
-    public static double stopVelTolDegPerSec = 25;
+    public static double stopTolDeg = 4.0;
+    public static double stopVelTolDegPerSec = 80.0;
 
     // Optional position filtering for noisy analog signals (1.0 = no filtering)
-    public static double posFilterAlpha = 0.2; //1.0; // 0..1
+    public static double posFilterAlpha = 0.15; // 0..1
     private double posFilt = 0.0;
     private boolean hasPosFilt = false;
 
@@ -87,7 +87,7 @@ public class Spindex implements Subsystem {
     private double lastPos = 0.0;      // UNWRAPPED pos last loop
     private boolean hasLast = false;
     private double omegaFilt = 0.0;
-    public static double velFilterAlpha = 0.1; // 0.25; // 0..1 (higher = less filtering)
+    public static double velFilterAlpha = 0.05; // 0..1 (higher = less filtering)
 
     // Absolute analog encoder calibration (degrees)
     public static double encOffsetDeg = 0.0;
