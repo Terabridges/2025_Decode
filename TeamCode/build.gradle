@@ -83,6 +83,7 @@ repositories {
 dependencies {
     implementation project(':FtcRobotController')
     implementation 'org.ftclib.ftclib:core:2.1.1' // core
+    implementation 'org.psilynx.psikit:core:0.1.0-beta2'
     implementation 'org.psilynx.psikit:ftc:0.1.0-beta2'
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
 }
