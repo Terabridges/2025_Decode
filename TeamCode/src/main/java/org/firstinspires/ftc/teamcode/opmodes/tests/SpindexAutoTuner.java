@@ -27,6 +27,11 @@ public class SpindexAutoTuner extends OpMode {
     // --- User knobs ---
     public static boolean runStictionChar = true;
 
+    // Which controller to tune
+    // 0 = cascaded controller (sweeps Spindex.kPos / Spindex.kVel)
+    // 1 = motion-profile controller (sweeps Spindex.profKp / Spindex.profKv)
+    public static int tuneControllerMode = 0;
+
     public static double charSettleSec = 0.25;
     public static double charRampRatePerSec = 0.30;
     public static double charMaxPower = 0.35;
@@ -44,6 +49,7 @@ public class SpindexAutoTuner extends OpMode {
     public static double settleHoldSec = 0.25;
 
     // Sweep scales (applied to starting gains)
+    // For controllerMode=0 these scale (kPos, kVel). For controllerMode=1 these scale (profKp, profKv).
     public static double[] kPosScales = new double[]{0.6, 1.0, 1.6};
     public static double[] kVelScales = new double[]{0.7, 1.0, 1.4};
 
@@ -130,12 +136,17 @@ public class SpindexAutoTuner extends OpMode {
     @Override
     public void start() {
         spindex.toInit();
-        Spindex.controllerMode = 0; // tune cascaded controller for now
+        Spindex.controllerMode = tuneControllerMode;
         spindex.useSpindexPID = true;
         Spindex.manualPower = 0.0;
 
-        baseKPos = Spindex.kPos;
-        baseKVel = Spindex.kVel;
+        if (tuneControllerMode == 1) {
+            baseKPos = Spindex.profKp;
+            baseKVel = Spindex.profKv;
+        } else {
+            baseKPos = Spindex.kPos;
+            baseKVel = Spindex.kVel;
+        }
 
         bestKPos = baseKPos;
         bestKVel = baseKVel;
@@ -159,6 +170,8 @@ public class SpindexAutoTuner extends OpMode {
         Logger.recordOutput("AutoTune/ControllerMode", Spindex.controllerMode);
         Logger.recordOutput("AutoTune/kPos", Spindex.kPos);
         Logger.recordOutput("AutoTune/kVel", Spindex.kVel);
+        Logger.recordOutput("AutoTune/profKp", Spindex.profKp);
+        Logger.recordOutput("AutoTune/profKv", Spindex.profKv);
         Logger.recordOutput("AutoTune/ErrorDeg", spindex.getLastErrorDeg());
         Logger.recordOutput("AutoTune/OmegaDegPerSec", spindex.getLastOmegaDegPerSec());
         Logger.recordOutput("AutoTune/Power", spindex.getLastPower());
@@ -169,9 +182,14 @@ public class SpindexAutoTuner extends OpMode {
                 Spindex.spindexTarget = wrap0To360(spindex.getLastRawDeg());
 
                 telemetry.addLine("Press A to start auto-tune");
+                telemetry.addData("TuneMode", tuneControllerMode);
                 telemetry.addData("PosRaw", "%.1f", spindex.getLastRawDeg());
                 telemetry.addData("PosUnwrap", "%.1f", spindex.getCurrentPositionFiltered());
-                telemetry.addData("kPos/kVel", "%.4f / %.6f", Spindex.kPos, Spindex.kVel);
+                if (tuneControllerMode == 1) {
+                    telemetry.addData("profKp/profKv", "%.5f / %.6f", Spindex.profKp, Spindex.profKv);
+                } else {
+                    telemetry.addData("kPos/kVel", "%.4f / %.6f", Spindex.kPos, Spindex.kVel);
+                }
                 telemetry.update();
 
                 if (current.a && !previous.a) {
@@ -263,8 +281,15 @@ public class SpindexAutoTuner extends OpMode {
 
             case SWEEP_PREP:
                 // Reset to baseline before sweep
-                Spindex.kPos = baseKPos;
-                Spindex.kVel = baseKVel;
+                if (tuneControllerMode == 1) {
+                    Spindex.controllerMode = 1;
+                    Spindex.profKp = baseKPos;
+                    Spindex.profKv = baseKVel;
+                } else {
+                    Spindex.controllerMode = 0;
+                    Spindex.kPos = baseKPos;
+                    Spindex.kVel = baseKVel;
+                }
 
                 iPos = 0;
                 iVel = 0;
@@ -282,8 +307,15 @@ public class SpindexAutoTuner extends OpMode {
                 if (!appliedPair) {
                     double candKPos = baseKPos * kPosScales[iPos];
                     double candKVel = baseKVel * kVelScales[iVel];
-                    Spindex.kPos = candKPos;
-                    Spindex.kVel = candKVel;
+                    if (tuneControllerMode == 1) {
+                        Spindex.controllerMode = 1;
+                        Spindex.profKp = candKPos;
+                        Spindex.profKv = candKVel;
+                    } else {
+                        Spindex.controllerMode = 0;
+                        Spindex.kPos = candKPos;
+                        Spindex.kVel = candKVel;
+                    }
                     appliedPair = true;
 
                     // Hold target at current
@@ -330,8 +362,13 @@ public class SpindexAutoTuner extends OpMode {
 
                     if (totalScore < bestScore) {
                         bestScore = totalScore;
-                        bestKPos = Spindex.kPos;
-                        bestKVel = Spindex.kVel;
+                        if (tuneControllerMode == 1) {
+                            bestKPos = Spindex.profKp;
+                            bestKVel = Spindex.profKv;
+                        } else {
+                            bestKPos = Spindex.kPos;
+                            bestKVel = Spindex.kVel;
+                        }
                     }
 
                     advancePairOrDone();
@@ -340,8 +377,15 @@ public class SpindexAutoTuner extends OpMode {
 
             case DONE:
                 // Apply best and hold
-                Spindex.kPos = bestKPos;
-                Spindex.kVel = bestKVel;
+                if (tuneControllerMode == 1) {
+                    Spindex.controllerMode = 1;
+                    Spindex.profKp = bestKPos;
+                    Spindex.profKv = bestKVel;
+                } else {
+                    Spindex.controllerMode = 0;
+                    Spindex.kPos = bestKPos;
+                    Spindex.kVel = bestKVel;
+                }
                 spindex.useSpindexPID = true;
                 Spindex.spindexTarget = wrap0To360(spindex.getLastRawDeg());
 
@@ -353,8 +397,13 @@ public class SpindexAutoTuner extends OpMode {
 
                 telemetry.addLine("Auto-tune complete");
                 telemetry.addData("BestScore", "%.3f", bestScore);
-                telemetry.addData("Best kPos", "%.4f", bestKPos);
-                telemetry.addData("Best kVel", "%.6f", bestKVel);
+                if (tuneControllerMode == 1) {
+                    telemetry.addData("Best profKp", "%.5f", bestKPos);
+                    telemetry.addData("Best profKv", "%.6f", bestKVel);
+                } else {
+                    telemetry.addData("Best kPos", "%.4f", bestKPos);
+                    telemetry.addData("Best kVel", "%.6f", bestKVel);
+                }
                 telemetry.addData("kSPos/kSNeg", "%.3f / %.3f", Spindex.kSPos, Spindex.kSNeg);
                 telemetry.addLine("Press stop to exit");
                 telemetry.update();
@@ -362,7 +411,11 @@ public class SpindexAutoTuner extends OpMode {
         }
 
         telemetry.addData("State", state.name());
-        telemetry.addData("kPos/kVel", "%.4f / %.6f", Spindex.kPos, Spindex.kVel);
+        if (tuneControllerMode == 1) {
+            telemetry.addData("profKp/profKv", "%.5f / %.6f", Spindex.profKp, Spindex.profKv);
+        } else {
+            telemetry.addData("kPos/kVel", "%.4f / %.6f", Spindex.kPos, Spindex.kVel);
+        }
         telemetry.addData("Err", "%.2f", spindex.getLastErrorDeg());
         telemetry.addData("Omega", "%.1f", spindex.getLastOmegaDegPerSec());
         telemetry.update();
