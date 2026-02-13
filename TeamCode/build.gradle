@@ -32,6 +32,40 @@ tasks.withType(dev.frozenmilk.sinister.sloth.DeploySloth).configureEach {
     adbExecutable = rootProject.file("tools/adb-serial.bat")
 }
 
+tasks.withType(dev.frozenmilk.sinister.sloth.RemoveRemoteSloth).configureEach {
+    adbExecutable = rootProject.file("tools/adb-serial.bat")
+}
+
+def robotConfigXmlFiles = [
+        "oraclegit.xml",
+        "oraclev3git.xml"
+]
+
+tasks.register("pushRobotConfigXml") {
+    group = "install"
+    description = "Push selected TeamCode XML config files to /sdcard/FIRST on the connected RC/Control Hub."
+
+    doLast {
+        def adbPath = rootProject.file("tools/adb-serial.bat").absolutePath
+        def xmlDir = project.file("src/main/res/xml")
+
+        robotConfigXmlFiles.each { fileName ->
+            def sourceFile = new File(xmlDir, fileName)
+            if (!sourceFile.exists()) {
+                logger.warn("Skipping missing XML config: ${sourceFile}")
+                return
+            }
+            exec {
+                commandLine adbPath, "push", sourceFile.absolutePath, "/sdcard/FIRST/"
+            }
+        }
+    }
+}
+
+tasks.named("deploySloth") {
+    finalizedBy("pushRobotConfigXml")
+}
+
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
 
