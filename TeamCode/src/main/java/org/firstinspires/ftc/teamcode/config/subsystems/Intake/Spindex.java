@@ -29,17 +29,9 @@ public class Spindex implements Subsystem {
     Util util;
 
     //---------------- Software ----------------
-    public static double spindexTarget = 0.0;
-    public static double currentPos = 0;
+    public static double spindexTarget = 0.0; // RAW target in [0, 360)
+    public static double currentPos = 0;      // UNWRAPPED current position (continuous degrees)
     private double spindexPower = 0.0;
-
-//    public PIDController spindexPID;
-//    public static double p = 0.0018, i = 0.00005, d = 0.000175; //for larger than one ball
-//    public static double posTolerance = 5;
-//    public static double integrationBounds = 5;
-//    public static double spindexMaxPower = 0.75;
-//    public static double thresh = 0.01;
-//    public static double minPow = 0.08;
 
     public boolean useSpindexPID = true;
     private double frontBallOne = 30;
@@ -47,23 +39,31 @@ public class Spindex implements Subsystem {
     private double switchIntakeForward = 35;
 
     public static double kPos = 0.012;      // position -> velocity gain (1/sec)
-    public static  double kVel = 0.00035;    // velocity P (power per (ticks/sec))
-    public static double kS   = 0.08;       // static friction feedforward (your minPow idea)
+    public static double kVel = 0.00035;    // velocity P (power per (deg/sec))
+    public static double kS   = 0.08;       // static friction feedforward
     public static double maxPower = 0.75;
 
-    public static double aMax = 6000;       // ticks/sec^2  (tune)
-    public static double omegaMax = 9000;   // ticks/sec    (tune)
-    public static double posTol = 5;        // ticks
-    public static double velTol = 50;       // ticks/sec
+    public static double aMax = 6000;       // deg/sec^2  (tune)
+    public static double omegaMax = 9000;   // deg/sec    (tune)
+    public static double posTol = 5;        // deg
+    public static double velTol = 50;       // deg/sec
 
     // State for velocity estimate
-    private double lastPos = 0.0;
+    private double lastPos = 0.0;      // UNWRAPPED pos last loop
     private boolean hasLast = false;
     private double omegaFilt = 0.0;
     public static double velFilterAlpha = 0.25; // 0..1 (higher = less filtering)
 
-    ElapsedTime timer;
+    // Unwrap state for absolute encoder (0..360)
+    private double unwrappedPos = 0.0;
+    private double lastRawPos = 0.0;
+    private boolean hasRaw = false;
+    private static final double WRAP_SIZE_DEG = 360.0;
 
+    // For debug/telemetry if you want it later
+    private double targetPosUnwrapped = 0.0;
+
+    ElapsedTime timer;
 
     //---------------- Constructor ----------------
     public Spindex(HardwareMap map) {
@@ -77,9 +77,6 @@ public class Spindex implements Subsystem {
         spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
         spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 0, 1);
 
-//        spindexPID = new PIDController(p, i, d);
-//        spindexPID.setIntegrationBounds(-integrationBounds, integrationBounds);
-//        spindexPID.setTolerance(posTolerance);
         util = new Util();
         timer = new ElapsedTime();
     }
@@ -94,68 +91,85 @@ public class Spindex implements Subsystem {
         return (x > 0) ? 1.0 : (x < 0) ? -1.0 : 0.0;
     }
 
-//    public double setSpindexPID(double targetPos) {
-//        spindexPID.setPID(p, i, d);
-//        currentPos = spindexEnc.getCurrentPosition();
-//        spindexPower = spindexPID.calculate(currentPos, targetPos);
-//        spindexPower = util.clamp(spindexPower, -spindexMaxPower, spindexMaxPower);
-//        if (spindexPower > thresh){
-//            if (spindexPower < minPow){
-//                spindexPower = minPow;
-//            }
-//        } else if (spindexPower < -thresh){
-//            if (spindexPower > -minPow){
-//                spindexPower = -minPow;
-//            }
-//        }
-//        return spindexPower;
-//    }
-//
-//    public void setSpindex(double target){
-//        setSpindexPow(setSpindexPID(target));
-//    }
-//
+    /**
+     * Unwrap absolute encoder angle (0..360) into a continuous angle.
+     */
+    private double unwrapDegrees(double rawDeg) {
+        if (!hasRaw) {
+            hasRaw = true;
+            lastRawPos = rawDeg;
+            unwrappedPos = rawDeg;
+            return unwrappedPos;
+        }
+
+        double delta = rawDeg - lastRawPos;
+
+        // Wrap delta into (-180, 180]
+        if (delta >  WRAP_SIZE_DEG / 2.0) delta -= WRAP_SIZE_DEG;
+        if (delta < -WRAP_SIZE_DEG / 2.0) delta += WRAP_SIZE_DEG;
+
+        unwrappedPos += delta;
+        lastRawPos = rawDeg;
+        return unwrappedPos;
+    }
+
+    /**
+     * Convert a raw target in [0,360) to the nearest equivalent angle to the current unwrapped position.
+     * Example: current = 725 deg, targetRaw = 10 deg -> nearest is 730 deg (not 10 deg).
+     */
+    private double nearestTargetUnwrapped(double currentUnwrappedDeg, double targetRawDeg) {
+        double k = Math.round((currentUnwrappedDeg - targetRawDeg) / WRAP_SIZE_DEG);
+        return targetRawDeg + k * WRAP_SIZE_DEG;
+    }
+
     public double getCurrentPosition(){
         return currentPos;
     }
 
     public double getTargetPosition(){
-        return spindexTarget;
+        return spindexTarget; // raw 0..360 as you had
     }
 
+    /**
+     * Braking-limited cascaded position->velocity controller.
+     *
+     * pos and target are in UNWRAPPED degrees.
+     * dt is seconds.
+     */
     public double getSpindexPID(double pos, double target, double dt) {
         if (dt <= 1e-4) dt = 1e-4;
 
-        // Velocity estimate (ticks/sec) with light filtering to avoid D-noise vibes
+        // Velocity estimate (deg/sec) with filtering
         double omega = 0.0;
         if (hasLast) omega = (pos - lastPos) / dt;
         lastPos = pos;
         hasLast = true;
+
         omegaFilt = omegaFilt + velFilterAlpha * (omega - omegaFilt);
 
         double error = target - pos;
 
         // Stop condition (prevents tiny oscillation near target)
         if (Math.abs(error) <= posTol && Math.abs(omegaFilt) <= velTol) {
+            spindexPower = 0.0;
             return 0.0;
         }
 
         // --- Braking speed limit ---
-        // omegaLimit = sqrt(2 * aMax * |error|)
         double omegaLimit = Math.sqrt(2.0 * aMax * Math.abs(error));
         omegaLimit = Math.min(omegaLimit, omegaMax);
 
         // Position -> desired velocity, then cap it by braking limit
-        double omegaCmd = kPos * error;                 // (ticks/sec)
+        double omegaCmd = kPos * error;                 // (deg/sec)
         omegaCmd = util.clamp(omegaCmd, -omegaLimit, omegaLimit);
 
         // Velocity control (simple P) + static friction feedforward
         double velErr = omegaCmd - omegaFilt;
         double power = kVel * velErr;
 
-        // Apply kS ONLY when we intend to move (prevents kick-induced oscillation)
-        if (Math.abs(omegaCmd) > 1.0) {
-            power += kS * sign(omegaCmd);
+        // Apply kS ONLY when we actually need to move (error-based gate)
+        if (Math.abs(error) > posTol) {
+            power += kS * sign(error);
         }
 
         // Clamp output
@@ -164,28 +178,45 @@ public class Spindex implements Subsystem {
         return spindexPower;
     }
 
-    public void setSpindex(){
-        setSpindexPow(getSpindexPID(currentPos, spindexTarget, timer.seconds()));
+    public void setSpindex(double dt){
+        setSpindexPow(getSpindexPID(currentPos, targetPosUnwrapped, dt));
     }
-
 
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-        //spindexTarget = frontBallOne;
         timer.reset();
+
+        // Initialize unwrap state cleanly
+        double raw = spindexEnc.getCurrentPosition(); // 0..360
+        unwrappedPos = raw;
+        lastRawPos = raw;
+        hasRaw = true;
+
+        currentPos = unwrappedPos;
+
+        // Initialize velocity state cleanly
+        lastPos = currentPos;
+        hasLast = false;
+        omegaFilt = 0.0;
     }
 
     @Override
     public void update(){
-        if (useSpindexPID){
-            //setSpindex(spindexTarget);
-            currentPos = spindexEnc.getCurrentPosition();
-            setSpindex();
+        double dt = timer.seconds();
+        timer.reset();
 
+        if (useSpindexPID){
+            // Read raw 0..360, unwrap into continuous degrees
+            double raw = spindexEnc.getCurrentPosition();
+            currentPos = unwrapDegrees(raw);
+
+            // Convert raw target (0..360) into nearest unwrapped target
+            targetPosUnwrapped = nearestTargetUnwrapped(currentPos, spindexTarget);
+
+            setSpindex(dt);
         } else {
             setSpindexPow(0);
         }
-        timer.reset();
     }
 }
