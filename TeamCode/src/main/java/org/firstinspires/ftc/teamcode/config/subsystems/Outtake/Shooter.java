@@ -5,6 +5,7 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -41,6 +42,7 @@ public class Shooter implements Subsystem {
     public Shooter(HardwareMap map) {
         leftFlywheel = map.get(DcMotorEx.class, "fly_left");
         rightFlywheel = map.get(DcMotorEx.class, "fly_right");
+        //leftFlywheel.setDirection(DcMotorSimple.Direction.REVERSE);
         hood = map.get(Servo.class, "hood");
 
         flywheelPID = new PIDController(p, i, d);
