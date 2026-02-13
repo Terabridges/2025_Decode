@@ -37,6 +37,7 @@ public class Spindex implements Subsystem {
     public static double manualPower = 0.0;
 
     public boolean useSpindexPID = true;
+    private boolean lastUseSpindexPID = true;
     private double frontBallOne = 30;
     private double ballForward = 60;
     private double switchIntakeForward = 35;
@@ -47,6 +48,19 @@ public class Spindex implements Subsystem {
     public static double kSPos = .126 ; //0.079;      // static friction feedforward for + direction
     public static double kSNeg = .097 ; //0.065;      // static friction feedforward for - direction
     public static double maxPower = 0.35; // 0.75;
+
+    // Controller selection
+    // 0 = braking-limited cascaded position->velocity (legacy behavior)
+    // 1 = motion-profiled position controller (trapezoidal profile) + PD on (pos, vel)
+    public static int controllerMode = 0;
+    private int lastControllerMode = 0;
+
+    // Motion-profile controller gains (used when controllerMode == 1)
+    public static double profKp = 0.010;  // power per deg of (profilePos - pos)
+    public static double profKv = 0.0012; // power per (deg/sec) of (profileVel - omega)
+    private double profPos = 0.0;
+    private double profVel = 0.0;
+    private boolean profHasState = false;
 
     // kS application shaping (prevents kS from sustaining oscillations once moving)
     public static double kSErrorFullDeg = 30; // deg error where kS is fully applied
@@ -253,23 +267,36 @@ public class Spindex implements Subsystem {
      * dt is seconds.
      */
     public double getSpindexPID(double pos, double target, double dt) {
+        // Legacy entry point (kept for compatibility): updates velocity internally.
         if (dt <= 1e-4) dt = 1e-4;
 
-        // Velocity estimate (deg/sec) with filtering
         double omega = 0.0;
         if (hasLast) omega = (pos - lastPos) / dt;
         lastPos = pos;
         hasLast = true;
-
         lastOmega = omega;
-
         omegaFilt = omegaFilt + velFilterAlpha * (omega - omegaFilt);
 
+        return cascadedControl(pos, target, omegaFilt, dt);
+    }
+
+    private void resetControlState(double posNow) {
+        lastOutPower = 0.0;
+        iPower = 0.0;
+        lastIError = 0.0;
+        lastIInZone = false;
+        lastISaturated = false;
+        profHasState = false;
+        profPos = posNow;
+        profVel = 0.0;
+    }
+
+    private double cascadedControl(double pos, double target, double omega, double dt) {
         double error = target - pos;
         lastError = error;
 
         // Stop condition (prevents tiny oscillation near target)
-        if (Math.abs(error) <= stopTolDeg && Math.abs(omegaFilt) <= stopVelTolDegPerSec) {
+        if (Math.abs(error) <= stopTolDeg && Math.abs(omega) <= stopVelTolDegPerSec) {
             iPower = 0.0;
             lastIInZone = false;
             lastISaturated = false;
@@ -288,7 +315,7 @@ public class Spindex implements Subsystem {
         lastOmegaCmd = omegaCmd;
 
         // Velocity control (simple P) + static friction feedforward
-        double velErr = omegaCmd - omegaFilt;
+        double velErr = omegaCmd - omega;
         lastVelErr = velErr;
         double power = kVel * velErr;
 
@@ -302,7 +329,7 @@ public class Spindex implements Subsystem {
             }
 
             double errScale = util.clamp(Math.abs(error) / Math.max(1e-6, kSErrorFullDeg), 0.0, 1.0);
-            double omegaScale = util.clamp(1.0 - (Math.abs(omegaFilt) / Math.max(1e-6, kSOmegaFullDegPerSec)), 0.0, 1.0);
+            double omegaScale = util.clamp(1.0 - (Math.abs(omega) / Math.max(1e-6, kSOmegaFullDegPerSec)), 0.0, 1.0);
 
             // Use desired motion direction (omegaCmd) rather than raw error sign.
             power += kSDir * sign(omegaCmd) * errScale * omegaScale;
@@ -312,7 +339,7 @@ public class Spindex implements Subsystem {
         // Purpose: remove residual steady-state error from stiction/bias without needing huge kS.
         // Only active near target and at low speed.
         if (kIHold != 0.0) {
-            boolean inZone = (Math.abs(error) <= iZoneDeg) && (Math.abs(omegaFilt) <= iZoneOmegaDegPerSec);
+            boolean inZone = (Math.abs(error) <= iZoneDeg) && (Math.abs(omega) <= iZoneOmegaDegPerSec);
             lastIInZone = inZone;
 
             if (inZone) {
@@ -355,7 +382,108 @@ public class Spindex implements Subsystem {
         return spindexPower;
     }
 
+    private double motionProfileControl(double pos, double target, double omega, double dt) {
+        if (dt <= 1e-4) dt = 1e-4;
+
+        // Initialize profile state on first use (or after mode switch)
+        if (!profHasState) {
+            profHasState = true;
+            profPos = pos;
+            profVel = 0.0;
+        }
+
+        double errorToTarget = target - pos;
+        lastError = errorToTarget;
+
+        // Stop condition (prevents tiny oscillation near target)
+        if (Math.abs(errorToTarget) <= stopTolDeg && Math.abs(omega) <= stopVelTolDegPerSec) {
+            iPower = 0.0;
+            lastIInZone = false;
+            lastISaturated = false;
+            profVel = 0.0;
+            spindexPower = 0.0;
+            return 0.0;
+        }
+
+        // --- Trapezoidal motion profile toward target ---
+        double profileErr = target - profPos;
+        double vLimit = Math.sqrt(2.0 * aMax * Math.abs(profileErr));
+        vLimit = Math.min(vLimit, omegaMax);
+        lastOmegaLimit = vLimit;
+
+        double vDesired = sign(profileErr) * vLimit;
+        double maxDv = aMax * dt;
+        profVel += util.clamp(vDesired - profVel, -maxDv, maxDv);
+        profPos += profVel * dt;
+
+        // Expose as "omega cmd" for logging
+        lastOmegaCmd = profVel;
+
+        // --- PD control to follow the profile ---
+        double posErr = profPos - pos;
+        double velErr = profVel - omega;
+        lastVelErr = velErr;
+
+        double power = profKp * posErr + profKv * velErr;
+
+        // Apply kS mainly to break static friction; taper it out when already moving / near target.
+        if (Math.abs(errorToTarget) > posTol) {
+            double kSDir;
+            if (errorToTarget > 0) {
+                kSDir = (kSPos != 0.0) ? kSPos : kS;
+            } else {
+                kSDir = (kSNeg != 0.0) ? kSNeg : kS;
+            }
+
+            double errScale = util.clamp(Math.abs(errorToTarget) / Math.max(1e-6, kSErrorFullDeg), 0.0, 1.0);
+            double omegaScale = util.clamp(1.0 - (Math.abs(omega) / Math.max(1e-6, kSOmegaFullDegPerSec)), 0.0, 1.0);
+            power += kSDir * sign(profVel) * errScale * omegaScale;
+        }
+
+        // --- Integral hold (optional) ---
+        if (kIHold != 0.0) {
+            boolean inZone = (Math.abs(errorToTarget) <= iZoneDeg) && (Math.abs(omega) <= iZoneOmegaDegPerSec);
+            lastIInZone = inZone;
+
+            if (inZone) {
+                if (sign(errorToTarget) != sign(lastIError) && Math.abs(lastIError) > posTol) {
+                    iPower = 0.0;
+                }
+
+                boolean saturated = Math.abs(power) >= (maxPower - 1e-3);
+                lastISaturated = saturated;
+                if (!saturated) {
+                    iPower += kIHold * errorToTarget * dt;
+                    iPower = util.clamp(iPower, -iMaxPower, iMaxPower);
+                }
+            } else {
+                lastISaturated = false;
+                if (iLeakPerSec > 0.0) {
+                    double leak = util.clamp(iLeakPerSec * dt, 0.0, 1.0);
+                    iPower *= (1.0 - leak);
+                }
+            }
+
+            lastIError = errorToTarget;
+            power += iPower;
+        }
+
+        // Clamp output
+        power = util.clamp(power, -maxPower, maxPower);
+
+        // Slew limit output power
+        if (powerSlewPerSec > 0.0 && dt > 1e-4) {
+            double maxDelta = powerSlewPerSec * dt;
+            power = util.clamp(power, lastOutPower - maxDelta, lastOutPower + maxDelta);
+        }
+
+        lastOutPower = power;
+        spindexPower = power;
+        return spindexPower;
+    }
+
     public void setSpindex(double dt){
+        // Prefer update() for consistent state; this remains as a convenience.
         setSpindexPow(getSpindexPID(currentPos, targetPosUnwrapped, dt));
     }
 
@@ -384,6 +512,10 @@ public class Spindex implements Subsystem {
         lastOutPower = 0.0;
         iPower = 0.0;
         lastIError = 0.0;
+
+        lastControllerMode = controllerMode;
+        lastUseSpindexPID = useSpindexPID;
+        profHasState = false;
     }
 
     @Override
@@ -416,19 +548,32 @@ public class Spindex implements Subsystem {
         // Convert raw target (0..360) into nearest unwrapped target
         targetPosUnwrapped = nearestTargetUnwrapped(posFilt, spindexTarget);
 
-        if (useSpindexPID){
-            // PID path updates velocity internally (so it happens exactly once per loop).
-            setSpindexPow(getSpindexPID(posFilt, targetPosUnwrapped, dt));
-        } else {
-            // Manual path still needs velocity estimates for logging/characterization.
-            if (dt <= 1e-4) dt = 1e-4;
-            double omega = 0.0;
-            if (hasLast) omega = (posFilt - lastPos) / dt;
-            lastPos = posFilt;
-            hasLast = true;
-            lastOmega = omega;
-            omegaFilt = omegaFilt + velFilterAlpha * (omega - omegaFilt);
+        // Velocity estimate once per loop (used by all control modes for logging/control)
+        if (dt <= 1e-4) dt = 1e-4;
+        double omega = 0.0;
+        if (hasLast) omega = (posFilt - lastPos) / dt;
+        lastPos = posFilt;
+        hasLast = true;
+        lastOmega = omega;
+        omegaFilt = omegaFilt + velFilterAlpha * (omega - omegaFilt);
 
+        // Reset controller state when switching modes or re-enabling PID
+        if (controllerMode != lastControllerMode || (useSpindexPID && !lastUseSpindexPID)) {
+            resetControlState(posFilt);
+            lastControllerMode = controllerMode;
+        }
+        lastUseSpindexPID = useSpindexPID;
+
+        if (useSpindexPID){
+            // Controller path
+            double power;
+            if (controllerMode == 1) {
+                power = motionProfileControl(posFilt, targetPosUnwrapped, omegaFilt, dt);
+            } else {
+                power = cascadedControl(posFilt, targetPosUnwrapped, omegaFilt, dt);
+            }
+            setSpindexPow(power);
+        } else {
             setSpindexPow(util.clamp(manualPower, -1.0, 1.0));
         }
     }
