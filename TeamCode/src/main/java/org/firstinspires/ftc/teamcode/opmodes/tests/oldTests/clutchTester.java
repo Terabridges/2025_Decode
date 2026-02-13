@@ -3,13 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes.tests.oldTests;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Transfer;
 
-@Configurable
+@Disabled
+//@Configurable
 @TeleOp(name="clutchTester", group="Test")
 public class clutchTester extends LinearOpMode {
 

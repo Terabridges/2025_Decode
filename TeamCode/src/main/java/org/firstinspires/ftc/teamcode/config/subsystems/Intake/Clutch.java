@@ -36,7 +36,7 @@ public class Clutch implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-
+        setClutchUp();
     }
 
     @Override

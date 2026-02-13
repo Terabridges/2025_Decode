@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests.oldTests;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 
+@Disabled
 @TeleOp(name="DistanceSensor", group="Test")
 public class DistanceSensorTest extends LinearOpMode {
 
