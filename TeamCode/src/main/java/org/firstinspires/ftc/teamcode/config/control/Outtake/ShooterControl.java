@@ -15,7 +15,11 @@ public class ShooterControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
+    EdgeDetector setServoRE = new EdgeDetector(() -> {
+        if (template != null) {
+            template.setServoOn();
+        }
+    });
 
     //---------------- Constructor ----------------
     public ShooterControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
@@ -27,6 +31,8 @@ public class ShooterControl implements Control {
     public ShooterControl(Robot robot, Gamepad gp1, Gamepad gp2) {
         //this(robot.templateSystem, gp1, gp2);
         this.robot = robot;
+        this.gp1 = gp1;
+        this.gp2 = gp2;
     }
 
     //---------------- Methods ----------------

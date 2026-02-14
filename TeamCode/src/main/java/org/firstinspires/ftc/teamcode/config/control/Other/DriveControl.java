@@ -22,7 +22,7 @@ public class DriveControl implements Control {
 
     //---------------- Constructor ----------------
     public DriveControl(Drive drive, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+        this.drive = drive;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
