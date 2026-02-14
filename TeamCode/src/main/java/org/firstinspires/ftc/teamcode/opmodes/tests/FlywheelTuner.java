@@ -50,9 +50,12 @@ public class FlywheelTuner extends OpMode {
     public void loop() {
         //robot.update();
         robot.outtake.shooter.update();
+//        robot.outtake.shooter.setLeftFlywheelPow(gamepad1.left_trigger);
+//        robot.outtake.shooter.setRightFlywheelPow(gamepad1.right_trigger);
 
         joinedTelemetry.addData("Current RPM", robot.outtake.shooter.getCurrentRPM());
         joinedTelemetry.addData("Target RPM", robot.outtake.shooter.getTargetRPM());
+        joinedTelemetry.addData("Current Power", robot.outtake.shooter.getCurrentPower());
         joinedTelemetry.update();
     }
 

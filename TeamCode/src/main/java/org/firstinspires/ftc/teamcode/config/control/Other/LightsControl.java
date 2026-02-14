@@ -15,7 +15,6 @@ public class LightsControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
 
     //---------------- Constructor ----------------
     public LightsControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
@@ -35,7 +34,7 @@ public class LightsControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+
     }
 
     @Override

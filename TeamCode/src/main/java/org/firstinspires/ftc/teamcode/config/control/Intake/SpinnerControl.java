@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Spinner;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
@@ -11,21 +12,24 @@ import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 public class SpinnerControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Spinner spinner;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
+    EdgeDetector SpinInRE = new EdgeDetector( () -> spinner.setMegaSpinIn());
+    EdgeDetector SpinInFE = new EdgeDetector( () -> spinner.setMegaSpinZero(), true);
+    EdgeDetector SpinOutRE = new EdgeDetector( () -> spinner.setMegaSpinOut());
+    EdgeDetector SpinOutFE = new EdgeDetector( () -> spinner.setMegaSpinZero(), true);
 
     //---------------- Constructor ----------------
-    public SpinnerControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public SpinnerControl(Spinner spinner, Gamepad gp1, Gamepad gp2){
+        this.spinner = spinner;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public SpinnerControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.intake.spinner, gp1, gp2);
         this.robot = robot;
     }
 
@@ -35,7 +39,10 @@ public class SpinnerControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+        SpinInRE.update(gp1.left_bumper);
+        SpinInFE.update(gp1.left_bumper);
+        SpinOutRE.update(gp1.right_bumper);
+        SpinOutFE.update(gp1.right_bumper);
     }
 
     @Override

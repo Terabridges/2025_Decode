@@ -17,7 +17,8 @@ public class Spinner implements Subsystem {
     public DcMotor megaSpin;
 
     //---------------- Software ----------------
-
+    private double megaSpinPow = 0;
+    private boolean useMegaSpin = true;
 
     //---------------- Constructor ----------------
     public Spinner(HardwareMap map) {
@@ -29,8 +30,24 @@ public class Spinner implements Subsystem {
     }
 
     //---------------- Methods ----------------
-    public void moveMegaSpinPow(double pow){
+    private void moveMegaSpinPow(double pow){
         megaSpin.setPower(pow);
+    }
+
+    public void setMegaSpinPow(double pow){
+        megaSpinPow = pow;
+    }
+
+    public void setMegaSpinIn(){
+        megaSpinPow = 0.95;
+    }
+
+    public void setMegaSpinOut(){
+        megaSpinPow = -0.95;
+    }
+
+    public void setMegaSpinZero(){
+        megaSpinPow = 0;
     }
 
     //---------------- Interface Methods ----------------
@@ -41,7 +58,9 @@ public class Spinner implements Subsystem {
 
     @Override
     public void update(){
-
+        if (useMegaSpin){
+            moveMegaSpinPow(megaSpinPow);
+        }
     }
 
 }
