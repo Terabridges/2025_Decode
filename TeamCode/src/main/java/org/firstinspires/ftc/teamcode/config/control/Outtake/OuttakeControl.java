@@ -27,6 +27,8 @@ public class OuttakeControl implements Control {
     public OuttakeControl(Robot robot, Gamepad gp1, Gamepad gp2) {
         //this(robot.templateSystem, gp1, gp2);
         this.robot = robot;
+        this.gp1 = gp1;
+        this.gp2 = gp2;
     }
 
     //---------------- Methods ----------------
