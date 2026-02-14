@@ -49,7 +49,7 @@ public class TransferTest extends OpMode {
     @Override
     public void start(){
         robot.toInit();
-        robot.intake.spindex.useSpindexPID = false;
+        //robot.intake.spindex.useSpindexPID = false;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class TransferTest extends OpMode {
             robot.intake.clutch.setClutchUp();
         }
 
-        robot.intake.spindex.setSpindexPow(gamepad1.right_trigger*0.2);
-        robot.intake.spinner.moveMegaSpinPow(gamepad1.left_stick_x);
+       // robot.intake.spindex.setSpindexPow(gamepad1.right_trigger*0.2);
+       // robot.intake.spinner.moveMegaSpinPow(gamepad1.left_stick_x);
     }
 }

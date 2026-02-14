@@ -15,11 +15,7 @@ public class ClutchControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> {
-        if (template != null) {
-            template.setServoOn();
-        }
-    });
+
 
     //---------------- Constructor ----------------
     public ClutchControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
@@ -41,7 +37,7 @@ public class ClutchControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+
     }
 
     @Override

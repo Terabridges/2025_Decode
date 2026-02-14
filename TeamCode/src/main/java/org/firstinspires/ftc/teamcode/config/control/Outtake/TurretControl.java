@@ -15,11 +15,6 @@ public class TurretControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> {
-        if (template != null) {
-            template.setServoOn();
-        }
-    });
 
     //---------------- Constructor ----------------
     public TurretControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
@@ -41,7 +36,7 @@ public class TurretControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+
     }
 
     @Override
