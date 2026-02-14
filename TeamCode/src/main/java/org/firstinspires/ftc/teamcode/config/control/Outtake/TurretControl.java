@@ -5,29 +5,28 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class TurretControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Turret turret;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
 
     //---------------- Constructor ----------------
-    public TurretControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public TurretControl(Turret turret, Gamepad gp1, Gamepad gp2){
+        this.turret = turret;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public TurretControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.outtake.turret, gp1, gp2);
         this.robot = robot;
-        this.gp1 = gp1;
-        this.gp2 = gp2;
     }
 
     //---------------- Methods ----------------

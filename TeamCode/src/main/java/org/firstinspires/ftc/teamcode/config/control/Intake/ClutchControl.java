@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Clutch;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
@@ -11,24 +12,22 @@ import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 public class ClutchControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Clutch clutch;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
 
 
     //---------------- Constructor ----------------
-    public ClutchControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public ClutchControl(Clutch clutch, Gamepad gp1, Gamepad gp2){
+        this.clutch = clutch;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public ClutchControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.intake.clutch, gp1, gp2);
         this.robot = robot;
-        this.gp1 = gp1;
-        this.gp2 = gp2;
     }
 
     //---------------- Methods ----------------

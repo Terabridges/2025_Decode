@@ -5,29 +5,29 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class ShooterControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Shooter shooter;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
+    EdgeDetector toggleUseFlywheel = new EdgeDetector(()-> shooter.toggleUseFlywheel());
 
     //---------------- Constructor ----------------
-    public ShooterControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public ShooterControl(Shooter shooter, Gamepad gp1, Gamepad gp2){
+        this.shooter = shooter;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public ShooterControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.outtake.shooter, gp1, gp2);
         this.robot = robot;
-        this.gp1 = gp1;
-        this.gp2 = gp2;
     }
 
     //---------------- Methods ----------------
@@ -36,7 +36,7 @@ public class ShooterControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        toggleUseFlywheel.update(gp1.y);
     }
 
     @Override

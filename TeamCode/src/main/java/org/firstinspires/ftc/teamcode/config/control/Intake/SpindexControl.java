@@ -16,6 +16,9 @@ public class SpindexControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
+    EdgeDetector ballClockwise = new EdgeDetector(()-> spindex.moveBallClockwise());
+    EdgeDetector ballCounter = new EdgeDetector(()-> spindex.moveBallCounter());
+    EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
 
     //---------------- Constructor ----------------
     public SpindexControl(Spindex spindex, Gamepad gp1, Gamepad gp2){
@@ -35,7 +38,9 @@ public class SpindexControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        ballClockwise.update(gp1.dpad_right);
+        ballCounter.update(gp1.dpad_left);
+        switchDirection.update(gp1.dpad_up);
     }
 
     @Override

@@ -1,10 +1,12 @@
 package org.firstinspires.ftc.teamcode.config.subsystems.Outtake;
 
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.arcrobotics.ftclib.controller.PIDFController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -27,10 +29,10 @@ public class Shooter implements Subsystem {
     public static double hoodDown = 0.0;
     public static double hoodUp = 1.0;
 
-    public PIDController flywheelPID;
-    public static double p = 0.0, i = 0.0, d = 0.0;
-    public static double posTolerance = 5;
-    public static double integrationBounds = 5;
+    public PIDFController flywheelPID;
+    public static double p = 0.0015, i = 0.0001, d = 0.0, f = 0.0002;
+    public static double posTolerance = 150;
+    public static double integrationBounds = 250;
     private double flywheelPower = 0.0;
     public static double flywheelTargetRPM = 0.0;
     public static double flywheelMaxPower = 1.0;
@@ -41,9 +43,11 @@ public class Shooter implements Subsystem {
     public Shooter(HardwareMap map) {
         leftFlywheel = map.get(DcMotorEx.class, "fly_left");
         rightFlywheel = map.get(DcMotorEx.class, "fly_right");
+        leftFlywheel.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFlywheel.setDirection(DcMotorSimple.Direction.FORWARD);
         hood = map.get(Servo.class, "hood");
 
-        flywheelPID = new PIDController(p, i, d);
+        flywheelPID = new PIDFController(p, i, d, f);
         flywheelPID.setIntegrationBounds(-integrationBounds, integrationBounds);
         flywheelPID.setTolerance(posTolerance);
         util = new Util();
@@ -67,7 +71,7 @@ public class Shooter implements Subsystem {
     }
 
     public double setFlywheelPID(double targetRPM) {
-        flywheelPID.setPID(p, i, d);
+        flywheelPID.setPIDF(p, i, d, f);
         currentRPM = velToRPM(leftFlywheel.getVelocity());
         flywheelPower = flywheelPID.calculate(currentRPM, targetRPM);
         flywheelPower = util.clamp(flywheelPower, -flywheelMaxPower, flywheelMaxPower);
@@ -88,6 +92,22 @@ public class Shooter implements Subsystem {
 
     public double getTargetRPM(){
         return flywheelTargetRPM;
+    }
+
+    public double getCurrentPower(){
+        return flywheelPower;
+    }
+
+    public void setLeftFlywheelPow(double pow){
+        leftFlywheel.setPower(pow);
+    }
+
+    public void setRightFlywheelPow(double pow){
+        rightFlywheel.setPower(pow);
+    }
+
+    public void toggleUseFlywheel(){
+        useFlywheelPID = !useFlywheelPID;
     }
 
     //---------------- Interface Methods ----------------
