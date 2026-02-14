@@ -103,6 +103,110 @@ public class Spindex implements Subsystem {
         setSpindexPos(shootThree);
     }
 
+    public void switchSides(){
+        if(currentDirection.equals("forward")){
+            currentDirection = "backward";
+            switch (currentBall) {
+                case "one":
+                    currentBall = "three";
+                    setSpindexBackwardThree();
+                    break;
+                case "two":
+                    currentBall = "one";
+                    setSpindexBackwardOne();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexBackwardTwo();
+                    break;
+            }
+        } else if(currentDirection.equals("backward")){
+            currentDirection = "forward";
+            switch (currentBall) {
+                case "three":
+                    currentBall = "one";
+                    setSpindexForwardOne();
+                    break;
+                case "one":
+                    currentBall = "two";
+                    setSpindexForwardTwo();
+                    break;
+                case "two":
+                    currentBall = "three";
+                    setSpindexForwardThree();
+                    break;
+            }
+        }
+    }
+
+    public void moveBallClockwise(){
+        if(currentDirection.equals("forward")){
+            switch (currentBall){
+                case "one":
+                    currentBall = "three";
+                    setSpindexForwardThree();
+                    break;
+                case "two":
+                    currentBall = "one";
+                    setSpindexForwardOne();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexForwardTwo();
+                    break;
+            }
+        } else if(currentDirection.equals("backward")) {
+            switch (currentBall) {
+                case "one":
+                    currentBall = "three";
+                    setSpindexBackwardThree();
+                    break;
+                case "two":
+                    currentBall = "one";
+                    setSpindexBackwardOne();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexBackwardTwo();
+                    break;
+            }
+        }
+    }
+
+    public void moveBallCounter(){
+        if(currentDirection.equals("forward")){
+            switch (currentBall){
+                case "one":
+                    currentBall = "two";
+                    setSpindexForwardTwo();
+                    break;
+                case "two":
+                    currentBall = "three";
+                    setSpindexForwardThree();
+                    break;
+                case "three":
+                    currentBall = "one";
+                    setSpindexForwardOne();
+                    break;
+            }
+        } else if(currentDirection.equals("backward")) {
+            switch (currentBall) {
+                case "one":
+                    currentBall = "two";
+                    setSpindexBackwardTwo();
+                    break;
+                case "two":
+                    currentBall = "three";
+                    setSpindexBackwardThree();
+                    break;
+                case "three":
+                    currentBall = "one";
+                    setSpindexBackwardOne();
+                    break;
+            }
+        }
+    }
+
 
     //---------------- Interface Methods ----------------
     @Override

@@ -106,6 +106,10 @@ public class Shooter implements Subsystem {
         rightFlywheel.setPower(pow);
     }
 
+    public void toggleUseFlywheel(){
+        useFlywheelPID = !useFlywheelPID;
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){

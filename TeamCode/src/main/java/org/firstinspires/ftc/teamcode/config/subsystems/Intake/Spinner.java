@@ -19,6 +19,7 @@ public class Spinner implements Subsystem {
     //---------------- Software ----------------
     private double megaSpinPow = 0;
     private boolean useMegaSpin = true;
+    private boolean frontOuterTripped = false;
 
     //---------------- Constructor ----------------
     public Spinner(HardwareMap map) {
@@ -48,6 +49,10 @@ public class Spinner implements Subsystem {
 
     public void setMegaSpinZero(){
         megaSpinPow = 0;
+    }
+
+    public boolean getFrontOuterTripped(){
+        return frontOuterTripped;
     }
 
     //---------------- Interface Methods ----------------

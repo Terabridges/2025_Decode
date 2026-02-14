@@ -13,16 +13,15 @@ import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
 public class DriveControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Drive drive;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    Drive drive;
     EdgeDetector slowModeRE = new EdgeDetector( () -> drive.toggleSlowMode());
 
     //---------------- Constructor ----------------
     public DriveControl(Drive drive, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+        this.drive = drive;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
