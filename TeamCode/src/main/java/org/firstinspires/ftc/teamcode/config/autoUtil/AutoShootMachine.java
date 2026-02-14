@@ -3,10 +3,7 @@ package org.firstinspires.ftc.teamcode.config.autoUtil;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
 
 public class AutoShootMachine {
 
@@ -72,104 +69,78 @@ public class AutoShootMachine {
     }
 
     private StateMachine buildMachine() {
-        Shooter shooter = robot.shooter;
-        Transfer transfer = robot.transfer;
-        Intake intake = robot.intake;
+        // TODO: wire this machine to V3 shooter/intake/vision commands.
+        // TODO: each state below should call subsystem commands instead of placeholders.
         return new StateMachineBuilder()
                 .state(ShootState.INIT)
-                .transition(() -> (startShooting && shooter.hasDesiredTarget && Math.abs(robot.vision.getTx()) < 6), ShootState.PRESPIN)
+                .transition(() -> startShooting, ShootState.PRESPIN)
 
                 .state(ShootState.PRESPIN)
                 .onEnter(() -> {
                     startShooting = false;
-                    intake.spinnerMacro = true;
-                    intake.spinnerMacroTarget = 0.95;
-                    shooter.shooterShoot = true;
-                    transfer.isDetecting = false;
-                    if (transfer.desiredRotate == 1) {
-                        transfer.ballLeft();
-                    } else if (transfer.desiredRotate == 2) {
-                        transfer.ballRight();
-                    }
+                    // TODO: start flywheel spin-up and intake feed prep.
                 })
-                .transition(() -> transfer.spindexAtTarget() && shooter.isAtRPM(), ShootState.CLUTCHDOWN)
                 .transitionTimed(spinUpTimeout, ShootState.CLUTCHDOWN)
 
                 .state(ShootState.CLUTCHDOWN)
                 .onEnter(() -> {
-                    transfer.max = 0.275;
-                    transfer.setClutchBarelyDown();
+                    // TODO: clutch down for first shot.
                 })
                 .transitionTimed(clutchDownTime, ShootState.WAIT1)
 
                 .state(ShootState.WAIT1)
-                .transition(() -> shooter.isFarShot(), ShootState.SPIN1)
-                .transition(() -> !shooter.isFarShot(), ShootState.SPIN)
+                .transitionTimed(0.01, ShootState.SPIN)
 
                 .state(ShootState.SPIN)
                 .onEnter(() -> {
-                    transfer.max = 0.2;
-                    transfer.ballLeft();
-                    transfer.ballLeft();
+                    // TODO: index/feed first shot.
                 })
-                .transition(() -> transfer.spindexAtTarget(), ShootState.SPIN3)
                 .transitionTimed(spinTime, ShootState.SPIN3)
 
                 .state(ShootState.SPIN1)
                 .onEnter(() -> {
-                    transfer.ballLeftSmall();
-                    shooter.hoodOffset -= 0.06;
+                    // TODO: alternate far-shot feed step.
                 })
-                .transition(() -> transfer.spindexAtTarget() && shooter.isAtRPM(), ShootState.CLUTCHDOWN1)
                 .transitionTimed(spinUpTimeout, ShootState.CLUTCHDOWN1)
 
                 .state(ShootState.CLUTCHDOWN1)
                 .onEnter(() -> {
-                    transfer.setClutchDownFar();
-                    shooter.useTurretPID = false;
+                    // TODO: clutch sequencing between shot 1 and 2.
                 })
                 .transitionTimed(clutchDownFarTime, ShootState.SPIN2)
-                .onExit(() -> transfer.setClutchBarelyDown())
+                .onExit(() -> {
+                    // TODO: restore clutch hold between far-shot steps.
+                })
 
                 .state(ShootState.SPIN2)
                 .onEnter(() -> {
-                    transfer.ballLeft();
-                    shooter.hoodOffset += 0.06;
+                    // TODO: index/feed second shot.
                 })
-                .transition(() -> transfer.spindexAtTarget() && shooter.isAtRPM(), ShootState.CLUTCHDOWN2)
                 .transitionTimed(spinUpTimeout, ShootState.CLUTCHDOWN2)
 
                 .state(ShootState.CLUTCHDOWN2)
-                .onEnter(() -> transfer.setClutchDownFar())
+                .onEnter(() -> {
+                    // TODO: clutch sequencing before final shot.
+                })
                 .transitionTimed(clutchDownFarTime, ShootState.SPIN3)
                 .onExit(() -> {
-                    transfer.setClutchBarelyDown();
-                    transfer.ballRightSmall();
+                    // TODO: settle clutch before final feed.
                 })
 
                 .state(ShootState.SPIN3)
                 .onEnter(() -> {
-                    transfer.max = 0.275;
-                    transfer.ballLeftSmall();
-                    transfer.ballLeft();
+                    // TODO: index/feed final shot.
                 })
-                .transition(() -> transfer.spindexAtTarget() && shooter.isAtRPM(), ShootState.WAIT2)
                 .transitionTimed(spinUpTimeout, ShootState.WAIT2)
-                .onExit(() -> transfer.setClutchDownFar())
+                .onExit(() -> {
+                    // TODO: clutch hold after final feed.
+                })
 
                 .state(ShootState.WAIT2)
                 .transitionTimed(clutchDownFarTime, ShootState.INIT)
                 .onExit(() -> {
-                    transfer.setClutchUp();
-                    transfer.ballRightSmall();
-                    intake.spinnerMacroTarget = 0;
-                    shooter.shooterShoot = false;
-                    transfer.isDetecting = true;
-                    transfer.emptyBalls();
-                    intake.spinnerMacro = false;
-                    transfer.max = 0.4;
+                    // TODO: stop shooter/intake and reset feed/clutch state.
                     shootingComplete = true;
-                    shooter.useTurretPID = true;
                 })
 
                 .build();

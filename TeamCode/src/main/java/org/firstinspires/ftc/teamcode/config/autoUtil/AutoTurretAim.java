@@ -26,19 +26,21 @@ public class AutoTurretAim {
     }
 
     public void updateAim(AutoStates activeState, boolean preloadComplete) {
+        if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) return;
+
         if (activeState == AutoStates.ACQUIRE_MOTIF) {
-            robot.shooter.useTurretLock = false;
+            robot.outtake.turret.turretVelocity = 0;
             aimAtObelisk();
             telemetry.addData("Obelisk Aim", true);
-        } else if (robot.shooter.hasDesiredTarget) {
-            robot.shooter.useTurretLock = true;
+        } else if (robot.outtake.vision.hasRequiredTarget()) {
+            robot.outtake.turret.turretVelocity = 0;
             telemetry.addData("Lock Aim", true);
         } else {
-            robot.shooter.useTurretLock = false;
-            robot.shooter.turretLockController.reset();
+            robot.outtake.turret.turretVelocity = 0;
             aimAtGoal(preloadComplete);
             telemetry.addData("Goal Aim", true);
         }
+        telemetry.addData("Required Tag Id", robot.outtake.vision.getRequiredTagId());
     }
 
     public void aimAtObelisk() {
@@ -50,14 +52,15 @@ public class AutoTurretAim {
     }
 
     private void aimTurretAt(Pose target) {
-        if (robot == null || robot.shooter == null || follower == null || target == null) return;
+        if (robot == null || robot.outtake == null || robot.outtake.turret == null || follower == null || target == null) return;
         Pose robotPose = follower.getPose();
         if (robotPose == null) return;
-        robot.shooter.aimTurretAtFieldPose(
-                robotPose.getX(),
-                robotPose.getY(),
-                robotPose.getHeading(),
-                target.getX(),
-                target.getY());
+        double dx = target.getX() - robotPose.getX();
+        double dy = target.getY() - robotPose.getY();
+        double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
+        double robotHeadingDeg = Math.toDegrees(robotPose.getHeading());
+        double turretDeg = headingToTargetDeg - robotHeadingDeg;
+        turretDeg = ((turretDeg % 360) + 360) % 360;
+        robot.outtake.turret.setTurretDegree(turretDeg);
     }
 }

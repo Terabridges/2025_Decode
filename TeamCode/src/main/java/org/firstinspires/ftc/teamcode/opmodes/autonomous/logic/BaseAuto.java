@@ -9,7 +9,6 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
@@ -29,7 +28,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
 
 @PsiKitAutoLog(rlogPort = 5802)
 public abstract class BaseAuto extends OpMode {
@@ -123,7 +122,7 @@ public abstract class BaseAuto extends OpMode {
         lastScoreRangeUsed = range;
         startPose = poses.findStartPose(alliance, range);
 
-        robot.drive.manualDrive = false;
+        robot.other.drive.manualDrive = false;
 
         shootMachine = new AutoShootMachine(robot, clutchDownTime, clutchDownFarTime, spinTime, spinUpTimeout);
         turretAim = new AutoTurretAim(robot, poses, alliance, range, telemetry);
@@ -131,18 +130,14 @@ public abstract class BaseAuto extends OpMode {
 
         autoMachine = buildAutoMachine();
 
-        robot.transfer.spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
         intakeSpeed = intakeSpeedModel.compute(robot.getVoltage(), alliance, range);
+        robot.outtake.vision.setRequiredTagId(alliance == Alliance.BLUE ? TAG_BLUE : TAG_RED);
+        robot.outtake.vision.clearMotifTagId();
 
-        if (robot != null && robot.shooter != null) {
-            int tagId = (alliance == Alliance.BLUE) ? TAG_BLUE : TAG_RED;
-            robot.shooter.setRequiredTagId(tagId);
-            if(alliance == Alliance.BLUE) {
-                GlobalVariables.allianceColor = "blue";
-            } else {
-                GlobalVariables.allianceColor = "red";
-            }
+        if (alliance == Alliance.BLUE) {
+            GlobalVariables.allianceColor = "blue";
+        } else {
+            GlobalVariables.allianceColor = "red";
         }
 
         rowsToRun = rowSequence.length;
@@ -155,10 +150,6 @@ public abstract class BaseAuto extends OpMode {
 
         stateTimer.reset();
 
-        robot.transfer.ballList[0] = "G";
-        robot.transfer.ballList[1] = "P";
-        robot.transfer.ballList[2] = "P";
-        robot.transfer.numBalls = 3;
     }
 
     @Override
@@ -304,10 +295,8 @@ public abstract class BaseAuto extends OpMode {
     protected void onEnterAcquireMotif() {
         setActiveState(AutoStates.ACQUIRE_MOTIF);
 
-        motifTracker.reset();
-        resetStateTimer();
-
-        turretAim.aimAtObelisk();
+        // TODO: reset motif acquisition command state.
+        // TODO: start turret/vision command to acquire motif.
     }
 
     protected boolean motifAcquiredOrTimedOut() {
@@ -315,34 +304,24 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void onExitAcquireMotif() {
-        motifTracker.resolveMotif(preloadComplete);
-        acquiredMotifId = motifTracker.getAcquiredMotifId();
+        // TODO: finalize motif acquisition and persist selected motif.
     }
 
     protected void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
 
-        resetStateTimer();
-
         if (!preloadComplete && !shouldShootPreload()) {
             return;
         }
 
-        // Start spin-up early so we arrive ready to shoot.
-        robot.intake.spinnerMacro = true;
-        robot.intake.spinnerMacroTarget = 0.95;
-        robot.shooter.shooterShoot = true;
-        robot.shooter.useTurretLock = true;
+        // TODO: start shooter/intake prep command while driving to score.
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
 
     protected void onEnterCompleteShoot() {
         setActiveState(AutoStates.COMPLETE_SHOOT);
-
-        resetStateTimer();
-        shootTimer.reset();
-        shootMachine.requestShoot();
+        // TODO: run shoot command sequence and mark completion from subsystem signal.
     }
 
     protected void onExitCompleteShoot() {
@@ -352,7 +331,7 @@ public abstract class BaseAuto extends OpMode {
         } else {
             rowsCompleted = Math.min(rowsCompleted + 1, rowsToRun);
         }
-        shootMachine.clearShootingComplete();
+        // TODO: clear shoot command completion state.
     }
 
     protected void onEnterGoToPickup() {
@@ -368,15 +347,13 @@ public abstract class BaseAuto extends OpMode {
     protected void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
 
-        resetStateTimer();
-
         buildPath(PathRequest.COMPLETE_PICKUP);
-        robot.intake.spinnerIn();
+        // TODO: run intake command while completing pickup path.
         followPath(pickupPath, intakeSpeed);
     }
 
     protected void onExitCompletePickup() {
-        robot.intake.spinnerZero();
+        // TODO: stop intake command after pickup completes.
     }
 
     protected void onEnterGoToRelease() {

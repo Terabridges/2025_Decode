@@ -22,6 +22,8 @@ public class Vision implements Subsystem {
     public double lastTx = 0;
     public double lastTy = 0;
     public double lastDistance = 100;
+    private int requiredTagId = -1; // -1 means "any tag"
+    private int motifTagId = -1; // -1 means motif not selected
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
@@ -46,6 +48,26 @@ public class Vision implements Subsystem {
 
     public boolean hasTarget() { return latest != null && latest.isValid(); }
 
+    public void setRequiredTagId(int tagId) {
+        requiredTagId = tagId;
+    }
+
+    public int getRequiredTagId() {
+        return requiredTagId;
+    }
+
+    public void setMotifTagId(int tagId) {
+        motifTagId = tagId;
+    }
+
+    public int getMotifTagId() {
+        return motifTagId;
+    }
+
+    public void clearMotifTagId() {
+        motifTagId = -1;
+    }
+
     /** True if any fiducial in the current frame matches tagId; tagId < 0 accepts any target. */
     public boolean seesTag(int tagId) {
         if (tagId < 0) return hasTarget();
@@ -56,6 +78,40 @@ public class Vision implements Subsystem {
             }
         }
         return false;
+    }
+
+    public boolean hasRequiredTarget() {
+        return seesTag(requiredTagId);
+    }
+
+    private LLResultTypes.FiducialResult getFiducialById(int tagId) {
+        if (!hasTarget() || latest.getFiducialResults().isEmpty()) {
+            return null;
+        }
+        for (LLResultTypes.FiducialResult f : latest.getFiducialResults()) {
+            if (f.getFiducialId() == tagId) {
+                return f;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns camera bearing in degrees for the requested tag if visible.
+     * Falls back to the frame-level tx cache when the specific tag isn't visible.
+     */
+    public double getTxForTag(int tagId) {
+        if (tagId < 0) {
+            return getTx();
+        }
+        LLResultTypes.FiducialResult f = getFiducialById(tagId);
+        if (f != null) {
+            Pose3D p = f.getTargetPoseCameraSpace();
+            double x = p.getPosition().x;
+            double z = p.getPosition().z;
+            lastTx = Math.toDegrees(Math.atan2(x, z));
+        }
+        return lastTx;
     }
 
     /*

@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Drive;
-import org.firstinspires.ftc.teamcode.config.subsystems.OLD.ShooterAuto;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Shooter;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Vision;
 
 @Disabled

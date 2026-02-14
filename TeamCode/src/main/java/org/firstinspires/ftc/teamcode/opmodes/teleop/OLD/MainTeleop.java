@@ -35,6 +35,7 @@ public class MainTeleop extends LinearOpMode {
 
     /** If true, TeleOp will always reset the follower on start instead of reusing Auto's. */
     public static boolean RESET_FOLLOWER_ON_START = false;
+    private boolean reuseAutoFollower = false;
 
     public DriveControl driveControl;
     public IntakeControl intakeControl;

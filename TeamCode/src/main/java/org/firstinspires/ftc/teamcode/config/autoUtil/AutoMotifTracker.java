@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
 
 public class AutoMotifTracker {
     public static final int TAG_MOTIF_1 = 21;
@@ -47,23 +47,22 @@ public class AutoMotifTracker {
     }
 
     public void resolveMotif(boolean preloadComplete) {
-        if (robot == null || robot.shooter == null || robot.shooter.vision == null) {
+        if (robot == null || robot.outtake == null || robot.outtake.vision == null) {
             return;
         }
 
         if (range == Range.CLOSE_RANGE && !preloadComplete) {
-            int seenId = robot.shooter.vision.getCurrentTagId();
+            int seenId = robot.outtake.vision.getCurrentTagId();
             if (alliance == Alliance.BLUE) {
                 acquiredMotifId = (seenId == TAG_MOTIF_1) ? TAG_MOTIF_3 : (seenId - 1);
             } else {
                 acquiredMotifId = (seenId == TAG_MOTIF_3) ? TAG_MOTIF_1 : (seenId + 1);
             }
         } else {
-            acquiredMotifId = robot.shooter.vision.getCurrentTagId();
+            acquiredMotifId = robot.outtake.vision.getCurrentTagId();
         }
 
         boolean validMotif = isMotifId(acquiredMotifId);
-        robot.shooter.setMotifTagId(validMotif ? acquiredMotifId : -1);
         if (validMotif) {
             if (acquiredMotifId == TAG_MOTIF_1) {
                 GlobalVariables.motif = "GPP";
@@ -77,11 +76,11 @@ public class AutoMotifTracker {
 
     private boolean seesAnyMotifTag() {
         return robot != null
-                && robot.shooter != null
-                && robot.shooter.vision != null
-                && (robot.shooter.vision.seesTag(TAG_MOTIF_1)
-                    || robot.shooter.vision.seesTag(TAG_MOTIF_2)
-                    || robot.shooter.vision.seesTag(TAG_MOTIF_3));
+                && robot.outtake != null
+                && robot.outtake.vision != null
+                && (robot.outtake.vision.seesTag(TAG_MOTIF_1)
+                    || robot.outtake.vision.seesTag(TAG_MOTIF_2)
+                    || robot.outtake.vision.seesTag(TAG_MOTIF_3));
     }
 
     private boolean isMotifId(int id) {
