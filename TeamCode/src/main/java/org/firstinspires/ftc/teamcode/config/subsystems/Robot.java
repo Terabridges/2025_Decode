@@ -34,10 +34,6 @@ public class Robot {
 
     //---------------- Constructors ----------------
     public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2){
-        this(hardwareMap, telemetry, gp1, gp2, false);
-    }
-
-    public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gp1, Gamepad gp2, boolean autoMode){
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
 
@@ -53,11 +49,7 @@ public class Robot {
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
     public Robot(HardwareMap hardwareMap, Telemetry telemetry){
-        this(hardwareMap, telemetry, null, null, false);
-    }
-
-    public Robot(HardwareMap hardwareMap, Telemetry telemetry, boolean autoMode){
-        this(hardwareMap, telemetry, null, null, autoMode);
+        this(hardwareMap, telemetry, null, null);
     }
 
     public double getVoltage(){

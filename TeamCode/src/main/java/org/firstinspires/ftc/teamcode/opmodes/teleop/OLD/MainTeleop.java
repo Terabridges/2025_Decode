@@ -33,6 +33,9 @@ import java.util.List;
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleop extends LinearOpMode {
 
+    /** If true, TeleOp will always reset the follower on start instead of reusing Auto's. */
+    public static boolean RESET_FOLLOWER_ON_START = false;
+
     public DriveControl driveControl;
     public IntakeControl intakeControl;
     public ShooterControl shooterControl;
@@ -105,7 +108,9 @@ public class MainTeleop extends LinearOpMode {
     @Override
     public void runOpMode(){
         Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        boolean reuseAutoFollower = true;
+        reuseAutoFollower = !RESET_FOLLOWER_ON_START
+                && GlobalVariables.autoFollowerValid
+                && FollowerManager.follower != null;
 
         driveControl = new DriveControl(robot, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -130,6 +135,9 @@ public class MainTeleop extends LinearOpMode {
         while (opModeInInit()){
             previousGamepad1.copy(currentGamepad1);
             currentGamepad1.copy(gamepad1);
+            reuseAutoFollower = !RESET_FOLLOWER_ON_START
+                && GlobalVariables.autoFollowerValid
+                && FollowerManager.follower != null;
 
             if (currentGamepad1.a && !previousGamepad1.a){
                 if(GlobalVariables.motif.equals("PPG")){
@@ -150,21 +158,21 @@ public class MainTeleop extends LinearOpMode {
             }
 
             if (currentGamepad1.x && !previousGamepad1.x) {
-                reuseAutoFollower = !reuseAutoFollower;
+                RESET_FOLLOWER_ON_START = !RESET_FOLLOWER_ON_START;
             }
 
             telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
-            telemetry.addData("Press X to toggle auto pose reuse.", "");
+            telemetry.addData("Press X to toggle follower reset on start.", "");
             telemetry.addData("Motif", GlobalVariables.motif);
             telemetry.addData("Alliance Color", GlobalVariables.allianceColor);
-            telemetry.addData("Reuse Auto Pose", reuseAutoFollower);
+            telemetry.addData("Reset Follower On Start", RESET_FOLLOWER_ON_START);
             telemetry.update();
         }
 
-        boolean canReuseAutoFollower = reuseAutoFollower
+        reuseAutoFollower = !RESET_FOLLOWER_ON_START
                 && GlobalVariables.autoFollowerValid
                 && FollowerManager.follower != null;
-        if (canReuseAutoFollower) {
+        if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {
             reuseAutoFollower = false;
