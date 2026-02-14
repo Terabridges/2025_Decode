@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
@@ -11,21 +12,21 @@ import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 public class OuttakeControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Outtake outtake;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
+
 
     //---------------- Constructor ----------------
-    public OuttakeControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public OuttakeControl(Outtake outtake, Gamepad gp1, Gamepad gp2){
+        this.outtake = outtake;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public OuttakeControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.outtake, gp1, gp2);
         this.robot = robot;
     }
 
@@ -35,7 +36,7 @@ public class OuttakeControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Spindex;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
@@ -11,21 +12,23 @@ import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 public class SpindexControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Spindex spindex;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
+    EdgeDetector ballClockwise = new EdgeDetector(()-> spindex.moveBallClockwise());
+    EdgeDetector ballCounter = new EdgeDetector(()-> spindex.moveBallCounter());
+    EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
 
     //---------------- Constructor ----------------
-    public SpindexControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public SpindexControl(Spindex spindex, Gamepad gp1, Gamepad gp2){
+        this.spindex = spindex;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public SpindexControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.intake.spindex, gp1, gp2);
         this.robot = robot;
     }
 
@@ -35,7 +38,9 @@ public class SpindexControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+        ballClockwise.update(gp1.dpad_right);
+        ballCounter.update(gp1.dpad_left);
+        switchDirection.update(gp1.dpad_up);
     }
 
     @Override

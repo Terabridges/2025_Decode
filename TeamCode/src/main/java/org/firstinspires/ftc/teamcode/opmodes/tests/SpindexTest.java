@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -9,9 +10,10 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
+@Configurable
 @PsiKitAutoLog(rlogPort = 5802)
-@TeleOp(name="TurretTuner", group="Test")
-public class TurretTuner extends OpMode {
+@TeleOp(name="SpindexTest", group="Test")
+public class SpindexTest extends OpMode {
 
     Robot robot;
 
@@ -22,6 +24,8 @@ public class TurretTuner extends OpMode {
     Gamepad previousGamepad2;
 
     private JoinedTelemetry joinedTelemetry;
+
+    public static double degree = 0;
 
     @Override
     public void init() {
@@ -43,13 +47,17 @@ public class TurretTuner extends OpMode {
     @Override
     public void start(){
         //robot.toInit();
-        robot.outtake.turret.toInit();
+        robot.intake.spindex.toInit();
     }
 
     @Override
     public void loop() {
         //robot.update();
-        robot.outtake.turret.update();
+        robot.intake.spindex.update();
+        gamepadUpdate();
+        if(currentGamepad1.a && !previousGamepad1.a){
+            robot.intake.spindex.setSpindexDegree(degree);
+        }
 
         joinedTelemetry.update();
     }

@@ -17,7 +17,6 @@ public class OtherControl implements Control {
     Gamepad gp2;
     Robot robot;
     Other other;
-    //EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
 
     //---------------- Constructor ----------------
     public OtherControl(Other other, Gamepad gp1, Gamepad gp2){

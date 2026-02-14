@@ -5,27 +5,27 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
+import org.firstinspires.ftc.teamcode.config.subsystems.Other.Lift;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class LiftControl implements Control {
 
     //---------------- Software ----------------
-    TemplateSubsystem template;
+    Lift lift;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
 
     //---------------- Constructor ----------------
-    public LiftControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
-        this.template = template;
+    public LiftControl(Lift lift, Gamepad gp1, Gamepad gp2){
+        this.lift = lift;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public LiftControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        //this(robot.templateSystem, gp1, gp2);
+        this(robot.other.lift, gp1, gp2);
         this.robot = robot;
     }
 
@@ -35,7 +35,7 @@ public class LiftControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        setServoRE.update(gp1.a);
+
     }
 
     @Override
