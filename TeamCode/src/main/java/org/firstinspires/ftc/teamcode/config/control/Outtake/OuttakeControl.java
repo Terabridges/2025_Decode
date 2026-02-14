@@ -15,7 +15,11 @@ public class OuttakeControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector setServoRE = new EdgeDetector(() -> template.setServoOn());
+    EdgeDetector setServoRE = new EdgeDetector(() -> {
+        if (template != null) {
+            template.setServoOn();
+        }
+    });
 
     //---------------- Constructor ----------------
     public OuttakeControl(TemplateSubsystem template, Gamepad gp1, Gamepad gp2){
