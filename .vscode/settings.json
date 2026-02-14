@@ -1,3 +1,31 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic"
+    ,
+    "VsCodeTaskButtons.showCounter": false,
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "$(rocket) Sloth Deploy",
+            "task": "Sloth: Deploy TeamCode (deploySloth)",
+            "tooltip": "Deploy TeamCode to the robot (Sloth)"
+        },
+        {
+            "label": "$(trash) Sloth Reset+Deploy",
+            "task": "Sloth: Remove Remote + Deploy",
+            "tooltip": "Remove remote Sloth + deploy fresh"
+        },
+        {
+            "label": "$(tools) Builds",
+            "tooltip": "Open a menu of common Gradle tasks",
+            "tasks": [
+                {
+                    "label": "Assemble Debug APK",
+                    "task": "Gradle: TeamCode assembleDebug (2025_Decode)"
+                },
+                {
+                    "label": "Compile Java (info)",
+                    "task": "Gradle: TeamCode compileDebugJavaWithJavac (info)"
+                }
+            ]
+        }
+    ]
 }
