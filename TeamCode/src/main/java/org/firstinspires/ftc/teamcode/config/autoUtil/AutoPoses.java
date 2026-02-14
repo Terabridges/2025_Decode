@@ -111,6 +111,7 @@ public class AutoPoses {
 
         // Row 4 (long side)
         public final Pose pick4StartLong = poseDeg(INTAKE_START_X, 84, 180);
+        public final Pose farPickupZone = poseDeg(INTAKE_START_X, 84, 180);
 
         // ========================
         // PICKUP END POSES
@@ -171,6 +172,8 @@ public class AutoPoses {
 
     public Pose pick4StartLB = baseToBlue(base.pick4StartLong);
     public Pose pick4StartLR = baseToRed(base.pick4StartLong);
+    public Pose farPickupZoneB = baseToBlue(base.farPickupZone);
+    public Pose farPickupZoneR = baseToRed(base.farPickupZone);
 
     public Pose pick1EndCB = baseToBlue(base.pick1EndClose);
     public Pose pick1EndCR = baseToRed(base.pick1EndClose);
@@ -233,17 +236,17 @@ public class AutoPoses {
        =========================
        load[alliance]
        score[alliance][range]
-       pickupStart[alliance][range][rowIndex]
-       pickupEnd[alliance][range][rowIndex]
+       pickupStartByRow[alliance][absoluteRow]
+       pickupEndByRow[alliance][absoluteRow]
        ========================= */
 
-    public final Pose[] load = new Pose[2];                  // [Alliance]
-    public final Pose[][] score = new Pose[2][2];            // [Alliance][Range]
-    public final Pose[][][] pickupStart = new Pose[2][2][3]; // [Alliance][Range][RowIndex]
-    public final Pose[][][] pickupEnd = new Pose[2][2][3];   // [Alliance][Range][RowIndex]
-    public final Pose[][] leave = new Pose[2][2];            // [Alliance][Range]
-    public final Pose[][] releaseGoTo = new Pose[2][2];      // [Alliance][Range]
-    public final Pose[][] releaseComplete = new Pose[2][2];  // [Alliance][Range]
+    public final Pose[] load = new Pose[2];                    // [Alliance]
+    public final Pose[][] score = new Pose[2][2];              // [Alliance][Range]
+    public final Pose[][] pickupStartByRow = new Pose[2][5];   // [Alliance][AbsoluteRow 1..4]
+    public final Pose[][] pickupEndByRow = new Pose[2][5];     // [Alliance][AbsoluteRow 1..4]
+    public final Pose[][] leave = new Pose[2][2];              // [Alliance][Range]
+    public final Pose[][] releaseGoTo = new Pose[2][2];        // [Alliance][Range]
+    public final Pose[][] releaseComplete = new Pose[2][2];    // [Alliance][Range]
 
 
     /* =========================
@@ -260,39 +263,32 @@ public class AutoPoses {
         setScore(Alliance.RED, Range.CLOSE_RANGE, scoreCR);
         setScore(Alliance.RED, Range.LONG_RANGE, scoreLR);
 
-        // --- Pickup Start (index 0..2; close rows 1-3, long rows 2-4) ---
+        // --- Pickup absolute rows (1..4, closest-to-goal outward) ---
+        // NOTE: Row 4 uses the existing load-side lane points.
         // Blue
-        setPickupStart(Alliance.BLUE, Range.CLOSE_RANGE, 0, pick1StartCB);
-        setPickupStart(Alliance.BLUE, Range.LONG_RANGE, 0, pick2StartLB);
-        setPickupStart(Alliance.BLUE, Range.CLOSE_RANGE, 1, pick2StartCB);
-        setPickupStart(Alliance.BLUE, Range.LONG_RANGE, 1, pick3StartLB);
-        setPickupStart(Alliance.BLUE, Range.CLOSE_RANGE, 2, pick3StartCB);
-        setPickupStart(Alliance.BLUE, Range.LONG_RANGE, 2, pick4StartLB);
+        setPickupStartAbsolute(Alliance.BLUE, 1, pick1StartCB);
+        setPickupStartAbsolute(Alliance.BLUE, 2, pick2StartCB);
+        setPickupStartAbsolute(Alliance.BLUE, 3, pick3StartCB);
+        setPickupStartAbsolute(Alliance.BLUE, 4, pick4StartLB);
 
         // Red
-        setPickupStart(Alliance.RED, Range.CLOSE_RANGE, 0, pick1StartCR);
-        setPickupStart(Alliance.RED, Range.LONG_RANGE, 0, pick2StartLR);
-        setPickupStart(Alliance.RED, Range.CLOSE_RANGE, 1, pick2StartCR);
-        setPickupStart(Alliance.RED, Range.LONG_RANGE, 1, pick3StartLR);
-        setPickupStart(Alliance.RED, Range.CLOSE_RANGE, 2, pick3StartCR);
-        setPickupStart(Alliance.RED, Range.LONG_RANGE, 2, pick4StartLR);
+        setPickupStartAbsolute(Alliance.RED, 1, pick1StartCR);
+        setPickupStartAbsolute(Alliance.RED, 2, pick2StartCR);
+        setPickupStartAbsolute(Alliance.RED, 3, pick3StartCR);
+        setPickupStartAbsolute(Alliance.RED, 4, pick4StartLR);
 
-        // --- Pickup End ---
+        // --- Pickup End absolute rows ---
         // Blue
-        setPickupEnd(Alliance.BLUE, Range.CLOSE_RANGE, 0, pick1EndCB);
-        setPickupEnd(Alliance.BLUE, Range.LONG_RANGE, 0, pick2EndLB);
-        setPickupEnd(Alliance.BLUE, Range.CLOSE_RANGE, 1, pick2EndCB);
-        setPickupEnd(Alliance.BLUE, Range.LONG_RANGE, 1, pick3EndLB);
-        setPickupEnd(Alliance.BLUE, Range.CLOSE_RANGE, 2, pick3EndCB);
-        setPickupEnd(Alliance.BLUE, Range.LONG_RANGE, 2, pick4EndLB);
+        setPickupEndAbsolute(Alliance.BLUE, 1, pick1EndCB);
+        setPickupEndAbsolute(Alliance.BLUE, 2, pick2EndCB);
+        setPickupEndAbsolute(Alliance.BLUE, 3, pick3EndCB);
+        setPickupEndAbsolute(Alliance.BLUE, 4, pick4EndLB);
 
         // Red
-        setPickupEnd(Alliance.RED, Range.CLOSE_RANGE, 0, pick1EndCR);
-        setPickupEnd(Alliance.RED, Range.LONG_RANGE, 0, pick2EndLR);
-        setPickupEnd(Alliance.RED, Range.CLOSE_RANGE, 1, pick2EndCR);
-        setPickupEnd(Alliance.RED, Range.LONG_RANGE, 1, pick3EndLR);
-        setPickupEnd(Alliance.RED, Range.CLOSE_RANGE, 2, pick3EndCR);
-        setPickupEnd(Alliance.RED, Range.LONG_RANGE, 2, pick4EndLR);
+        setPickupEndAbsolute(Alliance.RED, 1, pick1EndCR);
+        setPickupEndAbsolute(Alliance.RED, 2, pick2EndCR);
+        setPickupEndAbsolute(Alliance.RED, 3, pick3EndCR);
+        setPickupEndAbsolute(Alliance.RED, 4, pick4EndLR);
 
         // --- Leave ---
         setLeave(Alliance.BLUE, Range.CLOSE_RANGE, leaveCB);
@@ -320,12 +316,16 @@ public class AutoPoses {
         score[a.ordinal()][r.ordinal()] = pose;
     }
 
-    private void setPickupStart(Alliance a, Range r, int rowIndex, Pose pose) {
-        pickupStart[a.ordinal()][r.ordinal()][rowIndex] = pose;
+    private void setPickupStartAbsolute(Alliance a, int absoluteRow, Pose pose) {
+        if (absoluteRow >= 1 && absoluteRow <= 4) {
+            pickupStartByRow[a.ordinal()][absoluteRow] = pose;
+        }
     }
 
-    private void setPickupEnd(Alliance a, Range r, int rowIndex, Pose pose) {
-        pickupEnd[a.ordinal()][r.ordinal()][rowIndex] = pose;
+    private void setPickupEndAbsolute(Alliance a, int absoluteRow, Pose pose) {
+        if (absoluteRow >= 1 && absoluteRow <= 4) {
+            pickupEndByRow[a.ordinal()][absoluteRow] = pose;
+        }
     }
 
     private void setLeave(Alliance a, Range r, Pose pose) {
@@ -351,12 +351,18 @@ public class AutoPoses {
         return score[a.ordinal()][r.ordinal()];
     }
 
-    public Pose getPickupStart(Alliance a, Range r, int rowIndex) {
-        return pickupStart[a.ordinal()][r.ordinal()][rowIndex];
+    public Pose getPickupStart(Alliance a, int absoluteRow) {
+        int clamped = Math.max(1, Math.min(absoluteRow, 4));
+        return pickupStartByRow[a.ordinal()][clamped];
     }
 
-    public Pose getPickupEnd(Alliance a, Range r, int rowIndex) {
-        return pickupEnd[a.ordinal()][r.ordinal()][rowIndex];
+    public Pose getPickupEnd(Alliance a, int absoluteRow) {
+        int clamped = Math.max(1, Math.min(absoluteRow, 4));
+        return pickupEndByRow[a.ordinal()][clamped];
+    }
+
+    public Pose getFarPickupZone(Alliance a) {
+        return (a == Alliance.BLUE) ? farPickupZoneB : farPickupZoneR;
     }
 
     public Pose getLeave(Alliance a, Range r) {
