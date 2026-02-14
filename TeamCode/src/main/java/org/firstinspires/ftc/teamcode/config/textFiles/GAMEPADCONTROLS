@@ -1,0 +1,22 @@
+GAMEPAD1
+A:
+X: Shoot All Macro
+Y: Toggle Shooter
+B:
+Down:
+Left: One Ball Left
+Up:
+Right: One Ball Right
+LeftBump: Spin In
+RightBump: Spin Out
+LeftTrig:
+RightTrig:
+LStX: Movement
+LStY: Movement
+RStX: Movement
+RStY: Movement
+LStBut:
+RStBut:
+Back:
+Start:
+PlayStation:
