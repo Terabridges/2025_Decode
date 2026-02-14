@@ -10,7 +10,6 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -25,14 +24,12 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Mode;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.ShotPlan;
-import org.firstinspires.ftc.teamcode.config.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
-import org.firstinspires.ftc.teamcode.config.subsystems.Intake;
-import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.config.subsystems.Transfer;
-import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
-import org.firstinspires.ftc.teamcode.opmodes.teleop.MainTeleop;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Intake;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Transfer;
+import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
 
 @PsiKitAutoLog(rlogPort = 5802)
 class MainAuto extends OpMode {

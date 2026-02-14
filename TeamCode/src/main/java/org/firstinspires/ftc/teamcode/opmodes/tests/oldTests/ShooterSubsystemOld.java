@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Subsystem;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 

@@ -13,8 +13,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Shooter;
+import org.firstinspires.ftc.teamcode.config.subsystems.OLD.Subsystem;
 
 public class VisionSubSWithMT2 implements Subsystem {
 

@@ -1,0 +1,38 @@
+[MOTORS]
+left_front
+right_front
+left_back
+right_back
+fly_left (enc)
+fly_right
+base
+intake (controls both intakes and clutch)
+
+[SERVOS]
+hood
+clutch
+spindexL
+spindexR
+light1
+light2
+light3
+
+[CR SERVOS]
+turretL
+turretR
+
+[ANALOG]
+distance1 (front outer)
+distance2 (front inner)
+distance3 (back inner)
+distance4 (back outer)
+spindexAnalog
+turretAnalog
+
+[I2C]
+color1 (front)
+color2 (middle)
+color3 (back)
+
+[CAMERAS]
+limelight
