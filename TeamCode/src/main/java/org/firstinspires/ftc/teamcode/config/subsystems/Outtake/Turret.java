@@ -40,6 +40,7 @@ public class Turret implements Subsystem {
     public static double visionDirection = -1.0; // set to 1.0 to invert lock direction
     public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
     public static double limitAssistMarginDeg = 1.0;
+    private boolean txLockEnabled = false;
     private double currentPosition = 0;
     private ElapsedTime velocityTimer;
 
@@ -131,6 +132,32 @@ public class Turret implements Subsystem {
         correctionDeg = util.clamp(correctionDeg, -visionMaxStepDeg, visionMaxStepDeg);
         double targetDeg = normalizeDegrees(getCurrentDegrees() + correctionDeg);
         setTurretDegree(targetDeg);
+    }
+
+    public void toggleTxLock() {
+        txLockEnabled = !txLockEnabled;
+    }
+
+    public boolean isTxLockEnabled() {
+        return txLockEnabled;
+    }
+
+    public void updateTxLock(Vision vision) {
+        if (!txLockEnabled || vision == null) return;
+
+        int requiredTagId = vision.getRequiredTagId();
+        boolean hasTarget = requiredTagId >= 0
+                ? vision.seesTag(requiredTagId)
+                : vision.hasTarget();
+        if (!hasTarget) return;
+
+        double tx = requiredTagId >= 0
+                ? vision.getTxForTag(requiredTagId)
+                : vision.getTx();
+        double distanceIn = requiredTagId >= 0
+                ? vision.getDistanceInchesForTag(requiredTagId)
+                : vision.getDistanceInches();
+        aimFromVision(tx, distanceIn);
     }
 
     public void setTurretWithVelocity(){
