@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.sfdev.assembly.state.StateMachine;
 
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.Intake.ClutchControl;
@@ -19,11 +20,14 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
 
@@ -48,6 +52,8 @@ public class MainTeleOp extends OpMode {
 
     Gamepad currentGamepad2;
     Gamepad previousGamepad2;
+
+    StateMachine shootAllMachine;
 
     @Override
     public void init() {
@@ -74,6 +80,8 @@ public class MainTeleOp extends OpMode {
         currentGamepad2 = new Gamepad();
         previousGamepad2 = new Gamepad();
 
+        shootAllMachine = robot.getShootAllMachine();
+
     }
 
     @Override
@@ -84,6 +92,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void start() {
         robot.toInit();
+        shootAllMachine.start();
     }
 
     @Override
@@ -91,6 +100,7 @@ public class MainTeleOp extends OpMode {
         gamepadUpdate();
         controlsUpdate();
         robot.update();
+        stateMachinesUpdate();
     }
 
     @Override
@@ -103,6 +113,9 @@ public class MainTeleOp extends OpMode {
             c.update();
             c.addTelemetry(telemetry);
         }
+        telemetry.update();
+
+        Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
     }
 
     public void gamepadUpdate(){
@@ -111,5 +124,12 @@ public class MainTeleOp extends OpMode {
 
         previousGamepad2.copy(currentGamepad2);
         currentGamepad2.copy(gamepad2);
+    }
+
+    public void stateMachinesUpdate(){
+        if (currentGamepad1.x && !previousGamepad1.x && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)){
+            robot.initShootAllMachine = true;
+        }
+        shootAllMachine.update();
     }
 }

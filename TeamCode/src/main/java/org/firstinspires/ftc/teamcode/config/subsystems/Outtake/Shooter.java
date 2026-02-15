@@ -26,18 +26,19 @@ public class Shooter implements Subsystem {
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
 
-    public static double hoodDown = 0.0;
-    public static double hoodUp = 1.0;
+    private double hoodDown = 0.0;
+    private double hoodUp = 1.0;
+    public static double hoodPos = 0.5;
 
     public PIDFController flywheelPID;
-    public static double p = 0.0015, i = 0.0001, d = 0.0, f = 0.0002;
-    public static double posTolerance = 150;
-    public static double integrationBounds = 250;
+    private double p = 0.0015, i = 0.0001, d = 0.0, f = 0.0002;
+    private double posTolerance = 150;
+    private double integrationBounds = 250;
     private double flywheelPower = 0.0;
-    public static double flywheelTargetRPM = 0.0;
-    public static double flywheelMaxPower = 1.0;
-    private boolean useFlywheelPID = true;
-    public static double currentRPM = 0;
+    public static double flywheelTargetRPM = 2600;
+    private double flywheelMaxPower = 1.0;
+    public boolean useFlywheelPID = false;
+    private double currentRPM = 0;
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
