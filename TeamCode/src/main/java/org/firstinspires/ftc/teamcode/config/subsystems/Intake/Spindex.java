@@ -48,6 +48,8 @@ public class Spindex implements Subsystem {
 
     private String currentBall = "one";
 
+    private boolean shootMode = false;
+
     //---------------- Constructor ----------------
 
     public Spindex(HardwareMap map) {
@@ -67,40 +69,57 @@ public class Spindex implements Subsystem {
         setSpindexPos(degree/360);
     }
 
+
+    //TODO change direction and ball here, not in external method
     public void setSpindexForwardOne(){
-        setSpindexPos(forwardOne);
+        currentDirection = "forward";
+        currentBall = "one";
+        setSpindexDegree(forwardOne);
     }
 
     public void setSpindexForwardTwo(){
-        setSpindexPos(forwardTwo);
+        currentDirection = "forward";
+        currentBall = "two";
+        setSpindexDegree(forwardTwo);
     }
 
     public void setSpindexForwardThree(){
-        setSpindexPos(forwardThree);
+        currentDirection = "forward";
+        currentBall = "three";
+        setSpindexDegree(forwardThree);
     }
 
     public void setSpindexBackwardOne(){
-        setSpindexPos(backwardOne);
+        currentDirection = "backward";
+        currentBall = "one";
+        setSpindexDegree(backwardOne);
     }
 
     public void setSpindexBackwardTwo(){
-        setSpindexPos(backwardTwo);
+        currentDirection = "backward";
+        currentBall = "two";
+        setSpindexDegree(backwardTwo);
     }
 
     public void setSpindexBackwardThree(){
-        setSpindexPos(backwardThree);
+        currentDirection = "backward";
+        currentBall = "three";
+        setSpindexDegree(backwardThree);
     }
 
     public void setSpindexShootOne(){
-        setSpindexPos(shootOne);
+        currentBall = "one";
+        setSpindexDegree(shootOne);
     }
 
     public void setSpindexShootTwo(){
-        setSpindexPos(backwardTwo);
+        currentBall = "two";
+        setSpindexDegree(backwardTwo);
     }
 
     public void setSpindexShootThree(){
-        setSpindexPos(shootThree);
+        currentBall = "three";
+        setSpindexDegree(shootThree);
     }
 
     public void switchSides(){
@@ -140,7 +159,23 @@ public class Spindex implements Subsystem {
     }
 
     public void moveBallClockwise(){
-        if(currentDirection.equals("forward")){
+
+        if (shootMode){
+            switch (currentBall) {
+                case "one":
+                    currentBall = "three";
+                    setSpindexShootThree();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexShootTwo();
+                    break;
+                case "two":
+                    currentBall = "one";
+                    setSpindexShootOne();
+                    break;
+            }
+        } else if(currentDirection.equals("forward")){
             switch (currentBall){
                 case "one":
                     currentBall = "three";
@@ -174,7 +209,22 @@ public class Spindex implements Subsystem {
     }
 
     public void moveBallCounter(){
-        if(currentDirection.equals("forward")){
+        if (shootMode) {
+            switch (currentBall) {
+                case "one":
+                    currentBall = "two";
+                    setSpindexShootTwo();
+                    break;
+                case "two":
+                    currentBall = "three";
+                    setSpindexShootThree();
+                    break;
+                case "three":
+                    currentBall = "one";
+                    setSpindexShootOne();
+                    break;
+            }
+        } else if(currentDirection.equals("forward")){
             switch (currentBall){
                 case "one":
                     currentBall = "two";
@@ -207,6 +257,27 @@ public class Spindex implements Subsystem {
         }
     }
 
+    public void toggleShootMode(){
+        if (shootMode){
+            shootMode = false;
+            if(currentDirection.equals("forward")){
+                setSpindexForwardOne();
+            } else if (currentDirection.equals("backward")){
+                setSpindexBackwardOne();
+            }
+        } else {
+            shootMode = true;
+            setSpindexShootOne();
+        }
+    }
+
+    public String getCurrentDirection(){
+        return currentDirection;
+    }
+
+    public String getCurrentBall(){
+        return currentBall;
+    }
 
     //---------------- Interface Methods ----------------
     @Override

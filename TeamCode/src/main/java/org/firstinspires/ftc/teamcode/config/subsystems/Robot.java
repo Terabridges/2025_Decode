@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.config.subsystems;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.sfdev.assembly.state.StateMachine;
+import com.sfdev.assembly.state.StateMachineBuilder;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Intake;
@@ -23,6 +25,16 @@ public class Robot {
     private Gamepad gp1;
     private Gamepad gp2;
     private static VoltageSensor voltageSensor;
+
+    public enum ShootAllStates {
+        INIT,
+        GO_TO_SHOOT_ONE,
+        GO_TO_SHOOT_TWO,
+        GO_TO_SHOOT_THREE,
+        RESET
+    }
+
+    public boolean initShootAllMachine = false;
 
     //---------------- Subsystems ----------------
 
@@ -62,6 +74,51 @@ public class Robot {
 
     public double getVoltage(){
         return voltageSensor.getVoltage();
+    }
+
+    public StateMachine getShootAllMachine(){
+        return new StateMachineBuilder()
+                .state(ShootAllStates.INIT)
+                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+                .onExit(()-> {
+                    initShootAllMachine = false;
+                    intake.spinner.setMegaSpinIn();
+                    outtake.shooter.useFlywheelPID = true;
+                    intake.spindex.setSpindexForwardOne();
+                    intake.clutch.setClutchUp();
+                })
+
+                .state(ShootAllStates.GO_TO_SHOOT_ONE)
+                .transitionTimed(0.2, ShootAllStates.GO_TO_SHOOT_TWO)
+                .onExit(()-> {
+                    intake.clutch.setClutchDown();
+                    intake.spindex.setSpindexShootOne();
+                })
+
+                .state(ShootAllStates.GO_TO_SHOOT_TWO)
+                .transitionTimed(0.2, ShootAllStates.GO_TO_SHOOT_THREE)
+                .onExit(()-> {
+                    intake.spindex.setSpindexShootTwo();
+                })
+
+                .state(ShootAllStates.GO_TO_SHOOT_THREE)
+                .transitionTimed(0.2, ShootAllStates.RESET)
+                .onExit(()-> {
+                    intake.spindex.setSpindexShootThree();
+                })
+
+                .state(ShootAllStates.RESET)
+                .transitionTimed(0.2, ShootAllStates.INIT)
+                .onExit(()-> {
+                    intake.spindex.setSpindexForwardOne();
+                    intake.spinner.setMegaSpinZero();
+                    intake.clutch.setClutchUp();
+                    outtake.shooter.useFlywheelPID = false;
+                })
+
+
+                .build();
+
     }
 
     //---------------- Interface Methods ----------------

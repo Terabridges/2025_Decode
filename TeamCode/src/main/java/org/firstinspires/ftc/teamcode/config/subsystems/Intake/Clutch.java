@@ -16,7 +16,8 @@ public class Clutch implements Subsystem {
 
     //---------------- Software ----------------
     public static double clutchUp = 0.52;
-    public static double clutchDown = 0.4;
+    public static double clutchDown = 0.38;
+    private boolean isClutchDown = false;
 
     //---------------- Constructor ----------------
     public Clutch(HardwareMap map) {
@@ -30,6 +31,16 @@ public class Clutch implements Subsystem {
 
     public void setClutchDown(){
         clutch.setPosition(clutchDown);
+    }
+
+    public void toggleClutch(){
+        if (isClutchDown){
+            setClutchUp();
+            isClutchDown = false;
+        } else {
+            setClutchDown();
+            isClutchDown = true;
+        }
     }
 
 

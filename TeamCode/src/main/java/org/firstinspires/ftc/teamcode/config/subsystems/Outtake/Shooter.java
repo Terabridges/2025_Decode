@@ -36,7 +36,7 @@ public class Shooter implements Subsystem {
     private double flywheelPower = 0.0;
     public static double flywheelTargetRPM = 0.0;
     public static double flywheelMaxPower = 1.0;
-    private boolean useFlywheelPID = true;
+    public boolean useFlywheelPID = true;
     public static double currentRPM = 0;
 
     //---------------- Constructor ----------------
