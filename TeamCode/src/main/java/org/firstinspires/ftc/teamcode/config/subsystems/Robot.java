@@ -29,12 +29,18 @@ public class Robot {
     public enum ShootAllStates {
         INIT,
         GO_TO_SHOOT_ONE,
+        WAIT0,
+        WAIT1,
         GO_TO_SHOOT_TWO,
+        WAIT2,
         GO_TO_SHOOT_THREE,
+        WAIT3,
         RESET
     }
 
     public boolean initShootAllMachine = false;
+
+    private double waitTime = 0.35;
 
     //---------------- Subsystems ----------------
 
@@ -89,28 +95,42 @@ public class Robot {
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
-                .transitionTimed(0.2, ShootAllStates.GO_TO_SHOOT_TWO)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
                     intake.spindex.setSpindexShootOne();
                 })
 
-                .state(ShootAllStates.GO_TO_SHOOT_TWO)
-                .transitionTimed(0.2, ShootAllStates.GO_TO_SHOOT_THREE)
+                .state(ShootAllStates.WAIT0)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
+
+                .state(ShootAllStates.WAIT1)
+                .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_TWO)
                 .onExit(()-> {
                     intake.spindex.setSpindexShootTwo();
                 })
 
-                .state(ShootAllStates.GO_TO_SHOOT_THREE)
-                .transitionTimed(0.2, ShootAllStates.RESET)
+                .state(ShootAllStates.GO_TO_SHOOT_TWO)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT2)
+
+                .state(ShootAllStates.WAIT2)
+                .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_THREE)
                 .onExit(()-> {
                     intake.spindex.setSpindexShootThree();
                 })
 
-                .state(ShootAllStates.RESET)
-                .transitionTimed(0.2, ShootAllStates.INIT)
+                .state(ShootAllStates.GO_TO_SHOOT_THREE)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT3)
+
+                .state(ShootAllStates.WAIT3)
+                .transitionTimed(waitTime, ShootAllStates.RESET)
                 .onExit(()-> {
                     intake.spindex.setSpindexForwardOne();
+                })
+
+                .state(ShootAllStates.RESET)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+                .onExit(()-> {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     outtake.shooter.useFlywheelPID = false;

@@ -55,9 +55,12 @@ public class Spindex implements Subsystem {
     public Spindex(HardwareMap map) {
         spindexLeft = map.get(Servo.class, "spindexL");
         spindexRight = map.get(Servo.class, "spindexR");
-        frontColor = map.get(RevColorSensorV3.class, "color1");
-        middleColor = map.get(RevColorSensorV3.class, "color2");
-        backColor = map.get(RevColorSensorV3.class, "color3");
+        //frontColor = map.get(RevColorSensorV3.class, "color1");
+        //middleColor = map.get(RevColorSensorV3.class, "color2");
+        //backColor = map.get(RevColorSensorV3.class, "color3");
+        spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
+        spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 23, 1.17);
+        spindexEnc.setInverted(true);
     }
 
     //---------------- Methods ----------------
@@ -70,7 +73,6 @@ public class Spindex implements Subsystem {
     }
 
 
-    //TODO change direction and ball here, not in external method
     public void setSpindexForwardOne(){
         currentDirection = "forward";
         currentBall = "one";
@@ -114,7 +116,7 @@ public class Spindex implements Subsystem {
 
     public void setSpindexShootTwo(){
         currentBall = "two";
-        setSpindexDegree(backwardTwo);
+        setSpindexDegree(shootTwo);
     }
 
     public void setSpindexShootThree(){
@@ -277,6 +279,18 @@ public class Spindex implements Subsystem {
 
     public String getCurrentBall(){
         return currentBall;
+    }
+
+    public double getAbsolutePos(){
+        return spindexEnc.getCurrentPosition();
+    }
+
+    public boolean isSpindexAtPos(){
+        return (Math.abs((spindexRight.getPosition()*360) - getAbsolutePos()) <= 5);
+    }
+
+    public double getCommandedPos(){
+        return spindexRight.getPosition()*360;
     }
 
     //---------------- Interface Methods ----------------

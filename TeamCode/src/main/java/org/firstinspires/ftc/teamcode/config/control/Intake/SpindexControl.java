@@ -49,5 +49,7 @@ public class SpindexControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Current Direction", spindex.getCurrentDirection());
         telemetry.addData("Current Ball", spindex.getCurrentBall());
+        telemetry.addData("CurrentPos", spindex.getAbsolutePos());
+        telemetry.addData("CommandedPos", spindex.getCommandedPos());
     }
 }

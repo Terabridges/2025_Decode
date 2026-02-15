@@ -20,11 +20,14 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
 
@@ -111,6 +114,8 @@ public class MainTeleOp extends OpMode {
             c.addTelemetry(telemetry);
         }
         telemetry.update();
+
+        Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
     }
 
     public void gamepadUpdate(){
