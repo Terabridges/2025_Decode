@@ -42,7 +42,7 @@ public class SpindexControl implements Control {
         ballClockwise.update(gp1.dpad_right);
         ballCounter.update(gp1.dpad_left);
         switchDirection.update(gp1.dpad_up);
-        toggleShootMode.update(gp1.b);
+        toggleShootMode.update(gp1.back);
     }
 
     @Override
