@@ -16,6 +16,7 @@ public class TurretControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
+    EdgeDetector toggleTxLock = new EdgeDetector(() -> turret.toggleTxLock());
 
     //---------------- Constructor ----------------
     public TurretControl(Turret turret, Gamepad gp1, Gamepad gp2){
@@ -35,11 +36,13 @@ public class TurretControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        toggleTxLock.update(gp1.start);
+        if (robot == null || robot.outtake == null || robot.outtake.vision == null) return;
+        turret.updateTxLock(robot.outtake.vision);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("TX Lock", turret.isTxLockEnabled());
     }
 }
