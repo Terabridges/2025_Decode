@@ -111,6 +111,10 @@ public class Shooter implements Subsystem {
         useFlywheelPID = !useFlywheelPID;
     }
 
+    public void setHoodTarget(){
+        hood.setPosition(hoodPos);
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){

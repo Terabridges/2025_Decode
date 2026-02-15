@@ -40,6 +40,6 @@ public class VisionControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("Distance", vision.getDistanceInches());
     }
 }
