@@ -40,7 +40,7 @@ public class Robot {
         vision = new Vision(hardwareMap);
         drive = new Drive(hardwareMap);
         intake = new Intake(hardwareMap);
-        shooter = autoMode ? new ShooterAuto(hardwareMap, vision) : new Shooter(hardwareMap, vision);
+        shooter = new Shooter(hardwareMap, vision);
         transfer = new Transfer(hardwareMap);
 
         subsystems = new ArrayList<>(Arrays.asList(drive, intake, shooter, transfer, vision));
