@@ -23,6 +23,10 @@ public class VisionTurretLockTester extends OpMode {
     public static int requiredTagId = 20;
     public static boolean lockEnabled = true;
     public static double manualStepDeg = 2.0;
+    public static boolean enableLimitChassisAssist = true;
+    public static double chassisYawKp = 0.02;
+    public static double chassisYawMax = 0.25;
+    public static double chassisYawDirection = 1.0; // set to -1.0 to invert assist direction
 
     @Override
     public void init() {
@@ -70,15 +74,22 @@ public class VisionTurretLockTester extends OpMode {
         boolean seesRequired = robot.outtake.vision.hasRequiredTarget();
         double tx = robot.outtake.vision.getTxForTag(requiredTagId);
         double distanceIn = robot.outtake.vision.getDistanceInchesForTag(requiredTagId);
+        double yawAssist = 0.0;
+        boolean assistActive = false;
 
         if (lockEnabled && seesRequired) {
             robot.outtake.turret.aimFromVision(tx, distanceIn);
+            if (enableLimitChassisAssist && robot.outtake.turret.needsChassisYawAssist(tx, distanceIn)) {
+                assistActive = true;
+                yawAssist = tx * chassisYawKp * chassisYawDirection;
+                yawAssist = Math.max(-chassisYawMax, Math.min(chassisYawMax, yawAssist));
+            }
         }
 
         // POV mecanum drive: left stick = translation, right stick x = rotation.
         double axial = -currentGamepad1.left_stick_y;
         double lateral = currentGamepad1.left_stick_x;
-        double yaw = currentGamepad1.right_stick_x;
+        double yaw = currentGamepad1.right_stick_x + yawAssist;
         double leftFrontPower = axial + lateral + yaw;
         double rightFrontPower = axial - lateral - yaw;
         double leftBackPower = axial - lateral + yaw;
@@ -100,6 +111,9 @@ public class VisionTurretLockTester extends OpMode {
         joinedTelemetry.addData("Tx (deg)", tx);
         joinedTelemetry.addData("Distance (in)", distanceIn);
         joinedTelemetry.addData("Turret Deg", robot.outtake.turret.getCurrentDegrees());
+        joinedTelemetry.addData("Limit Assist Enabled", enableLimitChassisAssist);
+        joinedTelemetry.addData("Limit Assist Active", assistActive);
+        joinedTelemetry.addData("Yaw Assist", yawAssist);
         joinedTelemetry.addData("Manual Nudge Step", manualStepDeg);
         joinedTelemetry.addData("Controls", "A toggle lock, X/Y tag, B reset turret, Dpad L/R nudge");
         joinedTelemetry.update();
