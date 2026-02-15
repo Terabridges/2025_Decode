@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
@@ -98,6 +99,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void loop() {
         gamepadUpdate();
+        updateTemporaryRequiredTagForTesting();
         controlsUpdate();
         robot.update();
         stateMachinesUpdate();
@@ -131,5 +133,14 @@ public class MainTeleOp extends OpMode {
             robot.initShootAllMachine = true;
         }
         shootAllMachine.update();
+    }
+
+    private void updateTemporaryRequiredTagForTesting() {
+        // TEMPORARY: keep tx lock on alliance goal tag until proper vision-control flow is finalized.
+        if (GlobalVariables.allianceColor.equalsIgnoreCase("blue")) {
+            robot.outtake.vision.setRequiredTagId(20);
+        } else if (GlobalVariables.allianceColor.equalsIgnoreCase("red")) {
+            robot.outtake.vision.setRequiredTagId(24);
+        }
     }
 }

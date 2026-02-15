@@ -36,11 +36,15 @@ public class Turret implements Subsystem {
     public static double visionKp = 0.8;
     public static double visionDeadbandDeg = 0.25;
     public static double visionMaxStepDeg = 5.0;
+    // Exponential smoothing for tx; 1.0 = no filtering, lower = smoother.
+    public static double visionTxAlpha = 0.35;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
     public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
     public static double limitAssistMarginDeg = 1.0;
     private boolean txLockEnabled = false;
+    private boolean hasFilteredTx = false;
+    private double filteredTxDeg = 0.0;
     private double currentPosition = 0;
     private ElapsedTime velocityTimer;
 
@@ -136,6 +140,11 @@ public class Turret implements Subsystem {
 
     public void toggleTxLock() {
         txLockEnabled = !txLockEnabled;
+        if (txLockEnabled) {
+            // Avoid manual velocity nudge fighting lock.
+            turretVelocity = 0.0;
+            hasFilteredTx = false;
+        }
     }
 
     public boolean isTxLockEnabled() {
@@ -154,10 +163,22 @@ public class Turret implements Subsystem {
         double tx = requiredTagId >= 0
                 ? vision.getTxForTag(requiredTagId)
                 : vision.getTx();
+        tx = filterTx(tx);
         double distanceIn = requiredTagId >= 0
                 ? vision.getDistanceInchesForTag(requiredTagId)
                 : vision.getDistanceInches();
         aimFromVision(tx, distanceIn);
+    }
+
+    private double filterTx(double txDeg) {
+        double alpha = util.clamp(visionTxAlpha, 0.0, 1.0);
+        if (!hasFilteredTx) {
+            filteredTxDeg = txDeg;
+            hasFilteredTx = true;
+            return filteredTxDeg;
+        }
+        filteredTxDeg = (alpha * txDeg) + ((1.0 - alpha) * filteredTxDeg);
+        return filteredTxDeg;
     }
 
     public void setTurretWithVelocity(){
@@ -185,7 +206,9 @@ public class Turret implements Subsystem {
 
     @Override
     public void update(){
-        setTurretWithVelocity();
+        if (!txLockEnabled) {
+            setTurretWithVelocity();
+        }
     }
 
 }
