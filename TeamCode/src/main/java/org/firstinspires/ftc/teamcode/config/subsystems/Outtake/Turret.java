@@ -33,6 +33,12 @@ public class Turret implements Subsystem {
     private double startTurret = 250;
     public static double turretVelocity = 0;
     public static double velocityLoopTime = 250;
+    public static double visionKp = 0.8;
+    public static double visionDeadbandDeg = 0.25;
+    public static double visionMaxStepDeg = 5.0;
+    public static double cameraLateralOffsetIn = 0.0;
+    public static double visionDirection = -1.0; // set to 1.0 to invert lock direction
+    public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
     private double currentPosition = 0;
     private ElapsedTime velocityTimer;
 
@@ -54,6 +60,44 @@ public class Turret implements Subsystem {
 
     public void setTurretDegree(double degree){
         setTurretPos(degree/360);
+    }
+
+    public double normalizeDegrees(double degrees) {
+        return ((degrees % 360.0) + 360.0) % 360.0;
+    }
+
+    public double computeParallaxCorrectionDeg(double distanceIn) {
+        double safeDistance = Math.max(1.0, distanceIn);
+        return Math.toDegrees(Math.atan2(cameraLateralOffsetIn, safeDistance));
+    }
+
+    /**
+     * Aim turret at a field point using robot field pose.
+     */
+    public void aimAtFieldPoint(double robotX, double robotY, double robotHeadingRad,
+                                double targetX, double targetY) {
+        double dx = targetX - robotX;
+        double dy = targetY - robotY;
+        double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
+        double robotHeadingDeg = Math.toDegrees(robotHeadingRad);
+        double turretDeg = normalizeDegrees(headingToTargetDeg - robotHeadingDeg);
+        setTurretDegree(turretDeg);
+    }
+
+    /**
+     * Vision lock controller for positional-servo turret.
+     * Applies an incremental correction from tx (+ optional parallax correction from distance).
+     */
+    public void aimFromVision(double txDeg, double distanceIn) {
+        if (Math.abs(txDeg) <= visionDeadbandDeg) {
+            return;
+        }
+        double parallaxDeg = computeParallaxCorrectionDeg(distanceIn);
+        parallaxDeg *= Math.signum(txDeg);
+        double correctionDeg = (txDeg + parallaxDeg + visionErrorBiasDeg) * visionKp * visionDirection;
+        correctionDeg = util.clamp(correctionDeg, -visionMaxStepDeg, visionMaxStepDeg);
+        double targetDeg = normalizeDegrees(getCurrentDegrees() + correctionDeg);
+        setTurretDegree(targetDeg);
     }
 
     public void setTurretWithVelocity(){

@@ -22,6 +22,7 @@ public class Vision implements Subsystem {
     public double lastTx = 0;
     public double lastTy = 0;
     public double lastDistance = 100;
+    public static double tagTxSign = 1.0;
     private int requiredTagId = -1; // -1 means "any tag"
     private int motifTagId = -1; // -1 means motif not selected
 
@@ -106,10 +107,11 @@ public class Vision implements Subsystem {
         }
         LLResultTypes.FiducialResult f = getFiducialById(tagId);
         if (f != null) {
-            Pose3D p = f.getTargetPoseCameraSpace();
+            // Use ROBOT-space pose so left/right sign is stable regardless of camera mount rotation.
+            Pose3D p = f.getTargetPoseRobotSpace();
             double x = p.getPosition().x;
             double z = p.getPosition().z;
-            lastTx = Math.toDegrees(Math.atan2(x, z));
+            lastTx = tagTxSign * Math.toDegrees(Math.atan2(x, z));
         }
         return lastTx;
     }
@@ -179,6 +181,19 @@ public class Vision implements Subsystem {
             double z = p.getPosition().z;               // forward distance (meters)
             z *= 39.3701;
             lastDistance = z;
+        }
+        return lastDistance;
+    }
+
+    public double getDistanceInchesForTag(int tagId) {
+        if (tagId < 0) {
+            return getDistanceInches();
+        }
+        LLResultTypes.FiducialResult f = getFiducialById(tagId);
+        if (f != null) {
+            Pose3D p = f.getTargetPoseCameraSpace();
+            double z = p.getPosition().z;
+            lastDistance = z * 39.3701;
         }
         return lastDistance;
     }
