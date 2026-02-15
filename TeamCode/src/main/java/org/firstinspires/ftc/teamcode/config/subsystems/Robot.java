@@ -40,7 +40,7 @@ public class Robot {
 
     public boolean initShootAllMachine = false;
 
-    private double waitTime = 0.35;
+    private double waitTime = 0.01;
 
     //---------------- Subsystems ----------------
 
