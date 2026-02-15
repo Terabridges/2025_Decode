@@ -33,12 +33,9 @@ public class Turret implements Subsystem {
     private double startTurret = 250;
     public static double turretVelocity = 0;
     public static double velocityLoopTime = 250;
-    public static double visionKp = 0.7;
-    public static double visionDeadbandDeg = 0.4;
+    public static double visionKp = 0.8;
+    public static double visionDeadbandDeg = 0.25;
     public static double visionMaxStepDeg = 5.0;
-    public static double visionNearErrorDeg = 2.0;
-    public static double visionNearKpScale = 0.45;
-    public static double visionNearMaxStepDeg = 1.2;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
     public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
@@ -95,12 +92,7 @@ public class Turret implements Subsystem {
 
     public double computeVisionCorrectionDeg(double txDeg, double distanceIn) {
         double parallaxDeg = computeParallaxCorrectionDeg(distanceIn) * Math.signum(txDeg);
-        double errorDeg = txDeg + parallaxDeg + visionErrorBiasDeg;
-        double kp = visionKp;
-        if (Math.abs(errorDeg) <= visionNearErrorDeg) {
-            kp *= visionNearKpScale;
-        }
-        return errorDeg * kp * visionDirection;
+        return (txDeg + parallaxDeg + visionErrorBiasDeg) * visionKp * visionDirection;
     }
 
     /**
@@ -137,8 +129,7 @@ public class Turret implements Subsystem {
             return;
         }
         double correctionDeg = computeVisionCorrectionDeg(txDeg, distanceIn);
-        double maxStep = Math.abs(txDeg) <= visionNearErrorDeg ? visionNearMaxStepDeg : visionMaxStepDeg;
-        correctionDeg = util.clamp(correctionDeg, -maxStep, maxStep);
+        correctionDeg = util.clamp(correctionDeg, -visionMaxStepDeg, visionMaxStepDeg);
         double targetDeg = normalizeDegrees(getCurrentDegrees() + correctionDeg);
         setTurretDegree(targetDeg);
     }

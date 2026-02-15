@@ -38,6 +38,7 @@ public class Outtake implements Subsystem {
         shooter.update();
         turret.update();
         vision.update();
+        turret.updateTxLock(vision);
     }
 
 }

@@ -37,8 +37,6 @@ public class TurretControl implements Control {
     @Override
     public void update(){
         toggleTxLock.update(gp1.start);
-        if (robot == null || robot.outtake == null || robot.outtake.vision == null) return;
-        turret.updateTxLock(robot.outtake.vision);
     }
 
     @Override
