@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes.tests;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareDevice;
@@ -29,6 +30,19 @@ public class MotorAndServoTester extends LinearOpMode {
     private int crServoIndex = 0;
     private int testMode = 0; // 0: motors, 1: servos, 2: crservos
 
+    private boolean powerCapEnabled = true;
+    private boolean prevX = false;
+    private static final double CAPPED_POWER_SCALE = 0.5;
+
+    private boolean servoActive = false;
+    private boolean prevB = false;
+    private int lastServoIndex = -1;
+
+    private boolean crServoActive = false;
+    private int lastCrServoIndex = -1;
+
+    private boolean bEdge = false;
+
     @Override
     public void runOpMode() {
         // Get all devices and their names
@@ -54,6 +68,16 @@ public class MotorAndServoTester extends LinearOpMode {
                 sleep(200); // Debounce
             }
 
+            // Toggle power cap with X (edge-detected)
+            if (gamepad1.x && !prevX) {
+                powerCapEnabled = !powerCapEnabled;
+            }
+            prevX = gamepad1.x;
+
+            // Edge-detect B once per loop so it can be reused across modes.
+            bEdge = gamepad1.b && !prevB;
+            prevB = gamepad1.b;
+
             addControlsLegend();
 
             if (testMode == 0) {
@@ -73,14 +97,21 @@ public class MotorAndServoTester extends LinearOpMode {
         telemetry.addLine("  Y: switch mode (Motor/Servo/CRServo)");
         telemetry.addLine("  Dpad Left/Right: select device");
 
+        telemetry.addLine(String.format(
+                "  X: toggle power cap (currently %s)",
+                powerCapEnabled ? "ON (0.5x)" : "OFF (1.0x)"
+        ));
+
         if (testMode == 0) {
             telemetry.addLine("  Left stick Y: motor power (scaled)");
             telemetry.addLine("  A: stop motor");
         } else if (testMode == 1) {
             telemetry.addLine("  Right stick X: servo position (0..1)");
+            telemetry.addLine("  B: toggle servo active (PWM enable/disable)");
             telemetry.addLine("  A: center servo (0.5)");
         } else {
             telemetry.addLine("  Left stick Y: CRServo power (scaled)");
+            telemetry.addLine("  B: toggle CRServo active (PWM enable/disable)");
             telemetry.addLine("  A: stop CRServo");
         }
     }
@@ -120,7 +151,8 @@ public class MotorAndServoTester extends LinearOpMode {
             DcMotor currentMotor = motors.get(motorIndex);
             String name = motorNames.get(motorIndex);
             // Set power based on left stick Y (range -1 to 1, cap at 0.5 for safety)
-            double power = -gamepad1.left_stick_y * 0.5;
+            double maxPower = powerCapEnabled ? CAPPED_POWER_SCALE : 1.0;
+            double power = -gamepad1.left_stick_y * maxPower;
             currentMotor.setPower(power);
 
             // Reset to zero with A button
@@ -131,6 +163,7 @@ public class MotorAndServoTester extends LinearOpMode {
             telemetry.addData("Mode", "Motor");
             telemetry.addData("Testing Motor", motorIndex + "/" + (motors.size() - 1) + " (" + name + ")");
             telemetry.addData("Power", power);
+            telemetry.addData("Power Cap", powerCapEnabled ? "ON (0.5x)" : "OFF (1.0x)");
         } else {
             telemetry.addData("Mode", "Motor");
             telemetry.addData("No Motors", "Connect some!");
@@ -148,11 +181,32 @@ public class MotorAndServoTester extends LinearOpMode {
         }
 
         if (servos.size() > 0) {
+            // If selection changed, disable PWM on the previously-selected servo and reset active state.
+            if (lastServoIndex != servoIndex) {
+                if (lastServoIndex >= 0 && lastServoIndex < servos.size()) {
+                    disableServoPwm(servos.get(lastServoIndex));
+                }
+                servoActive = false;
+                lastServoIndex = servoIndex;
+            }
+
             Servo currentServo = servos.get(servoIndex);
             String name = servoNames.get(servoIndex);
-            // Set position based on right stick X (range 0 to 1)
+
+            // Toggle servo active (PWM enabled) with B.
+            if (bEdge) {
+                servoActive = !servoActive;
+                if (!servoActive) {
+                    disableServoPwm(currentServo);
+                }
+            }
+
+            // Set position based on right stick X (range 0..1) but only when active.
             double position = (gamepad1.right_stick_x + 1) / 2.0;
-            currentServo.setPosition(position);
+            if (servoActive) {
+                enableServoPwm(currentServo);
+                currentServo.setPosition(position);
+            }
 
             // Reset to 0.5 with A button
             if (gamepad1.a) {
@@ -162,9 +216,22 @@ public class MotorAndServoTester extends LinearOpMode {
             telemetry.addData("Mode", "Servo");
             telemetry.addData("Testing Servo", servoIndex + "/" + (servos.size() - 1) + " (" + name + ")");
             telemetry.addData("Position", position);
+            telemetry.addData("Active", servoActive ? "YES (PWM enabled)" : "NO (PWM disabled)");
         } else {
             telemetry.addData("Mode", "Servo");
             telemetry.addData("No Servos", "Connect some!");
+        }
+    }
+
+    private void enableServoPwm(Servo servo) {
+        if (servo instanceof PwmControl) {
+            ((PwmControl) servo).setPwmEnable();
+        }
+    }
+
+    private void disableServoPwm(Servo servo) {
+        if (servo instanceof PwmControl) {
+            ((PwmControl) servo).setPwmDisable();
         }
     }
 
@@ -179,23 +246,65 @@ public class MotorAndServoTester extends LinearOpMode {
         }
 
         if (crServos.size() > 0) {
+            // If selection changed, stop the previously-selected CRServo and reset active state.
+            if (lastCrServoIndex != crServoIndex) {
+                if (lastCrServoIndex >= 0 && lastCrServoIndex < crServos.size()) {
+                    disablePwmIfSupported(crServos.get(lastCrServoIndex));
+                }
+                crServoActive = false;
+                lastCrServoIndex = crServoIndex;
+            }
+
             CRServo currentCRServo = crServos.get(crServoIndex);
             String name = crServoNames.get(crServoIndex);
+
+            // Toggle CRServo active with B. When toggled off, ensure output is stopped.
+            if (bEdge) {
+                crServoActive = !crServoActive;
+                if (!crServoActive) {
+                    disablePwmIfSupported(currentCRServo);
+                }
+            }
+
             // Set power based on left stick Y (range -1 to 1, cap at 0.5 for safety)
-            double power = -gamepad1.left_stick_y * 0.5;
-            currentCRServo.setPower(power);
+            double maxPower = powerCapEnabled ? CAPPED_POWER_SCALE : 1.0;
+            double requestedPower = -gamepad1.left_stick_y * maxPower;
+            Double appliedPower = null;
+            if (crServoActive) {
+                enablePwmIfSupported(currentCRServo);
+                currentCRServo.setPower(requestedPower);
+                appliedPower = requestedPower;
+            }
 
             // Reset to zero with A button
             if (gamepad1.a) {
-                currentCRServo.setPower(0);
+                if (crServoActive) {
+                    enablePwmIfSupported(currentCRServo);
+                    currentCRServo.setPower(0);
+                    appliedPower = 0.0;
+                }
             }
 
             telemetry.addData("Mode", "CRServo");
             telemetry.addData("Testing CRServo", crServoIndex + "/" + (crServos.size() - 1) + " (" + name + ")");
-            telemetry.addData("Power", power);
+            telemetry.addData("Power", appliedPower == null ? "(inactive)" : appliedPower);
+            telemetry.addData("Power Cap", powerCapEnabled ? "ON (0.5x)" : "OFF (1.0x)");
+            telemetry.addData("Active", crServoActive ? "YES" : "NO");
         } else {
             telemetry.addData("Mode", "CRServo");
             telemetry.addData("No CRServos", "Connect some!");
+        }
+    }
+
+    private void enablePwmIfSupported(HardwareDevice device) {
+        if (device instanceof PwmControl) {
+            ((PwmControl) device).setPwmEnable();
+        }
+    }
+
+    private void disablePwmIfSupported(HardwareDevice device) {
+        if (device instanceof PwmControl) {
+            ((PwmControl) device).setPwmDisable();
         }
     }
 }
