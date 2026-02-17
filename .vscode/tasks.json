@@ -2,6 +2,22 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "ADB: Connect Robot (192.168.43.1)",
+			"type": "shell",
+			"command": "adb",
+			"args": [
+				"connect",
+				"192.168.43.1:5555"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"focus": true
+			}
+		},
+		{
 			"label": "Sloth: Deploy TeamCode (deploySloth)",
 			"type": "shell",
 			"command": "${workspaceFolder}\\\\gradlew.bat",
