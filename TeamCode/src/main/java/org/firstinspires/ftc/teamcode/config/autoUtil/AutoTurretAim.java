@@ -34,7 +34,13 @@ public class AutoTurretAim {
             telemetry.addData("Obelisk Aim", true);
         } else if (robot.outtake.vision.hasRequiredTarget()) {
             robot.outtake.turret.turretVelocity = 0;
+            int requiredTag = robot.outtake.vision.getRequiredTagId();
+            double tx = robot.outtake.vision.getTxForTag(requiredTag);
+            double distance = robot.outtake.vision.getDistanceInchesForTag(requiredTag);
+            robot.outtake.turret.aimFromVision(tx, distance);
             telemetry.addData("Lock Aim", true);
+            telemetry.addData("Lock Tx", tx);
+            telemetry.addData("Lock Distance In", distance);
         } else {
             robot.outtake.turret.turretVelocity = 0;
             aimAtGoal(preloadComplete);
@@ -55,12 +61,12 @@ public class AutoTurretAim {
         if (robot == null || robot.outtake == null || robot.outtake.turret == null || follower == null || target == null) return;
         Pose robotPose = follower.getPose();
         if (robotPose == null) return;
-        double dx = target.getX() - robotPose.getX();
-        double dy = target.getY() - robotPose.getY();
-        double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
-        double robotHeadingDeg = Math.toDegrees(robotPose.getHeading());
-        double turretDeg = headingToTargetDeg - robotHeadingDeg;
-        turretDeg = ((turretDeg % 360) + 360) % 360;
-        robot.outtake.turret.setTurretDegree(turretDeg);
+        robot.outtake.turret.aimAtFieldPoint(
+                robotPose.getX(),
+                robotPose.getY(),
+                robotPose.getHeading(),
+                target.getX(),
+                target.getY()
+        );
     }
 }

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
@@ -19,7 +20,6 @@ public class Spinner implements Subsystem {
     //---------------- Software ----------------
     private double megaSpinPow = 0;
     private boolean useMegaSpin = true;
-    private boolean frontOuterTripped = false;
 
     //---------------- Constructor ----------------
     public Spinner(HardwareMap map) {
@@ -28,6 +28,7 @@ public class Spinner implements Subsystem {
         backOuterDistance = map.get(AnalogInput.class, "distance2");
         backInnerDistance = map.get(AnalogInput.class, "distance3");
         megaSpin = map.get(DcMotor.class, "intake");
+        megaSpin.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     //---------------- Methods ----------------
@@ -51,8 +52,20 @@ public class Spinner implements Subsystem {
         megaSpinPow = 0;
     }
 
-    public boolean getFrontOuterTripped(){
-        return frontOuterTripped;
+    public double getFrontOuterDistance(){
+        return frontOuterDistance.getVoltage();
+    }
+
+    public double getFrontInnerDistance(){
+        return frontInnerDistance.getVoltage();
+    }
+
+    public double getBackOuterDistance(){
+        return backOuterDistance.getVoltage();
+    }
+
+    public double getBackInnerDistance(){
+        return backInnerDistance.getVoltage();
     }
 
     //---------------- Interface Methods ----------------

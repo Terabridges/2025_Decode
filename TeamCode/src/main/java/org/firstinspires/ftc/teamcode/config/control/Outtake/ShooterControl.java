@@ -17,6 +17,7 @@ public class ShooterControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector toggleUseFlywheel = new EdgeDetector(()-> shooter.toggleUseFlywheel());
+    EdgeDetector setHoodTarget = new EdgeDetector(()-> shooter.setHoodTarget());
 
     //---------------- Constructor ----------------
     public ShooterControl(Shooter shooter, Gamepad gp1, Gamepad gp2){
@@ -37,6 +38,7 @@ public class ShooterControl implements Control {
     @Override
     public void update(){
         toggleUseFlywheel.update(gp1.y);
+        setHoodTarget.update(gp1.b);
     }
 
     @Override
