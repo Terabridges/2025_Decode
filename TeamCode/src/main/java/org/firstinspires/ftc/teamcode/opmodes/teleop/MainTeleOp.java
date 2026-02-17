@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
@@ -93,6 +93,8 @@ public class MainTeleOp extends OpMode {
     @Override
     public void start() {
         robot.toInit();
+        updateTemporaryRequiredTagForTesting();
+        robot.outtake.turret.setTxLockEnabled(true);
         shootAllMachine.start();
     }
 
@@ -137,9 +139,9 @@ public class MainTeleOp extends OpMode {
 
     private void updateTemporaryRequiredTagForTesting() {
         // TEMPORARY: keep tx lock on alliance goal tag until proper vision-control flow is finalized.
-        if (GlobalVariables.allianceColor.equalsIgnoreCase("blue")) {
+        if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(20);
-        } else if (GlobalVariables.allianceColor.equalsIgnoreCase("red")) {
+        } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(24);
         }
     }

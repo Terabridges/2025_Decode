@@ -37,7 +37,8 @@ public class Turret implements Subsystem {
     public static double visionDeadbandDeg = 0.25;
     public static double visionMaxStepDeg = 5.0;
     // Exponential smoothing for tx; 1.0 = no filtering, lower = smoother.
-    public static double visionTxAlpha = 0.35;
+    // Default is no filtering so teleop behavior matches VisionTurretLockTester.
+    public static double visionTxAlpha = 1.0;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
     public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
@@ -139,7 +140,11 @@ public class Turret implements Subsystem {
     }
 
     public void toggleTxLock() {
-        txLockEnabled = !txLockEnabled;
+        setTxLockEnabled(!txLockEnabled);
+    }
+
+    public void setTxLockEnabled(boolean enabled) {
+        txLockEnabled = enabled;
         if (txLockEnabled) {
             // Avoid manual velocity nudge fighting lock.
             turretVelocity = 0.0;

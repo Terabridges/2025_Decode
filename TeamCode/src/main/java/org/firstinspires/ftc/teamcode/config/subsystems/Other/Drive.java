@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
-import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class Drive implements Subsystem {
 
@@ -122,7 +122,7 @@ public class Drive implements Subsystem {
     }
     public void resetHeading(){
         double allianceHeading = 0.0;
-        if (GlobalVariables.allianceColor.equalsIgnoreCase("blue")) {
+        if (GlobalVariables.isBlueAlliance()) {
             allianceHeading = Math.PI;
         }
         follower.setPose(new Pose(72, 72, allianceHeading));

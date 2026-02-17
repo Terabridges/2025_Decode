@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class AutoMotifTracker {
     public static final int TAG_MOTIF_1 = 21;
@@ -65,11 +65,11 @@ public class AutoMotifTracker {
         boolean validMotif = isMotifId(acquiredMotifId);
         if (validMotif) {
             if (acquiredMotifId == TAG_MOTIF_1) {
-                GlobalVariables.motif = "GPP";
+                GlobalVariables.setMotif(GlobalVariables.MotifPattern.GPP);
             } else if (acquiredMotifId == TAG_MOTIF_2) {
-                GlobalVariables.motif = "PGP";
+                GlobalVariables.setMotif(GlobalVariables.MotifPattern.PGP);
             } else if (acquiredMotifId == TAG_MOTIF_3) {
-                GlobalVariables.motif = "PPG";
+                GlobalVariables.setMotif(GlobalVariables.MotifPattern.PPG);
             }
         }
     }
