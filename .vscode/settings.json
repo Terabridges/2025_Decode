@@ -1,3 +1,11 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "VsCodeTaskButtons.showCounter": true,
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "$(radio-tower) ADB Connect",
+            "task": "ADB: Connect Robot (192.168.43.1)",
+            "tooltip": "Connect adb to 192.168.43.1:5555"
+        }
+    ]
 }
