@@ -87,7 +87,7 @@ public class Robot {
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT0)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
                     intake.spindex.setSpindexShootOne();
@@ -132,6 +132,37 @@ public class Robot {
                 .build();
 
     }
+
+//    public StateMachine getShootAllMachine(){
+//        return new StateMachineBuilder()
+//                .state(ShootAllStates.INIT)
+//                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+//                .onExit(()-> {
+//                    initShootAllMachine = false;
+//                    intake.spinner.setMegaSpinIn();
+//                    outtake.shooter.useFlywheelPID = true;
+//                    intake.spindex.setSpindexForwardOne();
+//                    intake.clutch.setClutchUp();
+//                })
+//
+//                .state(ShootAllStates.GO_TO_SHOOT_ONE)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.RESET)
+//                .onExit(()-> {
+//                    intake.clutch.setClutchDown();
+//                    intake.spindex.setSpindexShootThree();
+//                })
+//
+//                .state(ShootAllStates.RESET)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+//                .onExit(()-> {
+//                    intake.spinner.setMegaSpinZero();
+//                    intake.clutch.setClutchUp();
+//                    outtake.shooter.useFlywheelPID = false;
+//                })
+//
+//                .build();
+//
+//    }
 
     //---------------- Interface Methods ----------------
     public void update() {
