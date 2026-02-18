@@ -40,15 +40,17 @@ public class Spindex implements Subsystem {
     private double backwardOne = 100;
     private double backwardTwo = 170;
     private double backwardThree = 238;
-    private double shootOne = 82+10;
-    private double shootTwo = 150+10;
-    private double shootThree = 222+20;
+    private double shootOne = 82+5;
+    private double shootTwo = 150+5;
+    private double shootThree = 222+8;
 
     private String currentDirection = "forward";
 
     private String currentBall = "one";
 
     private boolean shootMode = false;
+
+    public boolean spindexStartingSpinning = false;
 
     //---------------- Constructor ----------------
 
@@ -67,6 +69,7 @@ public class Spindex implements Subsystem {
     //---------------- Methods ----------------
     public void setSpindexPos(double pos){
         spindexRight.setPosition(pos);
+        spindexStartingSpinning = true;
     }
 
     public void setSpindexDegree(double degree){
