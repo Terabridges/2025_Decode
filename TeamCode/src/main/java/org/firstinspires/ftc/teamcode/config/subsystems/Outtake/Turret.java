@@ -1,11 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.subsystems.Outtake;
 
-import com.arcrobotics.ftclib.controller.PIDController;
-import com.arcrobotics.ftclib.controller.PIDFController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -42,7 +38,7 @@ public class Turret implements Subsystem {
     public static double visionTxAlpha = 1.0;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
-    public static double visionErrorBiasDeg = 5; // slight rightward trim for steady left/right lock bias
+    public static double visionErrorBiasDeg = 5.0; // alliance-configured constant trim (degrees)
     public static double visionBiasMaxDistanceIn = 110.0; // do not apply bias beyond this distance
     public static double limitAssistMarginDeg = 1.0;
     private boolean txLockEnabled = false;

@@ -20,7 +20,6 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
@@ -34,6 +33,12 @@ import java.util.List;
 //@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
+    private static final int BLUE_GOAL_TAG_ID = 20;
+    private static final int RED_GOAL_TAG_ID = 24;
+    private static final double BLUE_VISION_DIRECTION = -1.0;
+    private static final double RED_VISION_DIRECTION = -1.0;
+    private static final double BLUE_BIAS_MAX_DISTANCE_IN = 110.0;
+    private static final double RED_BIAS_MAX_DISTANCE_IN = Double.POSITIVE_INFINITY;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -101,7 +106,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void start() {
         robot.toInit();
-        updateTemporaryRequiredTagForTesting();
+        applyAllianceVisionLockConfig();
         robot.outtake.turret.setTxLockEnabled(true);
         shootAllMachine.start();
     }
@@ -109,7 +114,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void loop() {
         gamepadUpdate();
-        updateTemporaryRequiredTagForTesting();
+        applyAllianceVisionLockConfig();
         controlsUpdate();
         robot.update();
         controlsTelemetryUpdate();
@@ -151,20 +156,19 @@ public class MainTeleOp extends OpMode {
         shootAllMachine.update();
     }
 
-    private void updateTemporaryRequiredTagForTesting() {
-        // TEMPORARY: keep tx lock on alliance goal tag until proper vision-control flow is finalized.
-        // Red keeps the "current" correction direction; blue uses the inverse.
+    private void applyAllianceVisionLockConfig() {
+        // Keep alliance lock config in one place to avoid drift between start/loop behavior.
         double biasMagnitude = Math.abs(Turret.visionErrorBiasDeg);
         if (GlobalVariables.isBlueAlliance()) {
-            robot.outtake.vision.setRequiredTagId(20);
-            Turret.visionDirection = -1.0;
+            robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
+            Turret.visionDirection = BLUE_VISION_DIRECTION;
             Turret.visionErrorBiasDeg = biasMagnitude;
-            Turret.visionBiasMaxDistanceIn = 110.0; // no bias at long range for blue
+            Turret.visionBiasMaxDistanceIn = BLUE_BIAS_MAX_DISTANCE_IN;
         } else if (GlobalVariables.isRedAlliance()) {
-            robot.outtake.vision.setRequiredTagId(24);
-            Turret.visionDirection = -1.0;
-            Turret.visionErrorBiasDeg = biasMagnitude; // flipped red-side offset direction
-            Turret.visionBiasMaxDistanceIn = Double.POSITIVE_INFINITY; // keep bias at long range for red
+            robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
+            Turret.visionDirection = RED_VISION_DIRECTION;
+            Turret.visionErrorBiasDeg = biasMagnitude;
+            Turret.visionBiasMaxDistanceIn = RED_BIAS_MAX_DISTANCE_IN;
         }
     }
 }
