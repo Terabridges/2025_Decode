@@ -42,7 +42,7 @@ public class Spindex implements Subsystem {
     private double backwardThree = 238;
     private double shootOne = 82+10;
     private double shootTwo = 150+10;
-    private double shootThree = 222+10;
+    private double shootThree = 222+20;
 
     private String currentDirection = "forward";
 

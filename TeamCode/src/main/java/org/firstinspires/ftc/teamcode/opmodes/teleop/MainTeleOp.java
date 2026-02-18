@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import com.bylazar.telemetry.JoinedTelemetry;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -56,6 +58,7 @@ public class MainTeleOp extends OpMode {
     Gamepad previousGamepad2;
 
     StateMachine shootAllMachine;
+    private JoinedTelemetry joinedTelemetry;
 
     @Override
     public void init() {
@@ -83,6 +86,10 @@ public class MainTeleOp extends OpMode {
         previousGamepad2 = new Gamepad();
 
         shootAllMachine = robot.getShootAllMachine();
+        joinedTelemetry = new JoinedTelemetry(
+                PanelsTelemetry.INSTANCE.getFtcTelemetry(),
+                telemetry
+        );
 
     }
 
@@ -122,9 +129,9 @@ public class MainTeleOp extends OpMode {
 
     public void controlsTelemetryUpdate() {
         for (Control c : controls) {
-            c.addTelemetry(telemetry);
+            c.addTelemetry(joinedTelemetry);
         }
-        telemetry.update();
+        joinedTelemetry.update();
 
         Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
     }
