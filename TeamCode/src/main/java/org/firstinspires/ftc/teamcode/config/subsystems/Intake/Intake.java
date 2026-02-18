@@ -41,6 +41,14 @@ public class Intake implements Subsystem {
         spindex.update();
         clutch.update();
         spinner.update();
+
+        if (spindex.spindexStartingSpinning){
+            spinner.overrideSpinIn();
+        }
+
+        if (spindex.isSpindexAtPos() && spindex.spindexStartingSpinning){
+            spinner.overrideSpinZero();
+        }
     }
 
 }
