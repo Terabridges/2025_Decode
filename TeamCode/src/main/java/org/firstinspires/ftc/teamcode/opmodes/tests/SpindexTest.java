@@ -70,3 +70,13 @@ public class SpindexTest extends OpMode {
         currentGamepad2.copy(gamepad2);
     }
 }
+
+// front ball 1 90
+//155
+//227
+//122
+//190
+//257
+//140
+//210
+//275

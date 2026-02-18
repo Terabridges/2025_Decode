@@ -34,15 +34,15 @@ public class Spindex implements Subsystem {
 
     private double spindexDegree = spindexPos*360;
 
-    private double forwardOne = 33;
-    private double forwardTwo = 101;
-    private double forwardThree = 168;
-    private double backwardOne = 134;
-    private double backwardTwo = 203;
-    private double backwardThree = 63;
-    private double shootOne = 83+10;
-    private double shootTwo = 151+10;
-    private double shootThree = 218+10;
+    private double forwardOne = 67;
+    private double forwardTwo = 132;
+    private double forwardThree = 205;
+    private double backwardOne = 100;
+    private double backwardTwo = 170;
+    private double backwardThree = 238;
+    private double shootOne = 82+10;
+    private double shootTwo = 150+10;
+    private double shootThree = 222+10;
 
     private String currentDirection = "forward";
 
@@ -59,8 +59,9 @@ public class Spindex implements Subsystem {
         //middleColor = map.get(RevColorSensorV3.class, "color2");
         //backColor = map.get(RevColorSensorV3.class, "color3");
         spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
-        spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 23, 1.17);
-        spindexEnc.setInverted(true);
+        spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 29, 1.17);
+        spindexEnc.setInverted(false);
+        spindexRight.setDirection(Servo.Direction.REVERSE);
     }
 
     //---------------- Methods ----------------
