@@ -13,7 +13,7 @@ public final class GlobalVariables {
         PGP
     }
 
-    private static AllianceColor allianceColor = AllianceColor.RED;
+    private static AllianceColor allianceColor = AllianceColor.BLUE;
     private static MotifPattern motif = MotifPattern.PPG;
     private static boolean autoFollowerValid = false;
 
@@ -85,7 +85,7 @@ public final class GlobalVariables {
     }
 
     public static void resetForMatch() {
-        allianceColor = AllianceColor.RED;
+        allianceColor = AllianceColor.BLUE;
         motif = MotifPattern.PPG;
         autoFollowerValid = false;
     }

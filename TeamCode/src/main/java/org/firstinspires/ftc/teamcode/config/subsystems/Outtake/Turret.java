@@ -33,15 +33,16 @@ public class Turret implements Subsystem {
     private double startTurret = 250;
     public static double turretVelocity = 0;
     public static double velocityLoopTime = 250;
-    public static double visionKp = 0.8;
-    public static double visionDeadbandDeg = 0.25;
-    public static double visionMaxStepDeg = 5.0;
+    // Conservative defaults to reduce lock oscillation from frame-to-frame overcorrection.
+    public static double visionKp = 0.45;
+    public static double visionDeadbandDeg = 0.5;
+    public static double visionMaxStepDeg = 2.0;
     // Exponential smoothing for tx; 1.0 = no filtering, lower = smoother.
     // Default is no filtering so teleop behavior matches VisionTurretLockTester.
     public static double visionTxAlpha = 1.0;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
-    public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
+    public static double visionErrorBiasDeg = 5; // slight rightward trim for steady left/right lock bias
     public static double limitAssistMarginDeg = 1.0;
     private boolean txLockEnabled = false;
     private boolean hasFilteredTx = false;

@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
@@ -27,6 +28,7 @@ public class VisionTurretLockTester extends OpMode {
     public static double chassisYawKp = 0.02;
     public static double chassisYawMax = 0.25;
     public static double chassisYawDirection = 1.0; // set to -1.0 to invert assist direction
+    public static double turretVisionDirection = -1.0; // tester-only direction trim for tx lock
 
     @Override
     public void init() {
@@ -42,6 +44,7 @@ public class VisionTurretLockTester extends OpMode {
         robot.toInit();
         robot.other.drive.manualDrive = true;
         robot.outtake.vision.setRequiredTagId(requiredTagId);
+        Turret.visionDirection = turretVisionDirection;
     }
 
     @Override
@@ -51,6 +54,7 @@ public class VisionTurretLockTester extends OpMode {
 
         robot.update();
         robot.outtake.vision.setRequiredTagId(requiredTagId);
+        Turret.visionDirection = turretVisionDirection;
 
         if (currentGamepad1.a && !previousGamepad1.a) {
             lockEnabled = !lockEnabled;
@@ -114,6 +118,7 @@ public class VisionTurretLockTester extends OpMode {
         joinedTelemetry.addData("Limit Assist Enabled", enableLimitChassisAssist);
         joinedTelemetry.addData("Limit Assist Active", assistActive);
         joinedTelemetry.addData("Yaw Assist", yawAssist);
+        joinedTelemetry.addData("Turret Vision Dir", Turret.visionDirection);
         joinedTelemetry.addData("Manual Nudge Step", manualStepDeg);
         joinedTelemetry.addData("Controls", "A toggle lock, X/Y tag, B reset turret, Dpad L/R nudge");
         joinedTelemetry.update();

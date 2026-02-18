@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
@@ -104,6 +105,7 @@ public class MainTeleOp extends OpMode {
         updateTemporaryRequiredTagForTesting();
         controlsUpdate();
         robot.update();
+        controlsTelemetryUpdate();
         stateMachinesUpdate();
     }
 
@@ -115,6 +117,11 @@ public class MainTeleOp extends OpMode {
     public void controlsUpdate() {
         for (Control c : controls) {
             c.update();
+        }
+    }
+
+    public void controlsTelemetryUpdate() {
+        for (Control c : controls) {
             c.addTelemetry(telemetry);
         }
         telemetry.update();
@@ -139,10 +146,13 @@ public class MainTeleOp extends OpMode {
 
     private void updateTemporaryRequiredTagForTesting() {
         // TEMPORARY: keep tx lock on alliance goal tag until proper vision-control flow is finalized.
+        // Red keeps the "current" correction direction; blue uses the inverse.
         if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(20);
+            Turret.visionDirection = -1.0;
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(24);
+            Turret.visionDirection = 1.0;
         }
     }
 }
