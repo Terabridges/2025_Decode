@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
 
@@ -154,12 +154,17 @@ public class MainTeleOp extends OpMode {
     private void updateTemporaryRequiredTagForTesting() {
         // TEMPORARY: keep tx lock on alliance goal tag until proper vision-control flow is finalized.
         // Red keeps the "current" correction direction; blue uses the inverse.
+        double biasMagnitude = Math.abs(Turret.visionErrorBiasDeg);
         if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(20);
             Turret.visionDirection = -1.0;
+            Turret.visionErrorBiasDeg = biasMagnitude;
+            Turret.visionBiasMaxDistanceIn = 110.0; // no bias at long range for blue
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(24);
-            Turret.visionDirection = 1.0;
+            Turret.visionDirection = -1.0;
+            Turret.visionErrorBiasDeg = biasMagnitude; // flipped red-side offset direction
+            Turret.visionBiasMaxDistanceIn = Double.POSITIVE_INFINITY; // keep bias at long range for red
         }
     }
 }

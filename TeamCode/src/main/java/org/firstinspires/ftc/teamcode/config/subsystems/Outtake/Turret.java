@@ -43,6 +43,7 @@ public class Turret implements Subsystem {
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
     public static double visionErrorBiasDeg = 5; // slight rightward trim for steady left/right lock bias
+    public static double visionBiasMaxDistanceIn = 110.0; // do not apply bias beyond this distance
     public static double limitAssistMarginDeg = 1.0;
     private boolean txLockEnabled = false;
     private boolean hasFilteredTx = false;
@@ -98,7 +99,8 @@ public class Turret implements Subsystem {
 
     public double computeVisionCorrectionDeg(double txDeg, double distanceIn) {
         double parallaxDeg = computeParallaxCorrectionDeg(distanceIn) * Math.signum(txDeg);
-        return (txDeg + parallaxDeg + visionErrorBiasDeg) * visionKp * visionDirection;
+        double biasDeg = (distanceIn <= visionBiasMaxDistanceIn) ? visionErrorBiasDeg : 0.0;
+        return (txDeg + parallaxDeg + biasDeg) * visionKp * visionDirection;
     }
 
     /**
