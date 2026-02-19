@@ -33,10 +33,12 @@ public class Spinner implements Subsystem {
     public boolean frontInnerTripped = false;
     public boolean backOuterTripped = false;
     public boolean backInnerTripped = false;
-    public static double frontOuterDistanceThresh = 0.026; //0.025
-    public static double frontInnerDistanceThresh = 0.32; //0.31
-    public static double backOuterDistanceThresh = 0.32;
-    public static double backInnerDistanceThresh = 0.026;
+    public static double frontOuterDistanceLowThresh = 0.25; // lower than 0.22
+    //public static double frontOuterDistanceHighThresh = 0.35; // higher than 0.32
+    public static double frontInnerDistanceLowThresh = 0.3; //lower than 0.3
+    public static double backOuterDistanceLowThresh = 0.25; //lower than 0.3
+    //public static double backOuterDistanceHighThresh = 0.35; //higher than 0.375
+    public static double backInnerDistanceLowThresh = 0.3; //lower than 0.3
     public boolean spinOverride = false;
     private double overridePow = 0;
 
@@ -46,8 +48,8 @@ public class Spinner implements Subsystem {
     public Spinner(HardwareMap map) {
         frontOuterDistanceSensor = map.get(AnalogInput.class, "distance0");
         frontInnerDistanceSensor = map.get(AnalogInput.class, "distance1");
-        backOuterDistanceSensor = map.get(AnalogInput.class, "distance2");
-        backInnerDistanceSensor = map.get(AnalogInput.class, "distance3");
+        backOuterDistanceSensor = map.get(AnalogInput.class, "distance3");
+        backInnerDistanceSensor = map.get(AnalogInput.class, "distance2");
         megaSpin = map.get(DcMotor.class, "intake");
         megaSpin.setDirection(DcMotorSimple.Direction.REVERSE);
     }
@@ -113,19 +115,21 @@ public class Spinner implements Subsystem {
         backOuterDistance = backOuterDistanceSensor.getVoltage();
         backInnerDistance = backInnerDistanceSensor.getVoltage();
 
-        if (Math.abs(frontOuterDistance - previousFrontOuterDistance) > frontOuterDistanceThresh){
+        if (frontOuterDistance < frontOuterDistanceLowThresh){
             frontOuterTripped = true;
         }
-        if (Math.abs(frontInnerDistance - previousFrontInnerDistance) > frontInnerDistanceThresh){
+        if (frontInnerDistance < frontInnerDistanceLowThresh){
             frontInnerTripped = true;
         }
-        if (Math.abs(backOuterDistance - previousBackOuterDistance) > backOuterDistanceThresh){
+        if (backOuterDistance < backOuterDistanceLowThresh){
             backOuterTripped = true;
         }
-        if (Math.abs(backInnerDistance - previousBackInnerDistance) > backInnerDistanceThresh){
+        if (backInnerDistance < backInnerDistanceLowThresh){
             backInnerTripped = true;
         }
     }
+
+
 
     public void unTrip(){
         frontOuterTripped = false;

@@ -37,12 +37,15 @@ public class Spindex implements Subsystem {
     private double forwardOne = 67;
     private double forwardTwo = 132;
     private double forwardThree = 205;
-    private double backwardOne = 100;
-    private double backwardTwo = 170;
-    private double backwardThree = 238;
-    private double shootOne = 82+5;
-    private double shootTwo = 150+5;
-    private double shootThree = 222+8;
+    private double backwardOne = 170;
+    private double backwardTwo = 238;
+    private double backwardThree = 100;
+    private double shootOne = 82;
+    private double shootTwo = 150;
+    private double shootThree = 222;
+    private double shootFour = 235;
+
+    //TODO make a four for everything, so it does not have to wrap around when shooting patterns
 
     private String currentDirection = "forward";
 
@@ -51,6 +54,10 @@ public class Spindex implements Subsystem {
     private boolean shootMode = false;
 
     public boolean spindexStartingSpinning = false;
+
+    public String[] ballList = {"E", "E", "E"};
+    public String balls = "";
+
 
     //---------------- Constructor ----------------
 
@@ -128,37 +135,107 @@ public class Spindex implements Subsystem {
         setSpindexDegree(shootThree);
     }
 
+    public void setSpindexShootFour(){
+        setSpindexDegree(shootFour);
+    }
+
     public void switchSides(){
         if(currentDirection.equals("forward")){
             currentDirection = "backward";
             switch (currentBall) {
                 case "one":
-                    currentBall = "three";
-                    setSpindexBackwardThree();
+                    if(ballList[2].equals("E")) {
+                        currentBall = "three";
+                        setSpindexBackwardThree();
+                    } else if(ballList[1].equals("E")) {
+                        currentBall = "two";
+                        setSpindexBackwardTwo();
+                    } else if(ballList[0].equals("E")) {
+                        currentBall = "one";
+                        setSpindexBackwardOne();
+                    } else {
+                        currentBall = "three";
+                        setSpindexBackwardThree();
+                    }
                     break;
                 case "two":
-                    currentBall = "one";
-                    setSpindexBackwardOne();
+                    if(ballList[0].equals("E")) {
+                        currentBall = "one";
+                        setSpindexBackwardOne();
+                    } else if(ballList[2].equals("E")) {
+                        currentBall = "three";
+                        setSpindexBackwardThree();
+                    } else if(ballList[1].equals("E")) {
+                        currentBall = "two";
+                        setSpindexBackwardTwo();
+                    } else {
+                        currentBall = "one";
+                        setSpindexBackwardOne();
+                    }
                     break;
                 case "three":
-                    currentBall = "two";
-                    setSpindexBackwardTwo();
+                    if(ballList[1].equals("E")) {
+                        currentBall = "two";
+                        setSpindexBackwardTwo();
+                    } else if(ballList[2].equals("E")) {
+                        currentBall = "three";
+                        setSpindexBackwardThree();
+                    } else if(ballList[0].equals("E")) {
+                        currentBall = "one";
+                        setSpindexBackwardOne();
+                    } else {
+                        currentBall = "two";
+                        setSpindexBackwardTwo();
+                    }
                     break;
             }
         } else if(currentDirection.equals("backward")){
             currentDirection = "forward";
             switch (currentBall) {
                 case "three":
-                    currentBall = "one";
-                    setSpindexForwardOne();
+                    if(ballList[0].equals("E")) {
+                        currentBall = "one";
+                        setSpindexForwardOne();
+                    } else if(ballList[1].equals("E")) {
+                        currentBall = "two";
+                        setSpindexForwardTwo();
+                    } else if(ballList[2].equals("E")) {
+                        currentBall = "three";
+                        setSpindexForwardThree();
+                    } else {
+                        currentBall = "one";
+                        setSpindexForwardOne();
+                    }
                     break;
                 case "one":
-                    currentBall = "two";
-                    setSpindexForwardTwo();
+                    if(ballList[1].equals("E")) {
+                        currentBall = "two";
+                        setSpindexForwardTwo();
+                    } else if(ballList[2].equals("E")) {
+                        currentBall = "three";
+                        setSpindexForwardThree();
+                    } else if(ballList[0].equals("E")) {
+                        currentBall = "one";
+                        setSpindexForwardOne();
+                    } else {
+                        currentBall = "two";
+                        setSpindexForwardTwo();
+                    }
                     break;
                 case "two":
-                    currentBall = "three";
-                    setSpindexForwardThree();
+                    if(ballList[2].equals("E")) {
+                        currentBall = "three";
+                        setSpindexForwardThree();
+                    } else if(ballList[1].equals("E")) {
+                        currentBall = "two";
+                        setSpindexForwardTwo();
+                    } else if(ballList[0].equals("E")) {
+                        currentBall = "one";
+                        setSpindexForwardOne();
+                    } else {
+                        currentBall = "three";
+                        setSpindexForwardThree();
+                    }
                     break;
             }
         }
@@ -169,14 +246,14 @@ public class Spindex implements Subsystem {
         if (shootMode){
             switch (currentBall) {
                 case "one":
-                    currentBall = "three";
-                    setSpindexShootThree();
-                    break;
-                case "three":
                     currentBall = "two";
                     setSpindexShootTwo();
                     break;
                 case "two":
+                    currentBall = "three";
+                    setSpindexShootThree();
+                    break;
+                case "three":
                     currentBall = "one";
                     setSpindexShootOne();
                     break;
@@ -184,31 +261,31 @@ public class Spindex implements Subsystem {
         } else if(currentDirection.equals("forward")){
             switch (currentBall){
                 case "one":
+                    currentBall = "two";
+                    setSpindexForwardTwo();
+                    break;
+                case "two":
                     currentBall = "three";
                     setSpindexForwardThree();
                     break;
-                case "two":
+                case "three":
                     currentBall = "one";
                     setSpindexForwardOne();
-                    break;
-                case "three":
-                    currentBall = "two";
-                    setSpindexForwardTwo();
                     break;
             }
         } else if(currentDirection.equals("backward")) {
             switch (currentBall) {
                 case "one":
+                    currentBall = "two";
+                    setSpindexBackwardTwo();
+                    break;
+                case "two":
                     currentBall = "three";
                     setSpindexBackwardThree();
                     break;
-                case "two":
+                case "three":
                     currentBall = "one";
                     setSpindexBackwardOne();
-                    break;
-                case "three":
-                    currentBall = "two";
-                    setSpindexBackwardTwo();
                     break;
             }
         }
@@ -218,46 +295,46 @@ public class Spindex implements Subsystem {
         if (shootMode) {
             switch (currentBall) {
                 case "one":
-                    currentBall = "two";
-                    setSpindexShootTwo();
-                    break;
-                case "two":
                     currentBall = "three";
                     setSpindexShootThree();
                     break;
-                case "three":
+                case "two":
                     currentBall = "one";
                     setSpindexShootOne();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexShootTwo();
                     break;
             }
         } else if(currentDirection.equals("forward")){
             switch (currentBall){
                 case "one":
-                    currentBall = "two";
-                    setSpindexForwardTwo();
-                    break;
-                case "two":
                     currentBall = "three";
                     setSpindexForwardThree();
                     break;
-                case "three":
+                case "two":
                     currentBall = "one";
                     setSpindexForwardOne();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexForwardTwo();
                     break;
             }
         } else if(currentDirection.equals("backward")) {
             switch (currentBall) {
                 case "one":
-                    currentBall = "two";
-                    setSpindexBackwardTwo();
-                    break;
-                case "two":
                     currentBall = "three";
                     setSpindexBackwardThree();
                     break;
-                case "three":
+                case "two":
                     currentBall = "one";
                     setSpindexBackwardOne();
+                    break;
+                case "three":
+                    currentBall = "two";
+                    setSpindexBackwardTwo();
                     break;
             }
         }
@@ -297,6 +374,58 @@ public class Spindex implements Subsystem {
         return spindexRight.getPosition()*360;
     }
 
+    public void updateIntookBall(){
+        if(isSpindexAtPos()) {
+            if (currentDirection.equals("forward")) {
+                if (currentBall.equals("one")) {
+                    ballList[0] = "B";
+                    if (ballList[1].equals("E")) {
+                        setSpindexForwardTwo();
+                    } else if (ballList[2].equals("E")) {
+                        setSpindexForwardThree();
+                    }
+                } else if (currentBall.equals("two")) {
+                    ballList[1] = "B";
+                    if (ballList[0].equals("E")) {
+                        setSpindexForwardOne();
+                    } else if (ballList[2].equals("E")) {
+                        setSpindexForwardThree();
+                    }
+                } else if (currentBall.equals("three")) {
+                    ballList[2] = "B";
+                    if (ballList[0].equals("E")) {
+                        setSpindexForwardOne();
+                    } else if (ballList[1].equals("E")) {
+                        setSpindexForwardTwo();
+                    }
+                }
+            } else if (currentDirection.equals("backward")) {
+                if (currentBall.equals("one")) {
+                    ballList[0] = "B";
+                    if (ballList[1].equals("E")) {
+                        setSpindexBackwardTwo();
+                    } else if (ballList[2].equals("E")) {
+                        setSpindexBackwardThree();
+                    }
+                } else if (currentBall.equals("two")) {
+                    ballList[1] = "B";
+                    if (ballList[0].equals("E")) {
+                        setSpindexBackwardOne();
+                    } else if (ballList[2].equals("E")) {
+                        setSpindexBackwardThree();
+                    }
+                } else if (currentBall.equals("three")) {
+                    ballList[2] = "B";
+                    if (ballList[0].equals("E")) {
+                        setSpindexBackwardOne();
+                    } else if (ballList[1].equals("E")) {
+                        setSpindexBackwardTwo();
+                    }
+                }
+            }
+        }
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
@@ -305,6 +434,6 @@ public class Spindex implements Subsystem {
 
     @Override
     public void update(){
-
+        balls = ballList[0] + ballList[1] + ballList[2];
     }
 }

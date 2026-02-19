@@ -117,12 +117,13 @@ public class Robot {
                 .state(ShootAllStates.WAIT3)
                 .transitionTimed(waitTime, ShootAllStates.RESET)
                 .onExit(()-> {
-                    intake.spindex.setSpindexForwardOne();
+                    intake.spindex.setSpindexShootFour();
                 })
 
                 .state(ShootAllStates.RESET)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
                 .onExit(()-> {
+                    intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     outtake.shooter.useFlywheelPID = false;

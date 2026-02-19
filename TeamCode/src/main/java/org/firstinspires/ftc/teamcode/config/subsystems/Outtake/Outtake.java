@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 
 public class Outtake implements Subsystem {
 
@@ -11,6 +12,7 @@ public class Outtake implements Subsystem {
     public Shooter shooter;
     public Turret turret;
     public Vision vision;
+    private ShooterData shooterData;
 
     //---------------- Software ----------------
 
@@ -20,6 +22,7 @@ public class Outtake implements Subsystem {
         shooter = new Shooter(map);
         turret = new Turret(map);
         vision = new Vision(map);
+        shooterData = new ShooterData();
     }
 
     //---------------- Methods ----------------
@@ -35,6 +38,8 @@ public class Outtake implements Subsystem {
 
     @Override
     public void update(){
+        shooter.flywheelTargetRPM = shooterData.getRPMVal(vision.getDistanceInches());
+        shooter.hoodPos = shooterData.getAngleVal(vision.getDistanceInches());
         shooter.update();
         turret.update();
         vision.update();

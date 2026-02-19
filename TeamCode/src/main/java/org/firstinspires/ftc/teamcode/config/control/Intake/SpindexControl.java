@@ -51,5 +51,6 @@ public class SpindexControl implements Control {
         telemetry.addData("Current Ball", spindex.getCurrentBall());
         telemetry.addData("CurrentPos", spindex.getAbsolutePos());
         telemetry.addData("CommandedPos", spindex.getCommandedPos());
+        telemetry.addData("Ball Order", spindex.balls);
     }
 }

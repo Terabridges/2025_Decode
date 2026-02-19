@@ -49,6 +49,45 @@ public class Intake implements Subsystem {
         if (spindex.isSpindexAtPos() && spindex.spindexStartingSpinning){
             spinner.overrideSpinZero();
         }
+
+        if(spinner.frontInnerTripped){
+            if (spindex.getCurrentDirection().equals("forward")){
+                if(spindex.getCurrentBall().equals("one")){
+                    if (spindex.ballList[0].equals("E")){
+                        spindex.updateIntookBall();
+                    }
+                } else if(spindex.getCurrentBall().equals("two")){
+                    if (spindex.ballList[1].equals("E")){
+                        spindex.updateIntookBall();
+                    }
+                } else if(spindex.getCurrentBall().equals("three")){
+                    if (spindex.ballList[2].equals("E")){
+                        spindex.updateIntookBall();
+                    }
+                }
+            }
+            spinner.frontInnerTripped = false;
+        }
+
+        if(spinner.backInnerTripped){
+            if (spindex.getCurrentDirection().equals("backward")){
+                if(spindex.getCurrentBall().equals("one")){
+                    if (spindex.ballList[0].equals("E")){
+                        spindex.updateIntookBall();
+                    }
+                } else if(spindex.getCurrentBall().equals("two")){
+                    if (spindex.ballList[1].equals("E")){
+                        spindex.updateIntookBall();
+                    }
+                } else if(spindex.getCurrentBall().equals("three")){
+                    if (spindex.ballList[2].equals("E")){
+                        spindex.updateIntookBall();
+                    }
+                }
+            }
+            spinner.backInnerTripped = false;
+        }
+
     }
 
 }

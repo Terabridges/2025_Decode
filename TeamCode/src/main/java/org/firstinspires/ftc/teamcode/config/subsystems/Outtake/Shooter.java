@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 @Configurable
@@ -28,14 +29,14 @@ public class Shooter implements Subsystem {
 
     private double hoodDown = 0.0;
     private double hoodUp = 1.0;
-    public static double hoodPos = 0.5;
+    public double hoodPos = 0.5;
 
     public PIDFController flywheelPID;
     private double p = 0.0015, i = 0.0001, d = 0.0, f = 0.0002;
     private double posTolerance = 150;
     private double integrationBounds = 250;
     private double flywheelPower = 0.0;
-    public static double flywheelTargetRPM = 2600;
+    public double flywheelTargetRPM = 2600;
     private double flywheelMaxPower = 1.0;
     public boolean useFlywheelPID = false;
     private double currentRPM = 0;
