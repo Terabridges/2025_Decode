@@ -1,11 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.subsystems.Outtake;
 
-import com.arcrobotics.ftclib.controller.PIDController;
-import com.arcrobotics.ftclib.controller.PIDFController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -33,14 +29,17 @@ public class Turret implements Subsystem {
     private double startTurret = 250;
     public static double turretVelocity = 0;
     public static double velocityLoopTime = 250;
-    public static double visionKp = 0.8;
-    public static double visionDeadbandDeg = 0.25;
-    public static double visionMaxStepDeg = 5.0;
+    // Conservative defaults to reduce lock oscillation from frame-to-frame overcorrection.
+    public static double visionKp = 0.45;
+    public static double visionDeadbandDeg = 0.5;
+    public static double visionMaxStepDeg = 2.0;
     // Exponential smoothing for tx; 1.0 = no filtering, lower = smoother.
-    public static double visionTxAlpha = 0.35;
+    // Default is no filtering so teleop behavior matches VisionTurretLockTester.
+    public static double visionTxAlpha = 1.0;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
-    public static double visionErrorBiasDeg = 0.0; // trim constant for steady left/right lock bias
+    public static double visionErrorBiasDeg = 5.0; // alliance-configured constant trim (degrees)
+    public static double visionBiasMaxDistanceIn = 110.0; // do not apply bias beyond this distance
     public static double limitAssistMarginDeg = 1.0;
     private boolean txLockEnabled = false;
     private boolean hasFilteredTx = false;
@@ -96,7 +95,8 @@ public class Turret implements Subsystem {
 
     public double computeVisionCorrectionDeg(double txDeg, double distanceIn) {
         double parallaxDeg = computeParallaxCorrectionDeg(distanceIn) * Math.signum(txDeg);
-        return (txDeg + parallaxDeg + visionErrorBiasDeg) * visionKp * visionDirection;
+        double biasDeg = (distanceIn <= visionBiasMaxDistanceIn) ? visionErrorBiasDeg : 0.0;
+        return (txDeg + parallaxDeg + biasDeg) * visionKp * visionDirection;
     }
 
     /**
@@ -139,7 +139,11 @@ public class Turret implements Subsystem {
     }
 
     public void toggleTxLock() {
-        txLockEnabled = !txLockEnabled;
+        setTxLockEnabled(!txLockEnabled);
+    }
+
+    public void setTxLockEnabled(boolean enabled) {
+        txLockEnabled = enabled;
         if (txLockEnabled) {
             // Avoid manual velocity nudge fighting lock.
             turretVelocity = 0.0;

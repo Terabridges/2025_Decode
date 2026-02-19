@@ -28,7 +28,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 @PsiKitAutoLog(rlogPort = 5802)
 public abstract class BaseAuto extends OpMode {
@@ -135,9 +135,9 @@ public abstract class BaseAuto extends OpMode {
         robot.outtake.vision.clearMotifTagId();
 
         if (alliance == Alliance.BLUE) {
-            GlobalVariables.allianceColor = "blue";
+            GlobalVariables.setAllianceColor(GlobalVariables.AllianceColor.BLUE);
         } else {
-            GlobalVariables.allianceColor = "red";
+            GlobalVariables.setAllianceColor(GlobalVariables.AllianceColor.RED);
         }
 
         rowsToRun = rowSequence.length;
@@ -146,7 +146,7 @@ public abstract class BaseAuto extends OpMode {
         preloadComplete = false;
 
         FollowerManager.initFollower(hardwareMap, startPose);
-        GlobalVariables.autoFollowerValid = false;
+        GlobalVariables.setAutoFollowerValid(false);
 
         stateTimer.reset();
 
@@ -206,7 +206,7 @@ public abstract class BaseAuto extends OpMode {
         if (follower != null) {
             follower.breakFollowing();
         }
-        GlobalVariables.autoFollowerValid = (follower != null);
+        GlobalVariables.setAutoFollowerValid(follower != null);
     }
 
     // ===== State Machine Construction =====

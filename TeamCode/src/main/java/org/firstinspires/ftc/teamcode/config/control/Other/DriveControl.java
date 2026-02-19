@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Other.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
-import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 public class DriveControl implements Control {
 
@@ -40,9 +40,9 @@ public class DriveControl implements Control {
         slowModeRE.update(gp1.dpad_down);
 
         if (drive.useFieldCentric){
-            if (GlobalVariables.allianceColor.equals("red")) {
+            if (GlobalVariables.isRedAlliance()) {
                 drive.driveFieldRelative(-gp1.left_stick_y, gp1.left_stick_x, gp1.right_stick_x); //Correct
-            } else if (GlobalVariables.allianceColor.equals("blue")) {
+            } else if (GlobalVariables.isBlueAlliance()) {
                 drive.driveFieldRelative(gp1.left_stick_y, -gp1.left_stick_x, gp1.right_stick_x); //Inverted
             }
         } else if(drive.manualDrive){
