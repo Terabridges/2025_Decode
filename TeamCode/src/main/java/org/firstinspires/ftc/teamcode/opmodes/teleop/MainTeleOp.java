@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import com.bylazar.telemetry.JoinedTelemetry;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -18,9 +20,9 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.utility.OLD.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
@@ -28,9 +30,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
+    private static final int BLUE_GOAL_TAG_ID = 20;
+    private static final int RED_GOAL_TAG_ID = 24;
+    private static final double BLUE_VISION_DIRECTION = -1.0;
+    private static final double RED_VISION_DIRECTION = -1.0;
+    private static final double BLUE_BIAS_MAX_DISTANCE_IN = 110.0;
+    private static final double RED_BIAS_MAX_DISTANCE_IN = Double.POSITIVE_INFINITY;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -55,6 +63,7 @@ public class MainTeleOp extends OpMode {
     Gamepad previousGamepad2;
 
     StateMachine shootAllMachine;
+    private JoinedTelemetry joinedTelemetry;
 
     @Override
     public void init() {
@@ -82,6 +91,10 @@ public class MainTeleOp extends OpMode {
         previousGamepad2 = new Gamepad();
 
         shootAllMachine = robot.getShootAllMachine();
+        joinedTelemetry = new JoinedTelemetry(
+                PanelsTelemetry.INSTANCE.getFtcTelemetry(),
+                telemetry
+        );
 
     }
 
@@ -93,15 +106,18 @@ public class MainTeleOp extends OpMode {
     @Override
     public void start() {
         robot.toInit();
+        applyAllianceVisionLockConfig();
+        robot.outtake.turret.setTxLockEnabled(true);
         shootAllMachine.start();
     }
 
     @Override
     public void loop() {
         gamepadUpdate();
-        updateTemporaryRequiredTagForTesting();
+        applyAllianceVisionLockConfig();
         controlsUpdate();
         robot.update();
+        controlsTelemetryUpdate();
         stateMachinesUpdate();
     }
 
@@ -113,9 +129,14 @@ public class MainTeleOp extends OpMode {
     public void controlsUpdate() {
         for (Control c : controls) {
             c.update();
-            c.addTelemetry(telemetry);
         }
-        telemetry.update();
+    }
+
+    public void controlsTelemetryUpdate() {
+        for (Control c : controls) {
+            c.addTelemetry(joinedTelemetry);
+        }
+        joinedTelemetry.update();
 
         Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
     }
@@ -135,12 +156,19 @@ public class MainTeleOp extends OpMode {
         shootAllMachine.update();
     }
 
-    private void updateTemporaryRequiredTagForTesting() {
-        // TEMPORARY: keep tx lock on alliance goal tag until proper vision-control flow is finalized.
-        if (GlobalVariables.allianceColor.equalsIgnoreCase("blue")) {
-            robot.outtake.vision.setRequiredTagId(20);
-        } else if (GlobalVariables.allianceColor.equalsIgnoreCase("red")) {
-            robot.outtake.vision.setRequiredTagId(24);
+    private void applyAllianceVisionLockConfig() {
+        // Keep alliance lock config in one place to avoid drift between start/loop behavior.
+        double biasMagnitude = Math.abs(Turret.visionErrorBiasDeg);
+        if (GlobalVariables.isBlueAlliance()) {
+            robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
+            Turret.visionDirection = BLUE_VISION_DIRECTION;
+            Turret.visionErrorBiasDeg = biasMagnitude;
+            Turret.visionBiasMaxDistanceIn = BLUE_BIAS_MAX_DISTANCE_IN;
+        } else if (GlobalVariables.isRedAlliance()) {
+            robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
+            Turret.visionDirection = RED_VISION_DIRECTION;
+            Turret.visionErrorBiasDeg = biasMagnitude;
+            Turret.visionBiasMaxDistanceIn = RED_BIAS_MAX_DISTANCE_IN;
         }
     }
 }

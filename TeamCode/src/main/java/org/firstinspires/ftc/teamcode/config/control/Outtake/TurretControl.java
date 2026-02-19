@@ -4,7 +4,6 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
-import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
@@ -16,7 +15,8 @@ public class TurretControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector toggleTxLock = new EdgeDetector(() -> turret.toggleTxLock());
+    EdgeDetector toggleTxLockStart = new EdgeDetector(() -> turret.toggleTxLock());
+    EdgeDetector toggleTxLockStick = new EdgeDetector(() -> turret.toggleTxLock());
 
     //---------------- Constructor ----------------
     public TurretControl(Turret turret, Gamepad gp1, Gamepad gp2){
@@ -36,11 +36,30 @@ public class TurretControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        toggleTxLock.update(gp1.start);
+        // Some controllers/Driver Station mappings do not reliably expose START.
+        // Keep START and add right-stick-click as a fallback toggle.
+        toggleTxLockStart.update(gp1.start || gp2.start);
+        toggleTxLockStick.update(gp1.right_stick_button || gp2.right_stick_button);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("TX Lock", turret.isTxLockEnabled());
+//        if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
+//            int requiredTagId = robot.outtake.vision.getRequiredTagId();
+//            boolean seesRequired = robot.outtake.vision.hasRequiredTarget();
+//            double tx = requiredTagId >= 0
+//                    ? robot.outtake.vision.getTxForTag(requiredTagId)
+//                    : robot.outtake.vision.getTx();
+//            double distanceIn = requiredTagId >= 0
+//                    ? robot.outtake.vision.getDistanceInchesForTag(requiredTagId)
+//                    : robot.outtake.vision.getDistanceInches();
+//
+//            telemetry.addData("TX Lock Required Tag", requiredTagId);
+//            telemetry.addData("TX Lock Sees Required", seesRequired);
+//            telemetry.addData("TX Lock Tx (deg)", tx);
+//            telemetry.addData("TX Lock Distance (in)", distanceIn);
+//        }
+//        telemetry.addData("TX Lock Toggle", "gp1/gp2 START or right-stick-click");
     }
 }
