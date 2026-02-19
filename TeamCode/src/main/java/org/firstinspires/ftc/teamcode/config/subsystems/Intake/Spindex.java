@@ -426,6 +426,12 @@ public class Spindex implements Subsystem {
         }
     }
 
+    public void emptyBalls(){
+        ballList[0] = "E";
+        ballList[1] = "E";
+        ballList[2] = "E";
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){

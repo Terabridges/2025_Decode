@@ -84,6 +84,7 @@ public class Robot {
                     outtake.shooter.useFlywheelPID = true;
                     intake.spindex.setSpindexForwardOne();
                     intake.clutch.setClutchUp();
+                    outtake.shooter.setHoodTarget();
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
@@ -127,6 +128,7 @@ public class Robot {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     outtake.shooter.useFlywheelPID = false;
+                    intake.spindex.emptyBalls();
                 })
 
 
