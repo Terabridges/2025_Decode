@@ -64,6 +64,8 @@ public abstract class BaseAuto extends OpMode {
     private boolean allowPickupCycles;
     @SuppressWarnings("unused")
     private boolean backRowLoopEnabled;
+    private int backRowLoopCyclesTarget;
+    private int backRowLoopCyclesCompleted;
     private AutoRoutePlanner routePlanner;
     private Range lastScoreRangeUsed;
     private enum PathRequest {
@@ -116,6 +118,7 @@ public abstract class BaseAuto extends OpMode {
         releaseAfterClosePickup = spec.releaseAfterClosePickup;
         shootPreload = spec.shootPreload;
         backRowLoopEnabled = spec.backRowLoopEnabled;
+        backRowLoopCyclesTarget = spec.backRowLoopCycles;
         rowSequence = spec.rowSequence;
         allowPickupCycles = rowSequence.length > 0;
         routePlanner = new AutoRoutePlanner(range);
@@ -144,6 +147,7 @@ public abstract class BaseAuto extends OpMode {
         rowsCompleted = 0;
         currentAbsoluteRow = (rowsToRun > 0) ? rowSequence[0] : routePlanner.getStartingAbsoluteRow();
         preloadComplete = false;
+        backRowLoopCyclesCompleted = 0;
 
         FollowerManager.initFollower(hardwareMap, startPose);
         GlobalVariables.setAutoFollowerValid(false);
@@ -260,7 +264,9 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
                 .onEnter(this::onEnterBackRowLoopCompleteShoot)
-                .transition(this::backRowLoopShootComplete, AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .onExit(this::onExitBackRowLoopCompleteShoot)
+                .transition(this::shouldExitBackRowLoop, AutoStates.LEAVE)
+                .transition(this::shouldContinueBackRowLoop, AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -414,6 +420,10 @@ public abstract class BaseAuto extends OpMode {
         shootTimer.reset();
 
         // TODO: shooter subsystem command to fire loop shot goes here.
+    }
+
+    protected void onExitBackRowLoopCompleteShoot() {
+        backRowLoopCyclesCompleted++;
     }
 
     // ===== Path Building =====
@@ -585,6 +595,26 @@ public abstract class BaseAuto extends OpMode {
     protected boolean backRowLoopShootComplete() {
         // Placeholder completion signal for loop shot until subsystem signal is wired.
         return shootTimedOut() || stateTimedOut();
+    }
+
+    protected boolean shouldExitBackRowLoop() {
+        if (!backRowLoopShootComplete()) {
+            return false;
+        }
+        if (backRowLoopCyclesTarget <= 0) {
+            return false;
+        }
+        return (backRowLoopCyclesCompleted + 1) >= backRowLoopCyclesTarget;
+    }
+
+    protected boolean shouldContinueBackRowLoop() {
+        if (!backRowLoopShootComplete()) {
+            return false;
+        }
+        if (backRowLoopCyclesTarget <= 0) {
+            return true;
+        }
+        return (backRowLoopCyclesCompleted + 1) < backRowLoopCyclesTarget;
     }
     
     // ===== Telemetry Helpers =====

@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -21,6 +22,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
+import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
@@ -114,7 +116,17 @@ public class MainTeleOp extends OpMode {
     public void start() {
         robot.toInit();
         applyAllianceVisionLockConfig();
-        robot.outtake.turret.setTxLockEnabled(true);
+        boolean reuseAutoFollower = GlobalVariables.isAutoFollowerValid()
+                && FollowerManager.follower != null;
+        if (reuseAutoFollower) {
+            FollowerManager.getFollower(hardwareMap);
+        } else {
+            double allianceHeading = GlobalVariables.isBlueAlliance() ? Math.PI : 0.0;
+            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, allianceHeading));
+        }
+        // Consume the auto->teleop handoff flag for this start.
+        GlobalVariables.setAutoFollowerValid(false);
+        robot.outtake.turret.setAimLockEnabled(true);
         shootAllMachine.start();
         loopTimer.reset();
         telemetryTimer.reset();
@@ -123,6 +135,9 @@ public class MainTeleOp extends OpMode {
     @Override
     public void loop() {
         gamepadUpdate();
+        if (FollowerManager.follower != null) {
+            FollowerManager.follower.update();
+        }
         updateAllianceToggle();
         applyAllianceVisionLockConfig();
         controlsUpdate();
@@ -135,7 +150,6 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void stop() {
-
     }
 
     public void controlsUpdate() {

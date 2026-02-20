@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.config.subsystems.Outtake;
 
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
+
+import com.pedropathing.geometry.Pose;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -13,6 +16,19 @@ import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 @Configurable
 public class Turret implements Subsystem {
+    private static final int BLUE_GOAL_TAG_ID = 20;
+    private static final int RED_GOAL_TAG_ID = 24;
+
+    public enum AimMode {
+        MANUAL,
+        LOCK
+    }
+
+    public enum LockSource {
+        NONE,
+        TX,
+        ODO
+    }
 
     //---------------- Hardware ----------------
     private Servo leftTurret;
@@ -25,18 +41,19 @@ public class Turret implements Subsystem {
     //---------------- Software ----------------
     private double turretPos = 0;
     private double turretDegree = turretPos*360;
-    public static double turretMinDeg = 50.0;
+    public static double turretMinDeg = 18.0;
     public static double turretMaxDeg = 330.0;
-    private double startTurret = 250;
+    public static double turretForwardDeg = 163.0;
     public static double turretVelocity = 0;
     public static double velocityLoopTime = 250;
     // Conservative defaults to reduce lock oscillation from frame-to-frame overcorrection.
-    public static double visionKp = 0.45;
-    public static double visionDeadbandDeg = 0.5;
-    public static double visionMaxStepDeg = 2.0;
+    public static double visionKp = 0.27;
+    public static double visionDeadbandDeg = 1.2;
+    public static double visionMaxStepDeg = 1.2;
+    public static double visionMinStepDeg = 0.16;
     // Exponential smoothing for tx; 1.0 = no filtering, lower = smoother.
     // Default is no filtering so teleop behavior matches VisionTurretLockTester.
-    public static double visionTxAlpha = 1.0;
+    public static double visionTxAlpha = 0.3;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
     public static double blueVisionCloseBiasDeg = 3;
@@ -45,11 +62,31 @@ public class Turret implements Subsystem {
     public static double redVisionFarBiasDeg = 1.5;
     public static double visionDistanceSplitIn = 110.0;
     public static double limitAssistMarginDeg = 1.0;
-    private boolean txLockEnabled = false;
+    public static double visionFallbackDelayMs = 180.0;
+    public static double visionReacquireDelayMs = 140.0;
+    public static double odoHoldAfterFallbackMs = 220.0;
+    public static double blueGoalX = 0.0;
+    public static double blueGoalY = 144.0;
+    public static double redGoalX = 144.0;
+    public static double redGoalY = 144.0;
+    public static double odoKp = 0.95;
+    public static double odoDeadbandDeg = 1.0;
+    public static double odoMaxStepDeg = 4.5;
+    public static double edgeCorrectionMinScale = 0.65;
+    public static double edgeCorrectionMarginDeg = 35.0;
+    public static boolean invertRightServo = false;
+    public static double leftServoOffset = 0.0;
+    public static double rightServoOffset = 0.0;
+    private AimMode aimMode = AimMode.MANUAL;
+    private LockSource activeLockSource = LockSource.NONE;
     private boolean hasFilteredTx = false;
     private double filteredTxDeg = 0.0;
+    private double commandedTurretDeg = 180.0;
     private double currentPosition = 0;
     private ElapsedTime velocityTimer;
+    private ElapsedTime missingTargetTimer;
+    private ElapsedTime seenTargetTimer;
+    private ElapsedTime odoHoldTimer;
 
 
     //---------------- Constructor ----------------
@@ -58,13 +95,23 @@ public class Turret implements Subsystem {
         rightTurret = map.get(Servo.class, "turretR");
         turretAnalog = map.get(AnalogInput.class, "turretAnalog");
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
+        commandedTurretDeg = rightTurret.getPosition() * 360.0;
         velocityTimer = new ElapsedTime();
+        missingTargetTimer = new ElapsedTime();
+        seenTargetTimer = new ElapsedTime();
+        odoHoldTimer = new ElapsedTime();
         util = new Util();
     }
 
     //---------------- Methods ----------------
     public void setTurretPos(double pos){
-        rightTurret.setPosition(util.clamp(pos, 0.0, 1.0));
+        double basePos = util.clamp(pos, 0.0, 1.0);
+        commandedTurretDeg = normalizeDegrees(basePos * 360.0);
+        double leftPos = util.clamp(basePos + leftServoOffset, 0.0, 1.0);
+        double rightBase = invertRightServo ? (1.0 - basePos) : basePos;
+        double rightPos = util.clamp(rightBase + rightServoOffset, 0.0, 1.0);
+        leftTurret.setPosition(leftPos);
+        rightTurret.setPosition(rightPos);
     }
 
     public void setTurretDegree(double degree){
@@ -130,7 +177,9 @@ public class Turret implements Subsystem {
         double dy = targetY - robotY;
         double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
         double robotHeadingDeg = Math.toDegrees(robotHeadingRad);
-        double turretDeg = normalizeDegrees(headingToTargetDeg - robotHeadingDeg);
+        // Convert field bearing into signed robot-relative angle, then map into measured turret frame.
+        double relativeDeg = ((headingToTargetDeg - robotHeadingDeg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+        double turretDeg = normalizeDegrees(turretForwardDeg + relativeDeg);
         setTurretDegree(turretDeg);
     }
 
@@ -144,35 +193,116 @@ public class Turret implements Subsystem {
         }
         double correctionDeg = computeVisionCorrectionDeg(txDeg, distanceIn);
         correctionDeg = util.clamp(correctionDeg, -visionMaxStepDeg, visionMaxStepDeg);
+        correctionDeg *= computeEdgeCorrectionScale();
+        if (Math.abs(correctionDeg) < visionMinStepDeg) {
+            return;
+        }
         double targetDeg = normalizeDegrees(getCurrentDegrees() + correctionDeg);
         setTurretDegree(targetDeg);
     }
 
     public void toggleTxLock() {
-        setTxLockEnabled(!txLockEnabled);
+        setTxLockEnabled(!isTxLockEnabled());
     }
 
     public void setTxLockEnabled(boolean enabled) {
-        txLockEnabled = enabled;
-        if (txLockEnabled) {
+        if (enabled) {
+            aimMode = AimMode.LOCK;
             // Avoid manual velocity nudge fighting lock.
             turretVelocity = 0.0;
             hasFilteredTx = false;
+            activeLockSource = LockSource.NONE;
+            missingTargetTimer.reset();
+            seenTargetTimer.reset();
+            odoHoldTimer.reset();
+        } else if (aimMode == AimMode.LOCK) {
+            aimMode = AimMode.MANUAL;
+            activeLockSource = LockSource.NONE;
         }
     }
 
     public boolean isTxLockEnabled() {
-        return txLockEnabled;
+        return aimMode == AimMode.LOCK;
     }
 
-    public void updateTxLock(Vision vision) {
-        if (!txLockEnabled || vision == null) return;
+    public void toggleOdoLock() {
+        setOdoLockEnabled(!isOdoLockEnabled());
+    }
 
+    public void setOdoLockEnabled(boolean enabled) {
+        // Compatibility alias: unified lock now handles tx+odo fallback.
+        setTxLockEnabled(enabled);
+    }
+
+    public boolean isOdoLockEnabled() {
+        return isTxLockEnabled() && activeLockSource == LockSource.ODO;
+    }
+
+    public AimMode getAimMode() {
+        return aimMode;
+    }
+
+    public LockSource getActiveLockSource() {
+        return activeLockSource;
+    }
+
+    public void toggleAimLock() {
+        toggleTxLock();
+    }
+
+    public void setAimLockEnabled(boolean enabled) {
+        setTxLockEnabled(enabled);
+    }
+
+    public boolean isAimLockEnabled() {
+        return isTxLockEnabled();
+    }
+
+    public void updateAimLock(Vision vision) {
+        if (!isAimLockEnabled()) return;
+        boolean hasVision = hasRequiredVisionTarget(vision);
+        if (hasVision) {
+            // Prevent immediate source flip back to TX during fast turns / blur.
+            if (activeLockSource == LockSource.ODO && odoHoldTimer.milliseconds() < odoHoldAfterFallbackMs) {
+                updateOdoLock(vision);
+                return;
+            }
+            if (seenTargetTimer.milliseconds() >= visionReacquireDelayMs && tryVisionLock(vision)) {
+                missingTargetTimer.reset();
+                return;
+            }
+            // Target is present but not yet stable enough for TX; hold current source.
+            if (activeLockSource == LockSource.ODO) {
+                updateOdoLock(vision);
+            }
+            return;
+        }
+        seenTargetTimer.reset();
+        // Avoid aggressive fallback when tag briefly drops out during fast turns.
+        if (missingTargetTimer.milliseconds() < visionFallbackDelayMs) {
+            return;
+        }
+        hasFilteredTx = false;
+        if (activeLockSource != LockSource.ODO) {
+            activeLockSource = LockSource.ODO;
+            odoHoldTimer.reset();
+        }
+        updateOdoLock(vision);
+    }
+
+    private boolean hasRequiredVisionTarget(Vision vision) {
+        if (vision == null) return false;
+        int requiredTagId = vision.getRequiredTagId();
+        return requiredTagId >= 0 ? vision.seesTag(requiredTagId) : vision.hasTarget();
+    }
+
+    private boolean tryVisionLock(Vision vision) {
+        if (vision == null) return false;
         int requiredTagId = vision.getRequiredTagId();
         boolean hasTarget = requiredTagId >= 0
                 ? vision.seesTag(requiredTagId)
                 : vision.hasTarget();
-        if (!hasTarget) return;
+        if (!hasTarget) return false;
 
         double tx = requiredTagId >= 0
                 ? vision.getTxForTag(requiredTagId)
@@ -181,7 +311,66 @@ public class Turret implements Subsystem {
         double distanceIn = requiredTagId >= 0
                 ? vision.getDistanceInchesForTag(requiredTagId)
                 : vision.getDistanceInches();
+        activeLockSource = LockSource.TX;
         aimFromVision(tx, distanceIn);
+        return true;
+    }
+
+    public void updateTxLock(Vision vision) {
+        // Compatibility alias: unified lock now handles tx+odo fallback.
+        updateAimLock(vision);
+    }
+
+    public void updateOdoLock() {
+        updateOdoLock(null);
+    }
+
+    private void updateOdoLock(Vision vision) {
+        if (follower == null) return;
+        Pose robotPose = follower.getPose();
+        if (robotPose == null) return;
+
+        int requiredTagId = (vision != null) ? vision.getRequiredTagId() : -1;
+        boolean aimBlueGoal;
+        if (requiredTagId == BLUE_GOAL_TAG_ID) {
+            aimBlueGoal = true;
+        } else if (requiredTagId == RED_GOAL_TAG_ID) {
+            aimBlueGoal = false;
+        } else {
+            aimBlueGoal = GlobalVariables.isBlueAlliance();
+        }
+
+        if (aimBlueGoal) {
+            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
+        } else {
+            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
+        }
+    }
+
+    private void aimAtFieldPointSmoothed(double robotX, double robotY, double robotHeadingRad,
+                                         double targetX, double targetY) {
+        double desiredDeg = computeFieldPointTurretDeg(robotX, robotY, robotHeadingRad, targetX, targetY);
+        double errorDeg = wrapSignedDegrees(desiredDeg - getCurrentDegrees());
+        if (Math.abs(errorDeg) <= odoDeadbandDeg) {
+            return;
+        }
+        double stepDeg = util.clamp(errorDeg * odoKp, -odoMaxStepDeg, odoMaxStepDeg);
+        stepDeg *= computeEdgeCorrectionScale();
+        setTurretDegree(getCurrentDegrees() + stepDeg);
+    }
+
+    private double computeFieldPointTurretDeg(double robotX, double robotY, double robotHeadingRad,
+                                              double targetX, double targetY) {
+        double dx = targetX - robotX;
+        double dy = targetY - robotY;
+        double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
+        double robotHeadingDeg = Math.toDegrees(robotHeadingRad);
+        double relativeDeg = wrapSignedDegrees(headingToTargetDeg - robotHeadingDeg);
+        return normalizeDegrees(turretForwardDeg + relativeDeg);
+    }
+
+    private double wrapSignedDegrees(double deg) {
+        return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
     }
 
     private double filterTx(double txDeg) {
@@ -204,7 +393,25 @@ public class Turret implements Subsystem {
     }
 
     public double getCurrentDegrees(){
-        return rightTurret.getPosition()*360;
+        return commandedTurretDeg;
+    }
+
+    private double computeEdgeCorrectionScale() {
+        double margin = Math.max(1.0, edgeCorrectionMarginDeg);
+        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+        double currentDeg = getCurrentDegrees();
+        double distToNearLimit = Math.min(Math.abs(currentDeg - minDeg), Math.abs(maxDeg - currentDeg));
+        double t = util.clamp(distToNearLimit / margin, 0.0, 1.0);
+        return edgeCorrectionMinScale + (1.0 - edgeCorrectionMinScale) * t;
+    }
+
+    public double getEncoderDegrees() {
+        return turretEnc.getCurrentPosition();
+    }
+
+    public double getEncoderVoltage() {
+        return turretAnalog.getVoltage();
     }
 
     public double getVelocityTimerMs(){
@@ -215,12 +422,11 @@ public class Turret implements Subsystem {
     @Override
     public void toInit(){
         velocityTimer.reset();
-        setTurretDegree(startTurret);
     }
 
     @Override
     public void update(){
-        if (!txLockEnabled) {
+        if (aimMode == AimMode.MANUAL) {
             setTurretWithVelocity();
         }
     }
