@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 
 @Configurable
@@ -38,8 +39,11 @@ public class Turret implements Subsystem {
     public static double visionTxAlpha = 1.0;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
-    public static double visionErrorBiasDeg = 5.0; // alliance-configured constant trim (degrees)
-    public static double visionBiasMaxDistanceIn = 110.0; // do not apply bias beyond this distance
+    public static double blueVisionCloseBiasDeg = 3;
+    public static double blueVisionFarBiasDeg = 2.5;
+    public static double redVisionCloseBiasDeg = 0;
+    public static double redVisionFarBiasDeg = 1.5;
+    public static double visionDistanceSplitIn = 110.0;
     public static double limitAssistMarginDeg = 1.0;
     private boolean txLockEnabled = false;
     private boolean hasFilteredTx = false;
@@ -95,7 +99,13 @@ public class Turret implements Subsystem {
 
     public double computeVisionCorrectionDeg(double txDeg, double distanceIn) {
         double parallaxDeg = computeParallaxCorrectionDeg(distanceIn) * Math.signum(txDeg);
-        double biasDeg = (distanceIn <= visionBiasMaxDistanceIn) ? visionErrorBiasDeg : 0.0;
+        boolean isFar = distanceIn > visionDistanceSplitIn;
+        double biasDeg;
+        if (GlobalVariables.isBlueAlliance()) {
+            biasDeg = isFar ? blueVisionFarBiasDeg : blueVisionCloseBiasDeg;
+        } else {
+            biasDeg = isFar ? redVisionFarBiasDeg : redVisionCloseBiasDeg;
+        }
         return (txDeg + parallaxDeg + biasDeg) * visionKp * visionDirection;
     }
 

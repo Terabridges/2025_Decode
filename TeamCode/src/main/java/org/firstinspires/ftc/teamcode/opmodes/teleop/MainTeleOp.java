@@ -38,8 +38,6 @@ public class MainTeleOp extends OpMode {
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double BLUE_VISION_DIRECTION = -1.0;
     private static final double RED_VISION_DIRECTION = -1.0;
-    private static final double BLUE_BIAS_MAX_DISTANCE_IN = 110.0;
-    private static final double RED_BIAS_MAX_DISTANCE_IN = Double.POSITIVE_INFINITY;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -125,6 +123,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void loop() {
         gamepadUpdate();
+        updateAllianceToggle();
         applyAllianceVisionLockConfig();
         controlsUpdate();
         robot.update();
@@ -150,6 +149,7 @@ public class MainTeleOp extends OpMode {
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
             }
+            joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Loop Time", loopTime);
             joinedTelemetry.update();
 
@@ -166,6 +166,16 @@ public class MainTeleOp extends OpMode {
         currentGamepad2.copy(gamepad2);
     }
 
+    private void updateAllianceToggle() {
+        if (currentGamepad2.back && !previousGamepad2.back) {
+            GlobalVariables.setAllianceColor(
+                    GlobalVariables.isBlueAlliance()
+                            ? GlobalVariables.AllianceColor.RED
+                            : GlobalVariables.AllianceColor.BLUE
+            );
+        }
+    }
+
     public void stateMachinesUpdate(){
         if (currentGamepad1.x && !previousGamepad1.x && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)){
             robot.initShootAllMachine = true;
@@ -175,17 +185,13 @@ public class MainTeleOp extends OpMode {
 
     private void applyAllianceVisionLockConfig() {
         // Keep alliance lock config in one place to avoid drift between start/loop behavior.
-        double biasMagnitude = Math.abs(Turret.visionErrorBiasDeg);
+        Turret.cameraLateralOffsetIn = 0.0;
         if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
             Turret.visionDirection = BLUE_VISION_DIRECTION;
-            Turret.visionErrorBiasDeg = biasMagnitude;
-            Turret.visionBiasMaxDistanceIn = BLUE_BIAS_MAX_DISTANCE_IN;
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
             Turret.visionDirection = RED_VISION_DIRECTION;
-            Turret.visionErrorBiasDeg = biasMagnitude;
-            Turret.visionBiasMaxDistanceIn = RED_BIAS_MAX_DISTANCE_IN;
         }
     }
 }

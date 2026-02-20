@@ -29,8 +29,8 @@ public class ShooterData {
         RPMLUT.add( 77.1  ,2400);
         RPMLUT.add( 90  ,2550);
         RPMLUT.add( 128.6  ,3000);
-        RPMLUT.add( 135.5  ,3200);
-        RPMLUT.add(maxDistance, 3500);
+        RPMLUT.add( 135.5  ,3100);
+        RPMLUT.add(maxDistance, 3200);
     }
 
     private void addAngleData(){
@@ -43,9 +43,9 @@ public class ShooterData {
         AngleLUT.add( 66.1  ,0.78);
         AngleLUT.add( 77.1  ,0.8);
         AngleLUT.add( 90  ,0.81);
-        AngleLUT.add( 128.6  ,0.9);
-        AngleLUT.add( 135.5  ,0.9);
-        AngleLUT.add(maxDistance, 0.9);
+        AngleLUT.add( 128.6  ,0.91);
+        AngleLUT.add( 135.5  ,0.92);
+        AngleLUT.add(maxDistance, 0.93);
     }
 
     public double getRPMVal(double distance){
