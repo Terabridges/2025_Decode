@@ -88,6 +88,20 @@ public class Intake implements Subsystem {
             spinner.backInnerTripped = false;
         }
 
+        if(spinner.frontOuterTripped){
+            if(spindex.getCurrentDirection().equals("backward")){
+                spindex.switchSides();
+            }
+            spinner.frontOuterTripped = false;
+        }
+
+        if(spinner.backOuterTripped){
+            if(spindex.getCurrentDirection().equals("forward")){
+                spindex.switchSides();
+            }
+            spinner.backOuterTripped = false;
+        }
+
     }
 
 }

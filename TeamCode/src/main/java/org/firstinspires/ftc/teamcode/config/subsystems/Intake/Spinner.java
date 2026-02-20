@@ -33,10 +33,10 @@ public class Spinner implements Subsystem {
     public boolean frontInnerTripped = false;
     public boolean backOuterTripped = false;
     public boolean backInnerTripped = false;
-    public static double frontOuterDistanceLowThresh = 0.25; // lower than 0.22
+    public static double frontOuterDistanceLowThresh = 0.7; // lower than 0.7
     //public static double frontOuterDistanceHighThresh = 0.35; // higher than 0.32
     public static double frontInnerDistanceLowThresh = 0.3; //lower than 0.3
-    public static double backOuterDistanceLowThresh = 0.25; //lower than 0.3
+    public static double backOuterDistanceLowThresh = 0.7; //lower than 0.7
     //public static double backOuterDistanceHighThresh = 0.35; //higher than 0.375
     public static double backInnerDistanceLowThresh = 0.3; //lower than 0.3
     public boolean spinOverride = false;

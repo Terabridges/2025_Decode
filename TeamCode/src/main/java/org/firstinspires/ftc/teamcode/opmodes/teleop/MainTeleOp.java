@@ -5,6 +5,7 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 
 import org.firstinspires.ftc.teamcode.config.control.Control;
@@ -65,6 +66,12 @@ public class MainTeleOp extends OpMode {
     StateMachine shootAllMachine;
     private JoinedTelemetry joinedTelemetry;
 
+    public ElapsedTime loopTimer;
+    public double loopTime;
+
+    public ElapsedTime telemetryTimer;
+    public double telemetryTime;
+
     @Override
     public void init() {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
@@ -95,6 +102,8 @@ public class MainTeleOp extends OpMode {
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
                 telemetry
         );
+        loopTimer = new ElapsedTime();
+        telemetryTimer = new ElapsedTime();
 
     }
 
@@ -109,6 +118,8 @@ public class MainTeleOp extends OpMode {
         applyAllianceVisionLockConfig();
         robot.outtake.turret.setTxLockEnabled(true);
         shootAllMachine.start();
+        loopTimer.reset();
+        telemetryTimer.reset();
     }
 
     @Override
@@ -119,6 +130,8 @@ public class MainTeleOp extends OpMode {
         robot.update();
         controlsTelemetryUpdate();
         stateMachinesUpdate();
+        loopTime = loopTimer.milliseconds();
+        loopTimer.reset();
     }
 
     @Override
@@ -133,12 +146,16 @@ public class MainTeleOp extends OpMode {
     }
 
     public void controlsTelemetryUpdate() {
-        for (Control c : controls) {
-            c.addTelemetry(joinedTelemetry);
-        }
-        joinedTelemetry.update();
+        if (telemetryTimer.milliseconds()>200) {
+            for (Control c : controls) {
+                c.addTelemetry(joinedTelemetry);
+            }
+            joinedTelemetry.addData("Loop Time", loopTime);
+            joinedTelemetry.update();
 
-        Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
+            Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
+            telemetryTimer.reset();
+        }
     }
 
     public void gamepadUpdate(){

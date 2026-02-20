@@ -58,15 +58,18 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"E", "E", "E"};
     public String balls = "";
 
+    private double greenThresh = 0.0013; //If green is highest, ball is green
+    private double blueThresh = 0.0013; //If blue is highest, ball is purple
+
 
     //---------------- Constructor ----------------
 
     public Spindex(HardwareMap map) {
         spindexLeft = map.get(Servo.class, "spindexL");
         spindexRight = map.get(Servo.class, "spindexR");
-        //frontColor = map.get(RevColorSensorV3.class, "color1");
-        //middleColor = map.get(RevColorSensorV3.class, "color2");
-        //backColor = map.get(RevColorSensorV3.class, "color3");
+        frontColor = map.get(RevColorSensorV3.class, "color1");
+        middleColor = map.get(RevColorSensorV3.class, "color2");
+        backColor = map.get(RevColorSensorV3.class, "color3");
         spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
         spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 29, 1.17);
         spindexEnc.setInverted(false);
