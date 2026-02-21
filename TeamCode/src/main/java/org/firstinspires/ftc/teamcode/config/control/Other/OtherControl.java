@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Other;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
+
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class OtherControl implements Control {
@@ -17,6 +17,7 @@ public class OtherControl implements Control {
     Gamepad gp2;
     Robot robot;
     Other other;
+    public EdgeDetector unJam = new EdgeDetector(()->other.unJam = true);
 
     //---------------- Constructor ----------------
     public OtherControl(Other other, Gamepad gp1, Gamepad gp2){
@@ -36,7 +37,7 @@ public class OtherControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        unJam.update(gp1.touchpad);
     }
 
     @Override

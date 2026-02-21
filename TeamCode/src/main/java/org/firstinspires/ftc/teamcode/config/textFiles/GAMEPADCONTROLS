@@ -1,11 +1,11 @@
 GAMEPAD1
-A:
+A: Toggle Clutch (Change)
 X: Shoot All Macro
 Y: Toggle Shooter
-B:
-Down:
+B: Set Hood Target (change)
+Down: Toggle Slowmode
 Left: One Ball Left
-Up:
+Up: Switch Sides
 Right: One Ball Right
 LeftBump: Spin In
 RightBump: Spin Out
@@ -15,8 +15,8 @@ LStX: Movement
 LStY: Movement
 RStX: Movement
 RStY: Movement
-LStBut:
-RStBut:
-Back:
-Start:
-PlayStation:
+LStBut: Untrip
+RStBut: Empty Balls
+Back: Toggle Shoot Mode
+Start: Toggle Turret Lock
+Touchpad: unjam

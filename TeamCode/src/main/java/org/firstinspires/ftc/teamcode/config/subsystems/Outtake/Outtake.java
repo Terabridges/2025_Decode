@@ -13,6 +13,7 @@ public class Outtake implements Subsystem {
     public Turret turret;
     public Vision vision;
     private ShooterData shooterData;
+    public double distanceInches = 0;
 
     //---------------- Software ----------------
 
@@ -38,8 +39,9 @@ public class Outtake implements Subsystem {
 
     @Override
     public void update(){
-        shooter.flywheelTargetRPM = shooterData.getRPMVal(vision.getDistanceInches());
-        shooter.hoodPos = shooterData.getAngleVal(vision.getDistanceInches());
+        distanceInches = vision.getDistanceInches();
+        shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches);
+        shooter.hoodPos = shooterData.getAngleVal(distanceInches);
         shooter.update();
         turret.update();
         vision.update();

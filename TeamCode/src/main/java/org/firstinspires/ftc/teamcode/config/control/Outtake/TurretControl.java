@@ -16,7 +16,7 @@ public class TurretControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector toggleTxLockStart = new EdgeDetector(() -> turret.toggleTxLock());
-    EdgeDetector toggleTxLockStick = new EdgeDetector(() -> turret.toggleTxLock());
+    //EdgeDetector toggleTxLockStick = new EdgeDetector(() -> turret.toggleTxLock());
 
     //---------------- Constructor ----------------
     public TurretControl(Turret turret, Gamepad gp1, Gamepad gp2){
@@ -39,7 +39,7 @@ public class TurretControl implements Control {
         // Some controllers/Driver Station mappings do not reliably expose START.
         // Keep START and add right-stick-click as a fallback toggle.
         toggleTxLockStart.update(gp1.start || gp2.start);
-        toggleTxLockStick.update(gp1.right_stick_button || gp2.right_stick_button);
+        //toggleTxLockStick.update(gp1.right_stick_button || gp2.right_stick_button);
     }
 
     @Override

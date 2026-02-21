@@ -36,12 +36,15 @@ public class Robot {
         WAIT2,
         GO_TO_SHOOT_THREE,
         WAIT3,
-        RESET
+        RESET,
+        UNJAM
     }
 
     public boolean initShootAllMachine = false;
 
     private double waitTime = 0.01;
+
+    private boolean goToReset = false;
 
 
     //---------------- Subsystems ----------------
@@ -80,6 +83,7 @@ public class Robot {
         return new StateMachineBuilder()
                 .state(ShootAllStates.INIT)
                 .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     initShootAllMachine = false;
                     intake.spinner.setMegaSpinIn();
@@ -91,6 +95,7 @@ public class Robot {
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT0)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
                     intake.spindex.setSpindexShootOne();
@@ -98,44 +103,60 @@ public class Robot {
 
                 .state(ShootAllStates.WAIT0)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT1)
                 .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_TWO)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.spindex.setSpindexShootTwo();
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_TWO)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT2)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT2)
                 .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_THREE)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.spindex.setSpindexShootThree();
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_THREE)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT3)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT3)
                 .transitionTimed(waitTime, ShootAllStates.RESET)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.spindex.setSpindexShootFour();
                 })
 
                 .state(ShootAllStates.RESET)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
-                    outtake.shooter.useFlywheelPID = false;
                     intake.spindex.emptyBalls();
                 })
 
+                .state(ShootAllStates.UNJAM)
+                .onEnter(()->{
+                    other.unJam = false;
+                    intake.spindex.setSpindexPos(intake.spindex.getAbsolutePos());
+                    intake.spinner.setMegaSpinZero();
+                    intake.clutch.setClutchUp();
+                    intake.spindex.emptyBalls();
+                    goToReset = true;
+                })
+                .transition(()-> goToReset, ShootAllStates.INIT)
+                .onExit(()->goToReset = false)
 
                 .build();
-
     }
 
 //    public StateMachine getShootAllMachine(){
