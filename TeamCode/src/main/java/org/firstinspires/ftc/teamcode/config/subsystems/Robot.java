@@ -65,10 +65,6 @@ public class Robot {
 
     private boolean goToReset = false;
 
-    public boolean reset = false;
-
-    public boolean clutchNeeded = false;
-
     public boolean useSorting = false;
 
 
@@ -113,7 +109,7 @@ public class Robot {
                     initShootAllMachine = false;
                     intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
-                    intake.spindex.setSpindexForwardOne();
+                    intake.spindex.setSpindexForwardZero();
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
                 })
@@ -198,11 +194,11 @@ public class Robot {
                     outtake.shooter.setHoodTarget();
 
                     if(startBall == 1){
-                        intake.spindex.setSpindexForwardOne();
+                        intake.spindex.setSpindexForwardZero();
                     } else if(startBall == 2){
-                        intake.spindex.setSpindexForwardTwo();
+                        intake.spindex.setSpindexForwardOne();
                     } else if(startBall == 3){
-                        intake.spindex.setSpindexForwardThree();
+                        intake.spindex.setSpindexForwardTwo();
                     }
                 })
 
@@ -267,40 +263,22 @@ public class Robot {
                 .onExit(()-> {
                     if(startBall == 1){
                         intake.spindex.setSpindexShootFour();
-                        clutchNeeded = false;
                     } else if(startBall == 2){
                         intake.spindex.setSpindexShootFive();
-                        clutchNeeded = false;
                     } else if(startBall == 3){
-                        intake.clutch.setClutchDownFar();
-                        clutchNeeded = true;
+                        intake.spindex.setSpindexShootSix();
                     }
                 })
 
-                .state(SortedShootAllStates.WAIT4)
-                .transition(()-> !clutchNeeded && intake.spindex.isSpindexAtPos(), SortedShootAllStates.RESET)
-                .transition(()-> clutchNeeded, SortedShootAllStates.CLUTCH)
-
-                .state(SortedShootAllStates.CLUTCH)
-                .transitionTimed(0.5, SortedShootAllStates.INIT)
-                .onExit(()->{
+                .state(ShootAllStates.RESET)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+                .onExit(()-> {
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                 })
-
-                .state(SortedShootAllStates.RESET)
-                .onEnter(()-> {
-                    reset = true;
-                    intake.spindex.setSpindexForwardOne();
-                    intake.spinner.setMegaSpinZero();
-                    intake.clutch.setClutchUp();
-                    intake.spindex.emptyBalls();
-                })
-                .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
-                .transition(()-> reset, SortedShootAllStates.INIT)
-                .onExit(()-> reset = false)
 
                 .state(SortedShootAllStates.UNJAM)
                 .onEnter(()->{
@@ -388,14 +366,14 @@ public class Robot {
         if (useSorting){
             int firstBall = getBallSortedShootOrder();
             if (firstBall == 1){
-                intake.spindex.setSpindexForwardOne();
+                intake.spindex.setSpindexForwardZero();
             } else if (firstBall == 2){
-                intake.spindex.setSpindexForwardTwo();
+                intake.spindex.setSpindexForwardOne();
             } else if (firstBall == 3) {
-                intake.spindex.setSpindexForwardThree();
+                intake.spindex.setSpindexForwardTwo();
             }
         } else {
-            intake.spindex.setSpindexForwardOne();
+            intake.spindex.setSpindexForwardZero();
         }
         outtake.shooter.setHoodTarget();
     }
