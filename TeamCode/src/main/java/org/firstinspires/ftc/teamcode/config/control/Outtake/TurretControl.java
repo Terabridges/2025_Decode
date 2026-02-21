@@ -15,8 +15,7 @@ public class TurretControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector toggleTxLockStart = new EdgeDetector(() -> turret.toggleTxLock());
-    //EdgeDetector toggleTxLockStick = new EdgeDetector(() -> turret.toggleTxLock());
+    EdgeDetector toggleAimLockStart = new EdgeDetector(() -> turret.toggleAimLock());
 
     //---------------- Constructor ----------------
     public TurretControl(Turret turret, Gamepad gp1, Gamepad gp2){
@@ -36,15 +35,14 @@ public class TurretControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        // Some controllers/Driver Station mappings do not reliably expose START.
-        // Keep START and add right-stick-click as a fallback toggle.
-        toggleTxLockStart.update(gp1.start || gp2.start);
-        //toggleTxLockStick.update(gp1.right_stick_button || gp2.right_stick_button);
+        // Aim lock toggle is START only.
+        toggleAimLockStart.update(gp1.start || gp2.start);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("TX Lock", turret.isTxLockEnabled());
+        telemetry.addData("Aim Lock", turret.isAimLockEnabled());
+        telemetry.addData("Aim Source", turret.getActiveLockSource());
 //        if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
 //            int requiredTagId = robot.outtake.vision.getRequiredTagId();
 //            boolean seesRequired = robot.outtake.vision.hasRequiredTarget();

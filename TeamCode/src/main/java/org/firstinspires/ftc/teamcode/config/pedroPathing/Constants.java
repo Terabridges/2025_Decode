@@ -16,18 +16,18 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(11.5)
-            .forwardZeroPowerAcceleration(-36.56)
-            .lateralZeroPowerAcceleration(-68.82)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.13, 0, 0.01, 0))
+            .mass(13.06346)
+            .forwardZeroPowerAcceleration(-29.585)
+            .lateralZeroPowerAcceleration(-57.328)
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.35, 0, 0.01, 0))
             .headingPIDFCoefficients(new PIDFCoefficients(2, 0, 0.06, 0.01))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01,0.0,0.00004,0.6,0.01))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.015,0.0,0.00001,0.6,0.01))
             .centripetalScaling(0.00045);
 
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(5.70866)
-            .strafePodX(-1.527559)
+            .forwardPodY(-4.05512)
+            .strafePodX(-2.87402)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
@@ -44,10 +44,10 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(77.82)
-            .yVelocity(63.71);
+            .xVelocity(77.397)
+            .yVelocity(60.940);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.95, 150, 0.85, 0.75);
+    public static PathConstraints pathConstraints = new PathConstraints(0.95, 150, 0.4, 0.9);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)

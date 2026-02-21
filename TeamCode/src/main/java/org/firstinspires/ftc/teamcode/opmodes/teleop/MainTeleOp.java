@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -21,6 +22,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
+import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
@@ -38,8 +40,6 @@ public class MainTeleOp extends OpMode {
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double BLUE_VISION_DIRECTION = -1.0;
     private static final double RED_VISION_DIRECTION = -1.0;
-    private static final double BLUE_BIAS_MAX_DISTANCE_IN = 110.0;
-    private static final double RED_BIAS_MAX_DISTANCE_IN = Double.POSITIVE_INFINITY;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -116,7 +116,17 @@ public class MainTeleOp extends OpMode {
     public void start() {
         robot.toInit();
         applyAllianceVisionLockConfig();
-        robot.outtake.turret.setTxLockEnabled(true);
+        boolean reuseAutoFollower = GlobalVariables.isAutoFollowerValid()
+                && FollowerManager.follower != null;
+        if (reuseAutoFollower) {
+            FollowerManager.getFollower(hardwareMap);
+        } else {
+            double allianceHeading = GlobalVariables.isBlueAlliance() ? Math.PI : 0.0;
+            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, allianceHeading));
+        }
+        // Consume the auto->teleop handoff flag for this start.
+        GlobalVariables.setAutoFollowerValid(false);
+        robot.outtake.turret.setAimLockEnabled(true);
         shootAllMachine.start();
         loopTimer.reset();
         telemetryTimer.reset();
@@ -125,6 +135,10 @@ public class MainTeleOp extends OpMode {
     @Override
     public void loop() {
         gamepadUpdate();
+        if (FollowerManager.follower != null) {
+            FollowerManager.follower.update();
+        }
+        updateAllianceToggle();
         applyAllianceVisionLockConfig();
         controlsUpdate();
         robot.update();
@@ -136,7 +150,6 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void stop() {
-
     }
 
     public void controlsUpdate() {
@@ -150,6 +163,7 @@ public class MainTeleOp extends OpMode {
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
             }
+            joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Loop Time", loopTime);
             joinedTelemetry.update();
 
@@ -166,6 +180,16 @@ public class MainTeleOp extends OpMode {
         currentGamepad2.copy(gamepad2);
     }
 
+    private void updateAllianceToggle() {
+        if (currentGamepad2.back && !previousGamepad2.back) {
+            GlobalVariables.setAllianceColor(
+                    GlobalVariables.isBlueAlliance()
+                            ? GlobalVariables.AllianceColor.RED
+                            : GlobalVariables.AllianceColor.BLUE
+            );
+        }
+    }
+
     public void stateMachinesUpdate(){
         if (currentGamepad1.x && !previousGamepad1.x && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)){
             robot.initShootAllMachine = true;
@@ -175,17 +199,13 @@ public class MainTeleOp extends OpMode {
 
     private void applyAllianceVisionLockConfig() {
         // Keep alliance lock config in one place to avoid drift between start/loop behavior.
-        double biasMagnitude = Math.abs(Turret.visionErrorBiasDeg);
+        Turret.cameraLateralOffsetIn = 0.0;
         if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
             Turret.visionDirection = BLUE_VISION_DIRECTION;
-            Turret.visionErrorBiasDeg = biasMagnitude;
-            Turret.visionBiasMaxDistanceIn = BLUE_BIAS_MAX_DISTANCE_IN;
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
             Turret.visionDirection = RED_VISION_DIRECTION;
-            Turret.visionErrorBiasDeg = biasMagnitude;
-            Turret.visionBiasMaxDistanceIn = RED_BIAS_MAX_DISTANCE_IN;
         }
     }
 }
