@@ -104,7 +104,7 @@ public class Robot {
     public StateMachine getShootAllMachine(){
         return new StateMachineBuilder()
                 .state(ShootAllStates.INIT)
-                .transition(() -> initShootAllMachine && getLoadedBallCount() > 0, ShootAllStates.GO_TO_SHOOT_ONE)
+                .transition(() -> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     initShootAllMachine = false;

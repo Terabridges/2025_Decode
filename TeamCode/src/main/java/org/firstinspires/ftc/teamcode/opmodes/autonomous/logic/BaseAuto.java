@@ -187,9 +187,9 @@ public abstract class BaseAuto extends OpMode {
     @Override
     public void loop() {
         follower.update();
-        turretAim.updateAim(activeState, preloadComplete);
 
         robot.update();
+        turretAim.updateAim(activeState, preloadComplete);
         autoMachine.update();
         if (shootAllMachine != null) {
             shootAllMachine.update();
@@ -384,7 +384,8 @@ public abstract class BaseAuto extends OpMode {
         shootTimer.reset();
         completeShootReadyTimer.reset();
         shootSequenceStarted = false;
-        skipCurrentShot = getLoadedBallCount() <= 0;
+        // Do not trust startup ball count for preload; only skip empty shots after preload.
+        skipCurrentShot = preloadComplete && getLoadedBallCount() <= 0;
     }
 
     protected void onExitCompleteShoot() {
@@ -489,8 +490,11 @@ public abstract class BaseAuto extends OpMode {
 
         resetStateTimer();
         shootTimer.reset();
+        completeShootReadyTimer.reset();
+        shootSequenceStarted = false;
+        skipCurrentShot = preloadComplete && getLoadedBallCount() <= 0;
 
-        // TODO: shooter subsystem command to fire loop shot goes here.
+        // Run the same shoot sequence logic used by COMPLETE_SHOOT for back-row loop shots.
     }
 
     protected void onExitBackRowLoopCompleteShoot() {
@@ -767,8 +771,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowLoopShootComplete() {
-        // Placeholder completion signal for loop shot until subsystem signal is wired.
-        return shootTimedOut() || stateTimedOut();
+        return shootActionComplete() || shootTimedOut() || stateTimedOut();
     }
 
     protected boolean shouldExitBackRowLoop() {
