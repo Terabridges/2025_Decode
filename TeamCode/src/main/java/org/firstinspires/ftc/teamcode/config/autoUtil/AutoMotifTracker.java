@@ -46,6 +46,10 @@ public class AutoMotifTracker {
         return hasTimedOut();
     }
 
+    public boolean hasVisibleMotif() {
+        return seesAnyMotifTag();
+    }
+
     public void resolveMotif(boolean preloadComplete) {
         if (robot == null || robot.outtake == null || robot.outtake.vision == null) {
             return;

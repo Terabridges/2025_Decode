@@ -36,6 +36,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private PathChain pickupPath;
     private PathChain goToScorePath;
     private PathChain backRowLoopPickupPath;
+    private PathChain backRowLoopCompletePickupPath;
     private PathChain leavePath;
     private PathChain releaseGoToPath;
     private PathChain releaseCompletePath;
@@ -59,6 +60,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
         GO_TO_PICKUP,
         COMPLETE_PICKUP,
         GO_TO_FAR_PICKUP_ZONE,
+        BACKROW_COMPLETE_PICKUP,
         GO_TO_SCORE,
         GO_TO_RELEASE,
         COMPLETE_RELEASE,
@@ -196,6 +198,10 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
                 .onEnter(this::onEnterBackRowLoopGoToPickup)
+                .transition(() -> advanceApproved(followerIdle()), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+
+                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+                .onEnter(this::onEnterBackRowLoopCompletePickup)
                 .transition(() -> advanceApproved(followerIdle()), AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
@@ -282,6 +288,13 @@ public abstract class BaseAutoPathTesting extends OpMode {
         followPath(goToScorePath);
     }
 
+    protected void onEnterBackRowLoopCompletePickup() {
+        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP);
+        resetStateTimer();
+        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
+        followPath(backRowLoopCompletePickupPath, PICKUP_POWER);
+    }
+
     protected void onEnterBackRowLoopCompleteShoot() {
         setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT);
         resetStateTimer();
@@ -308,6 +321,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
                 break;
             case GO_TO_FAR_PICKUP_ZONE:
                 backRowLoopPickupPath = pathLibrary.farPickupZone(currentPose, alliance);
+                break;
+            case BACKROW_COMPLETE_PICKUP:
+                backRowLoopCompletePickupPath = pathLibrary.pickup(currentPose, alliance, 4);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();

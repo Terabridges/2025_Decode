@@ -64,6 +64,7 @@ public class Robot {
     private double waitTime = 0.01;
 
     private boolean goToReset = false;
+    private int shootAllBallTargetCount = 0;
 
     public boolean reset = false;
 
@@ -107,10 +108,11 @@ public class Robot {
     public StateMachine getShootAllMachine(){
         return new StateMachineBuilder()
                 .state(ShootAllStates.INIT)
-                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+                .transition(() -> initShootAllMachine && getLoadedBallCount() > 0, ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     initShootAllMachine = false;
+                    shootAllBallTargetCount = Math.max(0, Math.min(3, getLoadedBallCount()));
                     intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
                     intake.spindex.setSpindexForwardOne();
@@ -127,28 +129,32 @@ public class Robot {
                 })
 
                 .state(ShootAllStates.WAIT0)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
+                .transition(() -> intake.spindex.isSpindexAtPos() && shootAllBallTargetCount <= 1, ShootAllStates.RESET)
+                .transition(() -> intake.spindex.isSpindexAtPos() && shootAllBallTargetCount > 1, ShootAllStates.WAIT1)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT1)
                 .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_TWO)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.spindex.setSpindexShootTwo();
-                })
 
                 .state(ShootAllStates.GO_TO_SHOOT_TWO)
+                .onEnter(() -> {
+                    intake.spindex.setSpindexShootTwo();
+                })
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT2)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT2)
                 .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_THREE)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.spindex.setSpindexShootThree();
-                })
 
                 .state(ShootAllStates.GO_TO_SHOOT_THREE)
+                .onEnter(() -> {
+                    if (shootAllBallTargetCount > 2) {
+                        intake.spindex.setSpindexShootThree();
+                    }
+                })
+                .transition(() -> shootAllBallTargetCount <= 2, ShootAllStates.RESET)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT3)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
@@ -163,6 +169,7 @@ public class Robot {
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
+                    shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -172,6 +179,7 @@ public class Robot {
                 .state(ShootAllStates.UNJAM)
                 .onEnter(()->{
                     other.unJam = false;
+                    shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexPos(intake.spindex.getAbsolutePos());
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -182,6 +190,20 @@ public class Robot {
                 .onExit(()->goToReset = false)
 
                 .build();
+    }
+
+    public int getLoadedBallCount() {
+        if (intake == null || intake.spindex == null || intake.spindex.ballList == null) {
+            return 0;
+        }
+        int count = 0;
+        String[] ballList = intake.spindex.ballList;
+        for (String slot : ballList) {
+            if (slot != null && !slot.equals("E")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public StateMachine getSortedShootAllMachine(){
