@@ -42,6 +42,8 @@ public class TurretControl implements Control {
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Aim Lock", turret.isAimLockEnabled());
         telemetry.addData("Aim Source", turret.getActiveLockSource());
+        telemetry.addData("Launch Zone", turret.isInLaunchZone());
+        telemetry.addData("Turret Wrap", turret.isTurretWrapEnabled());
 //        if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
 //            int requiredTagId = robot.outtake.vision.getRequiredTagId();
 //            boolean seesRequired = robot.outtake.vision.hasRequiredTarget();

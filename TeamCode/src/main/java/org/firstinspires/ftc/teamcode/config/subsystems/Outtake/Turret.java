@@ -74,6 +74,21 @@ public class Turret implements Subsystem {
     public static double odoMaxStepDeg = 4.5;
     public static double edgeCorrectionMinScale = 0.65;
     public static double edgeCorrectionMarginDeg = 35.0;
+    public static boolean autoEnableWrapInLaunchZone = true;
+    public static boolean wrapWithinLaunchZoneOnly = true;
+    // DECODE launch zones in 144x144 in field coordinates (official dimensions).
+    // Goal-side zone: 6 tiles wide and 3 tiles deep triangle.
+    public static double goalLaunchBaseLeftX = 0.0;
+    public static double goalLaunchBaseRightX = 144.0;
+    public static double goalLaunchBaseY = 144.0;
+    public static double goalLaunchApexX = 72.0;
+    public static double goalLaunchApexY = 72.0;
+    // Audience-side zone: 2 tiles wide and 1 tile deep centered triangle.
+    public static double audienceLaunchBaseLeftX = 48.0;
+    public static double audienceLaunchBaseRightX = 96.0;
+    public static double audienceLaunchBaseY = 0.0;
+    public static double audienceLaunchApexX = 72.0;
+    public static double audienceLaunchApexY = 24.0;
     public static boolean invertRightServo = false;
     public static double leftServoOffset = 0.0;
     public static double rightServoOffset = 0.0;
@@ -87,6 +102,8 @@ public class Turret implements Subsystem {
     private ElapsedTime missingTargetTimer;
     private ElapsedTime seenTargetTimer;
     private ElapsedTime odoHoldTimer;
+    private boolean turretWrapEnabled = false;
+    private boolean inLaunchZone = false;
 
 
     //---------------- Constructor ----------------
@@ -115,6 +132,7 @@ public class Turret implements Subsystem {
     }
 
     public void setTurretDegree(double degree){
+        refreshWrapStateFromOdometry();
         setTurretPos(clampToSafeRange(normalizeDegrees(degree)) / 360.0);
     }
 
@@ -129,6 +147,14 @@ public class Turret implements Subsystem {
         double minDeg = Math.min(turretMinDeg, turretMaxDeg);
         double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
         return util.clamp(degrees, minDeg, maxDeg);
+    }
+
+    public boolean isTurretWrapEnabled() {
+        return turretWrapEnabled;
+    }
+
+    public boolean isInLaunchZone() {
+        return inLaunchZone;
     }
 
     public boolean atMinLimit(double marginDeg) {
@@ -214,6 +240,9 @@ public class Turret implements Subsystem {
         }
         double correctionDeg = computeVisionCorrectionDeg(txDeg, distanceIn);
         correctionDeg = util.clamp(correctionDeg, -visionMaxStepDeg, visionMaxStepDeg);
+        if (turretWrapEnabled && needsOppositeWrapDirection(correctionDeg)) {
+            correctionDeg = -Math.signum(correctionDeg) * Math.max(Math.abs(correctionDeg), visionMinStepDeg);
+        }
         correctionDeg *= computeEdgeCorrectionScale();
         if (Math.abs(correctionDeg) < visionMinStepDeg) {
             return;
@@ -350,6 +379,7 @@ public class Turret implements Subsystem {
         if (follower == null) return;
         Pose robotPose = follower.getPose();
         if (robotPose == null) return;
+        refreshWrapStateFromOdometry(robotPose);
 
         int requiredTagId = (vision != null) ? vision.getRequiredTagId() : -1;
         boolean aimBlueGoal;
@@ -371,7 +401,7 @@ public class Turret implements Subsystem {
     private void aimAtFieldPointSmoothed(double robotX, double robotY, double robotHeadingRad,
                                          double targetX, double targetY) {
         double desiredDeg = computeFieldPointTurretDeg(robotX, robotY, robotHeadingRad, targetX, targetY);
-        double errorDeg = wrapSignedDegrees(desiredDeg - getCurrentDegrees());
+        double errorDeg = computeAimErrorDeg(desiredDeg, getCurrentDegrees());
         if (Math.abs(errorDeg) <= odoDeadbandDeg) {
             return;
         }
@@ -427,6 +457,32 @@ public class Turret implements Subsystem {
         return edgeCorrectionMinScale + (1.0 - edgeCorrectionMinScale) * t;
     }
 
+    private boolean needsOppositeWrapDirection(double correctionDeg) {
+        return (atMinLimit(limitAssistMarginDeg) && correctionDeg < 0.0)
+                || (atMaxLimit(limitAssistMarginDeg) && correctionDeg > 0.0);
+    }
+
+    private double computeAimErrorDeg(double desiredDeg, double currentDeg) {
+        double errorDeg = wrapSignedDegrees(desiredDeg - currentDeg);
+        if (!turretWrapEnabled) {
+            return errorDeg;
+        }
+        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+        boolean desiredInRange = desiredDeg >= minDeg && desiredDeg <= maxDeg;
+        boolean currentInRange = currentDeg >= minDeg && currentDeg <= maxDeg;
+        if (!desiredInRange || !currentInRange) {
+            return errorDeg;
+        }
+        // If shortest-path crosses through the forbidden wrap gap, choose the long-way path.
+        boolean shortestCrossesWrapGap = (errorDeg < 0.0 && desiredDeg > currentDeg)
+                || (errorDeg > 0.0 && desiredDeg < currentDeg);
+        if (!shortestCrossesWrapGap) {
+            return errorDeg;
+        }
+        return errorDeg > 0.0 ? (errorDeg - 360.0) : (errorDeg + 360.0);
+    }
+
     public double getEncoderDegrees() {
         return turretEnc.getCurrentPosition();
     }
@@ -447,9 +503,66 @@ public class Turret implements Subsystem {
 
     @Override
     public void update(){
+        refreshWrapStateFromOdometry();
         if (aimMode == AimMode.MANUAL) {
             setTurretWithVelocity();
         }
+    }
+
+    private void refreshWrapStateFromOdometry() {
+        if (follower == null) {
+            inLaunchZone = false;
+            turretWrapEnabled = false;
+            return;
+        }
+        Pose robotPose = follower.getPose();
+        refreshWrapStateFromOdometry(robotPose);
+    }
+
+    private void refreshWrapStateFromOdometry(Pose robotPose) {
+        if (robotPose == null) {
+            inLaunchZone = false;
+            turretWrapEnabled = false;
+            return;
+        }
+        inLaunchZone = isInsideLaunchZone(robotPose.getX(), robotPose.getY());
+        if (!autoEnableWrapInLaunchZone) {
+            turretWrapEnabled = false;
+            return;
+        }
+        turretWrapEnabled = wrapWithinLaunchZoneOnly ? inLaunchZone : true;
+    }
+
+    private boolean isInsideLaunchZone(double x, double y) {
+        return isInsideTriangle(
+                x, y,
+                goalLaunchBaseLeftX, goalLaunchBaseY,
+                goalLaunchBaseRightX, goalLaunchBaseY,
+                goalLaunchApexX, goalLaunchApexY
+        ) || isInsideTriangle(
+                x, y,
+                audienceLaunchBaseLeftX, audienceLaunchBaseY,
+                audienceLaunchBaseRightX, audienceLaunchBaseY,
+                audienceLaunchApexX, audienceLaunchApexY
+        );
+    }
+
+    private boolean isInsideTriangle(double px, double py,
+                                     double ax, double ay,
+                                     double bx, double by,
+                                     double cx, double cy) {
+        double d1 = signedArea(px, py, ax, ay, bx, by);
+        double d2 = signedArea(px, py, bx, by, cx, cy);
+        double d3 = signedArea(px, py, cx, cy, ax, ay);
+        boolean hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+        boolean hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+        return !(hasNeg && hasPos);
+    }
+
+    private double signedArea(double px, double py,
+                              double ax, double ay,
+                              double bx, double by) {
+        return (px - bx) * (ay - by) - (ax - bx) * (py - by);
     }
 
 }
