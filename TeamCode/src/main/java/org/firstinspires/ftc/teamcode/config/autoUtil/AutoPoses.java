@@ -9,11 +9,12 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 
 public class AutoPoses {
+    public static boolean ReturnToStart = true;
     private static final double FIELD_SIZE = 144.0;
-    private static final double ROBOT_WIDTH = 14.5;
-    private static final double ROBOT_LENGTH = 15.25;
-    private static final double INTAKE_START_X = 43.5;
-    private static final double INTAKE_END_X = 24.5;
+    private static final double ROBOT_WIDTH = 17.5;
+    private static final double ROBOT_LENGTH = 18;
+    private static final double INTAKE_START_X = 42;
+    private static final double INTAKE_END_X = 24;
     private static final double GOAL_Y = 144.0;
     private static final double GOAL_HEADING_DEG = 90.0;
     private static final double OBELISK_X = 72.0;
@@ -58,15 +59,17 @@ public class AutoPoses {
     public final Base base = new Base();
 
     public class Base {
+        private final double intakeHeadingDeg = 180.0;
+
         // Starting Poses
-        public final Pose closeStart = poseDeg(24 + ROBOT_WIDTH / 2, FIELD_SIZE - ROBOT_LENGTH / 2, 0);
-        public final Pose farStart = poseDeg(48 + ROBOT_WIDTH / 2, ROBOT_LENGTH / 2, 180);
+        public final Pose closeStart = poseDeg(23.567, 123.916 + 1, 216 + 18 - 2);
+        public final Pose farStart = poseDeg(48 + ROBOT_LENGTH / 2, ROBOT_WIDTH / 2, 0);
 
         // ========================
         // SCORE POSES
         // ========================
-        public final Pose scoreClose = poseDeg(48, 96, 70);
-        public final Pose scoreLong = poseDeg(48 + ROBOT_WIDTH / 2, 14.5, 230);
+        public final Pose scoreClose = poseDeg(48, 96, Math.toDegrees(closeStart.getHeading()));
+        public final Pose scoreLong = poseDeg(54, 16, Math.toDegrees(farStart.getHeading()));
 
         //TODO add a secondary score pose if need to save time (Closer to middle row, top of close triangle)
 
@@ -85,50 +88,50 @@ public class AutoPoses {
         // ========================
         // RELEASE (lever) POSES
         // ========================
-        public final Pose releaseGoToClose = poseDeg(20, 76, 180);
-        public final Pose releaseCompleteClose = poseDeg(14.25, 76, 180);
+        public final Pose releaseGoToClose = poseDeg(20, 76, 0);
+        public final Pose releaseCompleteClose = poseDeg(14.25, 76, 0);
 
         // ========================
         // LEAVE POSES
         // ========================
         // Close-side park is nearer the scoring area; long-side park is farther.
-        public final Pose leaveClose = poseDeg(36, 84, 180);
-        public final Pose leaveLong = poseDeg(15, 15, 180);
+        public final Pose leaveClose = poseDeg(36, 84, intakeHeadingDeg);
+        public final Pose leaveLong = poseDeg(15, 15, intakeHeadingDeg);
 
         // ========================
         // PICKUP START POSES
         // ========================
         // Row 1 (close side)
-        public final Pose pick1StartClose = poseDeg(INTAKE_START_X, 84, 180);
+        public final Pose pick1StartClose = poseDeg(INTAKE_START_X, 84, intakeHeadingDeg);
 
         // Row 2
-        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 36, 180);
-        public final Pose pick2StartClose = poseDeg(INTAKE_START_X, 60, 180);
+        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 36, intakeHeadingDeg);
+        public final Pose pick2StartClose = poseDeg(INTAKE_START_X, 60, intakeHeadingDeg);
 
         // Row 3
-        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 60, 180);
-        public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, 180);
+        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 60, intakeHeadingDeg);
+        public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, intakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4StartLong = poseDeg(INTAKE_START_X, 84, 180);
-        public final Pose farPickupZone = poseDeg(INTAKE_START_X, 84, 180);
+        public final Pose pick4StartLong = poseDeg(20, 12, intakeHeadingDeg);
+        public final Pose farPickupZone = pick4StartLong;
 
         // ========================
         // PICKUP END POSES
         // ========================
         // Row 1 (close side)
-        public final Pose pick1EndClose = poseDeg(INTAKE_END_X, 84, 180);
+        public final Pose pick1EndClose = poseDeg(INTAKE_END_X, 84, intakeHeadingDeg);
 
         // Row 2
-        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 36, 180);
-        public final Pose pick2EndClose = poseDeg(INTAKE_END_X, 60, 180);
+        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 36, intakeHeadingDeg);
+        public final Pose pick2EndClose = poseDeg(INTAKE_END_X, 60, intakeHeadingDeg);
 
         // Row 3
-        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 60, 180);
-        public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, 180);
+        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 60, intakeHeadingDeg);
+        public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, intakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4EndLong = poseDeg(INTAKE_END_X, 84, 180);
+        public final Pose pick4EndLong = poseDeg(12, 12, intakeHeadingDeg);
     }
 
     // ------------------------
@@ -136,12 +139,13 @@ public class AutoPoses {
     // ------------------------
     public Pose blueCloseStartPose = baseToBlue(base.closeStart);
     public Pose blueFarStartPose = baseToBlue(base.farStart);
-    public Pose redCloseStartPose = baseToRed(base.closeStart);
+    public Pose redCloseStartPose = poseDeg(122, 117, 126);
     public Pose redFarStartPose = baseToRed(base.farStart);
 
     public Pose scoreCB = baseToBlue(base.scoreClose);
     public Pose scoreLB = baseToBlue(base.scoreLong);
-    public Pose scoreCR = baseToRed(base.scoreClose);
+    public Pose scoreCR = poseDeg(baseToRed(base.scoreClose).getX(), baseToRed(base.scoreClose).getY(),
+            Math.toDegrees(redCloseStartPose.getHeading()));
     public Pose scoreLR = baseToRed(base.scoreLong);
 
     public Pose loadB = baseToBlue(base.load);
@@ -366,6 +370,12 @@ public class AutoPoses {
     }
 
     public Pose getLeave(Alliance a, Range r) {
+        if (ReturnToStart) {
+            if (a == Alliance.BLUE) {
+                return (r == Range.CLOSE_RANGE) ? blueCloseStartPose : blueFarStartPose;
+            }
+            return (r == Range.CLOSE_RANGE) ? redCloseStartPose : redFarStartPose;
+        }
         return leave[a.ordinal()][r.ordinal()];
     }
 

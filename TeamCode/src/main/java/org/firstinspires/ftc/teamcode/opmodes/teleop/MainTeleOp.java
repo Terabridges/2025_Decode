@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.drawCurrentAndHistory;
+
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
@@ -179,6 +181,7 @@ public class MainTeleOp extends OpMode {
         robot.update();
         controlsTelemetryUpdate();
         stateMachinesUpdate();
+        drawCurrentAndHistory();
         loopTime = loopTimer.milliseconds();
         loopTimer.reset();
     }
@@ -199,6 +202,12 @@ public class MainTeleOp extends OpMode {
         if (telemetryTimer.milliseconds()>200) {
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
+            }
+            if (FollowerManager.follower != null && FollowerManager.follower.getPose() != null) {
+                Pose pose = FollowerManager.follower.getPose();
+                joinedTelemetry.addData("Pedro X", "%.2f", pose.getX());
+                joinedTelemetry.addData("Pedro Y", "%.2f", pose.getY());
+                joinedTelemetry.addData("Pedro H (deg)", "%.1f", Math.toDegrees(pose.getHeading()));
             }
             joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Loop Time", loopTime);

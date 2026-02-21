@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @Autonomous(name = "MainAuto", group = "Auto")
 public class SelectableAuto extends SelectableOpMode {
     @IgnoreConfigurable
