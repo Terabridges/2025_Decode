@@ -59,7 +59,8 @@ public class AutoPoses {
     public final Base base = new Base();
 
     public class Base {
-        private final double intakeHeadingDeg = 180.0;
+        private final double longIntakeHeadingDeg = 0;
+        private final double closeIntakeHeadingDeg = 180;
 
         // Starting Poses
         public final Pose closeStart = poseDeg(23.567, 123.916 + 1, 216 + 18 - 2);
@@ -95,43 +96,43 @@ public class AutoPoses {
         // LEAVE POSES
         // ========================
         // Close-side park is nearer the scoring area; long-side park is farther.
-        public final Pose leaveClose = poseDeg(36, 84, intakeHeadingDeg);
-        public final Pose leaveLong = poseDeg(15, 15, intakeHeadingDeg);
+        public final Pose leaveClose = poseDeg(36, 84, closeIntakeHeadingDeg);
+        public final Pose leaveLong = poseDeg(15, 15, longIntakeHeadingDeg);
 
         // ========================
         // PICKUP START POSES
         // ========================
         // Row 1 (close side)
-        public final Pose pick1StartClose = poseDeg(INTAKE_START_X, 84, intakeHeadingDeg);
+        public final Pose pick1StartClose = poseDeg(INTAKE_START_X, 84, closeIntakeHeadingDeg);
 
         // Row 2
-        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 36, intakeHeadingDeg);
-        public final Pose pick2StartClose = poseDeg(INTAKE_START_X, 60, intakeHeadingDeg);
+        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 36, longIntakeHeadingDeg);
+        public final Pose pick2StartClose = poseDeg(INTAKE_START_X, 60, closeIntakeHeadingDeg);
 
         // Row 3
-        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 60, intakeHeadingDeg);
-        public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, intakeHeadingDeg);
+        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 60, longIntakeHeadingDeg);
+        public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4StartLong = poseDeg(20, 12, intakeHeadingDeg);
+        public final Pose pick4StartLong = poseDeg(20, 12, longIntakeHeadingDeg);
         public final Pose farPickupZone = pick4StartLong;
 
         // ========================
         // PICKUP END POSES
         // ========================
         // Row 1 (close side)
-        public final Pose pick1EndClose = poseDeg(INTAKE_END_X, 84, intakeHeadingDeg);
+        public final Pose pick1EndClose = poseDeg(INTAKE_END_X, 84, closeIntakeHeadingDeg);
 
         // Row 2
-        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 36, intakeHeadingDeg);
-        public final Pose pick2EndClose = poseDeg(INTAKE_END_X, 60, intakeHeadingDeg);
+        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 36, longIntakeHeadingDeg);
+        public final Pose pick2EndClose = poseDeg(INTAKE_END_X, 60, closeIntakeHeadingDeg);
 
         // Row 3
-        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 60, intakeHeadingDeg);
-        public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, intakeHeadingDeg);
+        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 60, longIntakeHeadingDeg);
+        public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4EndLong = poseDeg(12, 12, intakeHeadingDeg);
+        public final Pose pick4EndLong = poseDeg(12, 12, longIntakeHeadingDeg);
     }
 
     // ------------------------

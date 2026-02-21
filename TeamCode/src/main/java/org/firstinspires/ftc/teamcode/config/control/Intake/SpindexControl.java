@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.config.control.Intake;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -8,6 +9,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Spindex;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
+@Configurable
 public class SpindexControl implements Control {
 
     //---------------- Software ----------------
@@ -20,6 +22,8 @@ public class SpindexControl implements Control {
     EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
     //EdgeDetector toggleShootMode = new EdgeDetector(()-> spindex.toggleShootMode());
     EdgeDetector emptyBalls = new EdgeDetector(()-> spindex.emptyBalls());
+    public static int fullSpindexRumbleMs = 500;
+    private boolean wasFullLastLoop = false;
 
 
     //---------------- Constructor ----------------
@@ -35,6 +39,13 @@ public class SpindexControl implements Control {
     }
 
     //---------------- Methods ----------------
+    private int loadedBallCount() {
+        int count = 0;
+        if (spindex.ballList[0] != null && !spindex.ballList[0].equals("E")) count++;
+        if (spindex.ballList[1] != null && !spindex.ballList[1].equals("E")) count++;
+        if (spindex.ballList[2] != null && !spindex.ballList[2].equals("E")) count++;
+        return count;
+    }
 
 
     //---------------- Interface Methods ----------------
@@ -46,7 +57,11 @@ public class SpindexControl implements Control {
         //toggleShootMode.update(gp1.back);
         emptyBalls.update(gp1.right_stick_button);
 
-
+        boolean isFull = loadedBallCount() == 3;
+        if (isFull && !wasFullLastLoop) {
+            gp1.rumble(Math.max(0, fullSpindexRumbleMs));
+        }
+        wasFullLastLoop = isFull;
 
     }
 

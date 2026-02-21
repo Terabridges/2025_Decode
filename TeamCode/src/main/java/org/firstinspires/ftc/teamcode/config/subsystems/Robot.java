@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.config.subsystems;
 
+import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
+
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -8,11 +11,14 @@ import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Lift;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Other;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 import java.util.ArrayList;
@@ -20,6 +26,23 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Robot {
+    private static final double METERS_TO_INCHES = 39.3701;
+
+    public static class GoalTagRelocalizeResult {
+        public final boolean success;
+        public final int tagId;
+        public final String reason;
+        public final Pose followerPoseBefore;
+        public final Pose relocalizedPose;
+
+        public GoalTagRelocalizeResult(boolean success, int tagId, String reason, Pose followerPoseBefore, Pose relocalizedPose) {
+            this.success = success;
+            this.tagId = tagId;
+            this.reason = reason;
+            this.followerPoseBefore = followerPoseBefore;
+            this.relocalizedPose = relocalizedPose;
+        }
+    }
 
     //---------------- Objects ----------------
     private final HardwareMap hardwareMap;
@@ -64,6 +87,7 @@ public class Robot {
     private double waitTime = 0.01;
 
     private boolean goToReset = false;
+    private int shootAllBallTargetCount = 0;
 
     public boolean useSorting = false;
 
@@ -103,10 +127,11 @@ public class Robot {
     public StateMachine getShootAllMachine(){
         return new StateMachineBuilder()
                 .state(ShootAllStates.INIT)
-                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+                .transition(() -> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     initShootAllMachine = false;
+                    shootAllBallTargetCount = Math.max(0, Math.min(3, getLoadedBallCount()));
                     intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
                     intake.spindex.setSpindexForwardZero();
@@ -123,28 +148,32 @@ public class Robot {
                 })
 
                 .state(ShootAllStates.WAIT0)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
+                .transition(() -> intake.spindex.isSpindexAtPos() && shootAllBallTargetCount <= 1, ShootAllStates.RESET)
+                .transition(() -> intake.spindex.isSpindexAtPos() && shootAllBallTargetCount > 1, ShootAllStates.WAIT1)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT1)
                 .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_TWO)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.spindex.setSpindexShootTwo();
-                })
 
                 .state(ShootAllStates.GO_TO_SHOOT_TWO)
+                .onEnter(() -> {
+                    intake.spindex.setSpindexShootTwo();
+                })
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT2)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.WAIT2)
                 .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_THREE)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.spindex.setSpindexShootThree();
-                })
 
                 .state(ShootAllStates.GO_TO_SHOOT_THREE)
+                .onEnter(() -> {
+                    if (shootAllBallTargetCount > 2) {
+                        intake.spindex.setSpindexShootThree();
+                    }
+                })
+                .transition(() -> shootAllBallTargetCount <= 2, ShootAllStates.RESET)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT3)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
@@ -159,6 +188,7 @@ public class Robot {
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
+                    shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -168,6 +198,7 @@ public class Robot {
                 .state(ShootAllStates.UNJAM)
                 .onEnter(()->{
                     other.unJam = false;
+                    shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexPos(intake.spindex.getAbsolutePos());
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -178,6 +209,20 @@ public class Robot {
                 .onExit(()->goToReset = false)
 
                 .build();
+    }
+
+    public int getLoadedBallCount() {
+        if (intake == null || intake.spindex == null || intake.spindex.ballList == null) {
+            return 0;
+        }
+        int count = 0;
+        String[] ballList = intake.spindex.ballList;
+        for (String slot : ballList) {
+            if (slot != null && !slot.equals("E")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public StateMachine getSortedShootAllMachine(){
@@ -380,6 +425,50 @@ public class Robot {
 
     public void toggleSorting(){
         useSorting = !useSorting;
+    }
+
+    /**
+     * Points turret forward, then relocalizes follower from visible goal AprilTag (20 or 24).
+     * Call repeatedly in a loop while aiming; returns success once a valid goal-tag botpose is available.
+     */
+    public GoalTagRelocalizeResult relocalizeFromGoalTag() {
+        return relocalizeFromGoalTag(Turret.turretForwardDeg);
+    }
+
+    /**
+     * Same as {@link #relocalizeFromGoalTag()} but with caller-specified forward turret heading.
+     */
+    public GoalTagRelocalizeResult relocalizeFromGoalTag(double forwardTurretDeg) {
+        outtake.turret.setTurretDegree(forwardTurretDeg);
+
+        Pose before = snapshotPose(follower != null ? follower.getPose() : null);
+        if (follower == null) {
+            return new GoalTagRelocalizeResult(false, -1, "Follower not initialized", before, null);
+        }
+
+        int tagId = outtake.vision.getVisibleGoalTagId();
+        if (tagId < 0) {
+            return new GoalTagRelocalizeResult(false, -1, "No goal tag (20/24) visible", before, null);
+        }
+
+        Pose3D llPose = outtake.vision.getLatestBotPose();
+        if (llPose == null) {
+            return new GoalTagRelocalizeResult(false, tagId, "Goal tag visible but no Limelight botpose", before, null);
+        }
+
+        double xIn = llPose.getPosition().x * METERS_TO_INCHES;
+        double yIn = llPose.getPosition().y * METERS_TO_INCHES;
+        double headingRad = Math.toRadians(llPose.getOrientation().getYaw(AngleUnit.DEGREES));
+        Pose relocalized = new Pose(xIn, yIn, headingRad);
+        follower.setPose(relocalized);
+        return new GoalTagRelocalizeResult(true, tagId, "Relocalized from goal tag", before, snapshotPose(relocalized));
+    }
+
+    private Pose snapshotPose(Pose pose) {
+        if (pose == null) {
+            return null;
+        }
+        return new Pose(pose.getX(), pose.getY(), pose.getHeading());
     }
 
     //---------------- Interface Methods ----------------

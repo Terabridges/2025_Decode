@@ -123,21 +123,11 @@ public class MainTeleOp extends OpMode {
         currentGamepad1.copy(gamepad1);
 
         if (currentGamepad1.a && !previousGamepad1.a){
-            if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PPG)){
-                GlobalVariables.setMotif(GlobalVariables.MotifPattern.GPP);
-            } else if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.GPP)){
-                GlobalVariables.setMotif(GlobalVariables.MotifPattern.PGP);
-            } else if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PGP)){
-                GlobalVariables.setMotif(GlobalVariables.MotifPattern.PPG);
-            }
+            GlobalVariables.nextMotif();
         }
 
         if (currentGamepad1.b && !previousGamepad1.b){
-            if(GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.RED)){
-                GlobalVariables.setAllianceColor(GlobalVariables.AllianceColor.BLUE);
-            } else if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.BLUE)){
-                GlobalVariables.setAllianceColor(GlobalVariables.AllianceColor.RED);
-            }
+            GlobalVariables.toggleAlliance();
         }
 
         telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
@@ -229,11 +219,7 @@ public class MainTeleOp extends OpMode {
 
     private void updateAllianceToggle() {
         if (currentGamepad2.back && !previousGamepad2.back) {
-            GlobalVariables.setAllianceColor(
-                    GlobalVariables.isBlueAlliance()
-                            ? GlobalVariables.AllianceColor.RED
-                            : GlobalVariables.AllianceColor.BLUE
-            );
+            GlobalVariables.toggleAlliance();
         }
     }
 

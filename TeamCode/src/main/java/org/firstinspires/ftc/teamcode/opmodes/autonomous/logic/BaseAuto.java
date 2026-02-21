@@ -20,7 +20,6 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.AutoMotifTracker;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPathLibrary;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPoses;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoRoutePlanner;
-import org.firstinspires.ftc.teamcode.config.autoUtil.AutoShootMachine;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoTurretAim;
 import org.firstinspires.ftc.teamcode.config.autoUtil.ReleaseWaiter;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
@@ -41,6 +40,7 @@ public abstract class BaseAuto extends OpMode {
     private PathChain pickupPath;
     private PathChain goToScorePath;
     private PathChain backRowLoopPickupPath;
+    private PathChain backRowLoopCompletePickupPath;
     private PathChain leavePath;
     private PathChain releaseGoToPath;
     private PathChain releaseCompletePath;
@@ -49,9 +49,13 @@ public abstract class BaseAuto extends OpMode {
             -0.02, 0.47, 0.18, 0.24, -0.01, 0.01);
 
     // ===== Constants =====
-    private static final double SHOOT_ACTION_SECONDS = 10.0;
-    private static final double MOTIF_ACQUIRE_TIMEOUT = 1.0;
-    private static final double STATE_TIMEOUT_SECONDS = 5.0; // fallback: force state advance after this time
+    private static final double SHOOT_ACTION_SECONDS = 5.0;
+    private static final double COMPLETE_SHOOT_READY_TIMEOUT_SECONDS = 2.0;
+    private static final double COMPLETE_SHOOT_TURRET_TOLERANCE_DEG = 2.0;
+    private static final double MOTIF_ACQUIRE_TIMEOUT = 1.5;
+    private static final double MOTIF_ACQUIRE_AIM_WINDOW_SECONDS = 0.5;
+    private static final double STATE_TIMEOUT_SECONDS = 4.0; // fallback: force state advance after this time
+    private static final int PICKUP_TARGET_BALL_COUNT = 3;
     private static final int TAG_BLUE = 20;
     private static final int TAG_RED = 24;
     private static final double RELEASE_IDLE_SECONDS = 1.0;
@@ -72,6 +76,7 @@ public abstract class BaseAuto extends OpMode {
         GO_TO_PICKUP,
         COMPLETE_PICKUP,
         GO_TO_FAR_PICKUP_ZONE,
+        BACKROW_COMPLETE_PICKUP,
         GO_TO_SCORE,
         GO_TO_RELEASE,
         COMPLETE_RELEASE,
@@ -81,7 +86,7 @@ public abstract class BaseAuto extends OpMode {
     // ===== State Machine =====
     private StateMachine autoMachine;
     private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
-    private AutoShootMachine shootMachine;
+    private StateMachine shootAllMachine;
     private AutoTurretAim turretAim;
 
     // ===== Robot and Subsystems =====
@@ -97,7 +102,13 @@ public abstract class BaseAuto extends OpMode {
     private int acquiredMotifId = -1;
     private final ElapsedTime stateTimer = new ElapsedTime();
     private final ElapsedTime shootTimer = new ElapsedTime();
+    private final ElapsedTime completeShootReadyTimer = new ElapsedTime();
+    private final ElapsedTime motifAcquireTimer = new ElapsedTime();
     private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
+    private AutoStates acquireMotifReturnState = AutoStates.GO_TO_SHOOT;
+    private boolean motifResolvedThisAcquire = false;
+    private boolean shootSequenceStarted = false;
+    private boolean skipCurrentShot = false;
 
     protected BaseAuto(Alliance alliance) {
         this.alliance = alliance;
@@ -127,7 +138,7 @@ public abstract class BaseAuto extends OpMode {
 
         robot.other.drive.manualDrive = false;
 
-        shootMachine = new AutoShootMachine(robot, clutchDownTime, clutchDownFarTime, spinTime, spinUpTimeout);
+        shootAllMachine = robot.getShootAllMachine();
         turretAim = new AutoTurretAim(robot, poses, alliance, range, telemetry);
         motifTracker = new AutoMotifTracker(robot, alliance, range, MOTIF_ACQUIRE_TIMEOUT);
 
@@ -168,17 +179,21 @@ public abstract class BaseAuto extends OpMode {
     public void start() {
         autoMachine.start();
         robot.toInit();
-        shootMachine.start();
+        if (shootAllMachine != null) {
+            shootAllMachine.start();
+        }
     }
 
     @Override
     public void loop() {
         follower.update();
-        turretAim.updateAim(activeState, preloadComplete);
 
         robot.update();
+        turretAim.updateAim(activeState, preloadComplete);
         autoMachine.update();
-        shootMachine.update();
+        if (shootAllMachine != null) {
+            shootAllMachine.update();
+        }
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
 //        telemetry.addData("Auto Action", getActionMessage());
@@ -222,7 +237,11 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                .transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
+                .transition(this::shouldBypassAcquireMotif, AutoStates.GO_TO_SHOOT)
+                .transition(() -> motifAcquiredOrTimedOut() && shouldReturnToGoToShootAfterAcquire(), AutoStates.GO_TO_SHOOT)
+                .transition(() -> motifAcquiredOrTimedOut() && shouldReturnToGoToPickupAfterAcquire(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> motifAcquiredOrTimedOut() && shouldReturnToBackrowPickupAfterAcquire(), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .transition(() -> motifAcquiredOrTimedOut() && shouldReturnToLeaveAfterAcquire(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
@@ -232,6 +251,7 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
+                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
                 .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
                 .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && !shouldStartNextCycle() && shouldEnterBackRowLoop(), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
                 .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && !shouldStartNextCycle() && !shouldEnterBackRowLoop(), AutoStates.LEAVE)
@@ -243,8 +263,8 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-                .transition(() -> shouldReleaseAfterPickup() && (followerIdle() || stateTimedOut()), AutoStates.GO_TO_RELEASE)
-                .transition(() -> !shouldReleaseAfterPickup() && (followerIdle() || stateTimedOut()), AutoStates.GO_TO_SHOOT) //Could add second condition of intake finished
+                .transition(() -> shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.GO_TO_RELEASE)
+                .transition(() -> !shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.GO_TO_RELEASE)
                 .onEnter(this::onEnterGoToRelease)
@@ -256,6 +276,10 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
                 .onEnter(this::onEnterBackRowLoopGoToPickup)
+                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+
+                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+                .onEnter(this::onEnterBackRowLoopCompletePickup)
                 .transition(() -> followerIdle() || stateTimedOut(), AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
@@ -279,7 +303,9 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.ACQUIRE_MOTIF)
                 .onEnter(this::onEnterAcquireMotif)
                 .onExit(this::onExitAcquireMotif)
-                .transition(this::motifAcquiredOrTimedOut, AutoStates.GO_TO_SHOOT)
+                .transition(this::shouldBypassAcquireMotif, AutoStates.GO_TO_SHOOT)
+                .transition(() -> motifAcquiredOrTimedOut() && shouldReturnToGoToShootAfterAcquire(), AutoStates.GO_TO_SHOOT)
+                .transition(() -> motifAcquiredOrTimedOut() && shouldReturnToLeaveAfterAcquire(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
@@ -289,6 +315,7 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
+                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
                 .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle(), AutoStates.LEAVE)
 
                 .state(AutoStates.LEAVE)
@@ -300,17 +327,43 @@ public abstract class BaseAuto extends OpMode {
     // ===== State Machine Callbacks =====
     protected void onEnterAcquireMotif() {
         setActiveState(AutoStates.ACQUIRE_MOTIF);
+        motifTracker.reset();
+        motifAcquireTimer.reset();
+        motifResolvedThisAcquire = false;
+        acquireMotifReturnState = computePostAcquireTargetState();
 
-        // TODO: reset motif acquisition command state.
-        // TODO: start turret/vision command to acquire motif.
+        // Far auto: if motif is already visible, record immediately and advance.
+        if (range == Range.LONG_RANGE && motifTracker.hasVisibleMotif()) {
+            resolveMotifNow();
+        }
     }
 
     protected boolean motifAcquiredOrTimedOut() {
-        return motifTracker.hasMotifOrTimedOut();
+        if (shouldBypassAcquireMotif()) {
+            return true;
+        }
+
+        if (motifResolvedThisAcquire) {
+            return true;
+        }
+
+        // During ACQUIRE_MOTIF, turretAim keeps commanding obelisk aim from current pose.
+        if (motifTracker.hasVisibleMotif()) {
+            resolveMotifNow();
+            return true;
+        }
+
+        // If motif still not visible after aiming window, move on.
+        if (motifAcquireTimer.seconds() >= MOTIF_ACQUIRE_AIM_WINDOW_SECONDS) {
+            return true;
+        }
+
+        // Absolute timeout from ACQUIRE_MOTIF entry.
+        return motifAcquireTimer.seconds() >= MOTIF_ACQUIRE_TIMEOUT;
     }
 
     protected void onExitAcquireMotif() {
-        // TODO: finalize motif acquisition and persist selected motif.
+        acquiredMotifId = motifTracker.getAcquiredMotifId();
     }
 
     protected void onEnterGoToShoot() {
@@ -327,7 +380,12 @@ public abstract class BaseAuto extends OpMode {
 
     protected void onEnterCompleteShoot() {
         setActiveState(AutoStates.COMPLETE_SHOOT);
-        // TODO: run shoot command sequence and mark completion from subsystem signal.
+        resetStateTimer();
+        shootTimer.reset();
+        completeShootReadyTimer.reset();
+        shootSequenceStarted = false;
+        // Do not trust startup ball count for preload; only skip empty shots after preload.
+        skipCurrentShot = preloadComplete && getLoadedBallCount() <= 0;
     }
 
     protected void onExitCompleteShoot() {
@@ -352,6 +410,9 @@ public abstract class BaseAuto extends OpMode {
 
     protected void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
+        resetStateTimer();
+        robot.intake.spinner.setMegaSpinIn();
+        robot.intake.clutch.setClutchUp();
 
         buildPath(PathRequest.COMPLETE_PICKUP);
         // TODO: run intake command while completing pickup path.
@@ -413,13 +474,27 @@ public abstract class BaseAuto extends OpMode {
         followPath(goToScorePath);
     }
 
+    protected void onEnterBackRowLoopCompletePickup() {
+        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP);
+
+        resetStateTimer();
+        robot.intake.spinner.setMegaSpinIn();
+        robot.intake.clutch.setClutchUp();
+
+        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
+        followPath(backRowLoopCompletePickupPath, intakeSpeed);
+    }
+
     protected void onEnterBackRowLoopCompleteShoot() {
         setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT);
 
         resetStateTimer();
         shootTimer.reset();
+        completeShootReadyTimer.reset();
+        shootSequenceStarted = false;
+        skipCurrentShot = preloadComplete && getLoadedBallCount() <= 0;
 
-        // TODO: shooter subsystem command to fire loop shot goes here.
+        // Run the same shoot sequence logic used by COMPLETE_SHOOT for back-row loop shots.
     }
 
     protected void onExitBackRowLoopCompleteShoot() {
@@ -446,6 +521,9 @@ public abstract class BaseAuto extends OpMode {
                 break;
             case GO_TO_FAR_PICKUP_ZONE:
                 backRowLoopPickupPath = buildFarPickupZonePath(currentPose);
+                break;
+            case BACKROW_COMPLETE_PICKUP:
+                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickupPath(currentPose);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
@@ -477,6 +555,11 @@ public abstract class BaseAuto extends OpMode {
 
     protected PathChain buildFarPickupZonePath(Pose currentPose) {
         return pathLibrary.farPickupZone(currentPose, alliance);
+    }
+
+    protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
+        // Back-row loop always intakes from absolute row 4.
+        return pathLibrary.pickup(currentPose, alliance, 4);
     }
 
     protected PathChain buildReleaseGoToPath(Pose currentPose) {
@@ -562,8 +645,65 @@ public abstract class BaseAuto extends OpMode {
         return !preloadComplete && !shouldShootPreload();
     }
 
+    protected boolean shouldAcquireMotifAfterPreloadShot() {
+        return range == Range.CLOSE_RANGE && !preloadComplete;
+    }
+
+    protected boolean shouldBypassAcquireMotif() {
+        // Close auto should only acquire once, right after preload completes.
+        return range == Range.CLOSE_RANGE && !preloadComplete;
+    }
+
     protected boolean shouldEnterBackRowLoop() {
         return backRowLoopEnabled;
+    }
+
+    protected boolean pickupAdvanceReady() {
+        return hasReachedPickupBallTarget() || followerIdle() || stateTimedOut();
+    }
+
+    protected boolean hasReachedPickupBallTarget() {
+        return getLoadedBallCount() >= PICKUP_TARGET_BALL_COUNT;
+    }
+
+    protected int getLoadedBallCount() {
+        if (robot == null) return 0;
+        return robot.getLoadedBallCount();
+    }
+
+    protected AutoStates computePostAcquireTargetState() {
+        if (range == Range.CLOSE_RANGE && preloadComplete) {
+            if (shouldStartNextCycle()) {
+                return AutoStates.GO_TO_PICKUP;
+            }
+            if (shouldEnterBackRowLoop()) {
+                return AutoStates.BACKROW_LOOP_GO_TO_PICKUP;
+            }
+            return AutoStates.LEAVE;
+        }
+        return AutoStates.GO_TO_SHOOT;
+    }
+
+    protected boolean shouldReturnToGoToShootAfterAcquire() {
+        return acquireMotifReturnState == AutoStates.GO_TO_SHOOT;
+    }
+
+    protected boolean shouldReturnToGoToPickupAfterAcquire() {
+        return acquireMotifReturnState == AutoStates.GO_TO_PICKUP;
+    }
+
+    protected boolean shouldReturnToBackrowPickupAfterAcquire() {
+        return acquireMotifReturnState == AutoStates.BACKROW_LOOP_GO_TO_PICKUP;
+    }
+
+    protected boolean shouldReturnToLeaveAfterAcquire() {
+        return acquireMotifReturnState == AutoStates.LEAVE;
+    }
+
+    protected void resolveMotifNow() {
+        motifTracker.resolveMotif(preloadComplete);
+        acquiredMotifId = motifTracker.getAcquiredMotifId();
+        motifResolvedThisAcquire = true;
     }
 
     // ===== State/Timer Helpers =====
@@ -579,9 +719,42 @@ public abstract class BaseAuto extends OpMode {
         if (!preloadComplete && !shouldShootPreload()) {
             return true;
         }
-        return shootMachine.isShootingComplete();
+        if (skipCurrentShot) {
+            return true;
+        }
+        if (!shootSequenceStarted) {
+            if (shouldStartShootSequence()) {
+                robot.initShootAllMachine = true;
+                shootSequenceStarted = true;
+            } else {
+                return false;
+            }
+        }
+        if (shootAllMachine == null) {
+            return true;
+        }
+        return shootAllMachine.getState() == Robot.ShootAllStates.INIT && !robot.initShootAllMachine;
 
         //TODO get a boolean from shooter subsystem
+    }
+
+    protected boolean shouldStartShootSequence() {
+        return hasCompleteShootReadyConditions()
+                || completeShootReadyTimer.seconds() >= COMPLETE_SHOOT_READY_TIMEOUT_SECONDS;
+    }
+
+    protected boolean hasCompleteShootReadyConditions() {
+        if (robot == null || robot.outtake == null || robot.outtake.shooter == null
+                || robot.outtake.turret == null || robot.outtake.vision == null) {
+            return false;
+        }
+        boolean shooterAtRpm = robot.outtake.shooter.isAtRPM();
+        boolean requiredTagVisible = robot.outtake.vision.hasRequiredTarget();
+        boolean turretAligned = robot.outtake.turret.isVisionOnTarget(
+                robot.outtake.vision,
+                COMPLETE_SHOOT_TURRET_TOLERANCE_DEG
+        );
+        return shooterAtRpm && requiredTagVisible && turretAligned;
     }
 
     protected void setActiveState(AutoStates state) {
@@ -598,8 +771,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowLoopShootComplete() {
-        // Placeholder completion signal for loop shot until subsystem signal is wired.
-        return shootTimedOut() || stateTimedOut();
+        return shootActionComplete() || shootTimedOut() || stateTimedOut();
     }
 
     protected boolean shouldExitBackRowLoop() {
@@ -648,6 +820,8 @@ public abstract class BaseAuto extends OpMode {
                 return "Complete release";
             case BACKROW_LOOP_GO_TO_PICKUP:
                 return "Back-row loop: go to far pickup zone";
+            case BACKROW_LOOP_COMPLETE_PICKUP:
+                return "Back-row loop: complete pickup";
             case BACKROW_LOOP_GO_TO_SHOOT:
                 return "Back-row loop: go to shoot spot";
             case BACKROW_LOOP_COMPLETE_SHOOT:

@@ -29,22 +29,20 @@ public class AutoTurretAim {
         if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) return;
 
         if (activeState == AutoStates.ACQUIRE_MOTIF) {
+            if (robot.outtake.turret.isAimLockEnabled()) {
+                robot.outtake.turret.setAimLockEnabled(false);
+            }
             robot.outtake.turret.turretVelocity = 0;
             aimAtObelisk();
             telemetry.addData("Obelisk Aim", true);
-        } else if (robot.outtake.vision.hasRequiredTarget()) {
-            robot.outtake.turret.turretVelocity = 0;
-            int requiredTag = robot.outtake.vision.getRequiredTagId();
-            double tx = robot.outtake.vision.getTxForTag(requiredTag);
-            double distance = robot.outtake.vision.getDistanceInchesForTag(requiredTag);
-            robot.outtake.turret.aimFromVision(tx, distance);
-            telemetry.addData("Lock Aim", true);
-            telemetry.addData("Lock Tx", tx);
-            telemetry.addData("Lock Distance In", distance);
         } else {
-            robot.outtake.turret.turretVelocity = 0;
-            aimAtGoal(preloadComplete);
-            telemetry.addData("Goal Aim", true);
+            // Match teleop lock behavior continuously in auto:
+            // use TX lock when required tag is visible, else ODO fallback.
+            if (!robot.outtake.turret.isAimLockEnabled()) {
+                robot.outtake.turret.setAimLockEnabled(true);
+            }
+            telemetry.addData("Auto Aim Lock", true);
+            telemetry.addData("Auto Aim Source", robot.outtake.turret.getActiveLockSource());
         }
         telemetry.addData("Required Tag Id", robot.outtake.vision.getRequiredTagId());
     }

@@ -12,6 +12,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 
 public class Vision implements Subsystem {
+    public static final int BLUE_GOAL_TAG_ID = 20;
+    public static final int RED_GOAL_TAG_ID = 24;
 
     //---------------- Hardware ----------------
     private Limelight3A limelight;
@@ -142,6 +144,53 @@ public class Vision implements Subsystem {
             return -1;
         }
         return latest.getFiducialResults().get(0).getFiducialId();
+    }
+
+    /**
+     * Returns visible goal tag ID (20 or 24), favoring the one closest to camera center.
+     * Returns -1 when neither goal tag is currently visible.
+     */
+    public int getVisibleGoalTagId() {
+        if (!hasTarget() || latest.getFiducialResults().isEmpty()) {
+            return -1;
+        }
+        int bestId = -1;
+        double bestScore = Double.MAX_VALUE;
+        for (LLResultTypes.FiducialResult f : latest.getFiducialResults()) {
+            int id = f.getFiducialId();
+            if (id != BLUE_GOAL_TAG_ID && id != RED_GOAL_TAG_ID) continue;
+
+            Pose3D p = f.getTargetPoseRobotSpace();
+            double x = p.getPosition().x;
+            double z = p.getPosition().z;
+            double absBearingDeg = Math.abs(Math.toDegrees(Math.atan2(x, z)));
+            if (absBearingDeg < bestScore) {
+                bestScore = absBearingDeg;
+                bestId = id;
+            }
+        }
+        return bestId;
+    }
+
+    /**
+     * Returns Limelight robot pose estimate (MT2 preferred, then standard botpose), else null.
+     */
+    public Pose3D getLatestBotPose() {
+        if (latest == null || !latest.isValid()) {
+            return null;
+        }
+        try {
+            Pose3D mt2 = latest.getBotpose_MT2();
+            if (mt2 != null) {
+                return mt2;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            return latest.getBotpose();
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     /** Choose the obelisk face (21/22/23) whose yaw is most directly facing the robot. */
