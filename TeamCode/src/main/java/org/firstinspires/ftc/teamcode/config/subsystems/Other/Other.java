@@ -14,6 +14,7 @@ public class Other implements Subsystem {
 
     //---------------- Software ----------------
 
+    public boolean unJam = false;
 
     //---------------- Constructor ----------------
     public Other(HardwareMap map) {

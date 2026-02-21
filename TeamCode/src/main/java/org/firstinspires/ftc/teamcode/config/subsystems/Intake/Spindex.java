@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -43,7 +44,7 @@ public class Spindex implements Subsystem {
     private double shootOne = 82;
     private double shootTwo = 150;
     private double shootThree = 222;
-    private double shootFour = 235;
+    private double shootFour = 252;
 
     //TODO make a four for everything, so it does not have to wrap around when shooting patterns
 
@@ -60,6 +61,18 @@ public class Spindex implements Subsystem {
 
     private double greenThresh = 0.0013; //If green is highest, ball is green
     private double blueThresh = 0.0013; //If blue is highest, ball is purple
+    NormalizedRGBA frontColors;
+    public float frontRed;
+    public float frontGreen;
+    public float frontBlue;
+    NormalizedRGBA middleColors;
+    public float middleRed;
+    public float middleGreen;
+    public float middleBlue;
+    NormalizedRGBA backColors;
+    public float backRed;
+    public float backGreen;
+    public float backBlue;
 
 
     //---------------- Constructor ----------------
@@ -67,9 +80,9 @@ public class Spindex implements Subsystem {
     public Spindex(HardwareMap map) {
         spindexLeft = map.get(Servo.class, "spindexL");
         spindexRight = map.get(Servo.class, "spindexR");
-        frontColor = map.get(RevColorSensorV3.class, "color1");
-        middleColor = map.get(RevColorSensorV3.class, "color2");
-        backColor = map.get(RevColorSensorV3.class, "color3");
+        //frontColor = map.get(RevColorSensorV3.class, "color1");
+        //middleColor = map.get(RevColorSensorV3.class, "color2");
+        //backColor = map.get(RevColorSensorV3.class, "color3");
         spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
         spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 29, 1.17);
         spindexEnc.setInverted(false);
@@ -380,22 +393,41 @@ public class Spindex implements Subsystem {
     public void updateIntookBall(){
         if(isSpindexAtPos()) {
             if (currentDirection.equals("forward")) {
+                updateFrontColors();
                 if (currentBall.equals("one")) {
-                    ballList[0] = "B";
+                    if(isGreenBall(frontRed, frontGreen, frontBlue)){
+                        ballList[0] = "G";
+                    } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
+                        ballList[0] = "P";
+                    } else {
+                        ballList[0] = "B";
+                    }
                     if (ballList[1].equals("E")) {
                         setSpindexForwardTwo();
                     } else if (ballList[2].equals("E")) {
                         setSpindexForwardThree();
                     }
                 } else if (currentBall.equals("two")) {
-                    ballList[1] = "B";
+                    if(isGreenBall(frontRed, frontGreen, frontBlue)){
+                        ballList[1] = "G";
+                    } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
+                        ballList[1] = "P";
+                    } else {
+                        ballList[1] = "B";
+                    }
                     if (ballList[0].equals("E")) {
                         setSpindexForwardOne();
                     } else if (ballList[2].equals("E")) {
                         setSpindexForwardThree();
                     }
                 } else if (currentBall.equals("three")) {
-                    ballList[2] = "B";
+                    if(isGreenBall(frontRed, frontGreen, frontBlue)){
+                        ballList[2] = "G";
+                    } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
+                        ballList[2] = "P";
+                    } else {
+                        ballList[2] = "B";
+                    }
                     if (ballList[0].equals("E")) {
                         setSpindexForwardOne();
                     } else if (ballList[1].equals("E")) {
@@ -403,22 +435,41 @@ public class Spindex implements Subsystem {
                     }
                 }
             } else if (currentDirection.equals("backward")) {
+                updateBackColors();
                 if (currentBall.equals("one")) {
-                    ballList[0] = "B";
+                    if(isGreenBall(backRed, backGreen, backBlue)){
+                        ballList[0] = "G";
+                    } else if(isPurpleBall(backRed, backGreen, backBlue)){
+                        ballList[0] = "P";
+                    } else {
+                        ballList[0] = "B";
+                    }
                     if (ballList[1].equals("E")) {
                         setSpindexBackwardTwo();
                     } else if (ballList[2].equals("E")) {
                         setSpindexBackwardThree();
                     }
                 } else if (currentBall.equals("two")) {
-                    ballList[1] = "B";
+                    if(isGreenBall(backRed, backGreen, backBlue)){
+                        ballList[1] = "G";
+                    } else if(isPurpleBall(backRed, backGreen, backBlue)){
+                        ballList[1] = "P";
+                    } else {
+                        ballList[1] = "B";
+                    }
                     if (ballList[0].equals("E")) {
                         setSpindexBackwardOne();
                     } else if (ballList[2].equals("E")) {
                         setSpindexBackwardThree();
                     }
                 } else if (currentBall.equals("three")) {
-                    ballList[2] = "B";
+                    if(isGreenBall(backRed, backGreen, backBlue)){
+                        ballList[2] = "G";
+                    } else if(isPurpleBall(backRed, backGreen, backBlue)){
+                        ballList[2] = "P";
+                    } else {
+                        ballList[2] = "B";
+                    }
                     if (ballList[0].equals("E")) {
                         setSpindexBackwardOne();
                     } else if (ballList[1].equals("E")) {
@@ -433,6 +484,33 @@ public class Spindex implements Subsystem {
         ballList[0] = "E";
         ballList[1] = "E";
         ballList[2] = "E";
+    }
+
+    public void updateFrontColors(){
+        frontColors = frontColor.getNormalizedColors();
+        frontRed = frontColors.red;
+        frontGreen = frontColors.green;
+        frontBlue = frontColors.blue;
+    }
+    public void updateMiddleColors(){
+        middleColors = middleColor.getNormalizedColors();
+        middleRed = middleColors.red;
+        middleGreen = middleColors.green;
+        middleBlue = middleColors.blue;
+    }
+    public void updateBackColors(){
+        backColors = backColor.getNormalizedColors();
+        backRed = backColors.red;
+        backGreen = backColors.green;
+        backBlue = backColors.blue;
+    }
+
+    public boolean isGreenBall(float red, float green, float blue){
+        return (green > greenThresh && green > red && green > blue);
+    }
+
+    public boolean isPurpleBall(float red, float green, float blue){
+        return (blue > blueThresh && blue > red && blue > green);
     }
 
     //---------------- Interface Methods ----------------

@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Spinner;
-import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 

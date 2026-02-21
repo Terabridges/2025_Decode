@@ -6,7 +6,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Spindex;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class SpindexControl implements Control {
@@ -57,5 +56,11 @@ public class SpindexControl implements Control {
         telemetry.addData("CurrentPos", spindex.getAbsolutePos());
         telemetry.addData("CommandedPos", spindex.getCommandedPos());
         telemetry.addData("Ball Order", spindex.balls);
+        telemetry.addData("FrontRed", spindex.frontRed);
+        telemetry.addData("FrontGreen", spindex.frontGreen);
+        telemetry.addData("FrontBlue", spindex.frontBlue);
+        telemetry.addData("BackRed", spindex.backRed);
+        telemetry.addData("BackGreen", spindex.backGreen);
+        telemetry.addData("BackBlue", spindex.backBlue);
     }
 }

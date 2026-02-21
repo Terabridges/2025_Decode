@@ -138,6 +138,7 @@ public class Spinner implements Subsystem {
         backInnerTripped = false;
     }
 
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){

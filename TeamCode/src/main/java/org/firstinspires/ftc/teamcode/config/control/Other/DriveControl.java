@@ -6,7 +6,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Drive;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.OLD.TemplateSubsystem;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
