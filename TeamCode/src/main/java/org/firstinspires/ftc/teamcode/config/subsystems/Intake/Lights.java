@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
+@Configurable
 public class Lights implements Subsystem {
 
     //---------------- Hardware ----------------
@@ -19,6 +22,14 @@ public class Lights implements Subsystem {
     private double redPWM = 0.280;
     private double bluePWM = 0.611;
     private double clearPWM = 0.00;
+    public static double flashToggleMs = 750.0;
+    private String frontCommandedColor = "clear";
+    private String middleCommandedColor = "clear";
+    private String backCommandedColor = "clear";
+    private boolean flashEnabled = false;
+    private boolean flashLightsOn = true;
+    private long lastFlashWindow = -1;
+    private final ElapsedTime flashTimer = new ElapsedTime();
 
     //---------------- Constructor ----------------
     public Lights(HardwareMap map) {
@@ -28,69 +39,90 @@ public class Lights implements Subsystem {
     }
 
     //---------------- Methods ----------------
-    public void setFrontLight(String color){
-        if(color.equals("green")){
-            frontLight.setPosition(greenPWM);
-        } else if (color.equals("purple")){
-            frontLight.setPosition(purplePWM);
-        } else if(color.equals("red")){
-            frontLight.setPosition(redPWM);
-        } else if (color.equals("blue")){
-            frontLight.setPosition(bluePWM);
-        } else if (color.equals("clear")){
-            frontLight.setPosition(clearPWM);
+    private double pwmForColor(String color) {
+        if ("green".equals(color)) return greenPWM;
+        if ("purple".equals(color)) return purplePWM;
+        if ("red".equals(color)) return redPWM;
+        if ("blue".equals(color)) return bluePWM;
+        return clearPWM;
+    }
+
+    private void updateFlashWindow() {
+        if (!flashEnabled) {
+            flashLightsOn = true;
+            lastFlashWindow = -1;
+            return;
         }
+        long window = (long) (flashTimer.milliseconds() / Math.max(1.0, flashToggleMs));
+        if (window != lastFlashWindow) {
+            lastFlashWindow = window;
+            flashLightsOn = (window % 2L) == 0L;
+        }
+    }
+
+    private void applyFront() {
+        frontLight.setPosition((flashEnabled && !flashLightsOn) ? clearPWM : pwmForColor(frontCommandedColor));
+    }
+
+    private void applyMiddle() {
+        middleLight.setPosition((flashEnabled && !flashLightsOn) ? clearPWM : pwmForColor(middleCommandedColor));
+    }
+
+    private void applyBack() {
+        backLight.setPosition((flashEnabled && !flashLightsOn) ? clearPWM : pwmForColor(backCommandedColor));
+    }
+
+    private void applyAll() {
+        applyFront();
+        applyMiddle();
+        applyBack();
+    }
+
+    public void setFlashEnabled(boolean enabled) {
+        if (flashEnabled == enabled) return;
+        flashEnabled = enabled;
+        flashTimer.reset();
+        lastFlashWindow = -1;
+        updateFlashWindow();
+        applyAll();
+    }
+
+    public void setFrontLight(String color){
+        frontCommandedColor = color;
+        applyFront();
     }
 
     public void setMiddleLight(String color){
-        if(color.equals("green")){
-            middleLight.setPosition(greenPWM);
-        } else if (color.equals("purple")){
-            middleLight.setPosition(purplePWM);
-        } else if(color.equals("red")){
-            middleLight.setPosition(redPWM);
-        } else if (color.equals("blue")){
-            middleLight.setPosition(bluePWM);
-        } else if (color.equals("clear")){
-            middleLight.setPosition(clearPWM);
-        }
+        middleCommandedColor = color;
+        applyMiddle();
     }
 
     public void setBackLight(String color){
-        if(color.equals("green")){
-            backLight.setPosition(greenPWM);
-        } else if (color.equals("purple")){
-            backLight.setPosition(purplePWM);
-        } else if(color.equals("red")){
-            backLight.setPosition(redPWM);
-        } else if (color.equals("blue")){
-            backLight.setPosition(bluePWM);
-        } else if (color.equals("clear")){
-            backLight.setPosition(clearPWM);
-        }
+        backCommandedColor = color;
+        applyBack();
     }
 
     public void setFrontLightAlliance(){
         if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.BLUE)){
-            frontLight.setPosition(bluePWM);
+            setFrontLight("blue");
         } else if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.RED)){
-            frontLight.setPosition(redPWM);
+            setFrontLight("red");
         }
     }
 
     public void setMiddleLightAlliance(){
         if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.BLUE)){
-            middleLight.setPosition(bluePWM);
+            setMiddleLight("blue");
         } else if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.RED)){
-            middleLight.setPosition(redPWM);
+            setMiddleLight("red");
         }
     }
 
     public void setBackLightAlliance(){
         if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.BLUE)){
-            backLight.setPosition(bluePWM);
+            setBackLight("blue");
         } else if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.RED)){
-            backLight.setPosition(redPWM);
+            setBackLight("red");
         }
     }
 
@@ -98,14 +130,16 @@ public class Lights implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-        //setFrontLightAlliance();
-        //setMiddleLightAlliance();
-        //setBackLightAlliance();
+        setFlashEnabled(false);
+        setFrontLight("clear");
+        setMiddleLight("clear");
+        setBackLight("clear");
     }
 
     @Override
     public void update(){
-
+        updateFlashWindow();
+        applyAll();
     }
 
 }

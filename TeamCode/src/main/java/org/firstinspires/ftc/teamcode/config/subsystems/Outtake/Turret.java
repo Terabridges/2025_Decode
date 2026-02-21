@@ -145,6 +145,10 @@ public class Turret implements Subsystem {
     }
 
     public double computeVisionCorrectionDeg(double txDeg, double distanceIn) {
+        return computeVisionAimErrorDeg(txDeg, distanceIn) * visionKp * visionDirection;
+    }
+
+    public double computeVisionAimErrorDeg(double txDeg, double distanceIn) {
         double parallaxDeg = computeParallaxCorrectionDeg(distanceIn) * Math.signum(txDeg);
         boolean isFar = distanceIn > visionDistanceSplitIn;
         double biasDeg;
@@ -153,7 +157,24 @@ public class Turret implements Subsystem {
         } else {
             biasDeg = isFar ? redVisionFarBiasDeg : redVisionCloseBiasDeg;
         }
-        return (txDeg + parallaxDeg + biasDeg) * visionKp * visionDirection;
+        return txDeg + parallaxDeg + biasDeg;
+    }
+
+    public boolean isVisionOnTarget(Vision vision, double toleranceDeg) {
+        if (vision == null) return false;
+        int requiredTagId = vision.getRequiredTagId();
+        boolean hasTarget = requiredTagId >= 0
+                ? vision.seesTag(requiredTagId)
+                : vision.hasTarget();
+        if (!hasTarget) return false;
+
+        double tx = requiredTagId >= 0
+                ? vision.getTxForTag(requiredTagId)
+                : vision.getTx();
+        double distanceIn = requiredTagId >= 0
+                ? vision.getDistanceInchesForTag(requiredTagId)
+                : vision.getDistanceInches();
+        return Math.abs(computeVisionAimErrorDeg(tx, distanceIn)) <= Math.abs(toleranceDeg);
     }
 
     /**
