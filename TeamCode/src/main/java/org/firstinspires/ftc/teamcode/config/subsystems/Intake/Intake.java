@@ -14,6 +14,7 @@ public class Intake implements Subsystem {
     public Spindex spindex;
     public Spinner spinner;
     public Clutch clutch;
+    public Lights lights;
 
     //---------------- Software ----------------
 
@@ -23,6 +24,7 @@ public class Intake implements Subsystem {
         spindex = new Spindex(map);
         spinner = new Spinner(map);
         clutch = new Clutch(map);
+        lights = new Lights(map);
     }
 
     //---------------- Methods ----------------
@@ -34,6 +36,7 @@ public class Intake implements Subsystem {
         spindex.toInit();
         clutch.toInit();
         spinner.toInit();
+        lights.toInit();
     }
 
     @Override
@@ -41,6 +44,7 @@ public class Intake implements Subsystem {
         spindex.update();
         clutch.update();
         spinner.update();
+        lights.update();
 
         if (spindex.spindexStartingSpinning){
             spinner.overrideSpinIn();
@@ -102,6 +106,44 @@ public class Intake implements Subsystem {
             spinner.backOuterTripped = false;
         }
 
+        if(spindex.ballOneChanged){
+            spindex.ballOneChanged = false;
+            if(spindex.ballList[0].equals("E")){
+                lights.setFrontLight("clear");
+            } else if(spindex.ballList[0].equals("B")){
+                lights.setFrontLightAlliance();
+            } else if(spindex.ballList[0].equals("P")){
+                lights.setFrontLight("purple");
+            } else if(spindex.ballList[0].equals("G")){
+                lights.setFrontLight("green");
+            }
+        }
+
+        if(spindex.ballTwoChanged){
+            spindex.ballTwoChanged = false;
+            if(spindex.ballList[1].equals("E")){
+                lights.setMiddleLight("clear");
+            } else if(spindex.ballList[1].equals("B")){
+                lights.setMiddleLightAlliance();
+            } else if(spindex.ballList[1].equals("P")){
+                lights.setMiddleLight("purple");
+            } else if(spindex.ballList[1].equals("G")){
+                lights.setMiddleLight("green");
+            }
+        }
+
+        if(spindex.ballThreeChanged){
+            spindex.ballThreeChanged = false;
+            if(spindex.ballList[2].equals("E")){
+                lights.setBackLight("clear");
+            } else if(spindex.ballList[2].equals("B")){
+                lights.setBackLightAlliance();
+            } else if(spindex.ballList[2].equals("P")){
+                lights.setBackLight("purple");
+            } else if(spindex.ballList[2].equals("G")){
+                lights.setBackLight("green");
+            }
+        }
     }
 
 }

@@ -20,7 +20,7 @@ public class SpinnerControl implements Control {
     EdgeDetector SpinOutRE = new EdgeDetector( () -> spinner.setMegaSpinOut());
     EdgeDetector SpinOutFE = new EdgeDetector( () -> spinner.setMegaSpinZero(), true);
 
-    EdgeDetector unTrip = new EdgeDetector( () -> spinner.unTrip());
+    //EdgeDetector unTrip = new EdgeDetector( () -> spinner.unTrip());
 
     //---------------- Constructor ----------------
     public SpinnerControl(Spinner spinner, Gamepad gp1, Gamepad gp2){
@@ -45,7 +45,7 @@ public class SpinnerControl implements Control {
         SpinOutRE.update(gp1.right_bumper);
         SpinOutFE.update(gp1.right_bumper);
 
-        unTrip.update(gp1.left_stick_button);
+        //unTrip.update(gp1.left_stick_button);
     }
 
     @Override

@@ -16,7 +16,7 @@ import org.firstinspires.ftc.teamcode.config.control.Intake.SpindexControl;
 import org.firstinspires.ftc.teamcode.config.control.Intake.SpinnerControl;
 import org.firstinspires.ftc.teamcode.config.control.Other.DriveControl;
 import org.firstinspires.ftc.teamcode.config.control.Other.LiftControl;
-import org.firstinspires.ftc.teamcode.config.control.Other.LightsControl;
+import org.firstinspires.ftc.teamcode.config.control.Intake.LightsControl;
 import org.firstinspires.ftc.teamcode.config.control.Other.OtherControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
@@ -64,6 +65,8 @@ public class MainTeleOp extends OpMode {
     Gamepad previousGamepad2;
 
     StateMachine shootAllMachine;
+    StateMachine sortingShootAllMachine;
+
     private JoinedTelemetry joinedTelemetry;
 
     public ElapsedTime loopTimer;
@@ -71,6 +74,9 @@ public class MainTeleOp extends OpMode {
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
+
+    EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
+    EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
 
     @Override
     public void init() {
@@ -98,6 +104,8 @@ public class MainTeleOp extends OpMode {
         previousGamepad2 = new Gamepad();
 
         shootAllMachine = robot.getShootAllMachine();
+        sortingShootAllMachine = robot.getSortedShootAllMachine();
+
         joinedTelemetry = new JoinedTelemetry(
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
                 telemetry
@@ -109,7 +117,31 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void init_loop(){
+        previousGamepad1.copy(currentGamepad1);
+        currentGamepad1.copy(gamepad1);
 
+        if (currentGamepad1.a && !previousGamepad1.a){
+            if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PPG)){
+                GlobalVariables.setMotif(GlobalVariables.MotifPattern.GPP);
+            } else if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.GPP)){
+                GlobalVariables.setMotif(GlobalVariables.MotifPattern.PGP);
+            } else if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PGP)){
+                GlobalVariables.setMotif(GlobalVariables.MotifPattern.PPG);
+            }
+        }
+
+        if (currentGamepad1.b && !previousGamepad1.b){
+            if(GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.RED)){
+                GlobalVariables.setAllianceColor(GlobalVariables.AllianceColor.BLUE);
+            } else if (GlobalVariables.getAllianceColor().equals(GlobalVariables.AllianceColor.BLUE)){
+                GlobalVariables.setAllianceColor(GlobalVariables.AllianceColor.RED);
+            }
+        }
+
+        telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+        telemetry.addData("Motif", GlobalVariables.getMotif());
+        telemetry.addData("Alliance Color", GlobalVariables.getAllianceColor());
+        telemetry.update();
     }
 
     @Override
@@ -127,7 +159,10 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.turret.setAimLockEnabled(true);
+
         shootAllMachine.start();
+        sortingShootAllMachine.start();
+
         loopTimer.reset();
         telemetryTimer.reset();
     }
@@ -156,6 +191,8 @@ public class MainTeleOp extends OpMode {
         for (Control c : controls) {
             c.update();
         }
+        getReadyShoot.update(gamepad1.b);
+        toggleSorting.update(gamepad1.start);
     }
 
     public void controlsTelemetryUpdate() {
@@ -165,6 +202,7 @@ public class MainTeleOp extends OpMode {
             }
             joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Loop Time", loopTime);
+            joinedTelemetry.addData("Use Sorting", robot.useSorting);
             joinedTelemetry.update();
 
             Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
@@ -191,10 +229,17 @@ public class MainTeleOp extends OpMode {
     }
 
     public void stateMachinesUpdate(){
-        if (currentGamepad1.x && !previousGamepad1.x && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)){
-            robot.initShootAllMachine = true;
+        if(!robot.useSorting) {
+            if (currentGamepad1.x && !previousGamepad1.x && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                robot.initShootAllMachine = true;
+            }
+        } else {
+            if (currentGamepad1.x && !previousGamepad1.x && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
+                robot.initSortedShootAllMachine = true;
+            }
         }
         shootAllMachine.update();
+        sortingShootAllMachine.update();
     }
 
     private void applyAllianceVisionLockConfig() {

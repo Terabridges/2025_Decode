@@ -116,6 +116,10 @@ public class Shooter implements Subsystem {
         hood.setPosition(hoodPos);
     }
 
+    public boolean isAtRPM(){
+        return (Math.abs(flywheelTargetRPM - currentRPM) < 200);
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){

@@ -15,7 +15,7 @@ public class ClutchControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector toggleClutch = new EdgeDetector(()-> clutch.toggleClutch());
+    //EdgeDetector toggleClutch = new EdgeDetector(()-> clutch.toggleClutch());
 
 
     //---------------- Constructor ----------------
@@ -36,7 +36,7 @@ public class ClutchControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        toggleClutch.update(gp1.a);
+        //toggleClutch.update(gp1.a);
     }
 
     @Override

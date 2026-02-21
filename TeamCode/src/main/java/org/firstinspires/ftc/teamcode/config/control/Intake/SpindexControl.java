@@ -18,7 +18,7 @@ public class SpindexControl implements Control {
     EdgeDetector ballClockwise = new EdgeDetector(()-> spindex.moveBallClockwise());
     EdgeDetector ballCounter = new EdgeDetector(()-> spindex.moveBallCounter());
     EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
-    EdgeDetector toggleShootMode = new EdgeDetector(()-> spindex.toggleShootMode());
+    //EdgeDetector toggleShootMode = new EdgeDetector(()-> spindex.toggleShootMode());
     EdgeDetector emptyBalls = new EdgeDetector(()-> spindex.emptyBalls());
 
 
@@ -43,8 +43,9 @@ public class SpindexControl implements Control {
         ballClockwise.update(gp1.dpad_right);
         ballCounter.update(gp1.dpad_left);
         switchDirection.update(gp1.dpad_up);
-        toggleShootMode.update(gp1.back);
+        //toggleShootMode.update(gp1.back);
         emptyBalls.update(gp1.right_stick_button);
+
 
 
     }

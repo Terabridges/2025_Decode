@@ -4,23 +4,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
-import org.firstinspires.ftc.teamcode.config.control.Intake.ClutchControl;
-import org.firstinspires.ftc.teamcode.config.control.Intake.IntakeControl;
-import org.firstinspires.ftc.teamcode.config.control.Intake.SpindexControl;
-import org.firstinspires.ftc.teamcode.config.control.Intake.SpinnerControl;
-import org.firstinspires.ftc.teamcode.config.control.Other.DriveControl;
-import org.firstinspires.ftc.teamcode.config.control.Other.LiftControl;
-import org.firstinspires.ftc.teamcode.config.control.Other.LightsControl;
-import org.firstinspires.ftc.teamcode.config.control.Other.OtherControl;
-import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
-import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
-import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
-import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 @PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="TransferTest", group="Test")

@@ -44,9 +44,11 @@ public class Spindex implements Subsystem {
     private double shootOne = 82;
     private double shootTwo = 150;
     private double shootThree = 222;
-    private double shootFour = 252;
+    private double shootFour = 290;
+    private double shootFive = 360;
+    //290 //360
+    //shoot three half 252
 
-    //TODO make a four for everything, so it does not have to wrap around when shooting patterns
 
     private String currentDirection = "forward";
 
@@ -59,20 +61,24 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"E", "E", "E"};
     public String balls = "";
 
-    private double greenThresh = 0.0013; //If green is highest, ball is green
-    private double blueThresh = 0.0013; //If blue is highest, ball is purple
+    private double greenThresh = 0.0005; //If green is highest, ball is green was 0.0013 0.0009
+    private double blueThresh = 0.0005; //If blue is highest, ball is purple was 0.0013 0.0009
     NormalizedRGBA frontColors;
-    public float frontRed;
-    public float frontGreen;
-    public float frontBlue;
+    public float frontRed = 0;
+    public float frontGreen = 0;
+    public float frontBlue = 0;
     NormalizedRGBA middleColors;
-    public float middleRed;
-    public float middleGreen;
-    public float middleBlue;
+    public float middleRed = 0;
+    public float middleGreen = 0;
+    public float middleBlue = 0;
     NormalizedRGBA backColors;
-    public float backRed;
-    public float backGreen;
-    public float backBlue;
+    public float backRed = 0;
+    public float backGreen = 0;
+    public float backBlue = 0;
+
+    public boolean ballOneChanged = false;
+    public boolean ballTwoChanged = false;
+    public boolean ballThreeChanged = false;
 
 
     //---------------- Constructor ----------------
@@ -80,13 +86,16 @@ public class Spindex implements Subsystem {
     public Spindex(HardwareMap map) {
         spindexLeft = map.get(Servo.class, "spindexL");
         spindexRight = map.get(Servo.class, "spindexR");
-        //frontColor = map.get(RevColorSensorV3.class, "color1");
-        //middleColor = map.get(RevColorSensorV3.class, "color2");
-        //backColor = map.get(RevColorSensorV3.class, "color3");
+        frontColor = map.get(RevColorSensorV3.class, "color1");
+        middleColor = map.get(RevColorSensorV3.class, "color2");
+        backColor = map.get(RevColorSensorV3.class, "color3");
         spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
         spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 29, 1.17);
         spindexEnc.setInverted(false);
         spindexRight.setDirection(Servo.Direction.REVERSE);
+        frontColors = new NormalizedRGBA();
+        middleColors = new NormalizedRGBA();
+        backColors = new NormalizedRGBA();
     }
 
     //---------------- Methods ----------------
@@ -153,6 +162,10 @@ public class Spindex implements Subsystem {
 
     public void setSpindexShootFour(){
         setSpindexDegree(shootFour);
+    }
+
+    public void setSpindexShootFive(){
+        setSpindexDegree(shootFive);
     }
 
     public void switchSides(){
@@ -397,10 +410,13 @@ public class Spindex implements Subsystem {
                 if (currentBall.equals("one")) {
                     if(isGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[0] = "G";
+                        ballOneChanged = true;
                     } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[0] = "P";
+                        ballOneChanged = true;
                     } else {
                         ballList[0] = "B";
+                        ballOneChanged = true;
                     }
                     if (ballList[1].equals("E")) {
                         setSpindexForwardTwo();
@@ -410,10 +426,13 @@ public class Spindex implements Subsystem {
                 } else if (currentBall.equals("two")) {
                     if(isGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[1] = "G";
+                        ballTwoChanged = true;
                     } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[1] = "P";
+                        ballTwoChanged = true;
                     } else {
                         ballList[1] = "B";
+                        ballTwoChanged = true;
                     }
                     if (ballList[0].equals("E")) {
                         setSpindexForwardOne();
@@ -423,10 +442,13 @@ public class Spindex implements Subsystem {
                 } else if (currentBall.equals("three")) {
                     if(isGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[2] = "G";
+                        ballThreeChanged = true;
                     } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[2] = "P";
+                        ballThreeChanged = true;
                     } else {
                         ballList[2] = "B";
+                        ballThreeChanged = true;
                     }
                     if (ballList[0].equals("E")) {
                         setSpindexForwardOne();
@@ -439,10 +461,13 @@ public class Spindex implements Subsystem {
                 if (currentBall.equals("one")) {
                     if(isGreenBall(backRed, backGreen, backBlue)){
                         ballList[0] = "G";
+                        ballOneChanged = true;
                     } else if(isPurpleBall(backRed, backGreen, backBlue)){
                         ballList[0] = "P";
+                        ballOneChanged = true;
                     } else {
                         ballList[0] = "B";
+                        ballOneChanged = true;
                     }
                     if (ballList[1].equals("E")) {
                         setSpindexBackwardTwo();
@@ -452,10 +477,13 @@ public class Spindex implements Subsystem {
                 } else if (currentBall.equals("two")) {
                     if(isGreenBall(backRed, backGreen, backBlue)){
                         ballList[1] = "G";
+                        ballTwoChanged = true;
                     } else if(isPurpleBall(backRed, backGreen, backBlue)){
                         ballList[1] = "P";
+                        ballTwoChanged = true;
                     } else {
                         ballList[1] = "B";
+                        ballTwoChanged = true;
                     }
                     if (ballList[0].equals("E")) {
                         setSpindexBackwardOne();
@@ -465,10 +493,13 @@ public class Spindex implements Subsystem {
                 } else if (currentBall.equals("three")) {
                     if(isGreenBall(backRed, backGreen, backBlue)){
                         ballList[2] = "G";
+                        ballThreeChanged = true;
                     } else if(isPurpleBall(backRed, backGreen, backBlue)){
                         ballList[2] = "P";
+                        ballThreeChanged = true;
                     } else {
                         ballList[2] = "B";
+                        ballThreeChanged = true;
                     }
                     if (ballList[0].equals("E")) {
                         setSpindexBackwardOne();
@@ -484,6 +515,9 @@ public class Spindex implements Subsystem {
         ballList[0] = "E";
         ballList[1] = "E";
         ballList[2] = "E";
+        ballOneChanged = true;
+        ballTwoChanged = true;
+        ballThreeChanged = true;
     }
 
     public void updateFrontColors(){

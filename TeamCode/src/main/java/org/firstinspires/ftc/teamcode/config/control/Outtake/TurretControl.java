@@ -35,8 +35,7 @@ public class TurretControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        // Aim lock toggle is START only.
-        toggleAimLockStart.update(gp1.start || gp2.start);
+        toggleAimLockStart.update(gp1.a);
     }
 
     @Override

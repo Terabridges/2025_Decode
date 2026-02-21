@@ -37,7 +37,7 @@ public class OtherControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        unJam.update(gp1.touchpad);
+        unJam.update(gp1.back);
     }
 
     @Override
