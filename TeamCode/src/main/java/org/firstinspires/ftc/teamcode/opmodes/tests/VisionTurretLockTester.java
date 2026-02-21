@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
-//@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name = "VisionTurretLockTester", group = "Test")
 public class VisionTurretLockTester extends OpMode {
 

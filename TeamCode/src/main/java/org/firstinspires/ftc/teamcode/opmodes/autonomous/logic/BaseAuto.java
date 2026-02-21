@@ -30,7 +30,7 @@ import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 public abstract class BaseAuto extends OpMode {
 
     // ===== Pathing Configuration =====
@@ -512,6 +512,11 @@ public abstract class BaseAuto extends OpMode {
 
     protected Pose getScorePoseForCurrentShot() {
         Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
+        if (getScoreRangeForCurrentShot() == Range.CLOSE_RANGE && preloadComplete) {
+            // Close-range cycle shots should face the same direction as intake heading.
+            Pose closeIntakeHeadingPose = poses.getPickupStart(alliance, 1);
+            return new Pose(base.getX(), base.getY(), closeIntakeHeadingPose.getHeading());
+        }
         return base;
     }
 

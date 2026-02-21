@@ -41,7 +41,28 @@ public class AutoPathLibrary {
     }
 
     public PathChain leave(Pose currentPose, Alliance alliance, Range range) {
-        return buildLinear(currentPose, poses.getLeave(alliance, range), false);
+        Pose leavePose = poses.getLeave(alliance, range);
+        if (AutoPoses.ReturnToStart) {
+            return buildTurnThenDrive(currentPose, leavePose);
+        }
+        return buildLinear(currentPose, leavePose, false);
+    }
+
+    private PathChain buildTurnThenDrive(Pose start, Pose end) {
+        if (follower == null || start == null || end == null) {
+            return null;
+        }
+
+        // Tiny translation segment lets heading settle before the actual drive segment.
+        double epsilon = 0.01;
+        Pose turnPose = new Pose(start.getX() + epsilon, start.getY(), end.getHeading());
+
+        return follower.pathBuilder()
+                .addPath(new BezierLine(start, turnPose))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .addPath(new BezierLine(turnPose, end))
+                .setLinearHeadingInterpolation(end.getHeading(), end.getHeading())
+                .build();
     }
 
     public PathChain buildLinear(Pose start, Pose end, boolean smoothEnd) {
