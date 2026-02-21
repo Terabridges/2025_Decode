@@ -55,41 +55,51 @@ public class Intake implements Subsystem {
         }
 
         if(spinner.frontInnerTripped){
-            if (spindex.getCurrentDirection().equals("forward")){
-                if(spindex.getCurrentBall().equals("one")){
-                    if (spindex.ballList[0].equals("E")){
-                        spindex.updateIntookBall();
-                    }
-                } else if(spindex.getCurrentBall().equals("two")){
-                    if (spindex.ballList[1].equals("E")){
-                        spindex.updateIntookBall();
-                    }
-                } else if(spindex.getCurrentBall().equals("three")){
-                    if (spindex.ballList[2].equals("E")){
-                        spindex.updateIntookBall();
+            if (spindex.isSpindexAtPos()) {
+                if(spindex.isFrontColorDistanceTripped()) {
+                    if (spindex.getCurrentDirection().equals("forward")) {
+                        if (spindex.getCurrentBall().equals("one")) {
+                            if (spindex.ballList[0].equals("E")) {
+                                spindex.updateIntookBall();
+                            }
+                        } else if (spindex.getCurrentBall().equals("two")) {
+                            if (spindex.ballList[1].equals("E")) {
+                                spindex.updateIntookBall();
+                            }
+                        } else if (spindex.getCurrentBall().equals("three")) {
+                            if (spindex.ballList[2].equals("E")) {
+                                spindex.updateIntookBall();
+                            }
+                        }
                     }
                 }
+            } else {
+                spinner.frontInnerTripped = false;
             }
-            spinner.frontInnerTripped = false;
         }
 
         if(spinner.backInnerTripped){
-            if (spindex.getCurrentDirection().equals("backward")){
-                if(spindex.getCurrentBall().equals("one")){
-                    if (spindex.ballList[0].equals("E")){
-                        spindex.updateIntookBall();
-                    }
-                } else if(spindex.getCurrentBall().equals("two")){
-                    if (spindex.ballList[1].equals("E")){
-                        spindex.updateIntookBall();
-                    }
-                } else if(spindex.getCurrentBall().equals("three")){
-                    if (spindex.ballList[2].equals("E")){
-                        spindex.updateIntookBall();
+            if (spindex.isSpindexAtPos()) {
+                if(spindex.isBackColorDistanceTripped()) {
+                    if (spindex.getCurrentDirection().equals("backward")) {
+                        if (spindex.getCurrentBall().equals("one")) {
+                            if (spindex.ballList[0].equals("E")) {
+                                spindex.updateIntookBall();
+                            }
+                        } else if (spindex.getCurrentBall().equals("two")) {
+                            if (spindex.ballList[1].equals("E")) {
+                                spindex.updateIntookBall();
+                            }
+                        } else if (spindex.getCurrentBall().equals("three")) {
+                            if (spindex.ballList[2].equals("E")) {
+                                spindex.updateIntookBall();
+                            }
+                        }
                     }
                 }
+            } else {
+                spinner.backInnerTripped = false;
             }
-            spinner.backInnerTripped = false;
         }
 
         if(spinner.frontOuterTripped){
