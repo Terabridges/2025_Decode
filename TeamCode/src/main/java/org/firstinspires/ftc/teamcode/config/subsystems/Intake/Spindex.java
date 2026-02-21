@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
@@ -63,8 +64,10 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"E", "E", "E"};
     public String balls = "";
 
-    private double greenThresh = 0.0009; //If green is highest, ball is green was 0.0013 0.0009
-    private double blueThresh = 0.0009; //If blue is highest, ball is purple was 0.0013 0.0009
+    private double frontGreenThresh = 0.0006; //If green is highest, ball is green was 0.0013 0.0009
+    private double frontBlueThresh = 0.0006; //If blue is highest, ball is purple was 0.0013 0.0009
+    private double backGreenThresh = 0.0005;
+    private double backBlueThresh = 0.0005;
     NormalizedRGBA frontColors;
     public float frontRed = 0;
     public float frontGreen = 0;
@@ -81,6 +84,9 @@ public class Spindex implements Subsystem {
     public boolean ballOneChanged = false;
     public boolean ballTwoChanged = false;
     public boolean ballThreeChanged = false;
+
+    private double frontColorDistance = 0;
+    private double backColorDistance = 0;
 
 
     //---------------- Constructor ----------------
@@ -406,7 +412,7 @@ public class Spindex implements Subsystem {
     }
 
     public boolean isSpindexAtPos(){
-        return (Math.abs((spindexRight.getPosition()*360) - getAbsolutePos()) <= 5);
+        return (Math.abs((spindexRight.getPosition()*360) - getAbsolutePos()) <= 7);
     }
 
     public double getCommandedPos(){
@@ -418,10 +424,10 @@ public class Spindex implements Subsystem {
             if (currentDirection.equals("forward")) {
                 updateFrontColors();
                 if (currentBall.equals("one")) {
-                    if(isGreenBall(frontRed, frontGreen, frontBlue)){
+                    if(isFrontGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[0] = "G";
                         ballOneChanged = true;
-                    } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
+                    } else if(isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[0] = "P";
                         ballOneChanged = true;
                     } else {
@@ -434,10 +440,10 @@ public class Spindex implements Subsystem {
                         setSpindexForwardThree();
                     }
                 } else if (currentBall.equals("two")) {
-                    if(isGreenBall(frontRed, frontGreen, frontBlue)){
+                    if(isFrontGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[1] = "G";
                         ballTwoChanged = true;
-                    } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
+                    } else if(isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[1] = "P";
                         ballTwoChanged = true;
                     } else {
@@ -450,10 +456,10 @@ public class Spindex implements Subsystem {
                         setSpindexForwardThree();
                     }
                 } else if (currentBall.equals("three")) {
-                    if(isGreenBall(frontRed, frontGreen, frontBlue)){
+                    if(isFrontGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[2] = "G";
                         ballThreeChanged = true;
-                    } else if(isPurpleBall(frontRed, frontGreen, frontBlue)){
+                    } else if(isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[2] = "P";
                         ballThreeChanged = true;
                     } else {
@@ -469,10 +475,10 @@ public class Spindex implements Subsystem {
             } else if (currentDirection.equals("backward")) {
                 updateBackColors();
                 if (currentBall.equals("one")) {
-                    if(isGreenBall(backRed, backGreen, backBlue)){
+                    if(isBackGreenBall(backRed, backGreen, backBlue)){
                         ballList[0] = "G";
                         ballOneChanged = true;
-                    } else if(isPurpleBall(backRed, backGreen, backBlue)){
+                    } else if(isBackPurpleBall(backRed, backGreen, backBlue)){
                         ballList[0] = "P";
                         ballOneChanged = true;
                     } else {
@@ -485,10 +491,10 @@ public class Spindex implements Subsystem {
                         setSpindexBackwardThree();
                     }
                 } else if (currentBall.equals("two")) {
-                    if(isGreenBall(backRed, backGreen, backBlue)){
+                    if(isBackGreenBall(backRed, backGreen, backBlue)){
                         ballList[1] = "G";
                         ballTwoChanged = true;
-                    } else if(isPurpleBall(backRed, backGreen, backBlue)){
+                    } else if(isBackPurpleBall(backRed, backGreen, backBlue)){
                         ballList[1] = "P";
                         ballTwoChanged = true;
                     } else {
@@ -501,10 +507,10 @@ public class Spindex implements Subsystem {
                         setSpindexBackwardThree();
                     }
                 } else if (currentBall.equals("three")) {
-                    if(isGreenBall(backRed, backGreen, backBlue)){
+                    if(isBackGreenBall(backRed, backGreen, backBlue)){
                         ballList[2] = "G";
                         ballThreeChanged = true;
-                    } else if(isPurpleBall(backRed, backGreen, backBlue)){
+                    } else if(isBackPurpleBall(backRed, backGreen, backBlue)){
                         ballList[2] = "P";
                         ballThreeChanged = true;
                     } else {
@@ -549,12 +555,41 @@ public class Spindex implements Subsystem {
         backBlue = backColors.blue;
     }
 
-    public boolean isGreenBall(float red, float green, float blue){
-        return (green > greenThresh && green > red && green > blue);
+    public boolean isFrontGreenBall(float red, float green, float blue){
+        return (green > frontGreenThresh && green > red && green > blue);
     }
 
-    public boolean isPurpleBall(float red, float green, float blue){
-        return (blue > blueThresh && blue > red && blue > green);
+    public boolean isFrontPurpleBall(float red, float green, float blue){
+        return (blue > frontBlueThresh && blue > red && blue > green);
+    }
+
+    public boolean isBackGreenBall(float red, float green, float blue){
+        return (green > backGreenThresh && green > red && green > blue);
+    }
+
+    public boolean isBackPurpleBall(float red, float green, float blue){
+        return (blue > backBlueThresh && blue > red && blue > green);
+    }
+
+    public void updateColorDistances(){
+        frontColorDistance = frontColor.getDistance(DistanceUnit.INCH);
+        backColorDistance = backColor.getDistance(DistanceUnit.INCH);
+    }
+
+    public double getFrontColorDistance(){
+        return frontColorDistance;
+    }
+
+    public double getBackColorDistance(){
+        return backColorDistance;
+    }
+
+    public boolean isFrontColorDistanceTripped(){
+        return frontColorDistance > 1 && frontColorDistance < 3.5;
+    }
+
+    public boolean isBackColorDistanceTripped(){
+        return backColorDistance > 1 && backColorDistance < 3.5;
     }
 
     //---------------- Interface Methods ----------------
@@ -566,5 +601,6 @@ public class Spindex implements Subsystem {
     @Override
     public void update(){
         balls = ballList[0] + ballList[1] + ballList[2];
+        updateColorDistances();
     }
 }
