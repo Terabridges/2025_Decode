@@ -25,17 +25,10 @@ public final class GlobalVariables {
     }
 
     public static void setAllianceColor(AllianceColor color) {
-        if (color != null) {
+        if (color != null && allianceColor != color) {
             allianceColor = color;
-        }
-    }
-
-    public static void setAllianceColor(String color) {
-        if (color == null) return;
-        if (color.equalsIgnoreCase("blue")) {
-            allianceColor = AllianceColor.BLUE;
-        } else if (color.equalsIgnoreCase("red")) {
-            allianceColor = AllianceColor.RED;
+            // Changing alliance invalidates auto->teleop pose handoff assumptions.
+            autoFollowerValid = false;
         }
     }
 
@@ -61,19 +54,18 @@ public final class GlobalVariables {
         }
     }
 
-    public static void setMotif(String motifName) {
-        if (motifName == null) return;
-        if (motifName.equalsIgnoreCase("PPG")) {
-            motif = MotifPattern.PPG;
-        } else if (motifName.equalsIgnoreCase("GPP")) {
-            motif = MotifPattern.GPP;
-        } else if (motifName.equalsIgnoreCase("PGP")) {
-            motif = MotifPattern.PGP;
-        }
+    public static void toggleAlliance() {
+        setAllianceColor(isBlueAlliance() ? AllianceColor.RED : AllianceColor.BLUE);
     }
 
-    public static String getMotifName() {
-        return motif.name();
+    public static void nextMotif() {
+        if (motif == MotifPattern.PPG) {
+            motif = MotifPattern.GPP;
+        } else if (motif == MotifPattern.GPP) {
+            motif = MotifPattern.PGP;
+        } else {
+            motif = MotifPattern.PPG;
+        }
     }
 
     public static boolean isAutoFollowerValid() {
