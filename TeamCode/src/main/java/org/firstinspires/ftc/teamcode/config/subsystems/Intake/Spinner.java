@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 
@@ -42,6 +43,11 @@ public class Spinner implements Subsystem {
     public boolean spinOverride = false;
     private double overridePow = 0;
 
+//    private ElapsedTime frontInnerTimer;
+//    private ElapsedTime backInnerTimer;
+//    private boolean frontInnerInitial = false;
+//    private boolean backInnerInitial = false;
+
 
 
     //---------------- Constructor ----------------
@@ -52,6 +58,9 @@ public class Spinner implements Subsystem {
         backInnerDistanceSensor = map.get(AnalogInput.class, "distance2");
         megaSpin = map.get(DcMotor.class, "intake");
         megaSpin.setDirection(DcMotorSimple.Direction.REVERSE);
+
+//        frontInnerTimer = new ElapsedTime();
+//        backInnerTimer = new ElapsedTime();
     }
 
     //---------------- Methods ----------------
@@ -119,14 +128,28 @@ public class Spinner implements Subsystem {
             frontOuterTripped = true;
         }
         if (frontInnerDistance < frontInnerDistanceLowThresh){
+//            frontInnerTimer.reset();
+//            frontInnerInitial = true;
             frontInnerTripped = true;
         }
         if (backOuterDistance < backOuterDistanceLowThresh){
             backOuterTripped = true;
         }
         if (backInnerDistance < backInnerDistanceLowThresh){
+//            backInnerTimer.reset();
+//            backInnerInitial = true;
             backInnerTripped = true;
         }
+
+//        if(frontInnerInitial && frontInnerTimer.milliseconds()>100){
+//            frontInnerTripped = true;
+//            frontInnerInitial = false;
+//        }
+//
+//        if(backInnerInitial && backInnerTimer.milliseconds()>100){
+//            backInnerTripped = true;
+//            backInnerInitial = false;
+//        }
     }
 
 

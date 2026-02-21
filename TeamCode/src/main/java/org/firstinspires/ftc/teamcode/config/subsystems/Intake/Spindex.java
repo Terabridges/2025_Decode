@@ -41,11 +41,13 @@ public class Spindex implements Subsystem {
     private double backwardOne = 170;
     private double backwardTwo = 238;
     private double backwardThree = 100;
-    private double shootOne = 82;
-    private double shootTwo = 150;
-    private double shootThree = 222;
-    private double shootFour = 290;
-    private double shootFive = 360;
+    private double forwardZero = 6;
+    private double shootOne = 20;
+    private double shootTwo = 82;
+    private double shootThree = 150;
+    private double shootFour = 222;
+    private double shootFive = 290;
+    private double shootSix = 360;
     //290 //360
     //shoot three half 252
 
@@ -61,8 +63,8 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"E", "E", "E"};
     public String balls = "";
 
-    private double greenThresh = 0.0005; //If green is highest, ball is green was 0.0013 0.0009
-    private double blueThresh = 0.0005; //If blue is highest, ball is purple was 0.0013 0.0009
+    private double greenThresh = 0.0009; //If green is highest, ball is green was 0.0013 0.0009
+    private double blueThresh = 0.0009; //If blue is highest, ball is purple was 0.0013 0.0009
     NormalizedRGBA frontColors;
     public float frontRed = 0;
     public float frontGreen = 0;
@@ -166,6 +168,14 @@ public class Spindex implements Subsystem {
 
     public void setSpindexShootFive(){
         setSpindexDegree(shootFive);
+    }
+
+    public void setSpindexShootSix(){
+        setSpindexDegree(shootSix);
+    }
+
+    public void setSpindexForwardZero(){
+        setSpindexDegree(forwardZero);
     }
 
     public void switchSides(){
