@@ -119,7 +119,7 @@ public class AutoPoses {
         public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4StartLong = poseDeg(20, 12, longIntakeHeadingDeg);
+        public final Pose pick4StartLong = poseDeg(14.5, 15, longIntakeHeadingDeg + 15);
         public final Pose farPickupZone = pick4StartLong;
 
         // ========================
@@ -137,7 +137,7 @@ public class AutoPoses {
         public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4EndLong = poseDeg(12, 12, longIntakeHeadingDeg);
+        public final Pose pick4EndLong = poseDeg(14.5, 11, longIntakeHeadingDeg + 15);
     }
 
     // ------------------------

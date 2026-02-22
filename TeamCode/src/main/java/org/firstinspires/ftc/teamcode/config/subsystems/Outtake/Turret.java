@@ -132,10 +132,7 @@ public class Turret implements Subsystem {
         double basePos = util.clamp(pos, 0.0, 1.0);
         commandedTurretDeg = normalizeDegrees(basePos * 360.0);
         double leftPos = util.clamp(basePos + leftServoOffset, 0.0, 1.0);
-        double rightBase = invertRightServo ? (1.0 - basePos) : basePos;
-        double rightPos = util.clamp(rightBase + rightServoOffset, 0.0, 1.0);
         leftTurret.setPosition(leftPos);
-        rightTurret.setPosition(rightPos);
     }
 
     public void setTurretDegree(double degree){
@@ -533,10 +530,9 @@ public class Turret implements Subsystem {
             return;
         }
 
-        // Fallback to existing right-servo command frame when encoder is unavailable.
-        double rightPos = util.clamp(rightTurret.getPosition(), 0.0, 1.0);
-        double rightBase = invertRightServo ? (1.0 - rightPos) : rightPos;
-        double basePos = util.clamp(rightBase - rightServoOffset, 0.0, 1.0);
+        // Fallback to existing left-servo command frame when encoder is unavailable.
+        double leftPos = util.clamp(leftTurret.getPosition(), 0.0, 1.0);
+        double basePos = util.clamp(leftPos - leftServoOffset, 0.0, 1.0);
         commandedTurretDeg = normalizeDegrees(basePos * 360.0);
     }
 
