@@ -88,6 +88,7 @@ public abstract class BaseAuto extends OpMode {
     private StateMachine autoMachine;
     private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
     private StateMachine shootAllMachine;
+    private StateMachine sortingShootAllMachine;
     private AutoTurretAim turretAim;
 
     // ===== Robot and Subsystems =====
@@ -140,6 +141,7 @@ public abstract class BaseAuto extends OpMode {
         robot.other.drive.manualDrive = false;
 
         shootAllMachine = robot.getShootAllMachine();
+        sortingShootAllMachine = robot.getSortedShootAllMachine();
         turretAim = new AutoTurretAim(robot, poses, alliance, range, telemetry);
         motifTracker = new AutoMotifTracker(robot, alliance, range, MOTIF_ACQUIRE_TIMEOUT);
 
@@ -183,6 +185,9 @@ public abstract class BaseAuto extends OpMode {
         if (shootAllMachine != null) {
             shootAllMachine.start();
         }
+        if (sortingShootAllMachine != null) {
+            sortingShootAllMachine.start();
+        }
     }
 
     @Override
@@ -194,6 +199,9 @@ public abstract class BaseAuto extends OpMode {
         robot.update();
         if (shootAllMachine != null) {
             shootAllMachine.update();
+        }
+        if (sortingShootAllMachine != null) {
+            sortingShootAllMachine.update();
         }
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
@@ -735,16 +743,26 @@ public abstract class BaseAuto extends OpMode {
         if (!shootSequenceStarted) {
             if (shouldStartShootSequence()) {
                 robot.forceShootAllThreeOnNextStart = !preloadComplete;
-                robot.initShootAllMachine = true;
+                if (robot.useSorting) {
+                    robot.initSortedShootAllMachine = true;
+                } else {
+                    robot.initShootAllMachine = true;
+                }
                 shootSequenceStarted = true;
             } else {
                 return false;
             }
         }
-        if (shootAllMachine == null) {
+        StateMachine activeShootMachine = robot.useSorting ? sortingShootAllMachine : shootAllMachine;
+        if (activeShootMachine == null) {
             return true;
         }
-        return shootAllMachine.getState() == Robot.ShootAllStates.INIT && !robot.initShootAllMachine;
+        if (robot.useSorting) {
+            return activeShootMachine.getState() == Robot.SortedShootAllStates.INIT
+                    && !robot.initSortedShootAllMachine;
+        }
+        return activeShootMachine.getState() == Robot.ShootAllStates.INIT
+                && !robot.initShootAllMachine;
 
         //TODO get a boolean from shooter subsystem
     }

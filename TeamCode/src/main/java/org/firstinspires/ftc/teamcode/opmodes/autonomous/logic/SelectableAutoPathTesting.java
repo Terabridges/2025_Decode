@@ -50,7 +50,7 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
     private static final AutoSpec FAR_4 =
             new AutoSpec(Range.LONG_RANGE, false, false, true, 4, 3, 2, 1);
     private static final AutoSpec FAR_BACKROW_RELEASE =
-            new AutoSpec(Range.LONG_RANGE, true, false, true, 2, 4, 3);
+            new AutoSpec(Range.LONG_RANGE, true, false, true, 4, 3, 2);
     private static final AutoSpec FAR_BACKROW_ONLY =
             AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 2, 4);
     private static final AutoSpec FAR_BACKROW_PLUS_ONE =
