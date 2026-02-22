@@ -48,7 +48,7 @@ public class SpindexControl implements Control {
         ballCounter.update(gp1.dpad_left);
         switchDirection.update(gp1.dpad_up);
         //toggleShootMode.update(gp1.back);
-        emptyBalls.update(gp1.right_stick_button);
+        emptyBalls.update(gp1.right_stick_button || gp2.right_stick_button);
 
         boolean isFull = spindex.loadedBallCount() == 3;
         if (isFull && !wasFullLastLoop) {

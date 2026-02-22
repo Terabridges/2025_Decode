@@ -30,7 +30,7 @@ public class Drive implements Subsystem {
     public double FAST_MULT = 1.0;
     public double SLOW_MULT = 0.75;
     public double speed = FAST_MULT;
-    public boolean useFieldCentric = false;
+    public boolean useFieldCentric = true;
     public double headingOffset = 0;
 
     //---------------- Constructor ----------------
@@ -120,6 +120,7 @@ public class Drive implements Subsystem {
     public double getHeading(){
         return follower.getHeading();
     }
+
     public void resetHeading(){
         double allianceHeading = 0.0;
         if (GlobalVariables.isBlueAlliance()) {

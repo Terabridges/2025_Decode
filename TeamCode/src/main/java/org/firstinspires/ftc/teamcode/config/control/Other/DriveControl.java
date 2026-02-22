@@ -17,6 +17,7 @@ public class DriveControl implements Control {
     Gamepad gp2;
     Robot robot;
     EdgeDetector slowModeRE = new EdgeDetector( () -> drive.toggleSlowMode());
+    EdgeDetector resetFollower = new EdgeDetector(()-> drive.resetHeading());
 
     //---------------- Constructor ----------------
     public DriveControl(Drive drive, Gamepad gp1, Gamepad gp2){
@@ -37,6 +38,7 @@ public class DriveControl implements Control {
     @Override
     public void update(){
         slowModeRE.update(gp1.dpad_down);
+        resetFollower.update(gp2.x);
 
         if (drive.useFieldCentric){
             if (GlobalVariables.isRedAlliance()) {

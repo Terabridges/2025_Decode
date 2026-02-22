@@ -21,14 +21,14 @@ Back: unjam
 Start: Toggle Sorting
 Touchpad:
 
-GAMEPAD2 (TBD)
+GAMEPAD2
 A: Toggle Turret Lock
-X:
-Y:
+X: reset follower (TBD)
+Y: change motif (TBD)
 B: Get ready for shoot
-Down:
+Down: setShortValues (TBD)
 Left: 
-Up:
+Up: setLongValues (TBD)
 Right:
 LeftBump:
 RightBump:
