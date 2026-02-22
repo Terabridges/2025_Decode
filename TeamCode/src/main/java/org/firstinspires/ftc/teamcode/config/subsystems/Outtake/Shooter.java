@@ -40,6 +40,14 @@ public class Shooter implements Subsystem {
     private double flywheelMaxPower = 1.0;
     public boolean useFlywheelPID = false;
     private double currentRPM = 0;
+    public boolean flywheelOverride = false;
+    public double flywheelOverrideRPM = 0;
+    private double closeRPM = 2300;
+    private double closeAngle = 0.7;
+    private double farRPM = 3000;
+    private double farAngle = 0.91;
+
+
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
@@ -120,6 +128,26 @@ public class Shooter implements Subsystem {
         return (Math.abs(flywheelTargetRPM - currentRPM) < 200);
     }
 
+    public void toggleCloseOverride(){
+        if(flywheelOverride){
+            flywheelOverride = false;
+        } else {
+            flywheelOverride = true;
+            flywheelTargetRPM = closeRPM;
+            hoodPos = closeAngle;
+        }
+    }
+
+    public void toggleFarOverride(){
+        if(flywheelOverride){
+            flywheelOverride = false;
+        } else {
+            flywheelOverride = true;
+            flywheelTargetRPM = farRPM;
+            hoodPos = farAngle;
+        }
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
@@ -129,7 +157,11 @@ public class Shooter implements Subsystem {
     @Override
     public void update(){
         if (useFlywheelPID){
-            setFlywheel(flywheelTargetRPM);
+            if(!flywheelOverride) {
+                setFlywheel(flywheelTargetRPM);
+            } else {
+                setFlywheel(flywheelOverrideRPM);
+            }
         } else {
             setFlywheelPow(0);
         }

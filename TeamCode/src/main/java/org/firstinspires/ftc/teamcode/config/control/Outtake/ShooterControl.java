@@ -18,6 +18,8 @@ public class ShooterControl implements Control {
     Robot robot;
     EdgeDetector toggleUseFlywheel = new EdgeDetector(()-> shooter.toggleUseFlywheel());
     //EdgeDetector setHoodTarget = new EdgeDetector(()-> shooter.setHoodTarget());
+    EdgeDetector toggleCloseOverride = new EdgeDetector(()-> shooter.toggleCloseOverride());
+    EdgeDetector toggleFarOverride = new EdgeDetector(()-> shooter.toggleFarOverride());
 
     //---------------- Constructor ----------------
     public ShooterControl(Shooter shooter, Gamepad gp1, Gamepad gp2){
@@ -39,10 +41,12 @@ public class ShooterControl implements Control {
     public void update(){
         toggleUseFlywheel.update(gp1.y);
         //setHoodTarget.update(gp1.b);
+        toggleCloseOverride.update(gp2.dpad_down);
+        toggleFarOverride.update(gp2.dpad_up);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("RPM Override", shooter.flywheelOverride);
     }
 }
