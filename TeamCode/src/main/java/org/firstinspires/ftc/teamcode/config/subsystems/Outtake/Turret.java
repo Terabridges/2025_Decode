@@ -30,6 +30,11 @@ public class Turret implements Subsystem {
         ODO
     }
 
+    public enum AimTarget {
+        GOAL,
+        OBELISK
+    }
+
     //---------------- Hardware ----------------
     private Servo leftTurret;
     private Servo rightTurret;
@@ -69,6 +74,8 @@ public class Turret implements Subsystem {
     public static double blueGoalY = 144.0;
     public static double redGoalX = 144.0;
     public static double redGoalY = 144.0;
+    public static double obeliskX = 72.0;
+    public static double obeliskY = 144.0;
     public static double odoKp = 0.95;
     public static double odoDeadbandDeg = 1.0;
     public static double odoMaxStepDeg = 4.5;
@@ -92,16 +99,19 @@ public class Turret implements Subsystem {
     public static boolean invertRightServo = false;
     public static double leftServoOffset = 0.0;
     public static double rightServoOffset = 0.0;
+    // Encoder->turret mapping calibration.
+    public static double encoderRefTurretDeg = 59.25;
+    public static double encoderRefDeg = 280.0;
+    public static double encoderToTurretScale = 1.0; // turret-deg per encoder-deg near reference
+    public static boolean encoderDirectionInverted = false;
     private AimMode aimMode = AimMode.MANUAL;
     private LockSource activeLockSource = LockSource.NONE;
+    private AimTarget aimTarget = AimTarget.GOAL;
     private boolean hasFilteredTx = false;
     private double filteredTxDeg = 0.0;
     private double commandedTurretDeg = 180.0;
     private double currentPosition = 0;
     private ElapsedTime velocityTimer;
-    private ElapsedTime missingTargetTimer;
-    private ElapsedTime seenTargetTimer;
-    private ElapsedTime odoHoldTimer;
     private boolean turretWrapEnabled = false;
     private boolean inLaunchZone = false;
 
@@ -112,12 +122,9 @@ public class Turret implements Subsystem {
         rightTurret = map.get(Servo.class, "turretR");
         turretAnalog = map.get(AnalogInput.class, "turretAnalog");
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
-        commandedTurretDeg = rightTurret.getPosition() * 360.0;
-        velocityTimer = new ElapsedTime();
-        missingTargetTimer = new ElapsedTime();
-        seenTargetTimer = new ElapsedTime();
-        odoHoldTimer = new ElapsedTime();
         util = new Util();
+        syncCommandToMeasured();
+        velocityTimer = new ElapsedTime();
     }
 
     //---------------- Methods ----------------
@@ -262,9 +269,6 @@ public class Turret implements Subsystem {
             turretVelocity = 0.0;
             hasFilteredTx = false;
             activeLockSource = LockSource.NONE;
-            missingTargetTimer.reset();
-            seenTargetTimer.reset();
-            odoHoldTimer.reset();
         } else if (aimMode == AimMode.LOCK) {
             aimMode = AimMode.MANUAL;
             activeLockSource = LockSource.NONE;
@@ -296,6 +300,18 @@ public class Turret implements Subsystem {
         return activeLockSource;
     }
 
+    public AimTarget getAimTarget() {
+        return aimTarget;
+    }
+
+    public void setAimTargetGoal() {
+        aimTarget = AimTarget.GOAL;
+    }
+
+    public void setAimTargetObelisk() {
+        aimTarget = AimTarget.OBELISK;
+    }
+
     public void toggleAimLock() {
         toggleTxLock();
     }
@@ -309,61 +325,28 @@ public class Turret implements Subsystem {
     }
 
     public void updateAimLock(Vision vision) {
-        if (!isAimLockEnabled()) return;
-        boolean hasVision = hasRequiredVisionTarget(vision);
-        if (hasVision) {
-            // Prevent immediate source flip back to TX during fast turns / blur.
-            if (activeLockSource == LockSource.ODO && odoHoldTimer.milliseconds() < odoHoldAfterFallbackMs) {
-                updateOdoLock(vision);
-                return;
-            }
-            if (seenTargetTimer.milliseconds() >= visionReacquireDelayMs && tryVisionLock(vision)) {
-                missingTargetTimer.reset();
-                return;
-            }
-            // Target is present but not yet stable enough for TX; hold current source.
-            if (activeLockSource == LockSource.ODO) {
-                updateOdoLock(vision);
-            }
+        if (!isAimLockEnabled()) {
             return;
         }
-        seenTargetTimer.reset();
-        // Avoid aggressive fallback when tag briefly drops out during fast turns.
-        if (missingTargetTimer.milliseconds() < visionFallbackDelayMs) {
-            return;
-        }
-        hasFilteredTx = false;
-        if (activeLockSource != LockSource.ODO) {
+        if (aimTarget == AimTarget.OBELISK) {
+            hasFilteredTx = false;
             activeLockSource = LockSource.ODO;
-            odoHoldTimer.reset();
+            aimAtObeliskWithOdometry();
+            return;
         }
-        updateOdoLock(vision);
-    }
 
-    private boolean hasRequiredVisionTarget(Vision vision) {
-        if (vision == null) return false;
-        int requiredTagId = vision.getRequiredTagId();
-        return requiredTagId >= 0 ? vision.seesTag(requiredTagId) : vision.hasTarget();
-    }
+        int requiredGoalTagId = getRequiredGoalTagId(vision);
+        if (vision != null && vision.seesTag(requiredGoalTagId)) {
+            double tx = filterTx(vision.getTxForTag(requiredGoalTagId));
+            double distanceIn = vision.getDistanceInchesForTag(requiredGoalTagId);
+            activeLockSource = LockSource.TX;
+            aimFromVision(tx, distanceIn);
+            return;
+        }
 
-    private boolean tryVisionLock(Vision vision) {
-        if (vision == null) return false;
-        int requiredTagId = vision.getRequiredTagId();
-        boolean hasTarget = requiredTagId >= 0
-                ? vision.seesTag(requiredTagId)
-                : vision.hasTarget();
-        if (!hasTarget) return false;
-
-        double tx = requiredTagId >= 0
-                ? vision.getTxForTag(requiredTagId)
-                : vision.getTx();
-        tx = filterTx(tx);
-        double distanceIn = requiredTagId >= 0
-                ? vision.getDistanceInchesForTag(requiredTagId)
-                : vision.getDistanceInches();
-        activeLockSource = LockSource.TX;
-        aimFromVision(tx, distanceIn);
-        return true;
+        hasFilteredTx = false;
+        activeLockSource = LockSource.ODO;
+        updateGoalOdoLock(requiredGoalTagId);
     }
 
     public void updateTxLock(Vision vision) {
@@ -372,30 +355,86 @@ public class Turret implements Subsystem {
     }
 
     public void updateOdoLock() {
-        updateOdoLock(null);
+        updateGoalOdoLock(getAllianceGoalTagId());
     }
 
-    private void updateOdoLock(Vision vision) {
+    public void aimAtObeliskWithOdometry() {
+        if (follower == null) return;
+        Pose robotPose = follower.getPose();
+        if (robotPose == null) return;
+        refreshWrapStateFromOdometry(robotPose);
+        activeLockSource = LockSource.ODO;
+        aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), obeliskX, obeliskY);
+    }
+
+    private void updateGoalOdoLock(int goalTagId) {
         if (follower == null) return;
         Pose robotPose = follower.getPose();
         if (robotPose == null) return;
         refreshWrapStateFromOdometry(robotPose);
 
-        int requiredTagId = (vision != null) ? vision.getRequiredTagId() : -1;
-        boolean aimBlueGoal;
-        if (requiredTagId == BLUE_GOAL_TAG_ID) {
-            aimBlueGoal = true;
-        } else if (requiredTagId == RED_GOAL_TAG_ID) {
-            aimBlueGoal = false;
-        } else {
-            aimBlueGoal = GlobalVariables.isBlueAlliance();
+        if (goalTagId == BLUE_GOAL_TAG_ID) {
+            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
+            return;
+        }
+        if (goalTagId == RED_GOAL_TAG_ID) {
+            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
+            return;
         }
 
-        if (aimBlueGoal) {
+        if (GlobalVariables.isBlueAlliance()) {
             aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
         } else {
             aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
         }
+    }
+
+    private int getRequiredGoalTagId(Vision vision) {
+        if (vision != null) {
+            int tagId = vision.getRequiredTagId();
+            if (tagId == BLUE_GOAL_TAG_ID || tagId == RED_GOAL_TAG_ID) {
+                return tagId;
+            }
+        }
+        return getAllianceGoalTagId();
+    }
+
+    private int getAllianceGoalTagId() {
+        return GlobalVariables.isBlueAlliance() ? BLUE_GOAL_TAG_ID : RED_GOAL_TAG_ID;
+    }
+
+    /**
+     * Returns the absolute turret heading (deg) that ODO lock is trying to reach for goal aiming.
+     * Returns NaN when follower pose is unavailable.
+     */
+    public double getOdoGoalDesiredHeadingDeg(Vision vision) {
+        if (follower == null || follower.getPose() == null) {
+            return Double.NaN;
+        }
+        Pose robotPose = follower.getPose();
+        int goalTagId = getRequiredGoalTagId(vision);
+        double targetX = (goalTagId == RED_GOAL_TAG_ID) ? redGoalX : blueGoalX;
+        double targetY = (goalTagId == RED_GOAL_TAG_ID) ? redGoalY : blueGoalY;
+        return computeFieldPointTurretDeg(
+                robotPose.getX(),
+                robotPose.getY(),
+                robotPose.getHeading(),
+                targetX,
+                targetY
+        );
+    }
+
+    /**
+     * Signed heading delta (deg) from current turret heading to ODO goal target heading.
+     * Positive means rotate toward increasing turret angle; negative toward decreasing.
+     * Returns NaN when follower pose is unavailable.
+     */
+    public double getOdoGoalHeadingDeltaDeg(Vision vision) {
+        double desiredDeg = getOdoGoalDesiredHeadingDeg(vision);
+        if (Double.isNaN(desiredDeg)) {
+            return Double.NaN;
+        }
+        return computeAimErrorDeg(desiredDeg, getCurrentDegrees());
     }
 
     private void aimAtFieldPointSmoothed(double robotX, double robotY, double robotHeadingRad,
@@ -487,6 +526,41 @@ public class Turret implements Subsystem {
         return turretEnc.getCurrentPosition();
     }
 
+    public void syncCommandToMeasured() {
+        double mappedEncoderDeg = getMappedEncoderTurretDegrees();
+        if (!Double.isNaN(mappedEncoderDeg) && !Double.isInfinite(mappedEncoderDeg)) {
+            commandedTurretDeg = normalizeDegrees(mappedEncoderDeg);
+            return;
+        }
+
+        // Fallback to existing right-servo command frame when encoder is unavailable.
+        double rightPos = util.clamp(rightTurret.getPosition(), 0.0, 1.0);
+        double rightBase = invertRightServo ? (1.0 - rightPos) : rightPos;
+        double basePos = util.clamp(rightBase - rightServoOffset, 0.0, 1.0);
+        commandedTurretDeg = normalizeDegrees(basePos * 360.0);
+    }
+
+    public double getMappedEncoderTurretDegrees() {
+        double encoderDeg = getEncoderDegrees();
+        if (Double.isNaN(encoderDeg) || Double.isInfinite(encoderDeg)) {
+            return Double.NaN;
+        }
+        double deltaEncDeg = wrapSignedDegrees(encoderDeg - encoderRefDeg);
+        if (encoderDirectionInverted) {
+            deltaEncDeg = -deltaEncDeg;
+        }
+        double scale = (Math.abs(encoderToTurretScale) < 1e-6) ? 1.0 : encoderToTurretScale;
+        return normalizeDegrees(encoderRefTurretDeg + (deltaEncDeg * scale));
+    }
+
+    public double getMappedEncoderErrorDeg(double targetTurretDeg) {
+        double mapped = getMappedEncoderTurretDegrees();
+        if (Double.isNaN(mapped)) {
+            return Double.NaN;
+        }
+        return wrapSignedDegrees(mapped - normalizeDegrees(targetTurretDeg));
+    }
+
     public double getEncoderVoltage() {
         return turretAnalog.getVoltage();
     }
@@ -499,6 +573,7 @@ public class Turret implements Subsystem {
     @Override
     public void toInit(){
         velocityTimer.reset();
+        syncCommandToMeasured();
     }
 
     @Override

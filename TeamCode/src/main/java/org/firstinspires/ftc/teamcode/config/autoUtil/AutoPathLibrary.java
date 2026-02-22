@@ -70,15 +70,6 @@ public class AutoPathLibrary {
             return null;
         }
 
-        if (smoothEnd) {
-            return follower.pathBuilder()
-                    .addPath(new BezierLine(start, end))
-                    .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                    .setBrakingStart(0.75)
-                    .setBrakingStrength(0.85)
-                    .build();
-        }
-
         return follower.pathBuilder()
                 .addPath(new BezierLine(start, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())

@@ -45,8 +45,9 @@ public abstract class BaseAuto extends OpMode {
     private PathChain releaseGoToPath;
     private PathChain releaseCompletePath;
     private double intakeSpeed = 0.25;
-    private final AutoIntakeSpeed intakeSpeedModel = new AutoIntakeSpeed(
-            -0.02, 0.47, 0.18, 0.24, -0.01, 0.01);
+
+//    private final AutoIntakeSpeed intakeSpeedModel = new AutoIntakeSpeed(
+//            -0.02, 0.47, 0.18, 0.24, -0.01, 0.01);
 
     // ===== Constants =====
     private static final double SHOOT_ACTION_SECONDS = 5.0;
@@ -144,7 +145,7 @@ public abstract class BaseAuto extends OpMode {
 
         autoMachine = buildAutoMachine();
 
-        intakeSpeed = intakeSpeedModel.compute(robot.getVoltage(), alliance, range);
+        // Keep configured intakeSpeed value; do not override here.
         robot.outtake.vision.setRequiredTagId(alliance == Alliance.BLUE ? TAG_BLUE : TAG_RED);
         robot.outtake.vision.clearMotifTagId();
 
@@ -188,9 +189,9 @@ public abstract class BaseAuto extends OpMode {
     public void loop() {
         follower.update();
 
-        robot.update();
-        turretAim.updateAim(activeState, preloadComplete);
         autoMachine.update();
+        turretAim.updateAim(activeState, preloadComplete);
+        robot.update();
         if (shootAllMachine != null) {
             shootAllMachine.update();
         }
@@ -245,8 +246,8 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
-                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
+                .transition(this::shouldSkipShootPhase, AutoStates.LEAVE)
+                .transition(this::followerIdle, AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
@@ -258,7 +259,7 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_PICKUP)
+                .transition(this::followerIdle, AutoStates.COMPLETE_PICKUP)
 
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
@@ -268,7 +269,7 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.GO_TO_RELEASE)
                 .onEnter(this::onEnterGoToRelease)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_RELEASE)
+                .transition(this::followerIdle, AutoStates.COMPLETE_RELEASE)
 
                 .state(AutoStates.COMPLETE_RELEASE)
                 .onEnter(this::onEnterCompleteRelease)
@@ -276,15 +277,15 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
                 .onEnter(this::onEnterBackRowLoopGoToPickup)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+                .transition(this::followerIdle, AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
 
                 .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
                 .onEnter(this::onEnterBackRowLoopCompletePickup)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
+                .transition(this::followerIdle, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
                 .onEnter(this::onEnterBackRowLoopGoToShoot)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
+                .transition(this::followerIdle, AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
                 .onEnter(this::onEnterBackRowLoopCompleteShoot)
@@ -309,8 +310,8 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
-                .transition(() -> shouldSkipShootPhase() || stateTimedOut(), AutoStates.LEAVE)
-                .transition(() -> followerIdle() || stateTimedOut(), AutoStates.COMPLETE_SHOOT)
+                .transition(this::shouldSkipShootPhase, AutoStates.LEAVE)
+                .transition(this::followerIdle, AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
@@ -368,12 +369,13 @@ public abstract class BaseAuto extends OpMode {
 
     protected void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
+        resetStateTimer();
 
         if (!preloadComplete && !shouldShootPreload()) {
             return;
         }
 
-        // TODO: start shooter/intake prep command while driving to score.
+        prepareForShootWhileDriving();
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
@@ -468,8 +470,8 @@ public abstract class BaseAuto extends OpMode {
 
         resetStateTimer();
 
-        // TODO: intake subsystem command can be stopped here once transfer is complete.
-        // TODO: shooter subsystem spin-up / turret-lock command should begin before arrival.
+        // Stop intake transfer and pre-stage shot while driving to score.
+        prepareForShootWhileDriving();
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
@@ -616,6 +618,14 @@ public abstract class BaseAuto extends OpMode {
         }
     }
 
+    protected void prepareForShootWhileDriving() {
+        if (robot == null || robot.outtake == null || robot.outtake.shooter == null) {
+            return;
+        }
+        robot.outtake.shooter.useFlywheelPID = true;
+        robot.getReadyShoot();
+    }
+
     protected boolean followerIdle() {
         return follower != null && !follower.isBusy();
     }
@@ -659,7 +669,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean pickupAdvanceReady() {
-        return hasReachedPickupBallTarget() || followerIdle() || stateTimedOut();
+        return hasReachedPickupBallTarget() || followerIdle();
     }
 
     protected boolean hasReachedPickupBallTarget() {
@@ -724,6 +734,7 @@ public abstract class BaseAuto extends OpMode {
         }
         if (!shootSequenceStarted) {
             if (shouldStartShootSequence()) {
+                robot.forceShootAllThreeOnNextStart = !preloadComplete;
                 robot.initShootAllMachine = true;
                 shootSequenceStarted = true;
             } else {

@@ -81,6 +81,8 @@ public class Robot {
     }
 
     public boolean initShootAllMachine = false;
+    public boolean forceShootAllThreeOnNextStart = false;
+    public boolean useAvailableBallCountForShootAll = false;
 
     public boolean initSortedShootAllMachine = false;
 
@@ -131,7 +133,12 @@ public class Robot {
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     initShootAllMachine = false;
-                    shootAllBallTargetCount = Math.max(0, Math.min(3, getLoadedBallCount()));
+                    if (forceShootAllThreeOnNextStart || !useAvailableBallCountForShootAll) {
+                        shootAllBallTargetCount = 3;
+                    } else {
+                        shootAllBallTargetCount = Math.max(0, Math.min(3, getLoadedBallCount()));
+                    }
+                    forceShootAllThreeOnNextStart = false;
                     intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
                     intake.spindex.setSpindexForwardZero();

@@ -222,6 +222,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     protected void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
+        resetStateTimer();
         if (!preloadComplete && !shouldShootPreload()) {
             return;
         }

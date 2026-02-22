@@ -13,7 +13,7 @@ public class AutoPoses {
     private static final double FIELD_SIZE = 144.0;
     private static final double ROBOT_WIDTH = 17.5;
     private static final double ROBOT_LENGTH = 18;
-    private static final double INTAKE_START_X = 42;
+    private static final double INTAKE_START_X = 45;
     private static final double INTAKE_END_X = 24;
     private static final double GOAL_Y = 144.0;
     private static final double GOAL_HEADING_DEG = 90.0;
@@ -53,6 +53,11 @@ public class AutoPoses {
 
     public Pose baseToRed(Pose basePose, double dx, double dy, double dHeadingDeg) {
         return Mirror(offsetPose(basePose, dx, dy, dHeadingDeg));
+    }
+
+    private Pose mirrorWithHeading(Pose bluePose, double headingDeg) {
+        Pose mirrored = Mirror(bluePose);
+        return poseDeg(mirrored.getX(), mirrored.getY(), headingDeg);
     }
 
     //------------------ BASE POSES (BLUE SIDE COORDS) ------------------
@@ -114,7 +119,7 @@ public class AutoPoses {
         public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4StartLong = poseDeg(20, 12, longIntakeHeadingDeg);
+        public final Pose pick4StartLong = poseDeg(23, 12, longIntakeHeadingDeg);
         public final Pose farPickupZone = pick4StartLong;
 
         // ========================
@@ -141,13 +146,13 @@ public class AutoPoses {
     public Pose blueCloseStartPose = baseToBlue(base.closeStart);
     public Pose blueFarStartPose = baseToBlue(base.farStart);
     public Pose redCloseStartPose = poseDeg(122, 117, 126);
-    public Pose redFarStartPose = baseToRed(base.farStart);
+    public Pose redFarStartPose = mirrorWithHeading(base.farStart, base.longIntakeHeadingDeg);
 
     public Pose scoreCB = baseToBlue(base.scoreClose);
     public Pose scoreLB = baseToBlue(base.scoreLong);
     public Pose scoreCR = poseDeg(baseToRed(base.scoreClose).getX(), baseToRed(base.scoreClose).getY(),
             Math.toDegrees(redCloseStartPose.getHeading()));
-    public Pose scoreLR = baseToRed(base.scoreLong);
+    public Pose scoreLR = mirrorWithHeading(base.scoreLong, base.longIntakeHeadingDeg);
 
     public Pose loadB = baseToBlue(base.load);
     public Pose loadR = baseToRed(base.load);
@@ -160,7 +165,7 @@ public class AutoPoses {
     public Pose leaveCB = baseToBlue(base.leaveClose);
     public Pose leaveLB = baseToBlue(base.leaveLong);
     public Pose leaveCR = baseToRed(base.leaveClose);
-    public Pose leaveLR = baseToRed(base.leaveLong);
+    public Pose leaveLR = mirrorWithHeading(base.leaveLong, base.longIntakeHeadingDeg);
 
     public Pose pick1StartCB = baseToBlue(base.pick1StartClose);
     public Pose pick1StartCR = baseToRed(base.pick1StartClose);
@@ -168,17 +173,17 @@ public class AutoPoses {
     public Pose pick2StartLB = baseToBlue(base.pick2StartLong);
     public Pose pick2StartCB = baseToBlue(base.pick2StartClose);
     public Pose pick2StartCR = baseToRed(base.pick2StartClose);
-    public Pose pick2StartLR = baseToRed(base.pick2StartLong);
+    public Pose pick2StartLR = mirrorWithHeading(base.pick2StartLong, base.longIntakeHeadingDeg);
 
     public Pose pick3StartLB = baseToBlue(base.pick3StartLong);
     public Pose pick3StartCB = baseToBlue(base.pick3StartClose);
     public Pose pick3StartCR = baseToRed(base.pick3StartClose);
-    public Pose pick3StartLR = baseToRed(base.pick3StartLong);
+    public Pose pick3StartLR = mirrorWithHeading(base.pick3StartLong, base.longIntakeHeadingDeg);
 
     public Pose pick4StartLB = baseToBlue(base.pick4StartLong);
-    public Pose pick4StartLR = baseToRed(base.pick4StartLong);
+    public Pose pick4StartLR = mirrorWithHeading(base.pick4StartLong, base.longIntakeHeadingDeg);
     public Pose farPickupZoneB = baseToBlue(base.farPickupZone);
-    public Pose farPickupZoneR = baseToRed(base.farPickupZone);
+    public Pose farPickupZoneR = mirrorWithHeading(base.farPickupZone, base.longIntakeHeadingDeg);
 
     public Pose pick1EndCB = baseToBlue(base.pick1EndClose);
     public Pose pick1EndCR = baseToRed(base.pick1EndClose);
@@ -186,15 +191,15 @@ public class AutoPoses {
     public Pose pick2EndLB = baseToBlue(base.pick2EndLong);
     public Pose pick2EndCB = baseToBlue(base.pick2EndClose);
     public Pose pick2EndCR = baseToRed(base.pick2EndClose);
-    public Pose pick2EndLR = baseToRed(base.pick2EndLong);
+    public Pose pick2EndLR = mirrorWithHeading(base.pick2EndLong, base.longIntakeHeadingDeg);
 
     public Pose pick3EndLB = baseToBlue(base.pick3EndLong);
     public Pose pick3EndCB = baseToBlue(base.pick3EndClose);
     public Pose pick3EndCR = baseToRed(base.pick3EndClose);
-    public Pose pick3EndLR = baseToRed(base.pick3EndLong);
+    public Pose pick3EndLR = mirrorWithHeading(base.pick3EndLong, base.longIntakeHeadingDeg);
 
     public Pose pick4EndLB = baseToBlue(base.pick4EndLong);
-    public Pose pick4EndLR = baseToRed(base.pick4EndLong);
+    public Pose pick4EndLR = mirrorWithHeading(base.pick4EndLong, base.longIntakeHeadingDeg);
 
     public Pose getGoalPose(Alliance alliance, Range range, boolean preloadComplete) {
         Pose anchor = (alliance == Alliance.BLUE) ? base.goalBlueAnchor : base.goalRedAnchor;
