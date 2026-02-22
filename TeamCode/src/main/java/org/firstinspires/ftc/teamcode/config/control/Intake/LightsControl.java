@@ -45,6 +45,6 @@ public class LightsControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Aim Aligned", flashingForAim);
+        //telemetry.addData("Aim Aligned", flashingForAim);
     }
 }

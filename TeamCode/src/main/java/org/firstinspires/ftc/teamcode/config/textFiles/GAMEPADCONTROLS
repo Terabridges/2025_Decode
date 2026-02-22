@@ -23,13 +23,13 @@ Touchpad:
 
 GAMEPAD2
 A: Toggle Turret Lock
-X: reset follower (TBD)
-Y: change motif (TBD)
+X: reset follower
+Y: change motif
 B: Get ready for shoot
-Down: setShortValues (TBD)
-Left: toggle auto intake (TBD)
-Up: setLongValues (TBD)
-Right: put clutch mega up (TBD)
+Down: setShortValues
+Left: toggle auto intake
+Up: setLongValues
+Right: put clutch mega up
 LeftBump:
 RightBump:
 LeftTrig:

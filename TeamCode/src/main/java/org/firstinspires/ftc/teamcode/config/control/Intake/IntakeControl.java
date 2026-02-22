@@ -41,6 +41,6 @@ public class IntakeControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("Auto Intake", intake.autoIntake);
     }
 }
