@@ -13,7 +13,7 @@ public class AutoPoses {
     private static final double FIELD_SIZE = 144.0;
     private static final double ROBOT_WIDTH = 17.5;
     private static final double ROBOT_LENGTH = 18;
-    private static final double INTAKE_START_X = 45;
+    private static final double INTAKE_START_X = 44;
     private static final double INTAKE_END_X = 24;
     private static final double GOAL_Y = 144.0;
     private static final double GOAL_HEADING_DEG = 90.0;
@@ -119,7 +119,7 @@ public class AutoPoses {
         public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4StartLong = poseDeg(23, 12, longIntakeHeadingDeg);
+        public final Pose pick4StartLong = poseDeg(20, 12, longIntakeHeadingDeg);
         public final Pose farPickupZone = pick4StartLong;
 
         // ========================
@@ -366,9 +366,51 @@ public class AutoPoses {
         return pickupStartByRow[a.ordinal()][clamped];
     }
 
+    public Pose getPickupStart(Alliance a, Range r, int absoluteRow) {
+        int clamped = Math.max(1, Math.min(absoluteRow, 4));
+        switch (clamped) {
+            case 1:
+                return (a == Alliance.BLUE) ? pick1StartCB : pick1StartCR;
+            case 2:
+                if (r == Range.LONG_RANGE) {
+                    return (a == Alliance.BLUE) ? pick2StartLB : pick2StartLR;
+                }
+                return (a == Alliance.BLUE) ? pick2StartCB : pick2StartCR;
+            case 3:
+                if (r == Range.LONG_RANGE) {
+                    return (a == Alliance.BLUE) ? pick3StartLB : pick3StartLR;
+                }
+                return (a == Alliance.BLUE) ? pick3StartCB : pick3StartCR;
+            case 4:
+            default:
+                return (a == Alliance.BLUE) ? pick4StartLB : pick4StartLR;
+        }
+    }
+
     public Pose getPickupEnd(Alliance a, int absoluteRow) {
         int clamped = Math.max(1, Math.min(absoluteRow, 4));
         return pickupEndByRow[a.ordinal()][clamped];
+    }
+
+    public Pose getPickupEnd(Alliance a, Range r, int absoluteRow) {
+        int clamped = Math.max(1, Math.min(absoluteRow, 4));
+        switch (clamped) {
+            case 1:
+                return (a == Alliance.BLUE) ? pick1EndCB : pick1EndCR;
+            case 2:
+                if (r == Range.LONG_RANGE) {
+                    return (a == Alliance.BLUE) ? pick2EndLB : pick2EndLR;
+                }
+                return (a == Alliance.BLUE) ? pick2EndCB : pick2EndCR;
+            case 3:
+                if (r == Range.LONG_RANGE) {
+                    return (a == Alliance.BLUE) ? pick3EndLB : pick3EndLR;
+                }
+                return (a == Alliance.BLUE) ? pick3EndCB : pick3EndCR;
+            case 4:
+            default:
+                return (a == Alliance.BLUE) ? pick4EndLB : pick4EndLR;
+        }
     }
 
     public Pose getFarPickupZone(Alliance a) {
