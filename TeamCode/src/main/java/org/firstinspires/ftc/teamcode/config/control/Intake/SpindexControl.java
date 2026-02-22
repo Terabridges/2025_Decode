@@ -61,11 +61,11 @@ public class SpindexControl implements Control {
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Ball Order", spindex.balls);
+        telemetry.addData("Current Direction", spindex.getCurrentDirection());
+        telemetry.addData("Current Ball", spindex.getCurrentBall());
+        telemetry.addData("CurrentPos", spindex.getAbsolutePos());
+        telemetry.addData("CommandedPos", spindex.getCommandedPos());
 
-//        telemetry.addData("Current Direction", spindex.getCurrentDirection());
-//        telemetry.addData("Current Ball", spindex.getCurrentBall());
-//        telemetry.addData("CurrentPos", spindex.getAbsolutePos());
-//        telemetry.addData("CommandedPos", spindex.getCommandedPos());
 //        telemetry.addData("FrontColorDistance", spindex.getFrontColorDistance());
 //        telemetry.addData("BackColorDistance", spindex.getBackColorDistance());
 //        telemetry.addData("FrontRed", spindex.frontRed);

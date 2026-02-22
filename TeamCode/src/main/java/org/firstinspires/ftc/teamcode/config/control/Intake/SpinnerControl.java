@@ -50,7 +50,8 @@ public class SpinnerControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-//        telemetry.addData("FrontOuterTripped", spinner.frontOuterTripped);
+        telemetry.addData("FrontOuterTripped", spinner.frontOuterTripped);
+
 //        telemetry.addData("FrontInnerTripped", spinner.frontInnerTripped);
 //        telemetry.addData("BackOuterTripped", spinner.backOuterTripped);
 //        telemetry.addData("BackInnerTripped", spinner.backInnerTripped);
