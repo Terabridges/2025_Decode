@@ -51,11 +51,13 @@ public abstract class BaseAuto extends OpMode {
 
     // ===== Constants =====
     private static final double SHOOT_ACTION_SECONDS = 5.0;
+    private static final double COMPLETE_SHOOT_MIN_SETTLE_SECONDS = 0.25;
     private static final double COMPLETE_SHOOT_READY_TIMEOUT_SECONDS = 2.0;
     private static final double COMPLETE_SHOOT_TURRET_TOLERANCE_DEG = 2.0;
     private static final double MOTIF_ACQUIRE_TIMEOUT = 1.5;
     private static final double MOTIF_ACQUIRE_AIM_WINDOW_SECONDS = 0.5;
     private static final double STATE_TIMEOUT_SECONDS = 4.0; // fallback: force state advance after this time
+    private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
     private static final int PICKUP_TARGET_BALL_COUNT = 3;
     private static final int TAG_BLUE = 20;
     private static final int TAG_RED = 24;
@@ -289,7 +291,7 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
                 .onEnter(this::onEnterBackRowLoopCompletePickup)
-                .transition(this::followerIdle, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
+                .transition(this::backRowPickupAdvanceReady, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
                 .onEnter(this::onEnterBackRowLoopGoToShoot)
@@ -677,7 +679,25 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean pickupAdvanceReady() {
-        return hasReachedPickupBallTarget() || followerIdle();
+        return hasReachedPickupBallTarget() || followerIdle() || row4PickupTimedOut();
+    }
+
+    protected boolean backRowPickupAdvanceReady() {
+        return followerIdle() || backRowPickupTimedOut();
+    }
+
+    protected boolean row4PickupTimedOut() {
+        if (!(activeState == AutoStates.COMPLETE_PICKUP && currentAbsoluteRow == 4)) {
+            return false;
+        }
+        return stateTimer.seconds() >= ROW4_PICKUP_TIMEOUT_SECONDS;
+    }
+
+    protected boolean backRowPickupTimedOut() {
+        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP) {
+            return false;
+        }
+        return stateTimer.seconds() >= ROW4_PICKUP_TIMEOUT_SECONDS;
     }
 
     protected boolean hasReachedPickupBallTarget() {
@@ -768,6 +788,10 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean shouldStartShootSequence() {
+        // Require a brief settle window after entering COMPLETE_SHOOT so first shot is consistent.
+        if (completeShootReadyTimer.seconds() < COMPLETE_SHOOT_MIN_SETTLE_SECONDS) {
+            return false;
+        }
         return hasCompleteShootReadyConditions()
                 || completeShootReadyTimer.seconds() >= COMPLETE_SHOOT_READY_TIMEOUT_SECONDS;
     }

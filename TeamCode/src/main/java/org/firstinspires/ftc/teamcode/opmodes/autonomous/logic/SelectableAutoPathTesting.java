@@ -47,6 +47,8 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
             new AutoSpec(Range.LONG_RANGE, false, false, true, 4, 3);
     private static final AutoSpec FAR_3 =
             new AutoSpec(Range.LONG_RANGE, false, false, true, 4, 3, 2);
+    private static final AutoSpec FAR_3_THEN_2 =
+            new AutoSpec(Range.LONG_RANGE, false, false, true, 3, 2);
     private static final AutoSpec FAR_4 =
             new AutoSpec(Range.LONG_RANGE, false, false, true, 4, 3, 2, 1);
     private static final AutoSpec FAR_BACKROW_RELEASE =
@@ -81,12 +83,13 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
                 p.folder("Far", m -> {
                     m.add("Back Row Only (R: P, 4, backrow loop)", () -> make(Alliance.BLUE, FAR_BACKROW_ONLY));
                     m.add("Back Row Plus 1 Row (R: P, 4, 3, backrow loop)", () -> make(Alliance.BLUE, FAR_BACKROW_PLUS_ONE));
+                    m.add("3 Row (R: P, 4, 3, 2)", () -> make(Alliance.BLUE, FAR_3));
+                    m.add("Rows 3 + 2 (R: P, 3, 2)", () -> make(Alliance.BLUE, FAR_3_THEN_2));
                     m.folder("Other", s -> {
-                        s.add("Backrow Release (R: P, 2, 4, 3)", () -> make(Alliance.BLUE, FAR_BACKROW_RELEASE));
+                        s.add("Backrow Release (R: P, 4, 3, 2)", () -> make(Alliance.BLUE, FAR_BACKROW_RELEASE));
                         s.add("Preload Only (R: P)", () -> make(Alliance.BLUE, FAR_PRELOAD_ONLY));
                         s.add("1 Row (R: P, 4)", () -> make(Alliance.BLUE, FAR_1));
                         s.add("2 Row (R: P, 4, 3)", () -> make(Alliance.BLUE, FAR_2));
-                        s.add("3 Row (R: P, 4, 3, 2)", () -> make(Alliance.BLUE, FAR_3));
                         s.add("4 Row (R: P, 4, 3, 2, 1)", () -> make(Alliance.BLUE, FAR_4));
                     });
                 });
@@ -114,12 +117,13 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
                 p.folder("Far", m -> {
                     m.add("Back Row Only (R: P, 4, backrow loop)", () -> make(Alliance.RED, FAR_BACKROW_ONLY));
                     m.add("Back Row Plus 1 Row (R: P, 4, 3, backrow loop)", () -> make(Alliance.RED, FAR_BACKROW_PLUS_ONE));
+                    m.add("3 Row (R: P, 4, 3, 2)", () -> make(Alliance.RED, FAR_3));
+                    m.add("Rows 3 + 2 (R: P, 3, 2)", () -> make(Alliance.RED, FAR_3_THEN_2));
                     m.folder("Other", s -> {
-                        s.add("Backrow Release (R: P, 2, 4, 3)", () -> make(Alliance.RED, FAR_BACKROW_RELEASE));
+                        s.add("Backrow Release (R: P, 4, 3, 2)", () -> make(Alliance.RED, FAR_BACKROW_RELEASE));
                         s.add("Preload Only (R: P)", () -> make(Alliance.RED, FAR_PRELOAD_ONLY));
                         s.add("1 Row (R: P, 4)", () -> make(Alliance.RED, FAR_1));
                         s.add("2 Row (R: P, 4, 3)", () -> make(Alliance.RED, FAR_2));
-                        s.add("3 Row (R: P, 4, 3, 2)", () -> make(Alliance.RED, FAR_3));
                         s.add("4 Row (R: P, 4, 3, 2, 1)", () -> make(Alliance.RED, FAR_4));
                     });
                 });

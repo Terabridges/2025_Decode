@@ -23,6 +23,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.Far3RowAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.Far4RowAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.FarBackRowOnlyAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.FarBackRowPlus1RowAuto;
+import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.Far3Then2Auto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.FarBackrowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.FarPreloadOnlyAuto;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
@@ -65,12 +66,13 @@ public class SelectableAuto extends SelectableOpMode {
                 p.folder("Far", m -> {
                     m.add("Back Row Only (R: P, 4, backrow loop)", () -> new FarBackRowOnlyAuto(Alliance.BLUE));
                     m.add("Back Row Plus 1 Row (R: P, 4, 3, backrow loop)", () -> new FarBackRowPlus1RowAuto(Alliance.BLUE));
+                    m.add("3 Row (R: P, 4, 3, 2)", () -> new Far3RowAuto(Alliance.BLUE));
+                    m.add("Rows 3 + 2 (R: P, 3, 2)", () -> new Far3Then2Auto(Alliance.BLUE));
                     m.folder("Other", s -> {
-                        s.add("Backrow Release (R: P, 2, 4, 3)", () -> new FarBackrowReleaseAuto(Alliance.BLUE));
+                        s.add("Backrow Release (R: P, 4, 3, 2)", () -> new FarBackrowReleaseAuto(Alliance.BLUE));
                         s.add("Preload Only (R: P)", () -> new FarPreloadOnlyAuto(Alliance.BLUE));
                         s.add("1 Row (R: P, 4)", () -> new Far1RowAuto(Alliance.BLUE));
                         s.add("2 Row (R: P, 4, 3)", () -> new Far2RowAuto(Alliance.BLUE));
-                        s.add("3 Row (R: P, 4, 3, 2)", () -> new Far3RowAuto(Alliance.BLUE));
                         s.add("4 Row (R: P, 4, 3, 2, 1)", () -> new Far4RowAuto(Alliance.BLUE));
                     });
                 });
@@ -98,12 +100,13 @@ public class SelectableAuto extends SelectableOpMode {
                 p.folder("Far", m -> {
                     m.add("Back Row Only (R: P, 4, backrow loop)", () -> new FarBackRowOnlyAuto(Alliance.RED));
                     m.add("Back Row Plus 1 Row (R: P, 4, 3, backrow loop)", () -> new FarBackRowPlus1RowAuto(Alliance.RED));
+                    m.add("3 Row (R: P, 4, 3, 2)", () -> new Far3RowAuto(Alliance.RED));
+                    m.add("Rows 3 + 2 (R: P, 3, 2)", () -> new Far3Then2Auto(Alliance.RED));
                     m.folder("Other", s -> {
-                        s.add("Backrow Release (R: P, 2, 4, 3)", () -> new FarBackrowReleaseAuto(Alliance.RED));
+                        s.add("Backrow Release (R: P, 4, 3, 2)", () -> new FarBackrowReleaseAuto(Alliance.RED));
                         s.add("Preload Only (R: P)", () -> new FarPreloadOnlyAuto(Alliance.RED));
                         s.add("1 Row (R: P, 4)", () -> new Far1RowAuto(Alliance.RED));
                         s.add("2 Row (R: P, 4, 3)", () -> new Far2RowAuto(Alliance.RED));
-                        s.add("3 Row (R: P, 4, 3, 2)", () -> new Far3RowAuto(Alliance.RED));
                         s.add("4 Row (R: P, 4, 3, 2, 1)", () -> new Far4RowAuto(Alliance.RED));
                     });
                 });

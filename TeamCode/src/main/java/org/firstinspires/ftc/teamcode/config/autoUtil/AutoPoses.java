@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 
 public class AutoPoses {
-    public static boolean ReturnToStart = true;
+    public static boolean ReturnToStart = false;
     private static final double FIELD_SIZE = 144.0;
     private static final double ROBOT_WIDTH = 17.5;
     private static final double ROBOT_LENGTH = 18;
@@ -94,8 +94,8 @@ public class AutoPoses {
         // ========================
         // RELEASE (lever) POSES
         // ========================
-        public final Pose releaseGoToClose = poseDeg(20, 76, 0);
-        public final Pose releaseCompleteClose = poseDeg(14.25, 76, 0);
+        public final Pose releaseGoToClose = poseDeg(20, 76, 180);
+        public final Pose releaseCompleteClose = poseDeg(14.5, 76, 180);
 
         // ========================
         // LEAVE POSES
@@ -111,15 +111,15 @@ public class AutoPoses {
         public final Pose pick1StartClose = poseDeg(INTAKE_START_X, 84, closeIntakeHeadingDeg);
 
         // Row 2
-        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 36, longIntakeHeadingDeg);
+        public final Pose pick2StartLong = poseDeg(INTAKE_START_X, 60, longIntakeHeadingDeg);
         public final Pose pick2StartClose = poseDeg(INTAKE_START_X, 60, closeIntakeHeadingDeg);
 
         // Row 3
-        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 60, longIntakeHeadingDeg);
+        public final Pose pick3StartLong = poseDeg(INTAKE_START_X, 36, longIntakeHeadingDeg);
         public final Pose pick3StartClose = poseDeg(INTAKE_START_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4StartLong = poseDeg(14.5, 15, longIntakeHeadingDeg + 15);
+        public final Pose pick4StartLong = poseDeg(13.5, 16, longIntakeHeadingDeg + 20);
         public final Pose farPickupZone = pick4StartLong;
 
         // ========================
@@ -129,15 +129,15 @@ public class AutoPoses {
         public final Pose pick1EndClose = poseDeg(INTAKE_END_X, 84, closeIntakeHeadingDeg);
 
         // Row 2
-        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 36, longIntakeHeadingDeg);
+        public final Pose pick2EndLong = poseDeg(INTAKE_END_X, 60, longIntakeHeadingDeg);
         public final Pose pick2EndClose = poseDeg(INTAKE_END_X, 60, closeIntakeHeadingDeg);
 
         // Row 3
-        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 60, longIntakeHeadingDeg);
+        public final Pose pick3EndLong = poseDeg(INTAKE_END_X, 36, longIntakeHeadingDeg);
         public final Pose pick3EndClose = poseDeg(INTAKE_END_X, 36, closeIntakeHeadingDeg);
 
         // Row 4 (long side)
-        public final Pose pick4EndLong = poseDeg(14.5, 11, longIntakeHeadingDeg + 15);
+        public final Pose pick4EndLong = poseDeg(13.5, 11.25, longIntakeHeadingDeg + 20);
     }
 
     // ------------------------
