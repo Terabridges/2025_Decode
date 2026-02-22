@@ -15,6 +15,7 @@ public class IntakeControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
+    public EdgeDetector toggleAutoIntake = new EdgeDetector(()-> intake.toggleAutoIntake());
 
 
     //---------------- Constructor ----------------
@@ -35,7 +36,7 @@ public class IntakeControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        toggleAutoIntake.update(gp2.dpad_left);
     }
 
     @Override

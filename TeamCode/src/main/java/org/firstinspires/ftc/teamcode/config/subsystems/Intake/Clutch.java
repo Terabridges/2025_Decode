@@ -19,6 +19,7 @@ public class Clutch implements Subsystem {
     public static double clutchDown = 0.38;
     public static double clutchDownFar = 0.05;
     private boolean isClutchDown = false;
+    private boolean isClutchDownFar = false;
 
     //---------------- Constructor ----------------
     public Clutch(HardwareMap map) {
@@ -43,6 +44,16 @@ public class Clutch implements Subsystem {
         } else {
             setClutchDown();
             isClutchDown = true;
+        }
+    }
+
+    public void toggleClutchUpFar(){
+        if(!isClutchDownFar){
+            setClutchDownFar();
+            isClutchDownFar = true;
+        } else {
+            setClutchUp();
+            isClutchDownFar = false;
         }
     }
 
