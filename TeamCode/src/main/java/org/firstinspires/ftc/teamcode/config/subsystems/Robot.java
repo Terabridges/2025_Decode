@@ -73,8 +73,6 @@ public class Robot {
         WAIT2,
         GO_TO_THIRD,
         WAIT3,
-        WAIT4,
-        CLUTCH,
         RESET,
         UNJAM
 
@@ -91,7 +89,8 @@ public class Robot {
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;
 
-    public boolean useSorting = false;
+    public boolean useSorting = true;
+    private boolean wasFullLastLoop = false;
 
 
     //---------------- Subsystems ----------------
@@ -483,6 +482,12 @@ public class Robot {
         for (org.firstinspires.ftc.teamcode.config.subsystems.Subsystem s : subsystems) {
             s.update();
         }
+
+        boolean isFull = intake.spindex.loadedBallCount() == 3;
+        if (isFull && !wasFullLastLoop) {
+            getReadyShoot();
+        }
+        wasFullLastLoop = isFull;
     }
 
     public void toInit() {

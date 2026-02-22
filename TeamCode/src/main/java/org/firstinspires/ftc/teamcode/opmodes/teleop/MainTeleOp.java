@@ -184,7 +184,7 @@ public class MainTeleOp extends OpMode {
         for (Control c : controls) {
             c.update();
         }
-        getReadyShoot.update(gamepad1.b);
+        getReadyShoot.update(gamepad2.b);
         toggleSorting.update(gamepad1.start);
     }
 

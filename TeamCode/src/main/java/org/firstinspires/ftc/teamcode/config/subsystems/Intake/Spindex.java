@@ -61,7 +61,7 @@ public class Spindex implements Subsystem {
 
     public boolean spindexStartingSpinning = false;
 
-    public String[] ballList = {"E", "E", "E"};
+    public String[] ballList = {"G", "P", "P"};
     public String balls = "";
 
     private double frontGreenThresh = 0.0006; //If green is highest, ball is green was 0.0013 0.0009
@@ -590,6 +590,14 @@ public class Spindex implements Subsystem {
 
     public boolean isBackColorDistanceTripped(){
         return backColorDistance > 1 && backColorDistance < 3.5;
+    }
+
+    public int loadedBallCount() {
+        int count = 0;
+        if (ballList[0] != null && !ballList[0].equals("E")) count++;
+        if (ballList[1] != null && !ballList[1].equals("E")) count++;
+        if (ballList[2] != null && !ballList[2].equals("E")) count++;
+        return count;
     }
 
     //---------------- Interface Methods ----------------

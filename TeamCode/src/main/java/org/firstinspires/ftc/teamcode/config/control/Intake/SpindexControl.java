@@ -39,13 +39,6 @@ public class SpindexControl implements Control {
     }
 
     //---------------- Methods ----------------
-    private int loadedBallCount() {
-        int count = 0;
-        if (spindex.ballList[0] != null && !spindex.ballList[0].equals("E")) count++;
-        if (spindex.ballList[1] != null && !spindex.ballList[1].equals("E")) count++;
-        if (spindex.ballList[2] != null && !spindex.ballList[2].equals("E")) count++;
-        return count;
-    }
 
 
     //---------------- Interface Methods ----------------
@@ -57,7 +50,7 @@ public class SpindexControl implements Control {
         //toggleShootMode.update(gp1.back);
         emptyBalls.update(gp1.right_stick_button);
 
-        boolean isFull = loadedBallCount() == 3;
+        boolean isFull = spindex.loadedBallCount() == 3;
         if (isFull && !wasFullLastLoop) {
             gp1.rumble(Math.max(0, fullSpindexRumbleMs));
         }

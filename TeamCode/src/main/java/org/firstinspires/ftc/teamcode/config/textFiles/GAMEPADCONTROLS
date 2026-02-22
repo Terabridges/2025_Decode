@@ -2,7 +2,7 @@ GAMEPAD1
 A: Toggle Turret Lock
 X: Shoot All Macro
 Y: Toggle Shooter
-B: Get ready for shoot
+B:
 Down: Toggle Slowmode
 Left: One Ball Left
 Up: Switch Sides
@@ -21,7 +21,7 @@ Back: unjam
 Start: Toggle Sorting
 Touchpad:
 
-GAMEPAD2
+GAMEPAD2 (TBD)
 A: Toggle Turret Lock
 X:
 Y:
