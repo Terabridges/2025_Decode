@@ -143,6 +143,7 @@ public class Robot {
                     intake.spindex.setSpindexForwardZero();
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
+                    intake.autoIntake = false;
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
@@ -199,6 +200,7 @@ public class Robot {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
+                    intake.autoIntake = true;
                 })
 
                 .state(ShootAllStates.UNJAM)
@@ -209,6 +211,8 @@ public class Robot {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
+                    intake.autoIntake = false;
+                    intake.spinner.autoSpin = false;
                     goToReset = true;
                 })
                 .transition(()-> goToReset, ShootAllStates.INIT)
@@ -243,6 +247,7 @@ public class Robot {
                     outtake.shooter.useFlywheelPID = true;
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
+                    intake.autoIntake = false;
 
                     if(startBall == 1){
                         intake.spindex.setSpindexForwardZero();
@@ -329,6 +334,7 @@ public class Robot {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
+                    intake.autoIntake = true;
                 })
 
                 .state(SortedShootAllStates.UNJAM)
@@ -339,6 +345,8 @@ public class Robot {
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                     goToReset = true;
+                    intake.autoIntake = false;
+                    intake.spinner.autoSpin = false;
                 })
                 .transition(()-> goToReset, SortedShootAllStates.INIT)
                 .onExit(()->goToReset = false)

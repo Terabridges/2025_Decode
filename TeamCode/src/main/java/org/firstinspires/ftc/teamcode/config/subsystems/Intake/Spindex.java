@@ -59,7 +59,6 @@ public class Spindex implements Subsystem {
 
     private boolean shootMode = false;
 
-    public boolean spindexStartingSpinning = false;
 
     public String[] ballList = {"G", "P", "P"};
     public String balls = "";
@@ -109,7 +108,6 @@ public class Spindex implements Subsystem {
     //---------------- Methods ----------------
     public void setSpindexPos(double pos){
         spindexRight.setPosition(pos);
-        spindexStartingSpinning = true;
     }
 
     public void setSpindexDegree(double degree){

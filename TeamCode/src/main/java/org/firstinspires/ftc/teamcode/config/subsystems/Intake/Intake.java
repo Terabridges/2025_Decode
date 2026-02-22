@@ -17,7 +17,7 @@ public class Intake implements Subsystem {
     public Lights lights;
 
     //---------------- Software ----------------
-
+    public boolean autoIntake = true;
 
     //---------------- Constructor ----------------
     public Intake(HardwareMap map) {
@@ -28,7 +28,10 @@ public class Intake implements Subsystem {
     }
 
     //---------------- Methods ----------------
-
+    public void toggleAutoIntake(){
+        spinner.autoSpin = !spinner.autoSpin;
+        autoIntake = spinner.autoSpin;
+    }
 
     //---------------- Interface Methods ----------------
     @Override
@@ -46,16 +49,16 @@ public class Intake implements Subsystem {
         spinner.update();
         lights.update();
 
-        if (spindex.spindexStartingSpinning){
+        if (!spindex.isSpindexAtPos() && autoIntake){
             spinner.overrideSpinIn();
         }
 
-        if (spindex.isSpindexAtPos() && spindex.spindexStartingSpinning){
+        if (spindex.isSpindexAtPos() && autoIntake){
             spinner.overrideSpinZero();
         }
 
         if(spinner.frontInnerTripped){
-            if (spindex.isSpindexAtPos()) {
+            if (spindex.isSpindexAtPos() && autoIntake) {
                 if(spindex.isFrontColorDistanceTripped()) {
                     if (spindex.getCurrentDirection().equals("forward")) {
                         if (spindex.getCurrentBall().equals("one")) {
@@ -79,7 +82,7 @@ public class Intake implements Subsystem {
         }
 
         if(spinner.backInnerTripped){
-            if (spindex.isSpindexAtPos()) {
+            if (spindex.isSpindexAtPos() && autoIntake) {
                 if(spindex.isBackColorDistanceTripped()) {
                     if (spindex.getCurrentDirection().equals("backward")) {
                         if (spindex.getCurrentBall().equals("one")) {
@@ -103,14 +106,14 @@ public class Intake implements Subsystem {
         }
 
         if(spinner.frontOuterTripped){
-            if(spindex.getCurrentDirection().equals("backward")){
+            if(spindex.getCurrentDirection().equals("backward") && autoIntake){
                 spindex.switchSides();
             }
             spinner.frontOuterTripped = false;
         }
 
         if(spinner.backOuterTripped){
-            if(spindex.getCurrentDirection().equals("forward")){
+            if(spindex.getCurrentDirection().equals("forward") && autoIntake){
                 spindex.switchSides();
             }
             spinner.backOuterTripped = false;

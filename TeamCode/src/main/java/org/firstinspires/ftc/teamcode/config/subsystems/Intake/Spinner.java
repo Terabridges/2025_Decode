@@ -48,7 +48,7 @@ public class Spinner implements Subsystem {
 //    private boolean frontInnerInitial = false;
 //    private boolean backInnerInitial = false;
 
-
+    public boolean autoSpin = true;
 
     //---------------- Constructor ----------------
     public Spinner(HardwareMap map) {
@@ -161,6 +161,10 @@ public class Spinner implements Subsystem {
         backInnerTripped = false;
     }
 
+    public void toggleAutoSpin(){
+        autoSpin = !autoSpin;
+    }
+
 
     //---------------- Interface Methods ----------------
     @Override
@@ -173,7 +177,7 @@ public class Spinner implements Subsystem {
 
     @Override
     public void update(){
-        if(spinOverride){
+        if(spinOverride && autoSpin){
             moveMegaSpinPow(overridePow);
         } else if (useMegaSpin){
             moveMegaSpinPow(megaSpinPow);
