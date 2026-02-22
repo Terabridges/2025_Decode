@@ -31,7 +31,7 @@ Left: toggle auto intake
 Up: setLongValues
 Right: put clutch mega up
 LeftBump:
-RightBump:
+RightBump: Flash Color if See Turret
 LeftTrig:
 RightTrig:
 LStX:

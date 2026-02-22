@@ -91,6 +91,7 @@ public class Robot {
 
     public boolean useSorting = true;
     private boolean wasFullLastLoop = false;
+    public boolean txLights = false;
 
 
     //---------------- Subsystems ----------------
@@ -123,6 +124,15 @@ public class Robot {
 
     public double getVoltage(){
         return voltageSensor.getVoltage();
+    }
+
+    public void toggleLightsTurret(){
+        txLights = !txLights;
+        if (!txLights){
+            intake.lights.setFrontLight("clear");
+            intake.lights.setMiddleLight("clear");
+            intake.lights.setBackLight("clear");
+        }
     }
 
     public StateMachine getShootAllMachine(){
@@ -195,6 +205,7 @@ public class Robot {
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
+                    txLights = false;
                     shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
@@ -205,6 +216,7 @@ public class Robot {
 
                 .state(ShootAllStates.UNJAM)
                 .onEnter(()->{
+                    txLights = false;
                     other.unJam = false;
                     shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexPos(intake.spindex.getAbsolutePos());
@@ -330,6 +342,7 @@ public class Robot {
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
+                    txLights = false;
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -339,6 +352,7 @@ public class Robot {
 
                 .state(SortedShootAllStates.UNJAM)
                 .onEnter(()->{
+                    txLights = false;
                     other.unJam = false;
                     intake.spindex.setSpindexPos(intake.spindex.getAbsolutePos());
                     intake.spinner.setMegaSpinZero();
@@ -496,6 +510,18 @@ public class Robot {
             getReadyShoot();
         }
         wasFullLastLoop = isFull;
+
+        if (txLights){
+            if(outtake.vision.getTx()<3){
+                intake.lights.setFrontLight("yellow");
+                intake.lights.setMiddleLight("yellow");
+                intake.lights.setBackLight("yellow");
+            } else {
+                intake.lights.setFrontLight("red");
+                intake.lights.setMiddleLight("red");
+                intake.lights.setBackLight("red");
+            }
+        }
     }
 
     public void toInit() {

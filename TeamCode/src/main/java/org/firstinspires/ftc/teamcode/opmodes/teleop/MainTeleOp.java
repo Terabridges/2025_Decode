@@ -80,6 +80,7 @@ public class MainTeleOp extends OpMode {
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
     EdgeDetector nextMotif = new EdgeDetector(()-> GlobalVariables.nextMotif());
+    EdgeDetector flashLights = new EdgeDetector(()-> robot.toggleLightsTurret());
 
     @Override
     public void init() {
@@ -188,6 +189,7 @@ public class MainTeleOp extends OpMode {
         getReadyShoot.update(gamepad2.b);
         toggleSorting.update(gamepad1.start || gamepad2.start);
         nextMotif.update(gamepad2.y);
+        flashLights.update(gamepad2.right_bumper);
     }
 
     public void controlsTelemetryUpdate() {
@@ -205,6 +207,7 @@ public class MainTeleOp extends OpMode {
             joinedTelemetry.addData("Motif", GlobalVariables.getMotif());
 //            joinedTelemetry.addData("Loop Time", loopTime);
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
+            joinedTelemetry.addData("TXLights", robot.txLights);
             joinedTelemetry.update();
 
             telemetryTimer.reset();

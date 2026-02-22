@@ -40,7 +40,7 @@ public class LightsControl implements Control {
         if (robot == null) return;
         boolean aligned = robot.outtake.turret.isVisionOnTarget(robot.outtake.vision, aimAlignedToleranceDeg);
         flashingForAim = aligned;
-        lights.setFlashEnabled(aligned);
+        //lights.setFlashEnabled(aligned);
     }
 
     @Override
