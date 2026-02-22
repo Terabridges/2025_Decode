@@ -544,11 +544,11 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected PathChain buildGoToPickupPath(Pose currentPose) {
-        return pathLibrary.goToPickup(currentPose, alliance, currentAbsoluteRow);
+        return pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
     }
 
     protected PathChain buildPickupPath(Pose currentPose) {
-        return pathLibrary.pickup(currentPose, alliance, currentAbsoluteRow);
+        return pathLibrary.pickup(currentPose, alliance, range, currentAbsoluteRow);
     }
 
     protected PathChain buildGoToScorePath(Pose currentPose) {
@@ -561,7 +561,7 @@ public abstract class BaseAuto extends OpMode {
 
     protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
         // Back-row loop always intakes from absolute row 4.
-        return pathLibrary.pickup(currentPose, alliance, 4);
+        return pathLibrary.pickup(currentPose, alliance, Range.LONG_RANGE, 4);
     }
 
     protected PathChain buildReleaseGoToPath(Pose currentPose) {

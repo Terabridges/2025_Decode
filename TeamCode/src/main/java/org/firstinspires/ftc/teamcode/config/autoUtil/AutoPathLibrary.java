@@ -16,12 +16,12 @@ public class AutoPathLibrary {
         this.poses = poses;
     }
 
-    public PathChain goToPickup(Pose currentPose, Alliance alliance, int absoluteRow) {
-        return buildLinear(currentPose, poses.getPickupStart(alliance, absoluteRow), true);
+    public PathChain goToPickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
+        return buildLinear(currentPose, poses.getPickupStart(alliance, range, absoluteRow), true);
     }
 
-    public PathChain pickup(Pose currentPose, Alliance alliance, int absoluteRow) {
-        return buildLinear(currentPose, poses.getPickupEnd(alliance, absoluteRow), false);
+    public PathChain pickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
+        return buildLinear(currentPose, poses.getPickupEnd(alliance, range, absoluteRow), false);
     }
 
     public PathChain farPickupZone(Pose currentPose, Alliance alliance) {

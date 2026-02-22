@@ -315,16 +315,16 @@ public abstract class BaseAutoPathTesting extends OpMode {
         }
         switch (request) {
             case GO_TO_PICKUP:
-                goToPickupPath = pathLibrary.goToPickup(currentPose, alliance, currentAbsoluteRow);
+                goToPickupPath = pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
                 break;
             case COMPLETE_PICKUP:
-                pickupPath = pathLibrary.pickup(currentPose, alliance, currentAbsoluteRow);
+                pickupPath = pathLibrary.pickup(currentPose, alliance, range, currentAbsoluteRow);
                 break;
             case GO_TO_FAR_PICKUP_ZONE:
                 backRowLoopPickupPath = pathLibrary.farPickupZone(currentPose, alliance);
                 break;
             case BACKROW_COMPLETE_PICKUP:
-                backRowLoopCompletePickupPath = pathLibrary.pickup(currentPose, alliance, 4);
+                backRowLoopCompletePickupPath = pathLibrary.pickup(currentPose, alliance, Range.LONG_RANGE, 4);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
