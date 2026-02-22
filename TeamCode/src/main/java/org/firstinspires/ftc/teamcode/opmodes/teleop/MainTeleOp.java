@@ -195,16 +195,16 @@ public class MainTeleOp extends OpMode {
             }
             if (FollowerManager.follower != null && FollowerManager.follower.getPose() != null) {
                 Pose pose = FollowerManager.follower.getPose();
-                joinedTelemetry.addData("Pedro X", "%.2f", pose.getX());
-                joinedTelemetry.addData("Pedro Y", "%.2f", pose.getY());
-                joinedTelemetry.addData("Pedro H (deg)", "%.1f", Math.toDegrees(pose.getHeading()));
+//                joinedTelemetry.addData("Pedro X", "%.2f", pose.getX());
+//                joinedTelemetry.addData("Pedro Y", "%.2f", pose.getY());
+//                joinedTelemetry.addData("Pedro H (deg)", "%.1f", Math.toDegrees(pose.getHeading()));
             }
             joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
-            joinedTelemetry.addData("Loop Time", loopTime);
+            joinedTelemetry.addData("Motif", GlobalVariables.getMotif());
+//            joinedTelemetry.addData("Loop Time", loopTime);
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
             joinedTelemetry.update();
 
-            Logger.recordOutput("AbsolutePos", robot.intake.spindex.getAbsolutePos());
             telemetryTimer.reset();
         }
     }

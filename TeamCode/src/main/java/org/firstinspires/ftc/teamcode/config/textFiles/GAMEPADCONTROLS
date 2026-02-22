@@ -20,3 +20,26 @@ RStBut: Empty Balls
 Back: unjam
 Start: Toggle Sorting
 Touchpad:
+
+GAMEPAD2
+A: Toggle Turret Lock
+X:
+Y:
+B: Get ready for shoot
+Down:
+Left: 
+Up:
+Right:
+LeftBump:
+RightBump:
+LeftTrig:
+RightTrig:
+LStX:
+LStY:
+RStX:
+RStY:
+LStBut:
+RStBut: Empty Balls
+Back: unjam
+Start: Toggle Sorting
+Touchpad:
