@@ -86,4 +86,35 @@ dependencies {
     implementation 'org.psilynx.psikit:core:0.1.0-beta2'
     implementation 'org.psilynx.psikit:ftc:0.1.0-beta2'
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.12.1'
+}
+
+afterEvaluate {
+    def unitTestTask = tasks.findByName('testDebugUnitTest')
+    if (unitTestTask != null) {
+        tasks.register('runRlogSummary', JavaExec) {
+            group = 'verification'
+            description = 'Summarize an RLOG file into CSV stats (PC CLI).'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.RlogSummaryCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pPrefixes = project.findProperty('summaryPrefixes')
+            def pKeyContains = project.findProperty('summaryKeyContains')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pPrefixes != null) {
+                systemProperty 'summaryPrefixes', pPrefixes.toString()
+            }
+            if (pKeyContains != null) {
+                systemProperty 'summaryKeyContains', pKeyContains.toString()
+            }
+        }
+    }
 }

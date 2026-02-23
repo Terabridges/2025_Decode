@@ -16,5 +16,12 @@ if not defined ADB_EXE (
 	exit /b 1
 )
 
+"%ADB_EXE%" start-server >nul 2>&1
+
+echo %TARGET% | findstr /R /C:":" >nul
+if not errorlevel 1 (
+	"%ADB_EXE%" connect "%TARGET%" >nul 2>&1
+)
+
 "%ADB_EXE%" -s "%TARGET%" %*
 exit /b %ERRORLEVEL%
