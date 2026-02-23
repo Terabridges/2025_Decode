@@ -54,15 +54,18 @@ public abstract class BaseAuto extends OpMode {
     private static final double COMPLETE_SHOOT_MIN_SETTLE_SECONDS = 0.25;
     private static final double COMPLETE_SHOOT_READY_TIMEOUT_SECONDS = 2.0;
     private static final double COMPLETE_SHOOT_TURRET_TOLERANCE_DEG = 2.0;
+    private static final double SHOOT_SETTLE_MAX_TRANSLATIONAL_SPEED_IN_S = 1.5;
+    private static final double SHOOT_SETTLE_MAX_ANGULAR_SPEED_DEG_S = 12.0;
     private static final double MOTIF_ACQUIRE_TIMEOUT = 1.5;
     private static final double MOTIF_ACQUIRE_AIM_WINDOW_SECONDS = 0.5;
     private static final double STATE_TIMEOUT_SECONDS = 4.0; // fallback: force state advance after this time
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
+    private static final double FAR_PICKUP_ZONE_POWER = 0.5;
     private static final int PICKUP_TARGET_BALL_COUNT = 3;
     private static final int TAG_BLUE = 20;
     private static final int TAG_RED = 24;
     private static final double RELEASE_IDLE_SECONDS = 1.0;
-    private static final double RELEASE_TIMEOUT_SECONDS = 2.25;
+    private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
 
     private final Alliance alliance;
     private Range range;
@@ -207,6 +210,16 @@ public abstract class BaseAuto extends OpMode {
         }
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
+        telemetryM.debug("Motif Pattern: " + GlobalVariables.getMotif());
+        telemetryM.debug("Motif Tag ID: " + acquiredMotifId);
+        Pose scorePoseForNow = getScorePoseForCurrentShot();
+        telemetryM.debug(String.format("Score Heading Cmd (deg): %.1f",
+                Math.toDegrees(scorePoseForNow.getHeading())));
+        telemetryM.debug("Preload Complete: " + preloadComplete);
+        telemetryM.debug("Alliance: " + alliance);
+        if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
+            telemetryM.debug("Visible Tag ID: " + robot.outtake.vision.getCurrentTagId());
+        }
 //        telemetry.addData("Auto Action", getActionMessage());
 //        telemetry.addData("State Time", "%.2f", stateTimer.seconds());
 //        telemetry.addData("Current Row", currentAbsoluteRow);
@@ -262,10 +275,10 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && !shouldStartNextCycle() && shouldEnterBackRowLoop(), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && !shouldStartNextCycle() && !shouldEnterBackRowLoop(), AutoStates.LEAVE)
+                .transition(() -> shootAdvanceReady() && followerIdle() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
+                .transition(() -> shootAdvanceReady() && followerIdle() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
+                .transition(() -> shootAdvanceReady() && followerIdle() && !shouldStartNextCycle() && shouldEnterBackRowLoop(), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .transition(() -> shootAdvanceReady() && followerIdle() && !shouldStartNextCycle() && !shouldEnterBackRowLoop(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
@@ -287,10 +300,6 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
                 .onEnter(this::onEnterBackRowLoopGoToPickup)
-                .transition(this::followerIdle, AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
-
-                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
-                .onEnter(this::onEnterBackRowLoopCompletePickup)
                 .transition(this::backRowPickupAdvanceReady, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
@@ -326,8 +335,8 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
-                .transition(() -> (shootActionComplete() || shootTimedOut()) && followerIdle(), AutoStates.LEAVE)
+                .transition(() -> shootAdvanceReady() && followerIdle() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
+                .transition(() -> shootAdvanceReady() && followerIdle(), AutoStates.LEAVE)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -469,10 +478,11 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_PICKUP);
 
         resetStateTimer();
+        robot.intake.spinner.setMegaSpinIn();
+        robot.intake.clutch.setClutchUp();
 
-        // TODO: intake subsystem command should keep intake running for this full transfer leg.
         buildPath(PathRequest.GO_TO_FAR_PICKUP_ZONE);
-        followPath(backRowLoopPickupPath);
+        followPath(backRowLoopPickupPath, FAR_PICKUP_ZONE_POWER);
     }
 
     protected void onEnterBackRowLoopGoToShoot() {
@@ -608,9 +618,9 @@ public abstract class BaseAuto extends OpMode {
     protected Pose getScorePoseForCurrentShot() {
         Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
         if (getScoreRangeForCurrentShot() == Range.CLOSE_RANGE && preloadComplete) {
-            // Close-range cycle shots should face the same direction as intake heading.
-            Pose closeIntakeHeadingPose = poses.getPickupStart(alliance, 1);
-            return new Pose(base.getX(), base.getY(), closeIntakeHeadingPose.getHeading());
+            // Close-range cycle shots: blue at 180 deg, red at 160 deg.
+            double headingDeg = (alliance == Alliance.RED) ? 160.0 : 180.0;
+            return new Pose(base.getX(), base.getY(), Math.toRadians(headingDeg));
         }
         return base;
     }
@@ -753,6 +763,18 @@ public abstract class BaseAuto extends OpMode {
         return shootTimer.seconds() >= SHOOT_ACTION_SECONDS;
     }
 
+    protected boolean shootAdvanceReady() {
+        // Keep timeout fallback so a jammed mechanism cannot deadlock the auto.
+        if (shootTimedOut() || stateTimedOut()) {
+            return true;
+        }
+        return shootActionComplete() && allShotBallsCleared();
+    }
+
+    protected boolean allShotBallsCleared() {
+        return skipCurrentShot || getLoadedBallCount() <= 0;
+    }
+
     protected boolean shootActionComplete() {
         if (!preloadComplete && !shouldShootPreload()) {
             return true;
@@ -763,28 +785,31 @@ public abstract class BaseAuto extends OpMode {
         if (!shootSequenceStarted) {
             if (shouldStartShootSequence()) {
                 robot.forceShootAllThreeOnNextStart = !preloadComplete;
-                if (robot.useSorting) {
-                    robot.initSortedShootAllMachine = true;
-                } else {
-                    robot.initShootAllMachine = true;
-                }
+                armAutoShootSequence();
                 shootSequenceStarted = true;
             } else {
                 return false;
             }
         }
-        StateMachine activeShootMachine = robot.useSorting ? sortingShootAllMachine : shootAllMachine;
+        StateMachine activeShootMachine = getAutoShootMachine();
         if (activeShootMachine == null) {
             return true;
         }
-        if (robot.useSorting) {
-            return activeShootMachine.getState() == Robot.SortedShootAllStates.INIT
-                    && !robot.initSortedShootAllMachine;
-        }
-        return activeShootMachine.getState() == Robot.ShootAllStates.INIT
-                && !robot.initShootAllMachine;
+        return activeShootMachine.getState() == Robot.SortedShootAllStates.INIT
+                && !robot.initSortedShootAllMachine;
 
         //TODO get a boolean from shooter subsystem
+    }
+
+    private void armAutoShootSequence() {
+        // Auto always uses sorted shooting order.
+        robot.useSorting = true;
+        robot.initShootAllMachine = false;
+        robot.initSortedShootAllMachine = true;
+    }
+
+    private StateMachine getAutoShootMachine() {
+        return sortingShootAllMachine;
     }
 
     protected boolean shouldStartShootSequence() {
@@ -807,7 +832,27 @@ public abstract class BaseAuto extends OpMode {
                 robot.outtake.vision,
                 COMPLETE_SHOOT_TURRET_TOLERANCE_DEG
         );
-        return shooterAtRpm && requiredTagVisible && turretAligned;
+        boolean robotSettled = isRobotMotionSettledForShot();
+        return shooterAtRpm && requiredTagVisible && turretAligned && robotSettled;
+    }
+
+    protected boolean isRobotMotionSettledForShot() {
+        if (follower == null) {
+            return false;
+        }
+
+        if (follower.getVelocity() == null) {
+            return false;
+        }
+
+        double translationalSpeedInS = Math.abs(follower.getVelocity().getMagnitude());
+        double angularSpeedDegS = Math.abs(Math.toDegrees(follower.getAngularVelocity()));
+        if (Double.isNaN(translationalSpeedInS) || Double.isInfinite(translationalSpeedInS)
+                || Double.isNaN(angularSpeedDegS) || Double.isInfinite(angularSpeedDegS)) {
+            return false;
+        }
+        return translationalSpeedInS <= SHOOT_SETTLE_MAX_TRANSLATIONAL_SPEED_IN_S
+                && angularSpeedDegS <= SHOOT_SETTLE_MAX_ANGULAR_SPEED_DEG_S;
     }
 
     protected void setActiveState(AutoStates state) {
@@ -824,7 +869,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowLoopShootComplete() {
-        return shootActionComplete() || shootTimedOut() || stateTimedOut();
+        return shootAdvanceReady();
     }
 
     protected boolean shouldExitBackRowLoop() {

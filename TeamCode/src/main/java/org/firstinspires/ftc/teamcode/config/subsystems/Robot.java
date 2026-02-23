@@ -88,6 +88,7 @@ public class Robot {
 
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;
+    private int sortedStartBall = 1;
 
     public boolean useSorting = true;
     private boolean wasFullLastLoop = false;
@@ -248,7 +249,6 @@ public class Robot {
     }
 
     public StateMachine getSortedShootAllMachine(){
-        double startBall = getBallSortedShootOrder();
         return new StateMachineBuilder()
                 .state(SortedShootAllStates.INIT)
                 .transition(()-> initSortedShootAllMachine, SortedShootAllStates.GO_TO_FIRST)
@@ -260,12 +260,13 @@ public class Robot {
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
+                    sortedStartBall = getBallSortedShootOrder();
 
-                    if(startBall == 1){
+                    if(sortedStartBall == 1){
                         intake.spindex.setSpindexForwardZero();
-                    } else if(startBall == 2){
+                    } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexForwardOne();
-                    } else if(startBall == 3){
+                    } else if(sortedStartBall == 3){
                         intake.spindex.setSpindexForwardTwo();
                     }
                 })
@@ -276,11 +277,11 @@ public class Robot {
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
 
-                    if(startBall == 1){
+                    if(sortedStartBall == 1){
                         intake.spindex.setSpindexShootOne();
-                    } else if(startBall == 2){
+                    } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexShootTwo();
-                    } else if(startBall == 3){
+                    } else if(sortedStartBall == 3){
                         intake.spindex.setSpindexShootThree();
                     }
                 })
@@ -294,11 +295,11 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
 
-                    if(startBall == 1){
+                    if(sortedStartBall == 1){
                         intake.spindex.setSpindexShootTwo();
-                    } else if(startBall == 2){
+                    } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexShootThree();
-                    } else if(startBall == 3){
+                    } else if(sortedStartBall == 3){
                         intake.spindex.setSpindexShootFour();
                     }
                 })
@@ -312,11 +313,11 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
 
-                    if(startBall == 1){
+                    if(sortedStartBall == 1){
                         intake.spindex.setSpindexShootThree();
-                    } else if(startBall == 2){
+                    } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexShootFour();
-                    } else if(startBall == 3){
+                    } else if(sortedStartBall == 3){
                         intake.spindex.setSpindexShootFive();
                     }
                 })
@@ -329,18 +330,18 @@ public class Robot {
                 .transitionTimed(waitTime, SortedShootAllStates.RESET)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
-                    if(startBall == 1){
+                    if(sortedStartBall == 1){
                         intake.spindex.setSpindexShootFour();
-                    } else if(startBall == 2){
+                    } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexShootFive();
-                    } else if(startBall == 3){
+                    } else if(sortedStartBall == 3){
                         intake.spindex.setSpindexShootSix();
                     }
                 })
 
-                .state(ShootAllStates.RESET)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+                .state(SortedShootAllStates.RESET)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SortedShootAllStates.INIT)
+                .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
                     txLights = false;
                     intake.spindex.setSpindexForwardOne();

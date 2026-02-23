@@ -61,7 +61,7 @@ public class Turret implements Subsystem {
     public static double visionTxAlpha = 0.3;
     public static double cameraLateralOffsetIn = 0.0;
     public static double visionDirection = 1.0; // set to -1.0 to invert lock direction
-    public static double blueVisionCloseBiasDeg = 3;
+    public static double blueVisionCloseBiasDeg = 0;
     public static double blueVisionFarBiasDeg = 2.5;
     public static double redVisionCloseBiasDeg = 0;
     public static double redVisionFarBiasDeg = 1.5;

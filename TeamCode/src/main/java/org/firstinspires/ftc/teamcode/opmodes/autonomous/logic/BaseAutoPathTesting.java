@@ -43,6 +43,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     private static final double STATE_TIMEOUT_SECONDS = 5.0;
     private static final double PICKUP_POWER = 0.25;
+    private static final double FAR_PICKUP_ZONE_POWER = 0.5;
     private static final double RELEASE_COMPLETE_POWER = 0.35;
 
     private final Alliance alliance;
@@ -198,10 +199,6 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
                 .onEnter(this::onEnterBackRowLoopGoToPickup)
-                .transition(() -> advanceApproved(followerIdle()), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
-
-                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
-                .onEnter(this::onEnterBackRowLoopCompletePickup)
                 .transition(() -> advanceApproved(followerIdle()), AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
@@ -279,7 +276,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_PICKUP);
         resetStateTimer();
         buildPath(PathRequest.GO_TO_FAR_PICKUP_ZONE);
-        followPath(backRowLoopPickupPath);
+        followPath(backRowLoopPickupPath, FAR_PICKUP_ZONE_POWER);
     }
 
     protected void onEnterBackRowLoopGoToShoot() {
@@ -363,8 +360,8 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected Pose getScorePoseForCurrentShot() {
         Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
         if (getScoreRangeForCurrentShot() == Range.CLOSE_RANGE && preloadComplete) {
-            Pose closeIntakeHeadingPose = poses.getPickupStart(alliance, 1);
-            return new Pose(base.getX(), base.getY(), closeIntakeHeadingPose.getHeading());
+            double headingDeg = (alliance == Alliance.RED) ? 160.0 : 180.0;
+            return new Pose(base.getX(), base.getY(), Math.toRadians(headingDeg));
         }
         return base;
     }
