@@ -29,6 +29,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.LoopTimeTracker;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
@@ -76,8 +77,7 @@ public class MainTeleOp extends OpMode {
     private boolean shooterPositionHoldCanceledByDriver = false;
     private Pose shooterHoldPose = null;
 
-    public ElapsedTime loopTimer;
-    public double loopTime;
+    private LoopTimeTracker loopTimeTracker;
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
@@ -120,7 +120,7 @@ public class MainTeleOp extends OpMode {
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
                 telemetry
         );
-        loopTimer = new ElapsedTime();
+        loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
 
     }
@@ -163,7 +163,7 @@ public class MainTeleOp extends OpMode {
         shootAllMachine.start();
         sortingShootAllMachine.start();
 
-        loopTimer.reset();
+        loopTimeTracker.reset();
         telemetryTimer.reset();
     }
 
@@ -181,8 +181,7 @@ public class MainTeleOp extends OpMode {
         stateMachinesUpdate();
         updateShooterPositionHold();
         drawCurrentAndHistory();
-        loopTime = loopTimer.milliseconds();
-        loopTimer.reset();
+        loopTimeTracker.sampleLoop();
     }
 
     @Override
@@ -213,7 +212,12 @@ public class MainTeleOp extends OpMode {
             }
             joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Motif", GlobalVariables.getMotif());
-//            joinedTelemetry.addData("Loop Time", loopTime);
+                joinedTelemetry.addData(
+                    "Loop (ms)",
+                    "now %.2f | avg %.2f",
+                    loopTimeTracker.getCurrentLoopTimeMs(),
+                    loopTimeTracker.getTrailingAverageMs()
+                );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
             joinedTelemetry.addData("TXLights", robot.txLights);
             joinedTelemetry.update();
