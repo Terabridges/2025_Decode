@@ -31,13 +31,14 @@ import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.LoopTimeTracker;
 import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-//@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
@@ -90,6 +91,8 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void init() {
+        configureLowOverheadPsiKitLogging();
+
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
         outtakeControl = new OuttakeControl(robot, gamepad1, gamepad2);
@@ -123,6 +126,13 @@ public class MainTeleOp extends OpMode {
         loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
 
+    }
+
+    private void configureLowOverheadPsiKitLogging() {
+        FtcLogTuning.nonBulkReadPeriodSec = 0.10;
+        FtcLogTuning.processColorDistanceSensorsInBackground = false;
+        FtcLogTuning.pinpointLoggerCallsUpdate = false;
+        FtcLogTuning.pinpointReadPeriodSec = .10;
     }
 
     @Override
