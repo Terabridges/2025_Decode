@@ -58,10 +58,12 @@ public class TurretHardware {
      * all callers (OpModes, controllers) use the natural convention:
      * positive power = increasing turret angle.
      *
-     * On this robot: positive CRServo power = increasing turret angle,
-     * so no inversion is needed (false).
+     * Confirmed via rlog analysis: positive CRServo power physically moves
+     * the turret toward lower angles on this robot.
      */
-    public static boolean servoPowerInverted = false;
+    public static boolean servoPowerInverted = true;
+    /** Emergency brake reverse power magnitude (applied opposite to velocity). */
+    public static double emergencyBrakePower = 0.3;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -107,17 +109,20 @@ public class TurretHardware {
             boolean inMinZone = pos < (softLimitMinDeg + softLimitMarginDeg);
             boolean inMaxZone = pos > (softLimitMaxDeg - softLimitMarginDeg);
 
-            // Emergency brake: if moving fast toward a limit, force stop regardless
+            // Emergency brake: if moving fast toward a limit, apply REVERSE power
+            // to actively decelerate (zeroing power just lets momentum carry through)
             if (inMinZone && vel < -emergencyBrakeVelThreshold) {
-                lastPower = 0.0;
-                writeServos(0.0);
-                logSoftLimits(requestedPower, 0.0, "eBrake_min", inMinZone, inMaxZone);
+                double brakePower = emergencyBrakePower; // positive = toward max = away from min
+                lastPower = brakePower;
+                writeServos(brakePower);
+                logSoftLimits(requestedPower, brakePower, "eBrake_min", inMinZone, inMaxZone);
                 return;
             }
             if (inMaxZone && vel > emergencyBrakeVelThreshold) {
-                lastPower = 0.0;
-                writeServos(0.0);
-                logSoftLimits(requestedPower, 0.0, "eBrake_max", inMinZone, inMaxZone);
+                double brakePower = -emergencyBrakePower; // negative = toward min = away from max
+                lastPower = brakePower;
+                writeServos(brakePower);
+                logSoftLimits(requestedPower, brakePower, "eBrake_max", inMinZone, inMaxZone);
                 return;
             }
 
