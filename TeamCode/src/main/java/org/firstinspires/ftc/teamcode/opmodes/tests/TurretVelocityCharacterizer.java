@@ -59,6 +59,10 @@ public class TurretVelocityCharacterizer extends OpMode {
     public static double measureWindowSec = 0.5;
     /** Pause between steps (sec). */
     public static double pauseBetweenStepsSec = 0.8;
+    /** Power used to reposition the turret before each step. */
+    public static double repositionPower = 0.25;
+    /** Target position margin from the limit (deg) to reposition to before each step. */
+    public static double repositionMarginDeg = 20.0;
     /** Manual nudge power scale. */
     public static double nudgePowerScale = 0.15;
     /** Nudge deadband. */
@@ -70,7 +74,7 @@ public class TurretVelocityCharacterizer extends OpMode {
     private final Gamepad current = new Gamepad();
     private final Gamepad previous = new Gamepad();
 
-    private enum Phase { IDLE, RUNNING, PAUSING, DONE }
+    private enum Phase { IDLE, REPOSITIONING, RUNNING, PAUSING, DONE }
     private Phase phase = Phase.IDLE;
     private boolean directionCW = true;
     private int currentStep = 0;
@@ -114,6 +118,9 @@ public class TurretVelocityCharacterizer extends OpMode {
         switch (phase) {
             case IDLE:
                 handleIdle();
+                break;
+            case REPOSITIONING:
+                handleRepositioning(posDeg);
                 break;
             case RUNNING:
                 handleRunning(velDegSec);
@@ -160,7 +167,13 @@ public class TurretVelocityCharacterizer extends OpMode {
         joinedTelemetry.addData("Velocity Deg/s", fmt(velDegSec));
         joinedTelemetry.addData("Commanded Power", fmt(hardware.getLastPower()));
 
-        if (phase == Phase.RUNNING) {
+        if (phase == Phase.REPOSITIONING) {
+            double targetDeg = directionCW
+                    ? (TurretHardware.softLimitMinDeg + repositionMarginDeg)
+                    : (TurretHardware.softLimitMaxDeg - repositionMarginDeg);
+            joinedTelemetry.addData("Reposition Target", fmt(targetDeg) + "°");
+            joinedTelemetry.addData("Reposition Error", fmt(targetDeg - posDeg) + "°");
+        } else if (phase == Phase.RUNNING) {
             double stepPower = getPowerForStep(currentStep);
             double elapsed = stepTimer.seconds();
             joinedTelemetry.addData("Current Step Power", fmt(stepPower));
@@ -199,13 +212,39 @@ public class TurretVelocityCharacterizer extends OpMode {
         stepTimer.reset();
         velocitySum = 0.0;
         velocitySamples = 0;
-        phase = Phase.RUNNING;
+        phase = Phase.REPOSITIONING;
     }
 
     private void handleIdle() {
         double nudge = current.left_stick_x;
         if (Math.abs(nudge) < nudgeDeadband) nudge = 0.0;
         hardware.setPower(nudge * nudgePowerScale);
+    }
+
+    /**
+     * Move the turret opposite to the test direction so there is room to run at speed.
+     * If testing CW (positive), drive CCW toward the min limit + margin.
+     * If testing CCW (negative), drive CW toward the max limit - margin.
+     */
+    private void handleRepositioning(double posDeg) {
+        double targetDeg = directionCW
+                ? (TurretHardware.softLimitMinDeg + repositionMarginDeg)   // move toward low end
+                : (TurretHardware.softLimitMaxDeg - repositionMarginDeg); // move toward high end
+        double error = targetDeg - posDeg;
+
+        if (Math.abs(error) < 3.0) {
+            // Close enough — stop and settle briefly before running
+            hardware.setPower(0.0);
+            stepTimer.reset();
+            velocitySum = 0.0;
+            velocitySamples = 0;
+            phase = Phase.PAUSING;
+            return;
+        }
+
+        // Drive toward the target position
+        double power = (error > 0) ? repositionPower : -repositionPower;
+        hardware.setPower(power);
     }
 
     private void handleRunning(double velDegSec) {
@@ -226,8 +265,7 @@ public class TurretVelocityCharacterizer extends OpMode {
                 Logger.recordOutput(LOG_PREFIX + "Step/Samples", velocitySamples);
                 Logger.recordOutput(LOG_PREFIX + "Step/LimitTruncated", true);
             }
-            // Auto-reverse direction and advance to next step
-            directionCW = !directionCW;
+            // Hit limit — advance to next step and reposition
             currentStep++;
             if (currentStep >= totalSteps) {
                 hardware.setPower(0.0);
@@ -235,10 +273,7 @@ public class TurretVelocityCharacterizer extends OpMode {
                 phase = Phase.DONE;
             } else {
                 hardware.setPower(0.0);
-                stepTimer.reset();
-                velocitySum = 0.0;
-                velocitySamples = 0;
-                phase = Phase.PAUSING;
+                phase = Phase.REPOSITIONING;
             }
             return;
         }
@@ -270,12 +305,9 @@ public class TurretVelocityCharacterizer extends OpMode {
                 computeKV();
                 phase = Phase.DONE;
             } else {
-                // Pause between steps
+                // Reposition before next step
                 hardware.setPower(0.0);
-                stepTimer.reset();
-                velocitySum = 0.0;
-                velocitySamples = 0;
-                phase = Phase.PAUSING;
+                phase = Phase.REPOSITIONING;
             }
         }
     }
