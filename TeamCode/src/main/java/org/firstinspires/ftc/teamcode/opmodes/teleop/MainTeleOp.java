@@ -88,6 +88,7 @@ public class MainTeleOp extends OpMode {
     EdgeDetector nextMotif = new EdgeDetector(()-> GlobalVariables.nextMotif());
     EdgeDetector flashLights = new EdgeDetector(()-> robot.toggleLightsTurret());
     EdgeDetector toggleShooterPositionHold = new EdgeDetector(() -> shooterPositionHoldEnabled = !shooterPositionHoldEnabled);
+    EdgeDetector relocalizeDoubleB = new EdgeDetector(() -> robot.outtake.relocalization.onRelocalizeButtonPress());
 
     @Override
     public void init() {
@@ -207,6 +208,7 @@ public class MainTeleOp extends OpMode {
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.right_bumper);
         toggleShooterPositionHold.update(gamepad2.left_bumper);
+        relocalizeDoubleB.update(gamepad1.b);
     }
 
     public void controlsTelemetryUpdate() {
@@ -230,6 +232,10 @@ public class MainTeleOp extends OpMode {
                 );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
             joinedTelemetry.addData("TXLights", robot.txLights);
+            joinedTelemetry.addData("Reloc State", robot.outtake.relocalization.getState());
+            joinedTelemetry.addData("Reloc Last Success", robot.outtake.relocalization.wasLastSuccess());
+            joinedTelemetry.addData("Reloc Reason", robot.outtake.relocalization.getLastReason());
+            joinedTelemetry.addData("Reloc Tag Visible (prep)", robot.outtake.relocalization.isPreparedTagVisible());
             joinedTelemetry.update();
 
             telemetryTimer.reset();

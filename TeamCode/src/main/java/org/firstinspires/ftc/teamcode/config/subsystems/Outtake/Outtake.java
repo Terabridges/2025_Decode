@@ -12,6 +12,7 @@ public class Outtake implements Subsystem {
     public Shooter shooter;
     public Turret turret;
     public Vision vision;
+    public Relocalization relocalization;
     private ShooterData shooterData;
     public double distanceInches = 0;
 
@@ -23,6 +24,7 @@ public class Outtake implements Subsystem {
         shooter = new Shooter(map);
         turret = new Turret(map);
         vision = new Vision(map);
+        relocalization = new Relocalization(turret, vision);
         shooterData = new ShooterData();
     }
 
@@ -45,6 +47,7 @@ public class Outtake implements Subsystem {
         shooter.update();
         turret.update();
         vision.update();
+        relocalization.update();
         turret.updateAimLock(vision);
     }
 

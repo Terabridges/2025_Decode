@@ -193,6 +193,33 @@ public class Vision implements Subsystem {
         }
     }
 
+    /**
+     * Returns MT2 pose only (no fallback). Null means MT2 unavailable this frame.
+     */
+    public Pose3D getLatestBotPoseMT2() {
+        if (latest == null || !latest.isValid()) {
+            return null;
+        }
+        try {
+            return latest.getBotpose_MT2();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Pushes current robot yaw (deg) into Limelight MT2 solver when supported.
+     */
+    public void updateRobotYawDegrees(double yawDeg) {
+        if (limelight == null) return;
+        try {
+            limelight.getClass()
+                    .getMethod("updateRobotOrientation", double.class)
+                    .invoke(limelight, yawDeg);
+        } catch (Throwable ignored) {
+        }
+    }
+
     /** Choose the obelisk face (21/22/23) whose yaw is most directly facing the robot. */
     public int getFieldFacingObeliskId() {
         if (!hasTarget() || latest.getFiducialResults().isEmpty()) {
