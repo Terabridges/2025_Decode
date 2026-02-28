@@ -49,10 +49,10 @@ public class TurretProfileTuner extends OpMode {
     private static final String LOG_PREFIX = "Calibrator/Profile/";
 
     //---------------- Configurable Target Angles ----------------
-    public static double targetA = 90.0;
-    public static double targetB = 270.0;
-    public static double targetC = 45.0;
-    public static double panelTarget = 180.0;
+    public static double targetA = 100.0;
+    public static double targetB = 220.0;
+    public static double targetC = 80.0;
+    public static double panelTarget = 163.0;
 
     //---------------- Manual ----------------
     public static double nudgePowerScale = 0.15;
@@ -195,6 +195,9 @@ public class TurretProfileTuner extends OpMode {
     }
 
     private void startMove(double currentDeg, double goalDeg) {
+        // Clamp goal to safe operating range
+        goalDeg = TurretHardware.clampToSafeRange(goalDeg);
+
         moveStartDeg = currentDeg;
         moveGoalDeg = goalDeg;
         moveActive = true;

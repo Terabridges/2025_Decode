@@ -246,8 +246,12 @@ public class TurretVelocityCharacterizer extends OpMode {
             return;
         }
 
-        // Drive toward the target position
-        double power = (error > 0) ? repositionPower : -repositionPower;
+        // Drive toward the target position with proportional slowdown near target
+        double absDist = Math.abs(error);
+        double scale = Math.min(1.0, absDist / 20.0); // ramp down within 20°
+        double power = (error > 0) ? repositionPower * scale : -repositionPower * scale;
+        power = Math.max(-repositionPower, Math.min(repositionPower, power));
+        if (Math.abs(power) < 0.04) power = Math.signum(power) * 0.04; // min power to move
         hardware.setPower(power);
     }
 

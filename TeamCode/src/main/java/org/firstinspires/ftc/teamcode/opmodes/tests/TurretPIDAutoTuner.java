@@ -217,6 +217,13 @@ public class TurretPIDAutoTuner extends OpMode {
     }
 
     private void startOscillation(double currentDeg) {
+        // Clamp relay target to safe range
+        relayTargetDeg = TurretHardware.clampToSafeRange(relayTargetDeg);
+        // Also ensure target has enough room for oscillation on both sides
+        double minSafe = TurretHardware.softLimitMinDeg + 20.0;
+        double maxSafe = TurretHardware.softLimitMaxDeg - 20.0;
+        relayTargetDeg = Math.max(minSafe, Math.min(maxSafe, relayTargetDeg));
+
         crossingCount = 0;
         peakMax = Double.NEGATIVE_INFINITY;
         peakMin = Double.POSITIVE_INFINITY;
@@ -232,6 +239,17 @@ public class TurretPIDAutoTuner extends OpMode {
     }
 
     private void handleOscillating(double posDeg) {
+        // Safety: abort if we've drifted near a limit
+        if (hardware.isNearSoftLimit()) {
+            hardware.setPower(0.0);
+            if (crossingCount >= 4) {
+                computeResults();
+            }
+            phase = Phase.DONE;
+            Logger.recordOutput(LOG_PREFIX + "AbortedAtLimit", true);
+            return;
+        }
+
         double error = wrapSigned(posDeg - relayTargetDeg);
         boolean aboveTarget = (error > hysteresisDeg);
         boolean belowTarget = (error < -hysteresisDeg);

@@ -39,17 +39,19 @@ public class TurretHardware {
 
     //---------------- Soft Limits (Configurable) ----------------
     /** Minimum allowed turret angle (deg). Power toward this limit is blocked. */
-    public static double softLimitMinDeg = 30.0;
+    public static double softLimitMinDeg = 50.0;
     /** Maximum allowed turret angle (deg). Power toward this limit is blocked. */
-    public static double softLimitMaxDeg = 280.0;
+    public static double softLimitMaxDeg = 260.0;
     /** Margin from soft limit where power starts being attenuated (deg). */
-    public static double softLimitMarginDeg = 15.0;
+    public static double softLimitMarginDeg = 25.0;
     /** Enable soft limit enforcement in setPower(). */
     public static boolean softLimitsEnabled = true;
     /** Physical minimum turret angle (deg). Readings below this are encoder-wrap artifacts. */
     public static double physicalMinDeg = 15.0;
     /** Physical maximum turret angle (deg). Readings above this are encoder-wrap artifacts. */
     public static double physicalMaxDeg = 295.0;
+    /** Emergency brake velocity threshold (deg/s). If speed toward a limit exceeds this, force stop. */
+    public static double emergencyBrakeVelThreshold = 40.0;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -84,6 +86,24 @@ public class TurretHardware {
 
         if (softLimitsEnabled) {
             double pos = currentPositionDeg;
+            double vel = currentVelocityDegPerSec;
+
+            // Emergency brake: if moving fast toward a limit, force stop regardless
+            boolean inMinZone = pos < (softLimitMinDeg + softLimitMarginDeg);
+            boolean inMaxZone = pos > (softLimitMaxDeg - softLimitMarginDeg);
+            if (inMinZone && vel < -emergencyBrakeVelThreshold) {
+                lastPower = 0.0;
+                servoL.setPower(0.0);
+                servoR.setPower(0.0);
+                return;
+            }
+            if (inMaxZone && vel > emergencyBrakeVelThreshold) {
+                lastPower = 0.0;
+                servoL.setPower(0.0);
+                servoR.setPower(0.0);
+                return;
+            }
+
             // Block power that would push further past a limit
             if (pos <= softLimitMinDeg && clampedPower < 0) {
                 clampedPower = 0.0;
@@ -91,11 +111,11 @@ public class TurretHardware {
                 clampedPower = 0.0;
             }
             // Attenuate power in the margin zone
-            if (clampedPower < 0 && pos < (softLimitMinDeg + softLimitMarginDeg)) {
+            if (clampedPower < 0 && inMinZone) {
                 double distFromLimit = pos - softLimitMinDeg;
                 double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
                 clampedPower *= scale;
-            } else if (clampedPower > 0 && pos > (softLimitMaxDeg - softLimitMarginDeg)) {
+            } else if (clampedPower > 0 && inMaxZone) {
                 double distFromLimit = softLimitMaxDeg - pos;
                 double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
                 clampedPower *= scale;
@@ -279,5 +299,13 @@ public class TurretHardware {
      */
     private static double unwrap(double pos, double ref) {
         return ref + wrapSigned(pos - ref);
+    }
+
+    /**
+     * Clamp a target angle to the safe operating range [softLimitMinDeg, softLimitMaxDeg].
+     * Use this to validate any target before commanding a move.
+     */
+    public static double clampToSafeRange(double deg) {
+        return Math.max(softLimitMinDeg, Math.min(softLimitMaxDeg, deg));
     }
 }
