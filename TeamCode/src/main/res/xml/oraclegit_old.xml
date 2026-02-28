@@ -14,7 +14,8 @@
             <goBILDA5202SeriesMotor name="fly_right" port="1" />
             <goBILDA5202SeriesMotor name="left_front" port="2" />
             <goBILDA5202SeriesMotor name="left_back" port="3" />
-            <ContinuousRotationServo name="turret" port="0" />
+            <ContinuousRotationServo name="turretL" port="0" />
+            <ContinuousRotationServo name="turretR" port="4" />
             <ContinuousRotationServo name="intake_right" port="1" />
             <Servo name="clutch" port="2" />
             <Servo name="hood" port="3" />
