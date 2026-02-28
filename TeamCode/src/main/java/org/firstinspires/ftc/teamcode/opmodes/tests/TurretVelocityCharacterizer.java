@@ -212,6 +212,37 @@ public class TurretVelocityCharacterizer extends OpMode {
         int totalSteps = Math.min(powerSteps, MAX_STEPS);
         double stepPower = getPowerForStep(currentStep);
         double appliedPower = directionCW ? stepPower : -stepPower;
+
+        // --- Soft-limit guard: auto-reverse if approaching limit ---
+        if (hardware.isAtSoftLimit(directionCW)) {
+            // Record partial measurement if we have enough samples
+            if (velocitySamples > 3) {
+                double avgVelocity = velocitySum / velocitySamples;
+                resultPower[resultCount] = stepPower;
+                resultVelocity[resultCount] = avgVelocity;
+                resultCount++;
+                Logger.recordOutput(LOG_PREFIX + "Step/Power", stepPower);
+                Logger.recordOutput(LOG_PREFIX + "Step/AvgVelocity", avgVelocity);
+                Logger.recordOutput(LOG_PREFIX + "Step/Samples", velocitySamples);
+                Logger.recordOutput(LOG_PREFIX + "Step/LimitTruncated", true);
+            }
+            // Auto-reverse direction and advance to next step
+            directionCW = !directionCW;
+            currentStep++;
+            if (currentStep >= totalSteps) {
+                hardware.setPower(0.0);
+                computeKV();
+                phase = Phase.DONE;
+            } else {
+                hardware.setPower(0.0);
+                stepTimer.reset();
+                velocitySum = 0.0;
+                velocitySamples = 0;
+                phase = Phase.PAUSING;
+            }
+            return;
+        }
+
         hardware.setPower(appliedPower);
 
         double elapsed = stepTimer.seconds();
