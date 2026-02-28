@@ -235,6 +235,14 @@ public class TurretStictionCharacterizer extends OpMode {
         double appliedPower = directionCW ? currentRampPower : -currentRampPower;
         hardware.setPower(appliedPower);
 
+        // Soft-limit guard: abort ramp if we hit a limit
+        if (hardware.isAtSoftLimit(directionCW)) {
+            hardware.setPower(0.0);
+            phase = Phase.DONE;
+            Logger.recordOutput(LOG_PREFIX + "RampAbortedAtLimit", true);
+            return;
+        }
+
         // Check for breakaway
         if (Math.abs(velDegSec) >= breakawayThresholdDegSec) {
             if (directionCW) {

@@ -29,13 +29,23 @@ public class TurretHardware {
 
     //---------------- Calibration (Configurable) ----------------
     /** Encoder reading (deg) at the reference turret position. */
-    public static double encoderRefDeg = 280.0;
+    public static double encoderRefDeg = 201.8;
     /** True turret angle (deg) at the reference encoder position. */
-    public static double encoderRefTurretDeg = 59.25;
+    public static double encoderRefTurretDeg = 163.0;
     /** Scale factor: turret-degrees per encoder-degree near the reference point. */
-    public static double encoderToTurretScale = 1.0;
+    public static double encoderToTurretScale = 1.030;
     /** Set true if encoder direction is opposite to turret direction. */
     public static boolean encoderDirectionInverted = false;
+
+    //---------------- Soft Limits (Configurable) ----------------
+    /** Minimum allowed turret angle (deg). Power toward this limit is blocked. */
+    public static double softLimitMinDeg = 30.0;
+    /** Maximum allowed turret angle (deg). Power toward this limit is blocked. */
+    public static double softLimitMaxDeg = 280.0;
+    /** Margin from soft limit where power starts being attenuated (deg). */
+    public static double softLimitMarginDeg = 15.0;
+    /** Enable soft limit enforcement in setPower(). */
+    public static boolean softLimitsEnabled = true;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -62,12 +72,60 @@ public class TurretHardware {
 
     /**
      * Send identical power to both turret CRServos.
+     * If soft limits are enabled, power toward a limit is attenuated or blocked.
      * @param power value in [-1.0, 1.0]; 0 = stop
      */
     public void setPower(double power) {
+        double clampedPower = Math.max(-1.0, Math.min(1.0, power));
+
+        if (softLimitsEnabled) {
+            double pos = currentPositionDeg;
+            // Block power that would push further past a limit
+            if (pos <= softLimitMinDeg && clampedPower < 0) {
+                clampedPower = 0.0;
+            } else if (pos >= softLimitMaxDeg && clampedPower > 0) {
+                clampedPower = 0.0;
+            }
+            // Attenuate power in the margin zone
+            if (clampedPower < 0 && pos < (softLimitMinDeg + softLimitMarginDeg)) {
+                double distFromLimit = pos - softLimitMinDeg;
+                double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
+                clampedPower *= scale;
+            } else if (clampedPower > 0 && pos > (softLimitMaxDeg - softLimitMarginDeg)) {
+                double distFromLimit = softLimitMaxDeg - pos;
+                double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
+                clampedPower *= scale;
+            }
+        }
+
+        lastPower = clampedPower;
+        servoL.setPower(lastPower);
+        servoR.setPower(lastPower);
+    }
+
+    /**
+     * Send power bypassing soft limits (for calibration OpModes that know what they're doing).
+     * @param power value in [-1.0, 1.0]; 0 = stop
+     */
+    public void setPowerRaw(double power) {
         lastPower = Math.max(-1.0, Math.min(1.0, power));
         servoL.setPower(lastPower);
         servoR.setPower(lastPower);
+    }
+
+    /** Returns true if turret position is at or past the soft limit in the given direction. */
+    public boolean isAtSoftLimit(boolean positiveDirection) {
+        if (!softLimitsEnabled) return false;
+        return positiveDirection
+                ? (currentPositionDeg >= softLimitMaxDeg)
+                : (currentPositionDeg <= softLimitMinDeg);
+    }
+
+    /** Returns true if turret position is within the margin of a soft limit. */
+    public boolean isNearSoftLimit() {
+        if (!softLimitsEnabled) return false;
+        return (currentPositionDeg <= (softLimitMinDeg + softLimitMarginDeg))
+                || (currentPositionDeg >= (softLimitMaxDeg - softLimitMarginDeg));
     }
 
     /**
