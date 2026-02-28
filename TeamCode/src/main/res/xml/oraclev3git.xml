@@ -20,8 +20,8 @@
             <goBILDA5201SeriesMotor name="fly_right" port="3" />
             <Servo name="spindexL" port="0" />
             <Servo name="spindexR" port="1" />
-            <Servo name="turretL" port="2" />
-            <Servo name="turretR" port="3" />
+            <ContinuousRotationServo name="turretL" port="2" />
+            <ContinuousRotationServo name="turretR" port="3" />
             <Servo name="clutch" port="4" />
             <Servo name="hood" port="5" />
             <AnalogInput name="turretAnalog" port="1" />
