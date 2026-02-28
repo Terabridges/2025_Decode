@@ -56,7 +56,7 @@ public class TurretTest extends OpMode {
         robot.outtake.turret.update();
         gamepadUpdate();
         if(currentGamepad1.a && !previousGamepad1.a){
-            robot.outtake.turret.setTurretDegree(degree);
+            robot.outtake.turret.setTargetAngle(degree);
         }
 
         joinedTelemetry.update();

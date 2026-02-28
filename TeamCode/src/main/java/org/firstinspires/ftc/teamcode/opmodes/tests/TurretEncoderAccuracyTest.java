@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.TurretAimController;
 
 @Configurable
 @TeleOp(name = "TurretEncoderAccuracyTest", group = "Test")
@@ -19,7 +19,7 @@ public class TurretEncoderAccuracyTest extends OpMode {
     public static double settleToleranceDeg = 2.0;
     public static double settleTimeMs = 300.0;
 
-    public static double presetA = Turret.turretForwardDeg;
+    public static double presetA = TurretAimController.turretForwardDeg;
     public static double presetX = 90.0;
     public static double presetY = 180.0;
     public static double presetB = 270.0;
@@ -30,7 +30,7 @@ public class TurretEncoderAccuracyTest extends OpMode {
     private final Gamepad previous = new Gamepad();
     private final ElapsedTime inToleranceTimer = new ElapsedTime();
 
-    private double targetDeg = Turret.turretForwardDeg;
+    private double targetDeg = TurretAimController.turretForwardDeg;
     private boolean wasInTolerance = false;
 
     @Override
@@ -46,7 +46,6 @@ public class TurretEncoderAccuracyTest extends OpMode {
     public void start() {
         robot.toInit();
         robot.outtake.turret.setAimLockEnabled(false);
-        Turret.turretVelocity = 0.0;
         targetDeg = robot.outtake.turret.getCurrentDegrees();
         inToleranceTimer.reset();
     }
@@ -66,20 +65,17 @@ public class TurretEncoderAccuracyTest extends OpMode {
 
         if (edge(current.back, previous.back)) {
             robot.outtake.turret.toInit();
-            Turret.turretVelocity = 0.0;
             targetDeg = robot.outtake.turret.getCurrentDegrees();
         }
 
         robot.outtake.turret.setAimLockEnabled(false);
-        Turret.turretVelocity = 0.0;
-        robot.outtake.turret.setTurretDegree(targetDeg);
+        robot.outtake.turret.setTargetAngle(targetDeg);
         robot.outtake.turret.update();
 
-        double encoderDeg = robot.outtake.turret.getEncoderDegrees();
-        double mappedEncoderTurretDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
-        double commandedDeg = robot.outtake.turret.getCurrentDegrees();
-        double errorDeg = wrapSignedDeg(encoderDeg - targetDeg);
-        double mappedErrorDeg = robot.outtake.turret.getMappedEncoderErrorDeg(targetDeg);
+        double encoderDeg = robot.outtake.turret.getEncoderRawDeg();
+        double mappedDeg = robot.outtake.turret.getCurrentDegrees();
+        double commandedDeg = mappedDeg;
+        double errorDeg = wrapSignedDeg(mappedDeg - targetDeg);
         double absErrorDeg = Math.abs(errorDeg);
 
         boolean inTolerance = absErrorDeg <= Math.abs(settleToleranceDeg);
@@ -95,12 +91,11 @@ public class TurretEncoderAccuracyTest extends OpMode {
 
         joinedTelemetry.addData("Target (deg)", "%.2f", targetDeg);
         joinedTelemetry.addData("Commanded (deg)", "%.2f", commandedDeg);
-        joinedTelemetry.addData("Encoder (deg)", "%.2f", encoderDeg);
-        joinedTelemetry.addData("Error Enc-Target (deg)", "%.2f", errorDeg);
-        joinedTelemetry.addData("Mapped Enc->Turret (deg)", "%.2f", mappedEncoderTurretDeg);
-        joinedTelemetry.addData("Mapped Error (deg)", "%.2f", mappedErrorDeg);
+        joinedTelemetry.addData("Encoder Raw (deg)", "%.2f", encoderDeg);
+        joinedTelemetry.addData("Mapped Position (deg)", "%.2f", mappedDeg);
+        joinedTelemetry.addData("Error Mapped-Target (deg)", "%.2f", errorDeg);
         joinedTelemetry.addData("Abs Error (deg)", "%.2f", absErrorDeg);
-        joinedTelemetry.addData("Turret Velocity Cmd", "%.2f", Turret.turretVelocity);
+        joinedTelemetry.addData("On Target", robot.outtake.turret.isOnTarget());
         joinedTelemetry.addData("Tolerance (deg)", "%.2f", settleToleranceDeg);
         joinedTelemetry.addData("In Tolerance", inTolerance);
         joinedTelemetry.addData("Settled", settled);

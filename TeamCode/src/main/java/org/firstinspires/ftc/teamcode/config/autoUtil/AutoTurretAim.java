@@ -5,6 +5,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.TurretAimController;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 
 public class AutoTurretAim {
@@ -30,9 +31,8 @@ public class AutoTurretAim {
 
         int requiredGoalTagId = (alliance == Alliance.BLUE) ? BLUE_GOAL_TAG_ID : RED_GOAL_TAG_ID;
         robot.outtake.vision.setRequiredTagId(requiredGoalTagId);
-        robot.outtake.turret.turretVelocity = 0;
-        Turret.cameraLateralOffsetIn = 0.0;
-        Turret.visionDirection = (alliance == Alliance.BLUE) ? BLUE_VISION_DIRECTION : RED_VISION_DIRECTION;
+        TurretAimController.cameraLateralOffsetIn = 0.0;
+        TurretAimController.visionDirection = (alliance == Alliance.BLUE) ? BLUE_VISION_DIRECTION : RED_VISION_DIRECTION;
 
         boolean acquireMotif = activeState == AutoStates.ACQUIRE_MOTIF;
         if (activeState == AutoStates.ACQUIRE_MOTIF) {

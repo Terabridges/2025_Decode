@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.TurretAimController;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 
 @Configurable
@@ -20,7 +20,7 @@ public class GoalTagRelocalizationTest extends OpMode {
     public static double startX = 72.0;
     public static double startY = 72.0;
     public static double startHeadingDeg = 0.0;
-    public static double forwardTurretDeg = Turret.turretForwardDeg;
+    public static double forwardTurretDeg = TurretAimController.turretForwardDeg;
     public static boolean relocalizeEveryLoop = false;
 
     private Robot robot;

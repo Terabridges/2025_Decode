@@ -43,7 +43,7 @@ public class TurretFrameCharacterization extends OpMode {
         robot.outtake.turret.toInit();
         robot.outtake.turret.setAimLockEnabled(false);
         targetDeg = robot.outtake.turret.getCurrentDegrees();
-        previousEncoderDeg = robot.outtake.turret.getEncoderDegrees();
+        previousEncoderDeg = robot.outtake.turret.getEncoderRawDeg();
     }
 
     @Override
@@ -86,7 +86,7 @@ public class TurretFrameCharacterization extends OpMode {
         }
 
         if (edge(currentGamepad1.start, previousGamepad1.start)) {
-            targetDeg = robot.outtake.turret.getEncoderDegrees();
+            targetDeg = robot.outtake.turret.getEncoderRawDeg();
             lastAction = "Start -> target := encoder";
         }
         if (edge(currentGamepad1.back, previousGamepad1.back)) {
@@ -96,10 +96,11 @@ public class TurretFrameCharacterization extends OpMode {
         }
 
         robot.outtake.turret.setAimLockEnabled(false);
-        robot.outtake.turret.setTurretDegree(targetDeg);
+        robot.outtake.turret.setTargetAngle(targetDeg);
+        robot.outtake.turret.update();
 
         double commandedDeg = robot.outtake.turret.getCurrentDegrees();
-        double encoderDeg = robot.outtake.turret.getEncoderDegrees();
+        double encoderDeg = robot.outtake.turret.getEncoderRawDeg();
         double encoderDelta = wrapSignedDeg(encoderDeg - previousEncoderDeg);
         double trackingError = wrapSignedDeg(encoderDeg - commandedDeg);
 

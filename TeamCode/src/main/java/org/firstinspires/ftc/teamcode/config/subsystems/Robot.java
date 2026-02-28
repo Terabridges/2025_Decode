@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Other.Lift;
 import org.firstinspires.ftc.teamcode.config.subsystems.Other.Other;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.TurretAimController;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
 import java.util.ArrayList;
@@ -458,21 +459,51 @@ public class Robot {
 
     /**
      * Points turret forward, then relocalizes follower from visible goal AprilTag (20 or 24).
-     * Call repeatedly in a loop while aiming; returns success once a valid goal-tag botpose is available.
+     * Includes quality gating: rejects relocalization if the pose delta is unreasonably large,
+     * the robot is moving too fast, or the cooldown has not elapsed.
      */
     public GoalTagRelocalizeResult relocalizeFromGoalTag() {
-        return relocalizeFromGoalTag(Turret.turretForwardDeg);
+        return relocalizeFromGoalTag(TurretAimController.turretForwardDeg);
     }
+
+    //---------------- Relocalization Quality Gating ----------------
+    /** Max acceptable position delta (inches) — rejects wild jumps. */
+    public static double maxRelocalizeDeltaIn = 36.0;
+    /** Max acceptable heading delta (degrees). */
+    public static double maxRelocalizeDeltaHeadingDeg = 30.0;
+    /** Minimum time between relocalization attempts (seconds). */
+    public static double relocalizeCooldownSec = 2.0;
+    /** Max robot speed (in/sec) above which relocalization is rejected. */
+    public static double maxRelocalizeSpeedInPerSec = 12.0;
+    private final ElapsedTime relocalizeCooldownTimer = new ElapsedTime();
 
     /**
      * Same as {@link #relocalizeFromGoalTag()} but with caller-specified forward turret heading.
      */
     public GoalTagRelocalizeResult relocalizeFromGoalTag(double forwardTurretDeg) {
-        outtake.turret.setTurretDegree(forwardTurretDeg);
+        outtake.turret.setTargetAngle(forwardTurretDeg);
 
         Pose before = snapshotPose(follower != null ? follower.getPose() : null);
         if (follower == null) {
             return new GoalTagRelocalizeResult(false, -1, "Follower not initialized", before, null);
+        }
+
+        // Cooldown gate
+        if (relocalizeCooldownTimer.seconds() < relocalizeCooldownSec) {
+            return new GoalTagRelocalizeResult(false, -1,
+                    "Cooldown: " + String.format("%.1fs remaining",
+                            relocalizeCooldownSec - relocalizeCooldownTimer.seconds()),
+                    before, null);
+        }
+
+        // Speed gate: reject if robot moving too fast for good vision
+        Pose currentPose = follower.getPose();
+        double speedInPerSec = Math.hypot(
+                follower.getVelocity().getMagnitude(), 0.0);
+        if (speedInPerSec > maxRelocalizeSpeedInPerSec) {
+            return new GoalTagRelocalizeResult(false, -1,
+                    "Robot too fast: " + String.format("%.1f in/s", speedInPerSec),
+                    before, null);
         }
 
         int tagId = outtake.vision.getVisibleGoalTagId();
@@ -488,8 +519,29 @@ public class Robot {
         double xIn = llPose.getPosition().x * METERS_TO_INCHES;
         double yIn = llPose.getPosition().y * METERS_TO_INCHES;
         double headingRad = Math.toRadians(llPose.getOrientation().getYaw(AngleUnit.DEGREES));
+
+        // Delta sanity check
+        double deltaX = xIn - currentPose.getX();
+        double deltaY = yIn - currentPose.getY();
+        double deltaPos = Math.hypot(deltaX, deltaY);
+        double deltaHeadingDeg = Math.abs(Math.toDegrees(headingRad - currentPose.getHeading()));
+        deltaHeadingDeg = ((deltaHeadingDeg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+        deltaHeadingDeg = Math.abs(deltaHeadingDeg);
+
+        if (deltaPos > maxRelocalizeDeltaIn) {
+            return new GoalTagRelocalizeResult(false, tagId,
+                    "Position delta too large: " + String.format("%.1f in (max %.1f)", deltaPos, maxRelocalizeDeltaIn),
+                    before, null);
+        }
+        if (deltaHeadingDeg > maxRelocalizeDeltaHeadingDeg) {
+            return new GoalTagRelocalizeResult(false, tagId,
+                    "Heading delta too large: " + String.format("%.1f° (max %.1f°)", deltaHeadingDeg, maxRelocalizeDeltaHeadingDeg),
+                    before, null);
+        }
+
         Pose relocalized = new Pose(xIn, yIn, headingRad);
         follower.setPose(relocalized);
+        relocalizeCooldownTimer.reset();
         return new GoalTagRelocalizeResult(true, tagId, "Relocalized from goal tag", before, snapshotPose(relocalized));
     }
 

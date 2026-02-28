@@ -16,7 +16,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.TurretAimController;
 
 @Configurable
 @TeleOp(name = "LimelightPoseCenteringTest", group = "Test")
@@ -64,7 +64,6 @@ public class LimelightPoseCenteringTest extends OpMode {
         robot.other.drive.toInit();
 
         robot.outtake.turret.setAimLockEnabled(false);
-        Turret.turretVelocity = 0.0;
 
         FollowerManager.initFollower(hardwareMap, new Pose(72, 72, 0));
 
@@ -112,7 +111,7 @@ public class LimelightPoseCenteringTest extends OpMode {
         double scanMid = (turretScanMinDeg + turretScanMaxDeg) * 0.5;
         double scanAmp = (turretScanMaxDeg - turretScanMinDeg) * 0.5;
         double targetTurretDeg = scanMid + scanAmp * Math.sin(phase);
-        robot.outtake.turret.setTurretDegree(targetTurretDeg);
+        robot.outtake.turret.setTargetAngle(targetTurretDeg);
 
         if (robot.outtake.vision.seesTag(blueTagId)) {
             activeTagId = blueTagId;
@@ -147,8 +146,8 @@ public class LimelightPoseCenteringTest extends OpMode {
 
     private void doCenterTurret() {
         stopChassis();
-        robot.outtake.turret.setTurretDegree(Turret.turretForwardDeg);
-        double err = wrapSignedDeg(Turret.turretForwardDeg - robot.outtake.turret.getCurrentDegrees());
+        robot.outtake.turret.setTargetAngle(TurretAimController.turretForwardDeg);
+        double err = wrapSignedDeg(TurretAimController.turretForwardDeg - robot.outtake.turret.getCurrentDegrees());
         if (Math.abs(err) <= turretForwardToleranceDeg) {
             enterState(State.SEED_POSE_FROM_LIMELIGHT);
         }

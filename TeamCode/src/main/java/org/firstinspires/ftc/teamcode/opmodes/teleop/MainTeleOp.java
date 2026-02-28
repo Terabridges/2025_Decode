@@ -26,6 +26,7 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.TurretAimController;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
@@ -350,13 +351,13 @@ public class MainTeleOp extends OpMode {
 
     private void applyAllianceVisionLockConfig() {
         // Keep alliance lock config in one place to avoid drift between start/loop behavior.
-        Turret.cameraLateralOffsetIn = 0.0;
+        TurretAimController.cameraLateralOffsetIn = 0.0;
         if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
-            Turret.visionDirection = BLUE_VISION_DIRECTION;
+            TurretAimController.visionDirection = BLUE_VISION_DIRECTION;
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
-            Turret.visionDirection = RED_VISION_DIRECTION;
+            TurretAimController.visionDirection = RED_VISION_DIRECTION;
         }
     }
 }

@@ -104,8 +104,8 @@ public class TurretPositionCalibrator extends OpMode {
         }
 
         robot.outtake.turret.setAimLockEnabled(false);
-        // Calibration mode: command raw servo position so soft turret limits do not clip travel.
-        robot.outtake.turret.setTurretPos(targetDeg / 360.0);
+        // Calibration mode: command target angle via the CRServo controller.
+        robot.outtake.turret.setTargetAngle(targetDeg);
 
         double currentDeg = robot.outtake.turret.getCurrentDegrees();
         double encoderDeg = robot.outtake.turret.getEncoderDegrees();

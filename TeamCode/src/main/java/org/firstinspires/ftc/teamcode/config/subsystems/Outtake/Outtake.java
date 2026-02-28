@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.config.subsystems.Outtake;
 
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
@@ -45,7 +44,7 @@ public class Outtake implements Subsystem {
         shooter.update();
         turret.update();
         vision.update();
-        turret.updateAimLock(vision);
+        turret.updateAimLock(vision, shooter.getCurrentRPM());
     }
 
 }
