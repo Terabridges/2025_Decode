@@ -98,6 +98,8 @@ public class TurretHardware {
      */
     public void setPower(double power) {
         double clampedPower = Math.max(-1.0, Math.min(1.0, power));
+        double requestedPower = clampedPower; // save pre-limit value for logging
+        String limitAction = "none";
 
         if (softLimitsEnabled) {
             double pos = currentPositionDeg;
@@ -109,11 +111,13 @@ public class TurretHardware {
             if (inMinZone && vel < -emergencyBrakeVelThreshold) {
                 lastPower = 0.0;
                 writeServos(0.0);
+                logSoftLimits(requestedPower, 0.0, "eBrake_min", inMinZone, inMaxZone);
                 return;
             }
             if (inMaxZone && vel > emergencyBrakeVelThreshold) {
                 lastPower = 0.0;
                 writeServos(0.0);
+                logSoftLimits(requestedPower, 0.0, "eBrake_max", inMinZone, inMaxZone);
                 return;
             }
 
@@ -121,8 +125,10 @@ public class TurretHardware {
             // (positive power = toward max, negative = toward min — by convention)
             if (pos <= softLimitMinDeg && clampedPower < 0) {
                 clampedPower = 0.0;
+                limitAction = "block_min";
             } else if (pos >= softLimitMaxDeg && clampedPower > 0) {
                 clampedPower = 0.0;
+                limitAction = "block_max";
             }
 
             // Attenuate power in the margin zone (only toward the nearby limit)
@@ -130,15 +136,29 @@ public class TurretHardware {
                 double distFromLimit = pos - softLimitMinDeg;
                 double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
                 clampedPower *= scale;
+                limitAction = "atten_min(" + String.format("%.2f", scale) + ")";
             } else if (clampedPower > 0 && inMaxZone) {
                 double distFromLimit = softLimitMaxDeg - pos;
                 double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
                 clampedPower *= scale;
+                limitAction = "atten_max(" + String.format("%.2f", scale) + ")";
             }
+
+            logSoftLimits(requestedPower, clampedPower, limitAction, inMinZone, inMaxZone);
         }
 
         lastPower = clampedPower;
         writeServos(clampedPower);
+    }
+
+    /** Log soft limit diagnostics for AdvantageScope. */
+    private void logSoftLimits(double requested, double actual, String action,
+                               boolean inMinZone, boolean inMaxZone) {
+        Logger.recordOutput(LOG_PREFIX + "SoftLimit/RequestedPower", requested);
+        Logger.recordOutput(LOG_PREFIX + "SoftLimit/ActualPower", actual);
+        Logger.recordOutput(LOG_PREFIX + "SoftLimit/Action", action);
+        Logger.recordOutput(LOG_PREFIX + "SoftLimit/InMinZone", inMinZone);
+        Logger.recordOutput(LOG_PREFIX + "SoftLimit/InMaxZone", inMaxZone);
     }
 
     /**
