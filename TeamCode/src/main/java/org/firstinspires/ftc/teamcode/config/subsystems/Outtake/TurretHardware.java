@@ -52,6 +52,13 @@ public class TurretHardware {
     public static double physicalMaxDeg = 295.0;
     /** Emergency brake velocity threshold (deg/s). If speed toward a limit exceeds this, force stop. */
     public static double emergencyBrakeVelThreshold = 40.0;
+    /**
+     * Set true if positive CRServo power DECREASES turret angle.
+     * When true, the hardware layer negates power at the servo write so that
+     * all callers (OpModes, controllers) use the natural convention:
+     * positive power = increasing turret angle.
+     */
+    public static boolean servoPowerInverted = true;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -78,6 +85,11 @@ public class TurretHardware {
 
     /**
      * Send identical power to both turret CRServos.
+     * <p>
+     * Power is in the <b>turret-angle convention</b>: positive = increasing angle,
+     * negative = decreasing angle. If {@link #servoPowerInverted} is set, the sign
+     * is flipped before the hardware write so callers never need to think about it.
+     * <p>
      * If soft limits are enabled, power toward a limit is attenuated or blocked.
      * @param power value in [-1.0, 1.0]; 0 = stop
      */
@@ -87,30 +99,30 @@ public class TurretHardware {
         if (softLimitsEnabled) {
             double pos = currentPositionDeg;
             double vel = currentVelocityDegPerSec;
-
-            // Emergency brake: if moving fast toward a limit, force stop regardless
             boolean inMinZone = pos < (softLimitMinDeg + softLimitMarginDeg);
             boolean inMaxZone = pos > (softLimitMaxDeg - softLimitMarginDeg);
+
+            // Emergency brake: if moving fast toward a limit, force stop regardless
             if (inMinZone && vel < -emergencyBrakeVelThreshold) {
                 lastPower = 0.0;
-                servoL.setPower(0.0);
-                servoR.setPower(0.0);
+                writeServos(0.0);
                 return;
             }
             if (inMaxZone && vel > emergencyBrakeVelThreshold) {
                 lastPower = 0.0;
-                servoL.setPower(0.0);
-                servoR.setPower(0.0);
+                writeServos(0.0);
                 return;
             }
 
             // Block power that would push further past a limit
+            // (positive power = toward max, negative = toward min — by convention)
             if (pos <= softLimitMinDeg && clampedPower < 0) {
                 clampedPower = 0.0;
             } else if (pos >= softLimitMaxDeg && clampedPower > 0) {
                 clampedPower = 0.0;
             }
-            // Attenuate power in the margin zone
+
+            // Attenuate power in the margin zone (only toward the nearby limit)
             if (clampedPower < 0 && inMinZone) {
                 double distFromLimit = pos - softLimitMinDeg;
                 double scale = Math.max(0.0, distFromLimit / softLimitMarginDeg);
@@ -123,18 +135,27 @@ public class TurretHardware {
         }
 
         lastPower = clampedPower;
-        servoL.setPower(lastPower);
-        servoR.setPower(lastPower);
+        writeServos(clampedPower);
     }
 
     /**
      * Send power bypassing soft limits (for calibration OpModes that know what they're doing).
+     * Power uses the same turret-angle convention: positive = increasing angle.
      * @param power value in [-1.0, 1.0]; 0 = stop
      */
     public void setPowerRaw(double power) {
         lastPower = Math.max(-1.0, Math.min(1.0, power));
-        servoL.setPower(lastPower);
-        servoR.setPower(lastPower);
+        writeServos(lastPower);
+    }
+
+    /**
+     * Write power to both servos, applying direction inversion if needed.
+     * This is the ONLY place that accounts for physical servo wiring polarity.
+     */
+    private void writeServos(double power) {
+        double servoPower = servoPowerInverted ? -power : power;
+        servoL.setPower(servoPower);
+        servoR.setPower(servoPower);
     }
 
     /** Returns true if turret position is at or past the soft limit in the given direction. */
