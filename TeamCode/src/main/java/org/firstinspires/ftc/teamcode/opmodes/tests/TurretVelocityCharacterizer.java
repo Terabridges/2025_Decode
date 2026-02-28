@@ -230,7 +230,7 @@ public class TurretVelocityCharacterizer extends OpMode {
         double targetDeg = directionCW
                 ? (TurretHardware.softLimitMinDeg + repositionMarginDeg)   // move toward low end
                 : (TurretHardware.softLimitMaxDeg - repositionMarginDeg); // move toward high end
-        double error = targetDeg - posDeg;
+        double error = TurretHardware.wrapSigned(targetDeg - posDeg);
 
         if (Math.abs(error) < 3.0) {
             // Close enough — stop and settle briefly before running

@@ -46,6 +46,10 @@ public class TurretHardware {
     public static double softLimitMarginDeg = 15.0;
     /** Enable soft limit enforcement in setPower(). */
     public static boolean softLimitsEnabled = true;
+    /** Physical minimum turret angle (deg). Readings below this are encoder-wrap artifacts. */
+    public static double physicalMinDeg = 15.0;
+    /** Physical maximum turret angle (deg). Readings above this are encoder-wrap artifacts. */
+    public static double physicalMaxDeg = 295.0;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -135,9 +139,20 @@ public class TurretHardware {
     public void update() {
         double rawEncDeg = encoder.getCurrentPosition();
         currentPositionDeg = mapEncoderToTurretDeg(rawEncDeg);
+
+        // Clamp to physical range to prevent encoder 0/360° wrap artifacts.
+        // The turret physically cannot reach positions outside [physicalMinDeg, physicalMaxDeg].
+        // If the mapped angle lands outside that range, the encoder has wrapped
+        // through its discontinuity — snap to the nearest physical limit.
+        if (currentPositionDeg < physicalMinDeg || currentPositionDeg > physicalMaxDeg) {
+            double distToMin = Math.abs(wrapSigned(currentPositionDeg - physicalMinDeg));
+            double distToMax = Math.abs(wrapSigned(currentPositionDeg - physicalMaxDeg));
+            currentPositionDeg = (distToMin <= distToMax) ? physicalMinDeg : physicalMaxDeg;
+        }
+
         double nowSec = timer.seconds();
 
-        // Store in ring buffer
+        // Store in ring buffer (clamped position — prevents velocity spikes from wrap)
         positionBuffer[bufferIndex] = currentPositionDeg;
         timestampBuffer[bufferIndex] = nowSec;
         bufferIndex = (bufferIndex + 1) % VELOCITY_BUFFER_SIZE;
