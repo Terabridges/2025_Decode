@@ -57,8 +57,11 @@ public class TurretHardware {
      * When true, the hardware layer negates power at the servo write so that
      * all callers (OpModes, controllers) use the natural convention:
      * positive power = increasing turret angle.
+     *
+     * On this robot: positive CRServo power = increasing turret angle,
+     * so no inversion is needed (false).
      */
-    public static boolean servoPowerInverted = true;
+    public static boolean servoPowerInverted = false;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
