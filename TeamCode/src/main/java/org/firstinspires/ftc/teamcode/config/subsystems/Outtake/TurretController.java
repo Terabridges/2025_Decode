@@ -48,20 +48,68 @@ public class TurretController {
 
     //---------------- PID Gains ----------------
     // CRServo = power→velocity (not torque), so gains must be VERY small.
-    // At kV=0.00068, 1° error should produce only ~0.002 power (→ ~3°/s approach).
-    public static double kP = 0.002;
+    // At kV=0.00068, 1° error should produce only ~0.003 power (→ ~4°/s approach).
+    public static double kP = 0.003;
     public static double kI = 0.0;
-    public static double kD = 0.0005;
+    public static double kD = 0.001;
     /** Integral only accumulates when |error| < iZone (degrees). 0 = always. */
     public static double iZone = 10.0;
     /** Maximum integral accumulation (prevents windup). */
     public static double maxIntegral = 0.3;
     /** Low-pass filter coefficient for derivative (0–1; 1 = no filter). */
-    public static double dAlpha = 0.4;
+    public static double dAlpha = 0.35;
 
     //---------------- Motion Profile Constraints ----------------
-    public static double maxProfileVelocity = 150.0;     // deg/sec
-    public static double maxProfileAcceleration = 300.0;  // deg/sec²
+    public static double maxProfileVelocity = 400.0;     // deg/sec
+    public static double maxProfileAcceleration = 600.0;  // deg/sec² (accel phase, long moves)
+    public static double maxProfileDeceleration = 450.0;  // deg/sec² (decel phase)
+
+    /**
+     * Short-move acceleration scaling.  For moves shorter than
+     * {@code shortMoveFullAccelDeg}, acceleration is linearly blended
+     * between {@code shortMoveMinAccel} and {@code maxProfileAcceleration}.
+     * This prevents the CRServo from overshooting the velocity profile on
+     * short distances where the accel phase is only a few frames long.
+     *
+     * <p>The fade is linear in distance:
+     * <ul>
+     *   <li>&le; {@code shortMoveMinAccelDeg}: use {@code shortMoveMinAccel}</li>
+     *   <li>&ge; {@code shortMoveFullAccelDeg}: use {@code maxProfileAcceleration}</li>
+     *   <li>in between: linear interpolation</li>
+     * </ul></p>
+     */
+    public static double shortMoveMinAccel = 350.0;      // deg/sec² for very short moves
+    public static double shortMoveMinAccelDeg = 15.0;     // distance at or below which minAccel is used
+    public static double shortMoveFullAccelDeg = 60.0;    // distance at or above which full accel is used
+
+    /**
+     * Velocity-ratio threshold at which kS feedforward is fully suppressed.
+     * kS fades linearly from full at ratio 0 to zero at this ratio,
+     * where ratio = |desiredVelocity| / profilePeakVelocity.
+     *
+     * <p>Uses the profile's DESIRED velocity and PEAK velocity (not actual
+     * velocity or maxProfileVelocity). Desired velocity is perfectly smooth
+     * (no encoder noise, no filtering needed). Peak velocity normalises
+     * short triangular moves so they get the same kS fade at "cruise" as
+     * long trapezoidal moves.</p>
+     *
+     * <p>At 1.15: full kS at standstill, 15% kS at cruise (ratio=1.0),
+     * zero kS at 1.15× peak velocity. The 15% residual at cruise
+     * provides some kinetic friction compensation without impeding
+     * CW braking (kS_CW=0.084 > kS_CCW=0.072 causes directional
+     * asymmetry that worsens with higher kS at cruise).</p>
+     */
+    public static double kSVelRatioZero = 1.15;
+
+    /**
+     * Maximum absolute velocity (deg/s) at which post-profile / HOLD mode
+     * stiction compensation is applied.  Above this, kS fades to zero.
+     * This prevents kS from causing a limit-cycle when the turret is
+     * already moving toward the target (no stiction to overcome).
+     * Wider values (e.g. 50) spread the transition over more velocity range,
+     * reducing the amplitude of the limit-cycle oscillation.
+     */
+    public static double kSStallVelDps = 50.0;
 
     //---------------- Output Limits ----------------
     /**
@@ -69,7 +117,18 @@ public class TurretController {
      * Prevents full-power commands that cause violent overshoot on CRServos.
      * Should be set just above what the turret needs for the desired profile velocity.
      */
-    public static double maxOutputPower = 0.30;
+    public static double maxOutputPower = 0.50;
+
+    /**
+     * Low-pass filter coefficient for the PID output component (0–1).
+     * Only PID is filtered — feedforward passes through unfiltered for
+     * instant response to velocity-ratio kS fade changes.
+     * Lower values = heavier smoothing. At 0.3 and 50 Hz loop rate the
+     * PID reaches 95% of a step in ~150 ms.  Strong smoothing is safe
+     * here since FF handles the bulk of the drive signal.
+     * Set to 1.0 to disable filtering.
+     */
+    public static double outputFilterAlpha = 0.3;
 
     //---------------- On-Target Thresholds ----------------
     /** Position must be within this tolerance (degrees) to be considered on-target. */
@@ -92,14 +151,16 @@ public class TurretController {
 
     // Last outputs (for logging)
     private double lastOutput = 0.0;
+    private double lastRawOutput = 0.0;
     private double lastError = 0.0;
     private double lastFeedforward = 0.0;
     private double lastPidOutput = 0.0;
     private MotionState lastProfileState = null;
+    private double pidFiltered = 0.0;
 
     //---------------- Constructor ----------------
     public TurretController() {
-        profile = new TrapezoidalMotionProfile(maxProfileVelocity, maxProfileAcceleration);
+        profile = new TrapezoidalMotionProfile(maxProfileVelocity, maxProfileAcceleration, maxProfileDeceleration);
         loopTimer.reset();
     }
 
@@ -114,7 +175,22 @@ public class TurretController {
      */
     public void setTargetAngle(double currentDeg, double target) {
         targetDeg = target;
-        profile.setConstraints(maxProfileVelocity, maxProfileAcceleration);
+
+        // Scale acceleration for short moves to prevent velocity overshoot.
+        double distance = Math.abs(target - currentDeg);
+        double effectiveAccel;
+        if (distance <= shortMoveMinAccelDeg) {
+            effectiveAccel = shortMoveMinAccel;
+        } else if (distance >= shortMoveFullAccelDeg) {
+            effectiveAccel = maxProfileAcceleration;
+        } else {
+            // Linear interpolation between minAccel and maxAccel
+            double t = (distance - shortMoveMinAccelDeg)
+                     / (shortMoveFullAccelDeg - shortMoveMinAccelDeg);
+            effectiveAccel = shortMoveMinAccel + t * (maxProfileAcceleration - shortMoveMinAccel);
+        }
+
+        profile.setConstraints(maxProfileVelocity, effectiveAccel, maxProfileDeceleration);
         profile.generate(currentDeg, target);
         profileTimer.reset();
         mode = ControlMode.PROFILE;
@@ -168,11 +244,27 @@ public class TurretController {
             output = updateProfile(currentDeg, currentVelDegPerSec, dtSec);
         } else {
             // HOLD mode — PID only, no feedforward velocity/accel
-            output = updateHold(currentDeg, dtSec);
+            output = updateHold(currentDeg, currentVelDegPerSec, dtSec);
         }
 
         // Clamp to maxOutputPower — CRServos have too much momentum at full power
         output = Math.max(-maxOutputPower, Math.min(maxOutputPower, output));
+        lastRawOutput = output;
+
+        // Low-pass filter ONLY the PID component to smooth jitter while preserving
+        // instant FF responsiveness. Filtering the full output (FF+PID) caused
+        // oscillation: the kS velocity-ratio fade adjusted FF based on current
+        // velocity, but the filter delayed those adjustments, turning the
+        // stabilizing fade into positive feedback (iter 12 regression).
+        if (mode != ControlMode.DIRECT) {
+            double alpha = Math.max(0.0, Math.min(1.0, outputFilterAlpha));
+            pidFiltered = alpha * lastPidOutput + (1.0 - alpha) * pidFiltered;
+            output = lastFeedforward + pidFiltered;
+            // Re-clamp after reconstruction
+            output = Math.max(-maxOutputPower, Math.min(maxOutputPower, output));
+        } else {
+            pidFiltered = 0.0; // reset filter for mode transitions
+        }
         lastOutput = output;
 
         // Logging
@@ -180,6 +272,7 @@ public class TurretController {
         Logger.recordOutput(LOG_PREFIX + "TargetDeg", targetDeg);
         Logger.recordOutput(LOG_PREFIX + "ErrorDeg", lastError);
         Logger.recordOutput(LOG_PREFIX + "Output", lastOutput);
+        Logger.recordOutput(LOG_PREFIX + "RawOutput", lastRawOutput);
         Logger.recordOutput(LOG_PREFIX + "Feedforward", lastFeedforward);
         Logger.recordOutput(LOG_PREFIX + "PID", lastPidOutput);
         Logger.recordOutput(LOG_PREFIX + "Integral", integral);
@@ -204,7 +297,7 @@ public class TurretController {
                 && Math.abs(currentVelDegPerSec) <= onTargetVelocityDeg;
     }
 
-    /** Reset PID state (integral, derivative filter). */
+    /** Reset PID state (integral, derivative filter, output filter). */
     public void reset() {
         integral = 0.0;
         prevError = 0.0;
@@ -213,6 +306,7 @@ public class TurretController {
         lastProfileState = null;
         lastFeedforward = 0.0;
         lastPidOutput = 0.0;
+        pidFiltered = 0.0;
     }
 
     /** Current control mode. */
@@ -246,7 +340,7 @@ public class TurretController {
         if (profile.isFinished(elapsed) && isOnTarget(currentDeg, currentVelDegPerSec)) {
             mode = ControlMode.HOLD;
             lastProfileState = null;
-            return updateHold(currentDeg, dtSec);
+            return updateHold(currentDeg, currentVelDegPerSec, dtSec);
         }
 
         // Feedforward from profile (direction-specific stiction)
@@ -254,14 +348,47 @@ public class TurretController {
         double error = wrapSigned(desired.position - currentDeg);
 
         if (Math.abs(desired.velocity) > 0.01) {
-            // Profile is actively moving—use desired velocity direction for stiction
+            // Stiction (kS) compensation, faded by the profile's desired
+            // velocity ratio:  |desiredVelocity| / profilePeakVelocity.
+            //
+            // Using the DESIRED velocity (not actual) eliminates two
+            // problems that plagued actual-velocity-based fading:
+            //   1. Encoder noise → FF jitter (iter 13/15 regression)
+            //   2. Filtering the noise → phase lag → positive-feedback
+            //      oscillation (iter 12/14 regression)
+            //
+            // The profile's desired velocity is a perfectly smooth
+            // trapezoidal signal — no noise, no filtering needed.
+            //
+            // Using profilePeakVelocity (not maxProfileVelocity) ensures
+            // short triangular moves get the same kS fade behavior as
+            // long trapezoidal moves.  Without this, a 20° move at
+            // maxProfileVel=250 has ratio=peakVel(83)/250=0.33 at its
+            // "cruise" → kSScale=0.97 (near-full kS) → massive overshoot.
+            // With peakVel, ratio=83/83=1.0 → kSScale=0.3 (same as long
+            // moves at their cruise).
+            //
+            // At kSVelRatioZero=1.3:
+            //   - desVel=0 (start): ratio=0, kSScale=1.0 (full kS)
+            //   - desVel=peak/2 (mid-accel): ratio=0.5, kSScale=0.8
+            //   - desVel=peak (cruise): ratio=1.0, kSScale=0.3
             double kS = (desired.velocity > 0) ? kS_CW : kS_CCW;
-            ff += kS * Math.signum(desired.velocity);
+            double profilePeakVel = Math.max(1.0, profile.getPeakVelocity());
+            double velRatio = Math.abs(desired.velocity) / profilePeakVel;
+            double kSScale = Math.max(0.0, Math.min(1.0, kSVelRatioZero - velRatio));
+
+            ff += kSScale * kS * Math.signum(desired.velocity);
         } else if (Math.abs(error) > onTargetPositionDeg * 0.5) {
-            // Profile finished but not on target—use error direction for stiction
-            // (Without this, PID alone produces ~0.06 which is below stiction ~0.08)
-            double kS = (error > 0) ? kS_CW : kS_CCW;
-            ff += kS * Math.signum(error);
+            // Profile finished but not on target — apply kS only when
+            // the turret is nearly stalled (below kSStallVelDps).
+            // If the turret is already moving toward target, kS adds
+            // momentum that causes a limit-cycle oscillation around target.
+            double absVel = Math.abs(currentVelDegPerSec);
+            double stallScale = Math.max(0.0, 1.0 - absVel / kSStallVelDps);
+            if (stallScale > 0) {
+                double kS = (error > 0) ? kS_CW : kS_CCW;
+                ff += stallScale * kS * Math.signum(error);
+            }
         }
         ff += kV * desired.velocity;
         ff += kA * desired.acceleration;
@@ -274,7 +401,7 @@ public class TurretController {
         return ff + pid;
     }
 
-    private double updateHold(double currentDeg, double dtSec) {
+    private double updateHold(double currentDeg, double currentVelDegPerSec, double dtSec) {
         lastProfileState = null;
         lastFeedforward = 0.0;
 
@@ -282,11 +409,16 @@ public class TurretController {
         double pid = computePID(error, dtSec);
         lastPidOutput = pid;
 
-        // Add stiction compensation only when error is meaningful (direction-specific)
+        // Add stiction compensation only when error is meaningful AND
+        // turret is nearly stalled (below kSStallVelDps).
         double ff = 0.0;
         if (Math.abs(error) > onTargetPositionDeg * 0.5) {
-            double kS = (error > 0) ? kS_CW : kS_CCW;
-            ff = kS * Math.signum(error);
+            double absVel = Math.abs(currentVelDegPerSec);
+            double stallScale = Math.max(0.0, 1.0 - absVel / kSStallVelDps);
+            if (stallScale > 0) {
+                double kS = (error > 0) ? kS_CW : kS_CCW;
+                ff = stallScale * kS * Math.signum(error);
+            }
         }
         lastFeedforward = ff;
 

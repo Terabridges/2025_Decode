@@ -4,14 +4,17 @@ package org.firstinspires.ftc.teamcode.config.utility;
  * Generates a trapezoidal velocity motion profile for point-to-point turret moves.
  *
  * Three phases: acceleration → cruise → deceleration.
+ * Supports asymmetric accel/decel rates — accelerate aggressively, decelerate
+ * at a rate the mechanism can physically track.
  * Handles "triangular" profiles where the distance is too short to reach max velocity.
  * All units are in degrees and seconds.
  */
 public class TrapezoidalMotionProfile {
 
     //---------------- Constraints ----------------
-    private double maxVelocity;     // deg/sec
-    private double maxAcceleration; // deg/sec²
+    private double maxVelocity;      // deg/sec
+    private double maxAcceleration;  // deg/sec²  (accel phase)
+    private double maxDeceleration;  // deg/sec²  (decel phase)
 
     //---------------- Profile State ----------------
     private double startPos;
@@ -34,14 +37,26 @@ public class TrapezoidalMotionProfile {
     //---------------- Constructor ----------------
 
     /**
-     * Create a profile generator with given motion constraints.
+     * Create a profile generator with symmetric accel/decel.
      *
      * @param maxVelocity     maximum angular velocity in deg/sec (positive)
-     * @param maxAcceleration maximum angular acceleration in deg/sec² (positive)
+     * @param maxAcceleration maximum angular acceleration in deg/sec² (positive, used for both phases)
      */
     public TrapezoidalMotionProfile(double maxVelocity, double maxAcceleration) {
+        this(maxVelocity, maxAcceleration, maxAcceleration);
+    }
+
+    /**
+     * Create a profile generator with asymmetric accel/decel.
+     *
+     * @param maxVelocity      maximum angular velocity in deg/sec (positive)
+     * @param maxAcceleration  acceleration rate in deg/sec² (positive)
+     * @param maxDeceleration  deceleration rate in deg/sec² (positive)
+     */
+    public TrapezoidalMotionProfile(double maxVelocity, double maxAcceleration, double maxDeceleration) {
         this.maxVelocity = Math.abs(maxVelocity);
         this.maxAcceleration = Math.abs(maxAcceleration);
+        this.maxDeceleration = Math.abs(maxDeceleration);
     }
 
     //---------------- Profile Generation ----------------
@@ -82,24 +97,28 @@ public class TrapezoidalMotionProfile {
             return;
         }
 
-        // Check if we can reach maxVelocity
-        // Distance to accelerate from 0 to maxVelocity = v²/(2a)
+        // Check if we can reach maxVelocity (asymmetric accel/decel)
+        // Distance to accelerate from 0 to maxVelocity = v²/(2·a_accel)
+        // Distance to decelerate from maxVelocity to 0 = v²/(2·a_decel)
         double accelDist = (maxVelocity * maxVelocity) / (2.0 * maxAcceleration);
-        double decelDist = accelDist; // symmetric
+        double decelDist = (maxVelocity * maxVelocity) / (2.0 * maxDeceleration);
 
         if (accelDist + decelDist <= absDistance) {
             // Full trapezoidal profile: accel + cruise + decel
             peakVelocity = maxVelocity;
             accelTime = maxVelocity / maxAcceleration;
-            decelTime = accelTime;
+            decelTime = maxVelocity / maxDeceleration;
             double cruiseDist = absDistance - accelDist - decelDist;
             cruiseTime = cruiseDist / maxVelocity;
         } else {
             // Triangular profile: can't reach maxVelocity
-            // Peak velocity = sqrt(absDistance * maxAcceleration)
-            peakVelocity = Math.sqrt(absDistance * maxAcceleration);
+            // With asymmetric rates: d = v²/(2·a_a) + v²/(2·a_d)
+            //   d = v² · (a_d + a_a) / (2·a_a·a_d)
+            //   v = sqrt(2·d·a_a·a_d / (a_a + a_d))
+            peakVelocity = Math.sqrt(2.0 * absDistance * maxAcceleration * maxDeceleration
+                                     / (maxAcceleration + maxDeceleration));
             accelTime = peakVelocity / maxAcceleration;
-            decelTime = accelTime;
+            decelTime = peakVelocity / maxDeceleration;
             cruiseTime = 0;
         }
 
@@ -137,13 +156,13 @@ public class TrapezoidalMotionProfile {
             double accelPos = 0.5 * maxAcceleration * accelTime * accelTime;
             pos = startPos + (accelPos + peakVelocity * tc) * direction;
         } else {
-            // Deceleration phase
+            // Deceleration phase (uses maxDeceleration)
             double td = t - accelTime - cruiseTime;
-            accel = -maxAcceleration * direction;
-            vel = (peakVelocity - maxAcceleration * td) * direction;
+            accel = -maxDeceleration * direction;
+            vel = (peakVelocity - maxDeceleration * td) * direction;
             double accelPos = 0.5 * maxAcceleration * accelTime * accelTime;
             double cruisePos = peakVelocity * cruiseTime;
-            double decelPos = peakVelocity * td - 0.5 * maxAcceleration * td * td;
+            double decelPos = peakVelocity * td - 0.5 * maxDeceleration * td * td;
             pos = startPos + (accelPos + cruisePos + decelPos) * direction;
         }
 
@@ -170,10 +189,16 @@ public class TrapezoidalMotionProfile {
         return isGenerated;
     }
 
-    /** Update motion constraints for live tuning. */
+    /** Update motion constraints for live tuning (symmetric accel/decel). */
     public void setConstraints(double maxVelocity, double maxAcceleration) {
+        setConstraints(maxVelocity, maxAcceleration, maxAcceleration);
+    }
+
+    /** Update motion constraints for live tuning (asymmetric accel/decel). */
+    public void setConstraints(double maxVelocity, double maxAcceleration, double maxDeceleration) {
         this.maxVelocity = Math.abs(maxVelocity);
         this.maxAcceleration = Math.abs(maxAcceleration);
+        this.maxDeceleration = Math.abs(maxDeceleration);
     }
 
     /** Peak velocity the profile reaches (may be less than maxVelocity for short moves). */
