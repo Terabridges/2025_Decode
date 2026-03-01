@@ -47,11 +47,11 @@ public class TurretVelocityCharacterizer extends OpMode {
     private static final int MAX_STEPS = 20;
 
     //---------------- Configurable ----------------
-    /** Starting power level (should be above kS). */
-    public static double startPower = 0.05;
+    /** Starting power level (must be above CRServo stiction, ~0.08). */
+    public static double startPower = 0.08;
     /** Ending power level. Keep low enough that the turret can sustain steady-state
-     *  across the full travel without hitting soft limits (~0.15 → 120°/s × 1.5s = 180°). */
-    public static double endPower = 0.15;
+     *  across the full travel without hitting soft limits (~0.14 → ~80°/s × 1.5s = 120°). */
+    public static double endPower = 0.14;
     /** Number of power steps to test. */
     public static int powerSteps = 6;
     /** Duration at each power level to reach steady state (sec). */
@@ -286,8 +286,10 @@ public class TurretVelocityCharacterizer extends OpMode {
         boolean posOk = posError < settlePosThreshold;
         boolean velOk = Math.abs(velDegSec) < settleVelThreshold;
 
-        // If turret drifted too far during settle, go back to repositioning
-        if (posError > 15.0) {
+        // If turret drifted too far during settle, go back to repositioning.
+        // Use settlePosThreshold as the boundary so there's no dead zone between
+        // "close enough to settle" and "too far, re-reposition".
+        if (!posOk) {
             phase = Phase.REPOSITIONING;
             return;
         }
