@@ -37,9 +37,14 @@ public class TurretController {
     }
 
     //---------------- Feedforward Gains ----------------
-    public static double kS = 0.08;   // minimum power to overcome static friction
-    public static double kV = 0.002;  // power per deg/sec
-    public static double kA = 0.0001; // power per deg/sec²
+    /** Stiction power for CW (positive) direction — measured via TurretStictionCharacterizer. */
+    public static double kS_CW = 0.084;
+    /** Stiction power for CCW (negative) direction — measured via TurretStictionCharacterizer. */
+    public static double kS_CCW = 0.072;
+    /** Velocity feedforward (power per deg/sec) — measured via TurretVelocityCharacterizer. */
+    public static double kV = 0.00068;
+    /** Acceleration feedforward (power per deg/sec²). */
+    public static double kA = 0.0001;
 
     //---------------- PID Gains ----------------
     public static double kP = 0.015;
@@ -233,9 +238,10 @@ public class TurretController {
             return updateHold(currentDeg, dtSec);
         }
 
-        // Feedforward from profile
+        // Feedforward from profile (direction-specific stiction)
         double ff = 0.0;
         if (Math.abs(desired.velocity) > 0.01) {
+            double kS = (desired.velocity > 0) ? kS_CW : kS_CCW;
             ff += kS * Math.signum(desired.velocity);
         }
         ff += kV * desired.velocity;
@@ -258,9 +264,10 @@ public class TurretController {
         double pid = computePID(error, dtSec);
         lastPidOutput = pid;
 
-        // Add stiction compensation only when error is meaningful
+        // Add stiction compensation only when error is meaningful (direction-specific)
         double ff = 0.0;
         if (Math.abs(error) > onTargetPositionDeg * 0.5) {
+            double kS = (error > 0) ? kS_CW : kS_CCW;
             ff = kS * Math.signum(error);
         }
         lastFeedforward = ff;

@@ -185,7 +185,8 @@ public class TurretProfileTuner extends OpMode {
         joinedTelemetry.addData("kP", fmt(TurretController.kP));
         joinedTelemetry.addData("kI", fmt(TurretController.kI));
         joinedTelemetry.addData("kD", fmt(TurretController.kD));
-        joinedTelemetry.addData("kS", fmt(TurretController.kS));
+        joinedTelemetry.addData("kS_CW", fmt(TurretController.kS_CW));
+        joinedTelemetry.addData("kS_CCW", fmt(TurretController.kS_CCW));
         joinedTelemetry.addData("kV", fmt(TurretController.kV));
 
         joinedTelemetry.addLine("--- Controls ---");
