@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.config.autoUtil;
 
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
 
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -24,6 +25,14 @@ public class AutoPathLibrary {
         return buildLinear(currentPose, poses.getPickupEnd(alliance, range, absoluteRow), false);
     }
 
+    public PathChain pickupRow4A(Pose currentPose, Alliance alliance) {
+        return buildLinear(currentPose, poses.getPickupMidRow4(alliance), false);
+    }
+
+    public PathChain pickupRow4B(Pose currentPose, Alliance alliance) {
+        return buildLinear(currentPose, poses.getPickupEnd(alliance, Range.LONG_RANGE, 4), false);
+    }
+
     public PathChain farPickupZone(Pose currentPose, Alliance alliance) {
         return buildLinear(currentPose, poses.getFarPickupZone(alliance), false);
     }
@@ -32,12 +41,10 @@ public class AutoPathLibrary {
         return buildLinear(currentPose, scorePose, true);
     }
 
-    public PathChain releaseGoTo(Pose currentPose, Alliance alliance, Range range) {
-        return buildLinear(currentPose, poses.getReleaseGoTo(alliance, range), false);
-    }
-
     public PathChain releaseComplete(Pose currentPose, Alliance alliance, Range range) {
-        return buildLinear(currentPose, poses.getReleaseComplete(alliance, range), false);
+        return buildCurve(currentPose,
+                poses.getReleaseControl(alliance, range),
+                poses.getReleaseComplete(alliance, range));
     }
 
     public PathChain leave(Pose currentPose, Alliance alliance, Range range) {
@@ -72,6 +79,17 @@ public class AutoPathLibrary {
 
         return follower.pathBuilder()
                 .addPath(new BezierLine(start, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    public PathChain buildCurve(Pose start, Pose control, Pose end) {
+        if (follower == null || start == null || control == null || end == null) {
+            return null;
+        }
+
+        return follower.pathBuilder()
+                .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
                 .build();
     }

@@ -4,6 +4,8 @@ public enum AutoStates {
     ACQUIRE_MOTIF,
     WAIT,
     GO_TO_PICKUP,
+    COMPLETE_PICKUP_A,
+    COMPLETE_PICKUP_B,
     COMPLETE_PICKUP,
     GO_TO_RELEASE,
     COMPLETE_RELEASE,

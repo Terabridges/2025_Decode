@@ -38,11 +38,12 @@ public abstract class BaseAuto extends OpMode {
     private Pose startPose;
     private PathChain goToPickupPath;
     private PathChain pickupPath;
+    private PathChain pickupPathA;
+    private PathChain pickupPathB;
     private PathChain goToScorePath;
     private PathChain backRowLoopPickupPath;
     private PathChain backRowLoopCompletePickupPath;
     private PathChain leavePath;
-    private PathChain releaseGoToPath;
     private PathChain releaseCompletePath;
     private double intakeSpeed = 0.25;
 
@@ -61,6 +62,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double STATE_TIMEOUT_SECONDS = 4.0; // fallback: force state advance after this time
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
     private static final double FAR_PICKUP_ZONE_POWER = 0.5;
+    private static final double GO_TO_PICKUP_INTAKE_START_T = 0.5;
     private static final int PICKUP_TARGET_BALL_COUNT = 3;
     private static final int TAG_BLUE = 20;
     private static final int TAG_RED = 24;
@@ -80,11 +82,12 @@ public abstract class BaseAuto extends OpMode {
     private Range lastScoreRangeUsed;
     private enum PathRequest {
         GO_TO_PICKUP,
+        COMPLETE_PICKUP_A,
+        COMPLETE_PICKUP_B,
         COMPLETE_PICKUP,
         GO_TO_FAR_PICKUP_ZONE,
         BACKROW_COMPLETE_PICKUP,
         GO_TO_SCORE,
-        GO_TO_RELEASE,
         COMPLETE_RELEASE,
         LEAVE
     }
@@ -116,6 +119,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean motifResolvedThisAcquire = false;
     private boolean shootSequenceStarted = false;
     private boolean skipCurrentShot = false;
+    private boolean pickupIntakePrimed = false;
 
     protected BaseAuto(Alliance alliance) {
         this.alliance = alliance;
@@ -200,6 +204,7 @@ public abstract class BaseAuto extends OpMode {
         follower.update();
 
         autoMachine.update();
+        maybePrimePickupIntake();
         turretAim.updateAim(activeState, preloadComplete);
         robot.update();
         if (shootAllMachine != null) {
@@ -282,17 +287,24 @@ public abstract class BaseAuto extends OpMode {
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
+                .transition(() -> shouldUseThreeStepRow4Pickup() && followerIdle(), AutoStates.COMPLETE_PICKUP_A)
                 .transition(this::followerIdle, AutoStates.COMPLETE_PICKUP)
+
+                .state(AutoStates.COMPLETE_PICKUP_A)
+                .onEnter(this::onEnterCompletePickupA)
+                .transition(this::followerIdle, AutoStates.COMPLETE_PICKUP_B)
+
+                .state(AutoStates.COMPLETE_PICKUP_B)
+                .onEnter(this::onEnterCompletePickupB)
+                .onExit(this::onExitCompletePickup)
+                .transition(() -> shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.COMPLETE_RELEASE)
+                .transition(() -> !shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
                 .onExit(this::onExitCompletePickup)
-                .transition(() -> shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.GO_TO_RELEASE)
+                .transition(() -> shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.COMPLETE_RELEASE)
                 .transition(() -> !shouldReleaseAfterPickup() && pickupAdvanceReady(), AutoStates.GO_TO_SHOOT)
-
-                .state(AutoStates.GO_TO_RELEASE)
-                .onEnter(this::onEnterGoToRelease)
-                .transition(this::followerIdle, AutoStates.COMPLETE_RELEASE)
 
                 .state(AutoStates.COMPLETE_RELEASE)
                 .onEnter(this::onEnterCompleteRelease)
@@ -423,17 +435,35 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.GO_TO_PICKUP);
 
         resetStateTimer();
+        pickupIntakePrimed = false;
 
         refreshCurrentAbsoluteRow();
         buildPath(PathRequest.GO_TO_PICKUP);
         followPath(goToPickupPath);
     }
 
+    protected void onEnterCompletePickupA() {
+        setActiveState(AutoStates.COMPLETE_PICKUP_A);
+        resetStateTimer();
+        primePickupIntakeNow();
+
+        buildPath(PathRequest.COMPLETE_PICKUP_A);
+        followPath(pickupPathA, intakeSpeed);
+    }
+
+    protected void onEnterCompletePickupB() {
+        setActiveState(AutoStates.COMPLETE_PICKUP_B);
+        resetStateTimer();
+        primePickupIntakeNow();
+
+        buildPath(PathRequest.COMPLETE_PICKUP_B);
+        followPath(pickupPathB, intakeSpeed);
+    }
+
     protected void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
         resetStateTimer();
-        robot.intake.spinner.setMegaSpinIn();
-        robot.intake.clutch.setClutchUp();
+        primePickupIntakeNow();
 
         buildPath(PathRequest.COMPLETE_PICKUP);
         // TODO: run intake command while completing pickup path.
@@ -442,15 +472,6 @@ public abstract class BaseAuto extends OpMode {
 
     protected void onExitCompletePickup() {
         // TODO: stop intake command after pickup completes.
-    }
-
-    protected void onEnterGoToRelease() {
-        setActiveState(AutoStates.GO_TO_RELEASE);
-
-        resetStateTimer();
-
-        buildPath(PathRequest.GO_TO_RELEASE);
-        followPath(releaseGoToPath);
     }
 
     protected void onEnterCompleteRelease() {
@@ -538,6 +559,12 @@ public abstract class BaseAuto extends OpMode {
             case GO_TO_PICKUP:
                 goToPickupPath = buildGoToPickupPath(currentPose);
                 break;
+            case COMPLETE_PICKUP_A:
+                pickupPathA = buildPickupPathRow4A(currentPose);
+                break;
+            case COMPLETE_PICKUP_B:
+                pickupPathB = buildPickupPathRow4B(currentPose);
+                break;
             case COMPLETE_PICKUP:
                 pickupPath = buildPickupPath(currentPose);
                 break;
@@ -550,9 +577,6 @@ public abstract class BaseAuto extends OpMode {
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
                 goToScorePath = buildGoToScorePath(currentPose);
-                break;
-            case GO_TO_RELEASE:
-                releaseGoToPath = buildReleaseGoToPath(currentPose);
                 break;
             case COMPLETE_RELEASE:
                 releaseCompletePath = buildReleaseCompletePath(currentPose);
@@ -571,6 +595,14 @@ public abstract class BaseAuto extends OpMode {
         return pathLibrary.pickup(currentPose, alliance, range, currentAbsoluteRow);
     }
 
+    protected PathChain buildPickupPathRow4A(Pose currentPose) {
+        return pathLibrary.pickupRow4A(currentPose, alliance);
+    }
+
+    protected PathChain buildPickupPathRow4B(Pose currentPose) {
+        return pathLibrary.pickupRow4B(currentPose, alliance);
+    }
+
     protected PathChain buildGoToScorePath(Pose currentPose) {
         return pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
     }
@@ -582,10 +614,6 @@ public abstract class BaseAuto extends OpMode {
     protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
         // Back-row loop always intakes from absolute row 4.
         return pathLibrary.pickup(currentPose, alliance, Range.LONG_RANGE, 4);
-    }
-
-    protected PathChain buildReleaseGoToPath(Pose currentPose) {
-        return pathLibrary.releaseGoTo(currentPose, alliance, range);
     }
 
     protected PathChain buildReleaseCompletePath(Pose currentPose) {
@@ -650,6 +678,33 @@ public abstract class BaseAuto extends OpMode {
         return follower != null && !follower.isBusy();
     }
 
+    protected void maybePrimePickupIntake() {
+        if (activeState != AutoStates.GO_TO_PICKUP || pickupIntakePrimed) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double t = follower.getCurrentPath().getClosestPointTValue();
+        if (Double.isNaN(t) || Double.isInfinite(t)) {
+            return;
+        }
+
+        if (t >= GO_TO_PICKUP_INTAKE_START_T || followerIdle()) {
+            primePickupIntakeNow();
+        }
+    }
+
+    protected void primePickupIntakeNow() {
+        if (pickupIntakePrimed || robot == null || robot.intake == null) {
+            return;
+        }
+        robot.intake.spinner.setMegaSpinIn();
+        robot.intake.clutch.setClutchUp();
+        pickupIntakePrimed = true;
+    }
+
     // ===== Decision Helpers =====
     protected boolean shouldShootPreload() {
         return shootPreload;
@@ -688,6 +743,10 @@ public abstract class BaseAuto extends OpMode {
         return backRowLoopEnabled;
     }
 
+    protected boolean shouldUseThreeStepRow4Pickup() {
+        return currentAbsoluteRow == 4;
+    }
+
     protected boolean pickupAdvanceReady() {
         return hasReachedPickupBallTarget() || followerIdle() || row4PickupTimedOut();
     }
@@ -697,7 +756,9 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean row4PickupTimedOut() {
-        if (!(activeState == AutoStates.COMPLETE_PICKUP && currentAbsoluteRow == 4)) {
+        boolean row4PickupState = activeState == AutoStates.COMPLETE_PICKUP
+                || activeState == AutoStates.COMPLETE_PICKUP_B;
+        if (!(row4PickupState && currentAbsoluteRow == 4)) {
             return false;
         }
         return stateTimer.seconds() >= ROW4_PICKUP_TIMEOUT_SECONDS;
@@ -912,6 +973,10 @@ public abstract class BaseAuto extends OpMode {
                 return "Approach intake spot (row " + currentAbsoluteRow + ")";
             case COMPLETE_PICKUP:
                 return "Complete intake (row " + currentAbsoluteRow + ")";
+            case COMPLETE_PICKUP_A:
+                return "Complete intake A (row " + currentAbsoluteRow + ")";
+            case COMPLETE_PICKUP_B:
+                return "Complete intake B (row " + currentAbsoluteRow + ")";
             case GO_TO_RELEASE:
                 return "Approach release spot";
             case COMPLETE_RELEASE:

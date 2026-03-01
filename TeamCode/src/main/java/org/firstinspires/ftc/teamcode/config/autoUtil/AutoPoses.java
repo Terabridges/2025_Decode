@@ -32,16 +32,16 @@ public class AutoPoses {
     public Pose loadR = poseDeg(FIELD_SIZE - ROBOT_WIDTH / 2.0, ROBOT_LENGTH / 2.0, 0);
 
     // ===== Release Poses =====
-    public Pose releaseGoToCloseB = poseDeg(23.0, 74.0, 180.0);
+    public Pose releaseControlCloseB = poseDeg(23.0, 74.0, 180.0);
     public Pose releaseCompleteCloseB = poseDeg(17.5, 74.0, 180.0);
-    public Pose releaseGoToCloseR = poseDeg(121.0, 74.0, 180);
+    public Pose releaseControlCloseR = poseDeg(121.0, 74.0, 180.0);
     public Pose releaseCompleteCloseR = poseDeg(126.5, 74.0, 180);
 
     // ===== Leave Poses =====
     public Pose leaveCB = poseDeg(36.0, 84.0, 180.0);
-    public Pose leaveLB = poseDeg(15.0, 15.0, 0.0);
+    public Pose leaveLB = poseDeg(40.0, 15.0, 0.0);
     public Pose leaveCR = poseDeg(108.0, 84.0, 180);
-    public Pose leaveLR = poseDeg(129.0, 15.0, 0.0);
+    public Pose leaveLR = poseDeg(104.0, 15.0, 0.0);
 
     // ===== Pickup Start Poses =====
     public Pose pick1StartCB = poseDeg(44.0, 84.0, 180.0);
@@ -57,8 +57,10 @@ public class AutoPoses {
     public Pose pick3StartCR = poseDeg(97.5, 36.0, 180.0);
     public Pose pick3StartLR = poseDeg(100.0, 36.0, 0);
 
-    public Pose pick4StartLB = poseDeg(13.5, 16.0, 20.0);
-    public Pose pick4StartLR = poseDeg(130.5, 16.0, 340.0);
+    public Pose pick4StartLB = poseDeg(12.5, 16.0, 15.0);
+    public Pose pick4StartLR = poseDeg(131.5, 16.0, 345.0);
+    public Pose pick4MidLB = poseDeg(12.5, 12.5, 15.0);
+    public Pose pick4MidLR = poseDeg(131.5, 12.5, 345.0);
 
     public Pose farPickupZoneB = poseDeg(10.0, 11.5, 0.0);
     public Pose farPickupZoneR = poseDeg(134.0, 11.5, 0.0);
@@ -77,8 +79,8 @@ public class AutoPoses {
     public Pose pick3EndCR = poseDeg(120.0, 36.0, 180.0);
     public Pose pick3EndLR = poseDeg(120.0, 36.0, 0);
 
-    public Pose pick4EndLB = poseDeg(13.5, 11.25, 20.0);
-    public Pose pick4EndLR = poseDeg(130.5, 11.25, 340.0);
+    public Pose pick4EndLB = poseDeg(9.0, 8.5, 0.0);
+    public Pose pick4EndLR = poseDeg(135.0, 8.5, 0.0);
 
     // ===== Goal / Obelisk =====
     public Pose goalBlueAnchor = poseDeg(0.0, 144.0, 90.0);
@@ -116,7 +118,6 @@ public class AutoPoses {
     public final Pose[][] pickupStartByRow = new Pose[2][5];
     public final Pose[][] pickupEndByRow = new Pose[2][5];
     public final Pose[][] leave = new Pose[2][2];
-    public final Pose[][] releaseGoTo = new Pose[2][2];
     public final Pose[][] releaseComplete = new Pose[2][2];
 
     public AutoPoses() {
@@ -151,11 +152,6 @@ public class AutoPoses {
         setLeave(Alliance.RED, Range.CLOSE_RANGE, leaveCR);
         setLeave(Alliance.RED, Range.LONG_RANGE, leaveLR);
 
-        setReleaseGoTo(Alliance.BLUE, Range.CLOSE_RANGE, releaseGoToCloseB);
-        setReleaseGoTo(Alliance.BLUE, Range.LONG_RANGE, releaseGoToCloseB);
-        setReleaseGoTo(Alliance.RED, Range.CLOSE_RANGE, releaseGoToCloseR);
-        setReleaseGoTo(Alliance.RED, Range.LONG_RANGE, releaseGoToCloseR);
-
         setReleaseComplete(Alliance.BLUE, Range.CLOSE_RANGE, releaseCompleteCloseB);
         setReleaseComplete(Alliance.BLUE, Range.LONG_RANGE, releaseCompleteCloseB);
         setReleaseComplete(Alliance.RED, Range.CLOSE_RANGE, releaseCompleteCloseR);
@@ -184,10 +180,6 @@ public class AutoPoses {
 
     private void setLeave(Alliance a, Range r, Pose pose) {
         leave[a.ordinal()][r.ordinal()] = pose;
-    }
-
-    private void setReleaseGoTo(Alliance a, Range r, Pose pose) {
-        releaseGoTo[a.ordinal()][r.ordinal()] = pose;
     }
 
     private void setReleaseComplete(Alliance a, Range r, Pose pose) {
@@ -258,6 +250,10 @@ public class AutoPoses {
         return (a == Alliance.BLUE) ? farPickupZoneB : farPickupZoneR;
     }
 
+    public Pose getPickupMidRow4(Alliance a) {
+        return (a == Alliance.BLUE) ? pick4MidLB : pick4MidLR;
+    }
+
     public Pose getLeave(Alliance a, Range r) {
         if (ReturnToStart) {
             if (a == Alliance.BLUE) {
@@ -268,11 +264,14 @@ public class AutoPoses {
         return leave[a.ordinal()][r.ordinal()];
     }
 
-    public Pose getReleaseGoTo(Alliance a, Range r) {
-        return releaseGoTo[a.ordinal()][r.ordinal()];
-    }
-
     public Pose getReleaseComplete(Alliance a, Range r) {
         return releaseComplete[a.ordinal()][r.ordinal()];
+    }
+
+    public Pose getReleaseControl(Alliance a, Range r) {
+        if (a == Alliance.BLUE) {
+            return releaseControlCloseB;
+        }
+        return releaseControlCloseR;
     }
 }

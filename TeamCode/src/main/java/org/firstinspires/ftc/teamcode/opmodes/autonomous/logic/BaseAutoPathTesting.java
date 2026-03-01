@@ -34,11 +34,12 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private Pose startPose;
     private PathChain goToPickupPath;
     private PathChain pickupPath;
+    private PathChain pickupPathA;
+    private PathChain pickupPathB;
     private PathChain goToScorePath;
     private PathChain backRowLoopPickupPath;
     private PathChain backRowLoopCompletePickupPath;
     private PathChain leavePath;
-    private PathChain releaseGoToPath;
     private PathChain releaseCompletePath;
 
     private static final double STATE_TIMEOUT_SECONDS = 5.0;
@@ -59,11 +60,12 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     private enum PathRequest {
         GO_TO_PICKUP,
+        COMPLETE_PICKUP_A,
+        COMPLETE_PICKUP_B,
         COMPLETE_PICKUP,
         GO_TO_FAR_PICKUP_ZONE,
         BACKROW_COMPLETE_PICKUP,
         GO_TO_SCORE,
-        GO_TO_RELEASE,
         COMPLETE_RELEASE,
         LEAVE
     }
@@ -182,16 +184,22 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
+                .transition(() -> advanceApproved(shouldUseThreeStepRow4Pickup() && followerIdle()), AutoStates.COMPLETE_PICKUP_A)
                 .transition(() -> advanceApproved(followerIdle()), AutoStates.COMPLETE_PICKUP)
+
+                .state(AutoStates.COMPLETE_PICKUP_A)
+                .onEnter(this::onEnterCompletePickupA)
+                .transition(() -> advanceApproved(followerIdle()), AutoStates.COMPLETE_PICKUP_B)
+
+                .state(AutoStates.COMPLETE_PICKUP_B)
+                .onEnter(this::onEnterCompletePickupB)
+                .transition(() -> advanceApproved(shouldReleaseAfterPickup() && followerIdle()), AutoStates.COMPLETE_RELEASE)
+                .transition(() -> advanceApproved(!shouldReleaseAfterPickup() && followerIdle()), AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.COMPLETE_PICKUP)
                 .onEnter(this::onEnterCompletePickup)
-                .transition(() -> advanceApproved(shouldReleaseAfterPickup() && followerIdle()), AutoStates.GO_TO_RELEASE)
+                .transition(() -> advanceApproved(shouldReleaseAfterPickup() && followerIdle()), AutoStates.COMPLETE_RELEASE)
                 .transition(() -> advanceApproved(!shouldReleaseAfterPickup() && followerIdle()), AutoStates.GO_TO_SHOOT)
-
-                .state(AutoStates.GO_TO_RELEASE)
-                .onEnter(this::onEnterGoToRelease)
-                .transition(() -> advanceApproved(followerIdle()), AutoStates.COMPLETE_RELEASE)
 
                 .state(AutoStates.COMPLETE_RELEASE)
                 .onEnter(this::onEnterCompleteRelease)
@@ -250,11 +258,16 @@ public abstract class BaseAutoPathTesting extends OpMode {
         followPath(pickupPath, PICKUP_POWER);
     }
 
-    protected void onEnterGoToRelease() {
-        setActiveState(AutoStates.GO_TO_RELEASE);
-        resetStateTimer();
-        buildPath(PathRequest.GO_TO_RELEASE);
-        followPath(releaseGoToPath);
+    protected void onEnterCompletePickupA() {
+        setActiveState(AutoStates.COMPLETE_PICKUP_A);
+        buildPath(PathRequest.COMPLETE_PICKUP_A);
+        followPath(pickupPathA, PICKUP_POWER);
+    }
+
+    protected void onEnterCompletePickupB() {
+        setActiveState(AutoStates.COMPLETE_PICKUP_B);
+        buildPath(PathRequest.COMPLETE_PICKUP_B);
+        followPath(pickupPathB, PICKUP_POWER);
     }
 
     protected void onEnterCompleteRelease() {
@@ -314,6 +327,12 @@ public abstract class BaseAutoPathTesting extends OpMode {
             case GO_TO_PICKUP:
                 goToPickupPath = pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
                 break;
+            case COMPLETE_PICKUP_A:
+                pickupPathA = pathLibrary.pickupRow4A(currentPose, alliance);
+                break;
+            case COMPLETE_PICKUP_B:
+                pickupPathB = pathLibrary.pickupRow4B(currentPose, alliance);
+                break;
             case COMPLETE_PICKUP:
                 pickupPath = pathLibrary.pickup(currentPose, alliance, range, currentAbsoluteRow);
                 break;
@@ -326,9 +345,6 @@ public abstract class BaseAutoPathTesting extends OpMode {
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
                 goToScorePath = pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
-                break;
-            case GO_TO_RELEASE:
-                releaseGoToPath = pathLibrary.releaseGoTo(currentPose, alliance, range);
                 break;
             case COMPLETE_RELEASE:
                 releaseCompletePath = pathLibrary.releaseComplete(currentPose, alliance, range);
@@ -405,6 +421,10 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     protected boolean shouldEnterBackRowLoop() {
         return backRowLoopEnabled;
+    }
+
+    protected boolean shouldUseThreeStepRow4Pickup() {
+        return currentAbsoluteRow == 4;
     }
 
     protected boolean stateTimedOut() {
