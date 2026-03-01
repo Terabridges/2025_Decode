@@ -48,21 +48,30 @@ public class TurretVelocityCharacterizer extends OpMode {
 
     //---------------- Configurable ----------------
     /** Starting power level (should be above kS). */
-    public static double startPower = 0.10;
-    /** Ending power level. */
-    public static double endPower = 0.80;
+    public static double startPower = 0.05;
+    /** Ending power level. Keep low enough that the turret can sustain steady-state
+     *  across the full travel without hitting soft limits (~0.15 → 120°/s × 1.5s = 180°). */
+    public static double endPower = 0.15;
     /** Number of power steps to test. */
-    public static int powerSteps = 8;
+    public static int powerSteps = 6;
     /** Duration at each power level to reach steady state (sec). */
     public static double steadyStateDurationSec = 1.5;
     /** Window at end of each step to measure average velocity (sec). */
     public static double measureWindowSec = 0.5;
     /** Pause between steps (sec). */
     public static double pauseBetweenStepsSec = 0.8;
-    /** Power used to reposition the turret before each step. */
-    public static double repositionPower = 0.25;
+    /** Power used to reposition the turret before each step. Kept low to avoid
+     *  overshooting soft limits — proportional slowdown handles final approach. */
+    public static double repositionPower = 0.12;
     /** Target position margin from the limit (deg) to reposition to before each step. */
     public static double repositionMarginDeg = 20.0;
+    /** Time (sec) the turret must remain near the start position with low velocity
+     *  before the RUNNING phase begins. Prevents residual drift from corrupting data. */
+    public static double settleTimeSec = 0.4;
+    /** Maximum velocity (deg/s) considered "settled" after repositioning. */
+    public static double settleVelThreshold = 5.0;
+    /** Maximum position error (deg) from target to be considered "settled". */
+    public static double settlePosThreshold = 5.0;
     /** Manual nudge power scale. */
     public static double nudgePowerScale = 0.15;
     /** Nudge deadband. */
@@ -74,11 +83,13 @@ public class TurretVelocityCharacterizer extends OpMode {
     private final Gamepad current = new Gamepad();
     private final Gamepad previous = new Gamepad();
 
-    private enum Phase { IDLE, REPOSITIONING, RUNNING, PAUSING, DONE }
+    private enum Phase { IDLE, REPOSITIONING, SETTLING, RUNNING, PAUSING, DONE }
     private Phase phase = Phase.IDLE;
     private boolean directionCW = true;
     private int currentStep = 0;
     private final ElapsedTime stepTimer = new ElapsedTime();
+    private final ElapsedTime settleTimer = new ElapsedTime();
+    private boolean settledOnce = false; // true once vel+pos thresholds met
 
     // Measurement accumulator
     private double velocitySum = 0.0;
@@ -87,9 +98,11 @@ public class TurretVelocityCharacterizer extends OpMode {
     // Results
     private final double[] resultPower = new double[MAX_STEPS];
     private final double[] resultVelocity = new double[MAX_STEPS];
+    private final boolean[] resultTruncated = new boolean[MAX_STEPS];
     private int resultCount = 0;
     private double computedKV = Double.NaN;
     private double computedKS = Double.NaN;
+    private double repositionTargetDeg = 0.0; // cached for settle check
 
     @Override
     public void init() {
@@ -121,6 +134,9 @@ public class TurretVelocityCharacterizer extends OpMode {
                 break;
             case REPOSITIONING:
                 handleRepositioning(posDeg);
+                break;
+            case SETTLING:
+                handleSettling(posDeg, velDegSec);
                 break;
             case RUNNING:
                 handleRunning(velDegSec);
@@ -168,11 +184,13 @@ public class TurretVelocityCharacterizer extends OpMode {
         joinedTelemetry.addData("Commanded Power", fmt(hardware.getLastPower()));
 
         if (phase == Phase.REPOSITIONING) {
-            double targetDeg = directionCW
-                    ? (TurretHardware.softLimitMinDeg + repositionMarginDeg)
-                    : (TurretHardware.softLimitMaxDeg - repositionMarginDeg);
-            joinedTelemetry.addData("Reposition Target", fmt(targetDeg) + "°");
-            joinedTelemetry.addData("Reposition Error", fmt(targetDeg - posDeg) + "°");
+            joinedTelemetry.addData("Reposition Target", fmt(repositionTargetDeg) + "°");
+            joinedTelemetry.addData("Reposition Error", fmt(repositionTargetDeg - posDeg) + "°");
+        } else if (phase == Phase.SETTLING) {
+            joinedTelemetry.addData("Settle Target", fmt(repositionTargetDeg) + "°");
+            joinedTelemetry.addData("Settle PosErr", fmt(Math.abs(repositionTargetDeg - posDeg)) + "° (< " + fmt(settlePosThreshold) + ")");
+            joinedTelemetry.addData("Settle Vel", fmt(Math.abs(velDegSec)) + "°/s (< " + fmt(settleVelThreshold) + ")");
+            joinedTelemetry.addData("Settled", settledOnce ? fmt(settleTimer.seconds()) + "/" + fmt(settleTimeSec) : "waiting...");
         } else if (phase == Phase.RUNNING) {
             double stepPower = getPowerForStep(currentStep);
             double elapsed = stepTimer.seconds();
@@ -185,8 +203,9 @@ public class TurretVelocityCharacterizer extends OpMode {
 
         joinedTelemetry.addLine("--- Results (" + resultCount + ") ---");
         for (int i = 0; i < resultCount; i++) {
+            String tag = resultTruncated[i] ? " [TRUNC]" : "";
             joinedTelemetry.addData("  Power=" + fmt(resultPower[i]),
-                    "Vel=" + fmt(resultVelocity[i]) + " deg/s");
+                    "Vel=" + fmt(resultVelocity[i]) + " deg/s" + tag);
         }
 
         if (!Double.isNaN(computedKV)) {
@@ -227,22 +246,17 @@ public class TurretVelocityCharacterizer extends OpMode {
      * If testing CCW (negative), drive CW toward the max limit - margin.
      */
     private void handleRepositioning(double posDeg) {
-        double targetDeg = directionCW
+        repositionTargetDeg = directionCW
                 ? (TurretHardware.softLimitMinDeg + repositionMarginDeg)   // move toward low end
                 : (TurretHardware.softLimitMaxDeg - repositionMarginDeg); // move toward high end
-        // Direct subtraction is safe here — physical clamping in TurretHardware
-        // guarantees position stays within [physicalMinDeg, physicalMaxDeg],
-        // so no 0°/360° wrap to worry about. wrapSigned would flip the error
-        // sign when |error| > 180°, causing oscillation.
-        double error = targetDeg - posDeg;
+        double error = repositionTargetDeg - posDeg;
 
         if (Math.abs(error) < 3.0) {
-            // Close enough — stop and settle briefly before running
+            // Close enough — transition to SETTLING to verify position and wait for stop
             hardware.setPower(0.0);
-            stepTimer.reset();
-            velocitySum = 0.0;
-            velocitySamples = 0;
-            phase = Phase.PAUSING;
+            settleTimer.reset();
+            settledOnce = false;
+            phase = Phase.SETTLING;
             return;
         }
 
@@ -255,23 +269,76 @@ public class TurretVelocityCharacterizer extends OpMode {
         hardware.setPower(power);
     }
 
+    /**
+     * Wait for the turret to fully settle (low velocity + near target position)
+     * before beginning a measurement step. This prevents residual momentum
+     * from corrupting the early acceleration data or velocity readings.
+     */
+    private void handleSettling(double posDeg, double velDegSec) {
+        hardware.setPower(0.0);
+
+        double posError = Math.abs(repositionTargetDeg - posDeg);
+        boolean posOk = posError < settlePosThreshold;
+        boolean velOk = Math.abs(velDegSec) < settleVelThreshold;
+
+        // If turret drifted too far during settle, go back to repositioning
+        if (posError > 15.0) {
+            phase = Phase.REPOSITIONING;
+            return;
+        }
+
+        if (posOk && velOk) {
+            if (!settledOnce) {
+                // First frame meeting thresholds — start the settle timer
+                settledOnce = true;
+                settleTimer.reset();
+            }
+            if (settleTimer.seconds() >= settleTimeSec) {
+                // Settled long enough — begin the pause-then-run sequence
+                stepTimer.reset();
+                velocitySum = 0.0;
+                velocitySamples = 0;
+                phase = Phase.PAUSING;
+            }
+        } else {
+            // Not meeting thresholds — reset settle timer
+            settledOnce = false;
+        }
+
+        Logger.recordOutput(LOG_PREFIX + "Settle/PosError", posError);
+        Logger.recordOutput(LOG_PREFIX + "Settle/VelAbs", Math.abs(velDegSec));
+        Logger.recordOutput(LOG_PREFIX + "Settle/PosOk", posOk);
+        Logger.recordOutput(LOG_PREFIX + "Settle/VelOk", velOk);
+    }
+
     private void handleRunning(double velDegSec) {
         int totalSteps = Math.min(powerSteps, MAX_STEPS);
         double stepPower = getPowerForStep(currentStep);
         double appliedPower = directionCW ? stepPower : -stepPower;
 
         // --- Soft-limit guard: auto-reverse if approaching limit ---
-        if (hardware.isAtSoftLimit(directionCW)) {
-            // Record partial measurement if we have enough samples
+        if (hardware.isAtSoftLimit(directionCW) || hardware.isNearSoftLimit()) {
+            // Check if we're in the measurement window and limit interference is active
+            boolean inMeasureWindow = stepTimer.seconds() >= (steadyStateDurationSec - measureWindowSec);
+
+            // Record partial measurement if we have enough clean samples
             if (velocitySamples > 3) {
                 double avgVelocity = velocitySum / velocitySamples;
                 resultPower[resultCount] = stepPower;
                 resultVelocity[resultCount] = avgVelocity;
+                resultTruncated[resultCount] = true;
                 resultCount++;
                 Logger.recordOutput(LOG_PREFIX + "Step/Power", stepPower);
                 Logger.recordOutput(LOG_PREFIX + "Step/AvgVelocity", avgVelocity);
                 Logger.recordOutput(LOG_PREFIX + "Step/Samples", velocitySamples);
                 Logger.recordOutput(LOG_PREFIX + "Step/LimitTruncated", true);
+            } else {
+                // Not enough samples — skip this step entirely
+                Logger.recordOutput(LOG_PREFIX + "Step/Power", stepPower);
+                Logger.recordOutput(LOG_PREFIX + "Step/AvgVelocity", 0.0);
+                Logger.recordOutput(LOG_PREFIX + "Step/Samples", velocitySamples);
+                Logger.recordOutput(LOG_PREFIX + "Step/LimitTruncated", true);
+                Logger.recordOutput(LOG_PREFIX + "Step/Skipped", true);
             }
             // Hit limit — advance to next step and reposition
             currentStep++;
@@ -290,7 +357,9 @@ public class TurretVelocityCharacterizer extends OpMode {
 
         double elapsed = stepTimer.seconds();
 
-        // Accumulate velocity during the measurement window
+        // Accumulate velocity during the measurement window, but ONLY if
+        // the actual applied power matches the commanded power (no soft-limit
+        // attenuation corrupting the measurement).
         if (elapsed >= (steadyStateDurationSec - measureWindowSec)) {
             velocitySum += Math.abs(velDegSec);
             velocitySamples++;
@@ -301,11 +370,13 @@ public class TurretVelocityCharacterizer extends OpMode {
             double avgVelocity = (velocitySamples > 0) ? (velocitySum / velocitySamples) : 0.0;
             resultPower[resultCount] = stepPower;
             resultVelocity[resultCount] = avgVelocity;
+            resultTruncated[resultCount] = false;
             resultCount++;
 
             Logger.recordOutput(LOG_PREFIX + "Step/Power", stepPower);
             Logger.recordOutput(LOG_PREFIX + "Step/AvgVelocity", avgVelocity);
             Logger.recordOutput(LOG_PREFIX + "Step/Samples", velocitySamples);
+            Logger.recordOutput(LOG_PREFIX + "Step/LimitTruncated", false);
 
             currentStep++;
             if (currentStep >= totalSteps) {
@@ -333,20 +404,43 @@ public class TurretVelocityCharacterizer extends OpMode {
     /**
      * Compute kV from the results using least-squares: power = kS + kV * velocity.
      * kV is the slope, kS is the intercept.
+     * Only uses non-truncated (clean) measurements for the regression.
      */
     private void computeKV() {
-        if (resultCount < 2) return;
-
-        double sumP = 0, sumV = 0;
+        // Count clean (non-truncated) results
+        int cleanCount = 0;
         for (int i = 0; i < resultCount; i++) {
+            if (!resultTruncated[i]) cleanCount++;
+        }
+
+        if (cleanCount < 2) {
+            // Fall back to all results if not enough clean ones
+            cleanCount = resultCount;
+            if (cleanCount < 2) return;
+            // Use all results
+            computeKVFromRange(0, resultCount, false);
+        } else {
+            computeKVFromRange(0, resultCount, true);
+        }
+    }
+
+    /** Least-squares regression. If cleanOnly, skips truncated results. */
+    private void computeKVFromRange(int start, int end, boolean cleanOnly) {
+        double sumP = 0, sumV = 0;
+        int n = 0;
+        for (int i = start; i < end; i++) {
+            if (cleanOnly && resultTruncated[i]) continue;
             sumP += resultPower[i];
             sumV += resultVelocity[i];
+            n++;
         }
-        double meanP = sumP / resultCount;
-        double meanV = sumV / resultCount;
+        if (n < 2) return;
+        double meanP = sumP / n;
+        double meanV = sumV / n;
 
         double num = 0, den = 0;
-        for (int i = 0; i < resultCount; i++) {
+        for (int i = start; i < end; i++) {
+            if (cleanOnly && resultTruncated[i]) continue;
             double dV = resultVelocity[i] - meanV;
             double dP = resultPower[i] - meanP;
             num += dV * dP;
@@ -357,9 +451,11 @@ public class TurretVelocityCharacterizer extends OpMode {
             computedKV = 0.0;
             computedKS = meanP;
         } else {
-            computedKV = num / den; // power per deg/sec
-            computedKS = meanP - computedKV * meanV; // intercept = stiction estimate
+            computedKV = num / den;
+            computedKS = meanP - computedKV * meanV;
         }
+
+        Logger.recordOutput(LOG_PREFIX + "CleanStepsUsed", n);
     }
 
     private double getPowerForStep(int step) {
