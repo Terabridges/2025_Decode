@@ -63,13 +63,13 @@ public class TurretHardware {
      */
     public static boolean servoPowerInverted = true;
     /** Emergency brake maximum reverse power magnitude (applied opposite to velocity). */
-    public static double emergencyBrakePower = 0.3;
+    public static double emergencyBrakePower = 0.20;
     /**
      * Velocity (deg/s) at which full emergency brake power is applied.
      * Below this, brake power scales linearly with velocity: brake = maxPower * (|vel| / fullVel).
      * Prevents overshoot bounce by tapering brake force as the turret decelerates.
      */
-    public static double emergencyBrakeFullVelDps = 200.0;
+    public static double emergencyBrakeFullVelDps = 300.0;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -82,6 +82,7 @@ public class TurretHardware {
     private double lastPower = 0.0;
     private double currentPositionDeg = 0.0;
     private double currentVelocityDegPerSec = 0.0;
+    private double prevVelocityDegPerSec = 0.0; // for eBrake direction-change detection
 
     //---------------- Constructor ----------------
     public TurretHardware(HardwareMap map) {
@@ -118,7 +119,19 @@ public class TurretHardware {
             // Emergency brake: proportional to velocity magnitude.
             // Harder brake when moving fast (dangerous), gentle when slow (prevents
             // overshoot bounce). Power tapers linearly: brake = maxPower * (|vel| / fullVel).
+            // Once velocity reverses direction (brake worked), release immediately
+            // to prevent launching the turret back the other way.
             if (inMinZone && vel < -emergencyBrakeVelThreshold) {
+                // If velocity was positive last frame (moving away from min), the turret
+                // has already reversed — don't brake, let it coast away.
+                if (prevVelocityDegPerSec > 0) {
+                    // Velocity just flipped back negative — could be oscillation.
+                    // Just zero power, let attenuation handle it.
+                    lastPower = 0.0;
+                    writeServos(0.0);
+                    logSoftLimits(requestedPower, 0.0, "eBrake_min_release", inMinZone, inMaxZone);
+                    return;
+                }
                 double velMag = Math.abs(vel);
                 double fraction = Math.min(1.0, velMag / emergencyBrakeFullVelDps);
                 double brakePower = emergencyBrakePower * fraction; // positive = away from min
@@ -128,6 +141,12 @@ public class TurretHardware {
                 return;
             }
             if (inMaxZone && vel > emergencyBrakeVelThreshold) {
+                if (prevVelocityDegPerSec < 0) {
+                    lastPower = 0.0;
+                    writeServos(0.0);
+                    logSoftLimits(requestedPower, 0.0, "eBrake_max_release", inMinZone, inMaxZone);
+                    return;
+                }
                 double velMag = Math.abs(vel);
                 double fraction = Math.min(1.0, velMag / emergencyBrakeFullVelDps);
                 double brakePower = -emergencyBrakePower * fraction; // negative = away from max
@@ -241,6 +260,7 @@ public class TurretHardware {
         }
 
         // Compute velocity via linear regression over the ring buffer
+        prevVelocityDegPerSec = currentVelocityDegPerSec;
         currentVelocityDegPerSec = computeVelocity();
 
         // Log hardware state

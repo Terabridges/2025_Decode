@@ -72,8 +72,9 @@ public class TurretVelocityCharacterizer extends OpMode {
     public static double settleTimeSec = 0.4;
     /** Maximum velocity (deg/s) considered "settled" after repositioning. */
     public static double settleVelThreshold = 5.0;
-    /** Maximum position error (deg) from target to be considered "settled". */
-    public static double settlePosThreshold = 5.0;
+    /** Maximum position error (deg) from target to be considered "settled".
+     *  Must be generous — the turret coasts past target during deceleration. */
+    public static double settlePosThreshold = 10.0;
     /** Manual nudge power scale. */
     public static double nudgePowerScale = 0.15;
     /** Nudge deadband. */
