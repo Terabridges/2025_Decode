@@ -156,6 +156,9 @@ public class LimelightPoseCenteringTest extends OpMode {
 
     private void doSeedPoseFromLimelight() {
         stopChassis();
+        if (follower != null && follower.getPose() != null) {
+            robot.outtake.vision.updateRobotOrientationDeg(Math.toDegrees(follower.getPose().getHeading()));
+        }
 
         Pose3D llPose = getLimelightBotPose();
         if (llPose != null) {
@@ -216,14 +219,7 @@ public class LimelightPoseCenteringTest extends OpMode {
             return null;
         }
         try {
-            Pose3D mt2 = latest.getBotpose_MT2();
-            if (mt2 != null) {
-                return mt2;
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            return latest.getBotpose();
+            return latest.getBotpose_MT2();
         } catch (Throwable ignored) {
             return null;
         }

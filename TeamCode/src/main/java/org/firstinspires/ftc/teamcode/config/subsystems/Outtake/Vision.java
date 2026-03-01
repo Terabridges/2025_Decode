@@ -173,24 +173,27 @@ public class Vision implements Subsystem {
     }
 
     /**
-     * Returns Limelight robot pose estimate (MT2 preferred, then standard botpose), else null.
+     * Returns Limelight MegaTag2 robot pose estimate, else null.
      */
-    public Pose3D getLatestBotPose() {
+    public Pose3D getLatestMt2Pose() {
         if (latest == null || !latest.isValid()) {
             return null;
         }
         try {
-            Pose3D mt2 = latest.getBotpose_MT2();
-            if (mt2 != null) {
-                return mt2;
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            return latest.getBotpose();
+            return latest.getBotpose_MT2();
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+    /**
+     * Updates robot yaw used by Limelight MegaTag2 orientation fusion.
+     */
+    public boolean updateRobotOrientationDeg(double yawDeg) {
+        if (limelight == null) {
+            return false;
+        }
+        return limelight.updateRobotOrientation(yawDeg);
     }
 
     /** Choose the obelisk face (21/22/23) whose yaw is most directly facing the robot. */

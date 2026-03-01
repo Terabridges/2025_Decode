@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Relocalization.GoalTagRelocalization;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 
 @Configurable
@@ -21,12 +22,10 @@ public class GoalTagRelocalizationTest extends OpMode {
     public static double startY = 72.0;
     public static double startHeadingDeg = 0.0;
     public static double forwardTurretDeg = Turret.turretForwardDeg;
-    public static boolean relocalizeEveryLoop = false;
-
     private Robot robot;
     private Gamepad currentGamepad1;
     private Gamepad previousGamepad1;
-    private Robot.GoalTagRelocalizeResult lastRelocalizeResult;
+    private GoalTagRelocalization.GoalTagRelocalizeResult lastRelocalizeResult;
     private Pose lastRelocalizedPose;
 
     @Override
@@ -50,22 +49,26 @@ public class GoalTagRelocalizationTest extends OpMode {
         }
         robot.update();
 
-        if (relocalizeEveryLoop || (currentGamepad1.a && !previousGamepad1.a)) {
-            lastRelocalizeResult = robot.relocalizeFromGoalTag(forwardTurretDeg);
-            if (lastRelocalizeResult.success && lastRelocalizeResult.relocalizedPose != null) {
-                lastRelocalizedPose = copyPose(lastRelocalizeResult.relocalizedPose);
-            }
+        if (currentGamepad1.b && !previousGamepad1.b) {
+            robot.relocalization.stepGoalTagRelocalization(forwardTurretDeg);
         }
 
-        if (currentGamepad1.b && !previousGamepad1.b) {
+        lastRelocalizeResult = robot.relocalization.getLatestGoalTagRelocalizeResult();
+        if (lastRelocalizeResult != null && lastRelocalizeResult.success && lastRelocalizeResult.relocalizedPose != null) {
+            lastRelocalizedPose = copyPose(lastRelocalizeResult.relocalizedPose);
+        }
+
+        if (currentGamepad1.x && !previousGamepad1.x) {
             if (follower != null) {
                 follower.setPose(new Pose(startX, startY, Math.toRadians(startHeadingDeg)));
             }
         }
 
-        if (currentGamepad1.x && !previousGamepad1.x) {
+        if (currentGamepad1.y && !previousGamepad1.y) {
             lastRelocalizeResult = null;
             lastRelocalizedPose = null;
+            robot.relocalization.cancelGoalTagRelocalizationPrime();
+            robot.relocalization.clearGoalTagRelocalizeResult();
         }
 
         drawCurrentAndHistory();
@@ -76,9 +79,10 @@ public class GoalTagRelocalizationTest extends OpMode {
         Pose followerPose = (follower != null) ? follower.getPose() : null;
         int visibleGoalTag = robot.outtake.vision.getVisibleGoalTagId();
 
-        telemetry.addData("Controls", "A=Relocalize B=ResetPose X=ClearResult");
-        telemetry.addData("Relocalize Every Loop", relocalizeEveryLoop);
+        telemetry.addData("Controls", "B=Prime/Relocalize X=ResetPose Y=Clear/Cancel");
         telemetry.addData("Turret Forward Cmd (deg)", "%.1f", forwardTurretDeg);
+        telemetry.addData("Relocalize Primed", robot.relocalization.isGoalTagRelocalizationPrimed());
+        telemetry.addData("Relocalize Phase", robot.relocalization.getGoalTagRelocalizePhaseName());
         telemetry.addData("Visible Goal Tag", visibleGoalTag);
         telemetry.addData("Turret Cmd (deg)", "%.1f", robot.outtake.turret.getCurrentDegrees());
 
