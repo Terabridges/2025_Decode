@@ -314,8 +314,8 @@ public class TurretVelocityCharacterizer extends OpMode {
         double stepPower = getPowerForStep(currentStep);
         double appliedPower = directionCW ? stepPower : -stepPower;
 
-        // --- Soft-limit guard: auto-reverse if approaching limit ---
-        if (hardware.isAtSoftLimit(directionCW) || hardware.isNearSoftLimit()) {
+        // --- Soft-limit guard: auto-abort step if approaching the limit we're heading toward ---
+        if (hardware.isAtSoftLimit(directionCW) || hardware.isNearSoftLimit(directionCW)) {
             // Check if we're in the measurement window and limit interference is active
             boolean inMeasureWindow = stepTimer.seconds() >= (steadyStateDurationSec - measureWindowSec);
 

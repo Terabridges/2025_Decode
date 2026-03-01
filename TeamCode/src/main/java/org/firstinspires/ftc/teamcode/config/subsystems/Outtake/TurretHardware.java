@@ -231,6 +231,14 @@ public class TurretHardware {
                 || (currentPositionDeg >= (softLimitMaxDeg - softLimitMarginDeg));
     }
 
+    /** Returns true if turret is near the soft limit in the given travel direction. */
+    public boolean isNearSoftLimit(boolean positiveDirection) {
+        if (!softLimitsEnabled) return false;
+        return positiveDirection
+                ? (currentPositionDeg >= (softLimitMaxDeg - softLimitMarginDeg))
+                : (currentPositionDeg <= (softLimitMinDeg + softLimitMarginDeg));
+    }
+
     /**
      * Must be called once per loop, before reading position/velocity.
      * Samples the encoder and updates the velocity ring buffer.
