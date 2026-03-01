@@ -63,8 +63,10 @@ public class TurretVelocityCharacterizer extends OpMode {
     /** Power used to reposition the turret before each step. Kept low to avoid
      *  overshooting soft limits — proportional slowdown handles final approach. */
     public static double repositionPower = 0.12;
-    /** Target position margin from the limit (deg) to reposition to before each step. */
-    public static double repositionMarginDeg = 20.0;
+    /** Target position margin from the limit (deg) to reposition to before each step.
+     *  Must be larger than softLimitMarginDeg (25) so the target is outside the
+     *  attenuation zone; otherwise stiction + attenuation stalls repositioning. */
+    public static double repositionMarginDeg = 30.0;
     /** Time (sec) the turret must remain near the start position with low velocity
      *  before the RUNNING phase begins. Prevents residual drift from corrupting data. */
     public static double settleTimeSec = 0.4;
@@ -251,7 +253,7 @@ public class TurretVelocityCharacterizer extends OpMode {
                 : (TurretHardware.softLimitMaxDeg - repositionMarginDeg); // move toward high end
         double error = repositionTargetDeg - posDeg;
 
-        if (Math.abs(error) < 3.0) {
+        if (Math.abs(error) < 5.0) {
             // Close enough — transition to SETTLING to verify position and wait for stop
             hardware.setPower(0.0);
             settleTimer.reset();
