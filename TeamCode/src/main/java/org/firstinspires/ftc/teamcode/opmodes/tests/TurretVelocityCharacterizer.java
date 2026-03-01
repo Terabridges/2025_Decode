@@ -234,6 +234,7 @@ public class TurretVelocityCharacterizer extends OpMode {
         stepTimer.reset();
         velocitySum = 0.0;
         velocitySamples = 0;
+        settledOnce = false;
         phase = Phase.REPOSITIONING;
     }
 
@@ -253,69 +254,59 @@ public class TurretVelocityCharacterizer extends OpMode {
                 ? (TurretHardware.softLimitMinDeg + repositionMarginDeg)   // move toward low end
                 : (TurretHardware.softLimitMaxDeg - repositionMarginDeg); // move toward high end
         double error = repositionTargetDeg - posDeg;
-
-        if (Math.abs(error) < 5.0) {
-            // Close enough — transition to SETTLING to verify position and wait for stop
-            hardware.setPower(0.0);
-            settleTimer.reset();
-            settledOnce = false;
-            phase = Phase.SETTLING;
-            return;
-        }
-
-        // Drive toward the target position with proportional slowdown near target.
-        // CRServos have significant stiction (~0.08-0.10 power to start moving),
-        // so we keep a generous minimum floor and only ramp within the last 10°.
         double absDist = Math.abs(error);
-        double scale = Math.min(1.0, absDist / 10.0); // ramp down within 10°
-        double power = (error > 0) ? repositionPower * scale : -repositionPower * scale;
-        power = Math.max(-repositionPower, Math.min(repositionPower, power));
-        if (Math.abs(power) < 0.10) power = Math.signum(power) * 0.10; // min power to beat stiction
-        hardware.setPower(power);
-    }
+        double vel = hardware.getVelocityDegPerSec();
 
-    /**
-     * Wait for the turret to fully settle (low velocity + near target position)
-     * before beginning a measurement step. This prevents residual momentum
-     * from corrupting the early acceleration data or velocity readings.
-     */
-    private void handleSettling(double posDeg, double velDegSec) {
-        hardware.setPower(0.0);
+        boolean posOk = absDist < settlePosThreshold;
+        boolean velOk = Math.abs(vel) < settleVelThreshold;
 
-        double posError = Math.abs(repositionTargetDeg - posDeg);
-        boolean posOk = posError < settlePosThreshold;
-        boolean velOk = Math.abs(velDegSec) < settleVelThreshold;
-
-        // If turret drifted too far during settle, go back to repositioning.
-        // Use settlePosThreshold as the boundary so there's no dead zone between
-        // "close enough to settle" and "too far, re-reposition".
-        if (!posOk) {
-            phase = Phase.REPOSITIONING;
-            return;
-        }
-
+        // Settled: position close AND velocity low for long enough → go to PAUSING
         if (posOk && velOk) {
             if (!settledOnce) {
-                // First frame meeting thresholds — start the settle timer
                 settledOnce = true;
                 settleTimer.reset();
             }
             if (settleTimer.seconds() >= settleTimeSec) {
-                // Settled long enough — begin the pause-then-run sequence
+                hardware.setPower(0.0);
                 stepTimer.reset();
                 velocitySum = 0.0;
                 velocitySamples = 0;
                 phase = Phase.PAUSING;
+                return;
             }
         } else {
-            // Not meeting thresholds — reset settle timer
             settledOnce = false;
         }
 
-        Logger.recordOutput(LOG_PREFIX + "Settle/PosError", posError);
-        Logger.recordOutput(LOG_PREFIX + "Settle/VelAbs", Math.abs(velDegSec));
+        // Active proportional control: drive toward target, ramp down within 10°.
+        // When close and slow, apply zero power to let friction stop it.
+        if (posOk && Math.abs(vel) < 30.0) {
+            // Close enough and not moving fast — let friction brake
+            hardware.setPower(0.0);
+        } else {
+            double scale = Math.min(1.0, absDist / 10.0);
+            double power = (error > 0) ? repositionPower * scale : -repositionPower * scale;
+            power = Math.max(-repositionPower, Math.min(repositionPower, power));
+            // Min power to beat stiction, but only if not yet in settle zone
+            if (!posOk && Math.abs(power) < 0.10) {
+                power = Math.signum(power) * 0.10;
+            }
+            hardware.setPower(power);
+        }
+
+        Logger.recordOutput(LOG_PREFIX + "Settle/PosError", absDist);
         Logger.recordOutput(LOG_PREFIX + "Settle/PosOk", posOk);
         Logger.recordOutput(LOG_PREFIX + "Settle/VelOk", velOk);
+    }
+
+    /**
+     * SETTLING phase is no longer used — settle logic is folded into REPOSITIONING
+     * to maintain active position control and prevent coast oscillation.
+     * Kept as a no-op in case the phase enum value appears in old code paths.
+     */
+    private void handleSettling(double posDeg, double velDegSec) {
+        // Redirect to repositioning — should not normally be reached
+        phase = Phase.REPOSITIONING;
     }
 
     private void handleRunning(double velDegSec) {
@@ -355,6 +346,7 @@ public class TurretVelocityCharacterizer extends OpMode {
                 phase = Phase.DONE;
             } else {
                 hardware.setPower(0.0);
+                settledOnce = false;
                 phase = Phase.REPOSITIONING;
             }
             return;
@@ -393,6 +385,7 @@ public class TurretVelocityCharacterizer extends OpMode {
             } else {
                 // Reposition before next step
                 hardware.setPower(0.0);
+                settledOnce = false;
                 phase = Phase.REPOSITIONING;
             }
         }
