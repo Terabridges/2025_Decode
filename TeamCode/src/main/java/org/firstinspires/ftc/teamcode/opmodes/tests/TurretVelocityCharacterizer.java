@@ -60,9 +60,9 @@ public class TurretVelocityCharacterizer extends OpMode {
     public static double measureWindowSec = 0.5;
     /** Pause between steps (sec). */
     public static double pauseBetweenStepsSec = 0.8;
-    /** Power used to reposition the turret before each step. Kept low to avoid
-     *  overshooting soft limits — proportional slowdown handles final approach. */
-    public static double repositionPower = 0.12;
+    /** Power used to reposition the turret before each step. Must be well above
+     *  CRServo stiction (~0.08-0.10) so proportional ramp still moves the turret. */
+    public static double repositionPower = 0.15;
     /** Target position margin from the limit (deg) to reposition to before each step.
      *  Must be larger than softLimitMarginDeg (25) so the target is outside the
      *  attenuation zone; otherwise stiction + attenuation stalls repositioning. */
@@ -263,12 +263,14 @@ public class TurretVelocityCharacterizer extends OpMode {
             return;
         }
 
-        // Drive toward the target position with proportional slowdown near target
+        // Drive toward the target position with proportional slowdown near target.
+        // CRServos have significant stiction (~0.08-0.10 power to start moving),
+        // so we keep a generous minimum floor and only ramp within the last 10°.
         double absDist = Math.abs(error);
-        double scale = Math.min(1.0, absDist / 20.0); // ramp down within 20°
+        double scale = Math.min(1.0, absDist / 10.0); // ramp down within 10°
         double power = (error > 0) ? repositionPower * scale : -repositionPower * scale;
         power = Math.max(-repositionPower, Math.min(repositionPower, power));
-        if (Math.abs(power) < 0.04) power = Math.signum(power) * 0.04; // min power to move
+        if (Math.abs(power) < 0.10) power = Math.signum(power) * 0.10; // min power to beat stiction
         hardware.setPower(power);
     }
 
