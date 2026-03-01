@@ -47,19 +47,29 @@ public class TurretController {
     public static double kA = 0.0001;
 
     //---------------- PID Gains ----------------
-    public static double kP = 0.015;
+    // CRServo = power→velocity (not torque), so gains must be VERY small.
+    // At kV=0.00068, 1° error should produce only ~0.002 power (→ ~3°/s approach).
+    public static double kP = 0.002;
     public static double kI = 0.0;
-    public static double kD = 0.003;
+    public static double kD = 0.0005;
     /** Integral only accumulates when |error| < iZone (degrees). 0 = always. */
     public static double iZone = 10.0;
     /** Maximum integral accumulation (prevents windup). */
     public static double maxIntegral = 0.3;
     /** Low-pass filter coefficient for derivative (0–1; 1 = no filter). */
-    public static double dAlpha = 0.8;
+    public static double dAlpha = 0.4;
 
     //---------------- Motion Profile Constraints ----------------
-    public static double maxProfileVelocity = 300.0;     // deg/sec
-    public static double maxProfileAcceleration = 600.0;  // deg/sec²
+    public static double maxProfileVelocity = 150.0;     // deg/sec
+    public static double maxProfileAcceleration = 300.0;  // deg/sec²
+
+    //---------------- Output Limits ----------------
+    /**
+     * Maximum absolute power output from the controller (0–1).
+     * Prevents full-power commands that cause violent overshoot on CRServos.
+     * Should be set just above what the turret needs for the desired profile velocity.
+     */
+    public static double maxOutputPower = 0.30;
 
     //---------------- On-Target Thresholds ----------------
     /** Position must be within this tolerance (degrees) to be considered on-target. */
@@ -161,7 +171,8 @@ public class TurretController {
             output = updateHold(currentDeg, dtSec);
         }
 
-        output = Math.max(-1.0, Math.min(1.0, output));
+        // Clamp to maxOutputPower — CRServos have too much momentum at full power
+        output = Math.max(-maxOutputPower, Math.min(maxOutputPower, output));
         lastOutput = output;
 
         // Logging
@@ -240,16 +251,23 @@ public class TurretController {
 
         // Feedforward from profile (direction-specific stiction)
         double ff = 0.0;
+        double error = wrapSigned(desired.position - currentDeg);
+
         if (Math.abs(desired.velocity) > 0.01) {
+            // Profile is actively moving—use desired velocity direction for stiction
             double kS = (desired.velocity > 0) ? kS_CW : kS_CCW;
             ff += kS * Math.signum(desired.velocity);
+        } else if (Math.abs(error) > onTargetPositionDeg * 0.5) {
+            // Profile finished but not on target—use error direction for stiction
+            // (Without this, PID alone produces ~0.06 which is below stiction ~0.08)
+            double kS = (error > 0) ? kS_CW : kS_CCW;
+            ff += kS * Math.signum(error);
         }
         ff += kV * desired.velocity;
         ff += kA * desired.acceleration;
         lastFeedforward = ff;
 
         // PID on tracking error (desired position from profile vs actual)
-        double error = wrapSigned(desired.position - currentDeg);
         double pid = computePID(error, dtSec);
         lastPidOutput = pid;
 

@@ -92,6 +92,8 @@ public class TurretProfileTuner extends OpMode {
     public void start() {
         hardware.update();
         controller.reset();
+        // Hold at current position — prevents violent jump to default 180° target
+        controller.setTargetAngleImmediate(hardware.getPositionDeg());
     }
 
     @Override
