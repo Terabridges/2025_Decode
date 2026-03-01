@@ -62,8 +62,14 @@ public class TurretHardware {
      * the turret toward lower angles on this robot.
      */
     public static boolean servoPowerInverted = true;
-    /** Emergency brake reverse power magnitude (applied opposite to velocity). */
+    /** Emergency brake maximum reverse power magnitude (applied opposite to velocity). */
     public static double emergencyBrakePower = 0.3;
+    /**
+     * Velocity (deg/s) at which full emergency brake power is applied.
+     * Below this, brake power scales linearly with velocity: brake = maxPower * (|vel| / fullVel).
+     * Prevents overshoot bounce by tapering brake force as the turret decelerates.
+     */
+    public static double emergencyBrakeFullVelDps = 200.0;
 
     //---------------- Velocity Estimation ----------------
     private final double[] positionBuffer = new double[VELOCITY_BUFFER_SIZE];
@@ -109,17 +115,22 @@ public class TurretHardware {
             boolean inMinZone = pos < (softLimitMinDeg + softLimitMarginDeg);
             boolean inMaxZone = pos > (softLimitMaxDeg - softLimitMarginDeg);
 
-            // Emergency brake: if moving fast toward a limit, apply REVERSE power
-            // to actively decelerate (zeroing power just lets momentum carry through)
+            // Emergency brake: proportional to velocity magnitude.
+            // Harder brake when moving fast (dangerous), gentle when slow (prevents
+            // overshoot bounce). Power tapers linearly: brake = maxPower * (|vel| / fullVel).
             if (inMinZone && vel < -emergencyBrakeVelThreshold) {
-                double brakePower = emergencyBrakePower; // positive = toward max = away from min
+                double velMag = Math.abs(vel);
+                double fraction = Math.min(1.0, velMag / emergencyBrakeFullVelDps);
+                double brakePower = emergencyBrakePower * fraction; // positive = away from min
                 lastPower = brakePower;
                 writeServos(brakePower);
                 logSoftLimits(requestedPower, brakePower, "eBrake_min", inMinZone, inMaxZone);
                 return;
             }
             if (inMaxZone && vel > emergencyBrakeVelThreshold) {
-                double brakePower = -emergencyBrakePower; // negative = toward min = away from max
+                double velMag = Math.abs(vel);
+                double fraction = Math.min(1.0, velMag / emergencyBrakeFullVelDps);
+                double brakePower = -emergencyBrakePower * fraction; // negative = away from max
                 lastPower = brakePower;
                 writeServos(brakePower);
                 logSoftLimits(requestedPower, brakePower, "eBrake_max", inMinZone, inMaxZone);
