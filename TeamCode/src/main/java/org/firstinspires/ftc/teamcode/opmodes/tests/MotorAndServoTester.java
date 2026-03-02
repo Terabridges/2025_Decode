@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes.tests;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 @TeleOp(name = "MotorAndServoTester", group = "Test")
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)  // turn off otherwise bulk caching mode gets set to MANUAL and breaks motor velocity sampling
 public class MotorAndServoTester extends LinearOpMode {
 
     private List<DcMotor> motors = new ArrayList<>();
@@ -37,6 +38,8 @@ public class MotorAndServoTester extends LinearOpMode {
     private boolean servoActive = false;
     private boolean prevB = false;
     private int lastServoIndex = -1;
+
+    private static final double DEFAULT_TICKS_PER_REV = 28.0;
 
     private boolean crServoActive = false;
     private int lastCrServoIndex = -1;
@@ -160,13 +163,32 @@ public class MotorAndServoTester extends LinearOpMode {
                 currentMotor.setPower(0);
             }
 
+            String rpmTelemetry = getMotorRpmTelemetry(currentMotor);
+
             telemetry.addData("Mode", "Motor");
             telemetry.addData("Testing Motor", motorIndex + "/" + (motors.size() - 1) + " (" + name + ")");
             telemetry.addData("Power", power);
+            telemetry.addData("Raw RPM", rpmTelemetry);
             telemetry.addData("Power Cap", powerCapEnabled ? "ON (0.5x)" : "OFF (1.0x)");
         } else {
             telemetry.addData("Mode", "Motor");
             telemetry.addData("No Motors", "Connect some!");
+        }
+    }
+
+    private String getMotorRpmTelemetry(DcMotor motor) {
+        if (!(motor instanceof DcMotorEx)) {
+            return "N/A";
+        }
+
+        double ticksPerRev = DEFAULT_TICKS_PER_REV;
+
+        try {
+            double ticksPerSecond = ((DcMotorEx) motor).getVelocity();
+            double rpm = (ticksPerSecond / ticksPerRev) * 60.0;
+            return String.format("%.1f", rpm);
+        } catch (Throwable ignored) {
+            return "N/A";
         }
     }
 
