@@ -33,6 +33,10 @@ public class Intake implements Subsystem {
         autoIntake = spinner.autoSpin;
     }
 
+    public double getFloodgateCurrentAmps() {
+        return spinner.getFloodgateCurrentAmps();
+    }
+
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
