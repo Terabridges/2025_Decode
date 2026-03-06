@@ -1,16 +1,17 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.OLD;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 
-@Configurable
+@Disabled
+//@Configurable
 @TeleOp(name = "TurretPositionCalibrator", group = "Test")
 public class TurretPositionCalibrator extends OpMode {
 

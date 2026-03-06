@@ -2,20 +2,22 @@ package org.firstinspires.ftc.teamcode.config.subsystems.Other;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 
 public class Lift implements Subsystem {
 
     //---------------- Hardware ----------------
-    private DcMotor base;
+    private Servo kickerLeft;
+    private Servo kickerRight;
 
     //---------------- Software ----------------
 
 
     //---------------- Constructor ----------------
     public Lift(HardwareMap map) {
-        base = map.get(DcMotor.class, "base");
+
     }
 
     //---------------- Methods ----------------

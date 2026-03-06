@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.OLD;
 
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.drawCurrentAndHistory;
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
@@ -8,6 +8,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -18,7 +19,8 @@ import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 
-@Configurable
+@Disabled
+//@Configurable
 @TeleOp(name = "LimelightPoseCenteringTest", group = "Test")
 public class LimelightPoseCenteringTest extends OpMode {
 

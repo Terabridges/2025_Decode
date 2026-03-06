@@ -1,7 +1,9 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.OLD;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -9,9 +11,11 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
+@Disabled
+//@Configurable
 @PsiKitAutoLog(rlogPort = 5802)
-@TeleOp(name="FlywheelTuner", group="Test")
-public class FlywheelTuner extends OpMode {
+@TeleOp(name="TurretTest", group="Test")
+public class TurretTest extends OpMode {
 
     Robot robot;
 
@@ -22,6 +26,8 @@ public class FlywheelTuner extends OpMode {
     Gamepad previousGamepad2;
 
     private JoinedTelemetry joinedTelemetry;
+
+    public static double degree = 0;
 
     @Override
     public void init() {
@@ -43,19 +49,18 @@ public class FlywheelTuner extends OpMode {
     @Override
     public void start(){
         //robot.toInit();
-        robot.outtake.shooter.toInit();
+        robot.outtake.turret.toInit();
     }
 
     @Override
     public void loop() {
         //robot.update();
-        robot.outtake.shooter.update();
-//        robot.outtake.shooter.setLeftFlywheelPow(gamepad1.left_trigger);
-//        robot.outtake.shooter.setRightFlywheelPow(gamepad1.right_trigger);
+        robot.outtake.turret.update();
+        gamepadUpdate();
+        if(currentGamepad1.a && !previousGamepad1.a){
+            robot.outtake.turret.setTurretDegree(degree);
+        }
 
-        joinedTelemetry.addData("Current RPM", robot.outtake.shooter.getCurrentRPM());
-        joinedTelemetry.addData("Target RPM", robot.outtake.shooter.getTargetRPM());
-        joinedTelemetry.addData("Current Power", robot.outtake.shooter.getCurrentPower());
         joinedTelemetry.update();
     }
 

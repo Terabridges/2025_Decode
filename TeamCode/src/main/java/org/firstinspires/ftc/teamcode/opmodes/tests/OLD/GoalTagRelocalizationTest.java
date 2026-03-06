@@ -1,10 +1,11 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.OLD;
 
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.drawCurrentAndHistory;
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -13,7 +14,8 @@ import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 
-@Configurable
+@Disabled
+//@Configurable
 @TeleOp(name = "GoalTagRelocalizationTest", group = "Test")
 public class GoalTagRelocalizationTest extends OpMode {
 

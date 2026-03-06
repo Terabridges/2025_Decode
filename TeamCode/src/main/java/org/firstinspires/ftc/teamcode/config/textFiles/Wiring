@@ -3,23 +3,23 @@ left_front
 right_front
 left_back
 right_back
-fly_left (enc)
+fly_left (encoder)
 fly_right
-base
-intake (controls both intakes and clutch)
+intakeLeft
+intakeRight (encoder)
 
 [SERVOS]
 hood
 clutch
-spindexL
+spindexL (encoder)
 spindexR
 light1
 light2
 light3
-
-[CR SERVOS]
-turretL
+turretL (encoder)
 turretR
+kickL (encoder)
+kickR
 
 [ANALOG]
 distance1 (front outer)

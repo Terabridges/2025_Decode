@@ -9,14 +9,13 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
 @PsiKitAutoLog(rlogPort = 5802)
-@TeleOp(name="SpindexTest", group="Test")
-public class SpindexTest extends OpMode {
+@TeleOp(name="KickerTest", group="Test")
+public class KickerTest extends OpMode {
 
     //Robot robot;
 
@@ -32,10 +31,10 @@ public class SpindexTest extends OpMode {
     public static double rightDegree = 0;
     public static double degree = 0;
 
-    private Servo spindexLeft;
-    private Servo spindexRight;
-    private AnalogInput spindexAnalog;
-    private AbsoluteAnalogEncoder spindexEnc;
+    private Servo leftTurret;
+    private Servo rightTurret;
+    private AnalogInput turretAnalog;
+    private AbsoluteAnalogEncoder turretEnc;
 
     @Override
     public void init() {
@@ -52,13 +51,13 @@ public class SpindexTest extends OpMode {
                 telemetry
         );
 
-        spindexLeft = hardwareMap.get(Servo.class, "spindexL");
-        spindexRight = hardwareMap.get(Servo.class, "spindexR");
-        spindexAnalog = hardwareMap.get(AnalogInput.class, "spindexAnalog");
-        spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 29, 1.17);
-        spindexEnc.setInverted(false);
-        spindexRight.setDirection(Servo.Direction.FORWARD);
-        spindexLeft.setDirection(Servo.Direction.FORWARD);
+        leftTurret = hardwareMap.get(Servo.class, "turretL");
+        rightTurret = hardwareMap.get(Servo.class, "turretR");
+        turretAnalog = hardwareMap.get(AnalogInput.class, "turretAnalog");
+        turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
+        turretEnc.setInverted(false);
+        leftTurret.setDirection(Servo.Direction.FORWARD);
+        rightTurret.setDirection(Servo.Direction.FORWARD);
 
     }
 
@@ -71,19 +70,18 @@ public class SpindexTest extends OpMode {
     public void loop() {
         gamepadUpdate();
         if(currentGamepad1.b && !previousGamepad1.b){
-            spindexRight.setPosition(rightDegree/360);
+            rightTurret.setPosition(rightDegree);
         }
 
         if(currentGamepad1.x && !previousGamepad1.x){
-            spindexLeft.setPosition(leftDegree/360);
+            leftTurret.setPosition(leftDegree);
         }
 
         if(currentGamepad1.y && !previousGamepad1.y){
-            spindexRight.setPosition(degree/360);
-            spindexLeft.setPosition(degree/360);
+            leftTurret.setPosition(degree);
+            rightTurret.setPosition(degree);
         }
 
-        joinedTelemetry.addData("Position", spindexEnc.getCurrentPosition());
         joinedTelemetry.update();
     }
 

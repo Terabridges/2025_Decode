@@ -17,7 +17,8 @@ public class Spinner implements Subsystem {
     private AnalogInput frontInnerDistanceSensor;
     private AnalogInput backOuterDistanceSensor;
     private AnalogInput backInnerDistanceSensor;
-    public DcMotor megaSpin;
+    public DcMotor intakeLeft;
+    public DcMotor intakeRight;
 
     //---------------- Software ----------------
     private double megaSpinPow = 0;
@@ -56,8 +57,10 @@ public class Spinner implements Subsystem {
         frontInnerDistanceSensor = map.get(AnalogInput.class, "distance1");
         backOuterDistanceSensor = map.get(AnalogInput.class, "distance3");
         backInnerDistanceSensor = map.get(AnalogInput.class, "distance2");
-        megaSpin = map.get(DcMotor.class, "intake");
-        megaSpin.setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeLeft = map.get(DcMotor.class, "intake");
+        intakeLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeRight = map.get(DcMotor.class, "intake");
+        intakeLeft.setDirection(DcMotorSimple.Direction.FORWARD);
 
 //        frontInnerTimer = new ElapsedTime();
 //        backInnerTimer = new ElapsedTime();
@@ -65,7 +68,8 @@ public class Spinner implements Subsystem {
 
     //---------------- Methods ----------------
     private void moveMegaSpinPow(double pow){
-        megaSpin.setPower(pow);
+        intakeLeft.setPower(pow);
+        intakeRight.setPower(pow);
     }
 
     public void setMegaSpinPow(double pow){

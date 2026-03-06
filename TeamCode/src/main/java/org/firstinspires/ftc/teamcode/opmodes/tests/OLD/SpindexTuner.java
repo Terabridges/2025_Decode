@@ -1,23 +1,23 @@
-package org.firstinspires.ftc.teamcode.opmodes.tests;
+package org.firstinspires.ftc.teamcode.opmodes.tests.OLD;
 
-import com.arcrobotics.ftclib.controller.PIDController;
 import com.arcrobotics.ftclib.controller.PIDFController;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
-@Configurable
+@Disabled
+//@Configurable
 @PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="SpindexTuner", group="Test")
 public class SpindexTuner extends OpMode {
