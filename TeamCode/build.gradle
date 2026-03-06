@@ -116,5 +116,24 @@ afterEvaluate {
                 systemProperty 'summaryKeyContains', pKeyContains.toString()
             }
         }
+
+        tasks.register('runTurretAlignerRlogAnalysis', JavaExec) {
+            group = 'verification'
+            description = 'Analyze TurretServoAssemblyAligner RLOG by mode/enable-state and current spikes.'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.TurretAlignerRlogAnalyzeCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pHighCurrent = project.findProperty('highCurrentA')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pHighCurrent != null) {
+                systemProperty 'highCurrentA', pHighCurrent.toString()
+            }
+        }
     }
 }
