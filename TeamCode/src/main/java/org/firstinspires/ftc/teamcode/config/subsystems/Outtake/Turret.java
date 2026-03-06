@@ -6,6 +6,7 @@ import com.pedropathing.geometry.Pose;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -98,7 +99,23 @@ public class Turret implements Subsystem {
     public static double audienceLaunchApexY = 24.0;
     public static boolean invertRightServo = false;
     public static double leftServoOffset = 0.0;
-    public static double rightServoOffset = 0.0;
+    public static double rightServoOffset = 0.031;
+    /**
+     * Reference base servo position used for degree<->servo conversion.
+     * Base position is the shared, pre-offset command in [0..1] before left/right offsets.
+     */
+    public static double turretServoRefPos = 0.50;
+    /** Turret heading (deg) that corresponds to {@link #turretServoRefPos}. */
+    public static double turretServoRefTurretDeg = 180.0;
+    /**
+     * Calibrated slope (turret-deg per +1.0 base servo command).
+     * Negative means increasing servo position decreases turret angle.
+        * Example with -341.4: requesting +20 turret-deg changes base command by
+        * deltaPos = +20 / -341.4 = -0.0586 (before offsets/inversion).
+     */
+    public static double turretDegPerServoCommand = -341.4;
+    public static double turretServoPwmMinUs = 500.0;
+    public static double turretServoPwmMaxUs = 2500.0;
     // Encoder->turret mapping calibration.
     public static double encoderRefTurretDeg = 59.25;
     public static double encoderRefDeg = 280.0;
@@ -120,6 +137,8 @@ public class Turret implements Subsystem {
     public Turret(HardwareMap map) {
         leftTurret = map.get(Servo.class, "turretL");
         rightTurret = map.get(Servo.class, "turretR");
+        applyTurretServoPwmRange(leftTurret);
+        applyTurretServoPwmRange(rightTurret);
         turretAnalog = map.get(AnalogInput.class, "turretAnalog");
         turretEnc = new AbsoluteAnalogEncoder(turretAnalog, 3.3, 0, 1);
         util = new Util();
@@ -129,15 +148,53 @@ public class Turret implements Subsystem {
 
     //---------------- Methods ----------------
     public void setTurretPos(double pos){
+        // Base command shared by both servos before side-specific inversion/offsets.
         double basePos = util.clamp(pos, 0.0, 1.0);
-        commandedTurretDeg = normalizeDegrees(basePos * 360.0);
+        // Keep software heading estimate in the same calibrated frame.
+        commandedTurretDeg = baseServoPosToTurretDeg(basePos);
+
+        // Left servo follows basePos directly plus optional trim.
         double leftPos = util.clamp(basePos + leftServoOffset, 0.0, 1.0);
+
+        // Right servo can be mirrored and independently trimmed.
+        double rightBasePos = invertRightServo ? (1.0 - basePos) : basePos;
+        double rightPos = util.clamp(rightBasePos + rightServoOffset, 0.0, 1.0);
+
         leftTurret.setPosition(leftPos);
+        rightTurret.setPosition(rightPos);
+    }
+
+    /** Applies configured PWM pulse range to a turret servo if supported by the device. */
+    private void applyTurretServoPwmRange(Servo servo) {
+        if (!(servo instanceof PwmControl)) return;
+        double lo = Math.min(turretServoPwmMinUs, turretServoPwmMaxUs);
+        double hi = Math.max(turretServoPwmMinUs, turretServoPwmMaxUs);
+        ((PwmControl) servo).setPwmRange(new PwmControl.PwmRange(lo, hi));
     }
 
     public void setTurretDegree(double degree){
         refreshWrapStateFromOdometry();
-        setTurretPos(clampToSafeRange(normalizeDegrees(degree)) / 360.0);
+        double clampedDeg = clampToSafeRange(normalizeDegrees(degree));
+        setTurretPos(turretDegToBaseServoPos(clampedDeg));
+    }
+
+    /**
+     * Convert desired turret heading (deg) into shared base servo command in [0..1]
+     * using reference-point + calibrated-slope mapping.
+     */
+    private double turretDegToBaseServoPos(double turretDeg) {
+        double slope = (Math.abs(turretDegPerServoCommand) < 1e-6) ? 360.0 : turretDegPerServoCommand;
+        double errorDeg = wrapSignedDegrees(normalizeDegrees(turretDeg) - normalizeDegrees(turretServoRefTurretDeg));
+        return util.clamp(turretServoRefPos + (errorDeg / slope), 0.0, 1.0);
+    }
+
+    /**
+     * Convert shared base servo command back into turret heading (deg) in the same
+     * calibrated frame used by {@link #turretDegToBaseServoPos(double)}.
+     */
+    private double baseServoPosToTurretDeg(double basePos) {
+        double slope = (Math.abs(turretDegPerServoCommand) < 1e-6) ? 360.0 : turretDegPerServoCommand;
+        return normalizeDegrees(turretServoRefTurretDeg + ((basePos - turretServoRefPos) * slope));
     }
 
     public double normalizeDegrees(double degrees) {
@@ -533,7 +590,7 @@ public class Turret implements Subsystem {
         // Fallback to existing left-servo command frame when encoder is unavailable.
         double leftPos = util.clamp(leftTurret.getPosition(), 0.0, 1.0);
         double basePos = util.clamp(leftPos - leftServoOffset, 0.0, 1.0);
-        commandedTurretDeg = normalizeDegrees(basePos * 360.0);
+        commandedTurretDeg = baseServoPosToTurretDeg(basePos);
     }
 
     public double getMappedEncoderTurretDegrees() {
