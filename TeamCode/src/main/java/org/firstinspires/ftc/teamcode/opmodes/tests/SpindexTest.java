@@ -9,8 +9,10 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
@@ -36,6 +38,7 @@ public class SpindexTest extends OpMode {
     private Servo spindexRight;
     private AnalogInput spindexAnalog;
     private AbsoluteAnalogEncoder spindexEnc;
+    //private Intake intake;
 
     @Override
     public void init() {
@@ -59,6 +62,7 @@ public class SpindexTest extends OpMode {
         spindexEnc.setInverted(false);
         spindexRight.setDirection(Servo.Direction.FORWARD);
         spindexLeft.setDirection(Servo.Direction.FORWARD);
+        //intake = new Intake(hardwareMap);
 
     }
 
@@ -83,8 +87,12 @@ public class SpindexTest extends OpMode {
             spindexLeft.setPosition(degree/360);
         }
 
+        joinedTelemetry.addData("RawEncoderVolts", spindexAnalog.getVoltage());
         joinedTelemetry.addData("Position", spindexEnc.getCurrentPosition());
         joinedTelemetry.update();
+
+        Logger.recordOutput("SpindexDeg", spindexEnc.getCurrentPosition());
+        //Logger.recordOutput("RobotAmps", intake.getFloodgateCurrentAmps() );
     }
 
     public void gamepadUpdate(){
