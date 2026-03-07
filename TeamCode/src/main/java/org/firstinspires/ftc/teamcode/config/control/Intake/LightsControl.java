@@ -38,7 +38,7 @@ public class LightsControl implements Control {
     @Override
     public void update(){
         if (robot == null) return;
-        boolean aligned = robot.outtake.turret.isVisionOnTarget(robot.outtake.vision, aimAlignedToleranceDeg);
+        boolean aligned = robot.outtake.isVisionOnTarget(robot.outtake.vision, aimAlignedToleranceDeg);
         flashingForAim = aligned;
         //lights.setFlashEnabled(aligned);
     }
@@ -48,3 +48,4 @@ public class LightsControl implements Control {
         //telemetry.addData("Aim Aligned", flashingForAim);
     }
 }
+

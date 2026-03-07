@@ -58,7 +58,7 @@ public class TurretPositionCalibrator extends OpMode {
 
     @Override
     public void start() {
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         robot.outtake.turret.toInit();
         targetDeg = robot.outtake.turret.getCurrentDegrees();
     }
@@ -104,7 +104,7 @@ public class TurretPositionCalibrator extends OpMode {
             lastCapture = "Y: RED_GOAL";
         }
 
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         // Calibration mode: command raw servo position so soft turret limits do not clip travel.
         robot.outtake.turret.setTurretPos(targetDeg / 360.0);
 
@@ -173,3 +173,4 @@ public class TurretPositionCalibrator extends OpMode {
         return String.format("%.2f", v);
     }
 }
+

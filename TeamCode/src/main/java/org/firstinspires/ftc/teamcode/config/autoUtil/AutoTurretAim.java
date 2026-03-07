@@ -4,14 +4,11 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 
 public class AutoTurretAim {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
-    private static final double BLUE_VISION_DIRECTION = -1.0;
-    private static final double RED_VISION_DIRECTION = -1.0;
 
     private final Robot robot;
     private final Alliance alliance;
@@ -31,29 +28,27 @@ public class AutoTurretAim {
         int requiredGoalTagId = (alliance == Alliance.BLUE) ? BLUE_GOAL_TAG_ID : RED_GOAL_TAG_ID;
         robot.outtake.vision.setRequiredTagId(requiredGoalTagId);
         robot.outtake.turret.turretVelocity = 0;
-        Turret.cameraLateralOffsetIn = 0.0;
-        Turret.visionDirection = (alliance == Alliance.BLUE) ? BLUE_VISION_DIRECTION : RED_VISION_DIRECTION;
 
         boolean acquireMotif = activeState == AutoStates.ACQUIRE_MOTIF;
         if (activeState == AutoStates.ACQUIRE_MOTIF) {
             // Acquire motif uses only direct ODO obelisk aim (no aimLock).
-            if (robot.outtake.turret.isAimLockEnabled()) {
-                robot.outtake.turret.setAimLockEnabled(false);
+            if (robot.outtake.isAimLockEnabled()) {
+                robot.outtake.setAimLockEnabled(false);
             }
-            robot.outtake.turret.setAimTargetObelisk();
-            robot.outtake.turret.aimAtObeliskWithOdometry();
+            robot.outtake.setAimTargetObelisk();
+            robot.outtake.aimAtObeliskWithOdometry();
         } else {
             // All non-acquire states use the same aimLock flow as teleop.
-            if (!robot.outtake.turret.isAimLockEnabled()) {
-                robot.outtake.turret.setAimLockEnabled(true);
+            if (!robot.outtake.isAimLockEnabled()) {
+                robot.outtake.setAimLockEnabled(true);
             }
-            robot.outtake.turret.setAimTargetGoal();
+            robot.outtake.setAimTargetGoal();
         }
 
         telemetry.addData("Auto Acquire Motif", acquireMotif);
-        telemetry.addData("Auto Aim Lock", robot.outtake.turret.isAimLockEnabled());
-        telemetry.addData("Auto Aim Source", robot.outtake.turret.getActiveLockSource());
-        telemetry.addData("Auto Aim Target", robot.outtake.turret.getAimTarget());
+        telemetry.addData("Auto Aim Lock", robot.outtake.isAimLockEnabled());
+        telemetry.addData("Auto Aim Source", robot.outtake.getActiveLockSource());
+        telemetry.addData("Auto Aim Target", robot.outtake.getAimTarget());
         double commandedDeg = robot.outtake.turret.getCurrentDegrees();
         double mappedEncoderDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
         telemetry.addData("Turret Cmd (deg)", "%.2f", commandedDeg);
@@ -68,3 +63,4 @@ public class AutoTurretAim {
         telemetry.addData("Required Goal Tag Id", requiredGoalTagId);
     }
 }
+
