@@ -47,7 +47,7 @@ public class TurretEncoderAccuracyTest extends OpMode {
     @Override
     public void start() {
         robot.toInit();
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         Turret.turretVelocity = 0.0;
         targetDeg = robot.outtake.turret.getCurrentDegrees();
         inToleranceTimer.reset();
@@ -72,7 +72,7 @@ public class TurretEncoderAccuracyTest extends OpMode {
             targetDeg = robot.outtake.turret.getCurrentDegrees();
         }
 
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         Turret.turretVelocity = 0.0;
         robot.outtake.turret.setTurretDegree(targetDeg);
         robot.outtake.turret.update();
@@ -119,3 +119,4 @@ public class TurretEncoderAccuracyTest extends OpMode {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
     }
 }
+

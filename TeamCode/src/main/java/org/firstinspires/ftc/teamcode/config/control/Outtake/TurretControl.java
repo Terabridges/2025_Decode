@@ -4,28 +4,28 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.control.Control;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 
 public class TurretControl implements Control {
 
     //---------------- Software ----------------
-    Turret turret;
+    Outtake outtake;
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
-    EdgeDetector toggleAimLockStart = new EdgeDetector(() -> turret.toggleAimLock());
+    EdgeDetector toggleAimLockStart = new EdgeDetector(() -> outtake.toggleAimLock());
 
     //---------------- Constructor ----------------
-    public TurretControl(Turret turret, Gamepad gp1, Gamepad gp2){
-        this.turret = turret;
+    public TurretControl(Outtake outtake, Gamepad gp1, Gamepad gp2){
+        this.outtake = outtake;
         this.gp1 = gp1;
         this.gp2 = gp2;
     }
 
     public TurretControl(Robot robot, Gamepad gp1, Gamepad gp2) {
-        this(robot.outtake.turret, gp1, gp2);
+        this(robot.outtake, gp1, gp2);
         this.robot = robot;
     }
 
@@ -40,11 +40,11 @@ public class TurretControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Aim Lock", turret.isAimLockEnabled());
-//        telemetry.addData("Aim Source", turret.getActiveLockSource());
-//        telemetry.addData("Aim Target", turret.getAimTarget());
-//        double commandedDeg = turret.getCurrentDegrees();
-//        double mappedEncoderDeg = turret.getMappedEncoderTurretDegrees();
+        telemetry.addData("Aim Lock", outtake.isAimLockEnabled());
+//        telemetry.addData("Aim Source", outtake.getActiveLockSource());
+//        telemetry.addData("Aim Target", outtake.getAimTarget());
+//        double commandedDeg = outtake.turret.getCurrentDegrees();
+//        double mappedEncoderDeg = outtake.turret.getMappedEncoderTurretDegrees();
 //        telemetry.addData("Turret Cmd (deg)", "%.2f", commandedDeg);
 //        if (Double.isNaN(mappedEncoderDeg) || Double.isInfinite(mappedEncoderDeg)) {
 //            telemetry.addData("Turret Mapped Enc (deg)", "N/A");
@@ -57,8 +57,8 @@ public class TurretControl implements Control {
 //        telemetry.addData("Launch Zone", turret.isInLaunchZone());
 //        telemetry.addData("Turret Wrap", turret.isTurretWrapEnabled());
 //        if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
-//            double odoGoalDesired = turret.getOdoGoalDesiredHeadingDeg(robot.outtake.vision);
-//            double odoGoalDelta = turret.getOdoGoalHeadingDeltaDeg(robot.outtake.vision);
+//            double odoGoalDesired = outtake.getOdoGoalDesiredHeadingDeg(robot.outtake.vision);
+//            double odoGoalDelta = outtake.getOdoGoalHeadingDeltaDeg(robot.outtake.vision);
 //            if (Double.isNaN(odoGoalDesired) || Double.isNaN(odoGoalDelta)) {
 //                telemetry.addData("ODO Goal Desired (deg)", "N/A");
 //                telemetry.addData("ODO Goal Delta (deg)", "N/A");
