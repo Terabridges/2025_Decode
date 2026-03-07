@@ -65,7 +65,7 @@ public class LimelightPoseCenteringTest extends OpMode {
         robot.outtake.turret.toInit();
         robot.other.drive.toInit();
 
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         Turret.turretVelocity = 0.0;
 
         FollowerManager.initFollower(hardwareMap, new Pose(72, 72, 0));
@@ -280,3 +280,4 @@ public class LimelightPoseCenteringTest extends OpMode {
         telemetry.update();
     }
 }
+

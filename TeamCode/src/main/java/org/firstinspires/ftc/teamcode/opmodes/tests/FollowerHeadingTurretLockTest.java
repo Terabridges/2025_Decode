@@ -42,7 +42,7 @@ public class FollowerHeadingTurretLockTest extends OpMode {
 
         robot.toInit();
         robot.other.drive.manualDrive = true;
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         disableIntake();
     }
 
@@ -180,3 +180,4 @@ public class FollowerHeadingTurretLockTest extends OpMode {
         return String.format("%.1f", v);
     }
 }
+

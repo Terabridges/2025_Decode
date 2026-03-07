@@ -25,7 +25,6 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
-import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
@@ -43,8 +42,6 @@ import java.util.List;
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
-    private static final double BLUE_VISION_DIRECTION = -1.0;
-    private static final double RED_VISION_DIRECTION = -1.0;
     private static final double SHOOT_HOLD_CANCEL_STICK_THRESHOLD = 0.5;
 
     IntakeControl intakeControl;
@@ -168,7 +165,7 @@ public class MainTeleOp extends OpMode {
         }
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
-        robot.outtake.turret.setAimLockEnabled(true);
+        robot.outtake.setAimLockEnabled(true);
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
@@ -349,14 +346,12 @@ public class MainTeleOp extends OpMode {
     }
 
     private void applyAllianceVisionLockConfig() {
-        // Keep alliance lock config in one place to avoid drift between start/loop behavior.
-        Turret.cameraLateralOffsetIn = 0.0;
+        // Keep alliance tag config in one place to avoid drift between start/loop behavior.
         if (GlobalVariables.isBlueAlliance()) {
             robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
-            Turret.visionDirection = BLUE_VISION_DIRECTION;
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
-            Turret.visionDirection = RED_VISION_DIRECTION;
         }
     }
 }
+

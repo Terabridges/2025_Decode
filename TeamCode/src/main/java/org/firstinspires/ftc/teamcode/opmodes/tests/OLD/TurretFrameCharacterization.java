@@ -43,7 +43,7 @@ public class TurretFrameCharacterization extends OpMode {
     @Override
     public void start() {
         robot.outtake.turret.toInit();
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         targetDeg = robot.outtake.turret.getCurrentDegrees();
         previousEncoderDeg = robot.outtake.turret.getEncoderDegrees();
     }
@@ -97,7 +97,7 @@ public class TurretFrameCharacterization extends OpMode {
             lastAction = "Back -> turret init";
         }
 
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         robot.outtake.turret.setTurretDegree(targetDeg);
 
         double commandedDeg = robot.outtake.turret.getCurrentDegrees();
@@ -132,3 +132,4 @@ public class TurretFrameCharacterization extends OpMode {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
     }
 }
+

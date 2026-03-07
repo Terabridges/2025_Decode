@@ -38,7 +38,7 @@ public class GoalTagRelocalizationTest extends OpMode {
         previousGamepad1 = new Gamepad();
 
         robot.toInit();
-        robot.outtake.turret.setAimLockEnabled(false);
+        robot.outtake.setAimLockEnabled(false);
         FollowerManager.initFollower(hardwareMap, new Pose(startX, startY, Math.toRadians(startHeadingDeg)));
     }
 
@@ -113,3 +113,4 @@ public class GoalTagRelocalizationTest extends OpMode {
         return new Pose(pose.getX(), pose.getY(), pose.getHeading());
     }
 }
+
