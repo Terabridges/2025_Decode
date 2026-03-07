@@ -89,7 +89,6 @@ public class Robot {
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;
     private int sortedStartBall = 1;
-    private int sortedShootBallTargetCount = 0;
 
     public boolean useSorting = true;
     private boolean wasFullLastLoop = false;
@@ -268,7 +267,6 @@ public class Robot {
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
-                    sortedShootBallTargetCount = Math.max(0, Math.min(3, getLoadedBallCount()));
                     sortedStartBall = getBallSortedShootOrder();
 
                     if(sortedStartBall == 1){
@@ -286,34 +284,30 @@ public class Robot {
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
 
-                    if (sortedShootBallTargetCount > 0) {
-                        if(sortedStartBall == 1){
-                            intake.spindex.setSpindexShootOne();
-                        } else if(sortedStartBall == 2){
-                            intake.spindex.setSpindexShootTwo();
-                        } else if(sortedStartBall == 3){
-                            intake.spindex.setSpindexShootThree();
-                        }
+                    if(sortedStartBall == 1){
+                        intake.spindex.setSpindexShootOne();
+                    } else if(sortedStartBall == 2){
+                        intake.spindex.setSpindexShootTwo();
+                    } else if(sortedStartBall == 3){
+                        intake.spindex.setSpindexShootThree();
                     }
                 })
 
                 .state(SortedShootAllStates.WAIT0)
-                .transition(()-> intake.spindex.isSpindexAtPos() && sortedShootBallTargetCount <= 1, SortedShootAllStates.RESET)
-                .transition(()-> intake.spindex.isSpindexAtPos() && sortedShootBallTargetCount > 1, SortedShootAllStates.WAIT1)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SortedShootAllStates.WAIT1)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
 
                 .state(SortedShootAllStates.WAIT1)
                 .transitionTimed(waitTime, SortedShootAllStates.GO_TO_SECOND)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
-                    if (sortedShootBallTargetCount > 1) {
-                        if(sortedStartBall == 1){
-                            intake.spindex.setSpindexShootTwo();
-                        } else if(sortedStartBall == 2){
-                            intake.spindex.setSpindexShootThree();
-                        } else if(sortedStartBall == 3){
-                            //intake.spindex.setSpindexShootFour();
-                        }
+
+                    if(sortedStartBall == 1){
+                        intake.spindex.setSpindexShootTwo();
+                    } else if(sortedStartBall == 2){
+                        intake.spindex.setSpindexShootThree();
+                    } else if(sortedStartBall == 3){
+                        //intake.spindex.setSpindexShootFour();
                     }
                 })
 
@@ -322,18 +316,16 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
 
                 .state(SortedShootAllStates.WAIT2)
-                .transition(() -> sortedShootBallTargetCount <= 2, SortedShootAllStates.RESET)
                 .transitionTimed(waitTime, SortedShootAllStates.GO_TO_THIRD)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
-                    if (sortedShootBallTargetCount > 2) {
-                        if(sortedStartBall == 1){
-                            intake.spindex.setSpindexShootThree();
-                        } else if(sortedStartBall == 2){
-                            //intake.spindex.setSpindexShootFour();
-                        } else if(sortedStartBall == 3){
-                            //intake.spindex.setSpindexShootFive();
-                        }
+
+                    if(sortedStartBall == 1){
+                        intake.spindex.setSpindexShootThree();
+                    } else if(sortedStartBall == 2){
+                        //intake.spindex.setSpindexShootFour();
+                    } else if(sortedStartBall == 3){
+                        //intake.spindex.setSpindexShootFive();
                     }
                 })
 
@@ -359,7 +351,6 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
                     txLights = false;
-                    sortedShootBallTargetCount = 0;
                     intake.spindex.setSpindexForwardOne();
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -371,7 +362,6 @@ public class Robot {
                 .onEnter(()->{
                     txLights = false;
                     other.unJam = false;
-                    sortedShootBallTargetCount = 0;
                     intake.spindex.setSpindexPos(intake.spindex.getAbsolutePos());
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
@@ -418,77 +408,39 @@ public class Robot {
 //    }
 
     public int getBallSortedShootOrder(){
-        if (intake == null || intake.spindex == null || intake.spindex.ballList == null) {
+        if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PPG)) {
+            if (intake.spindex.balls.equals("PPG")){
+                return 1;
+            } else if (intake.spindex.balls.equals("GPP")){
+                return 2;
+            } else if (intake.spindex.balls.equals("PGP")){
+                return 3;
+            } else {
+                return 1;
+            }
+        } else if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.GPP)) {
+            if (intake.spindex.balls.equals("GPP")){
+                return 1;
+            } else if (intake.spindex.balls.equals("PGP")){
+                return 2;
+            } else if (intake.spindex.balls.equals("PPG")){
+                return 3;
+            } else {
+                return 1;
+            }
+        } else if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PGP)) {
+            if (intake.spindex.balls.equals("PGP")){
+                return 1;
+            } else if (intake.spindex.balls.equals("PPG")){
+                return 2;
+            } else if (intake.spindex.balls.equals("GPP")){
+                return 3;
+            } else {
+                return 1;
+            }
+        } else {
             return 1;
         }
-
-        String[] ballList = intake.spindex.ballList;
-        if (ballList.length < 3) {
-            return 1;
-        }
-
-        char[] motifSequence = getMotifSequence();
-        int bestStartIndex = 0;
-        int bestScore = Integer.MIN_VALUE;
-
-        for (int startIndex = 0; startIndex < 3; startIndex++) {
-            int score = scoreStartIndex(ballList, motifSequence, startIndex);
-            if (score > bestScore) {
-                bestScore = score;
-                bestStartIndex = startIndex;
-            }
-        }
-
-        return bestStartIndex + 1;
-    }
-
-    private int scoreStartIndex(String[] ballList, char[] motifSequence, int startIndex) {
-        int score = 0;
-
-        for (int shotIndex = 0; shotIndex < 3; shotIndex++) {
-            int slotIndex = (startIndex + shotIndex) % 3;
-            char slotColor = normalizeBallCode(ballList[slotIndex]);
-            char desiredColor = motifSequence[shotIndex];
-
-            int shotWeight = 3 - shotIndex;
-
-            if (slotColor == 'E') {
-                score -= 200 * shotWeight;
-                continue;
-            }
-
-            score += 40 * shotWeight;
-
-            if (slotColor == desiredColor) {
-                score += 100 * shotWeight;
-            } else if (slotColor == 'B') {
-                score -= 30 * shotWeight;
-            }
-        }
-
-        return score;
-    }
-
-    private char normalizeBallCode(String slot) {
-        if (slot == null || slot.isEmpty()) {
-            return 'E';
-        }
-        char code = Character.toUpperCase(slot.charAt(0));
-        if (code == 'P' || code == 'G' || code == 'E' || code == 'B') {
-            return code;
-        }
-        return 'B';
-    }
-
-    private char[] getMotifSequence() {
-        GlobalVariables.MotifPattern motif = GlobalVariables.getMotif();
-        if (motif == GlobalVariables.MotifPattern.GPP) {
-            return new char[]{'G', 'P', 'P'};
-        }
-        if (motif == GlobalVariables.MotifPattern.PGP) {
-            return new char[]{'P', 'G', 'P'};
-        }
-        return new char[]{'P', 'P', 'G'};
     }
 
     public void getReadyShoot(){
