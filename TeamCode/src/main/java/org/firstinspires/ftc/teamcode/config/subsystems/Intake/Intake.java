@@ -53,13 +53,13 @@ public class Intake implements Subsystem {
         spinner.update();
         lights.update();
 
-//        if (!spindex.isSpindexAtPos() && autoIntake){
-//            spinner.overrideSpinIn();
-//        }
-//
-//        if (spindex.isSpindexAtPos() && autoIntake){
-//            spinner.overrideSpinZero();
-//        }
+        if (!spindex.isSpindexAtPos() && autoIntake){
+            spinner.overrideSpinIn();
+        }
+
+        if (spindex.isSpindexAtPos() && autoIntake){
+            spinner.overrideSpinZero();
+        }
 
         if(spinner.frontInnerTripped){
             if (spindex.isSpindexAtPos() && autoIntake) {

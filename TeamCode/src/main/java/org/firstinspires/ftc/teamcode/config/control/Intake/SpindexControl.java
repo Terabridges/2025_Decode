@@ -64,7 +64,7 @@ public class SpindexControl implements Control {
         telemetry.addData("Current Direction", spindex.getCurrentDirection());
 //        telemetry.addData("Current Ball", spindex.getCurrentBall());
         //telemetry.addData("Current/Commanded Pos", String.format("%.1f",spindex.getAbsolutePos()) + "/" + String.format("%.1f",spindex.getCommandedPos()));
-        telemetry.addData("Commanded Pos", spindex.getCommandedPos());
+        telemetry.addData("Commanded Pos", spindex.getCommandedDegree());
         telemetry.addData("Absolute Pos", spindex.getAbsolutePos());
 
         //telemetry.addData("CommandedPos", spindex.getCommandedPos());
