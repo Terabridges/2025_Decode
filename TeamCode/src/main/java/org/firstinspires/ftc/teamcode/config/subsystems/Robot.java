@@ -127,6 +127,13 @@ public class Robot {
         return voltageSensor.getVoltage();
     }
 
+    public double getCurrentAmps() {
+        if (intake == null) {
+            return Double.NaN;
+        }
+        return intake.getFloodgateCurrentAmps();
+    }
+
     public void toggleLightsTurret(){
         txLights = !txLights;
         if (!txLights){

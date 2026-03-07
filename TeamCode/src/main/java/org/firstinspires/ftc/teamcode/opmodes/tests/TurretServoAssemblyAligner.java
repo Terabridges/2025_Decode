@@ -7,10 +7,15 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
+import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
+
+import org.psilynx.psikit.core.Logger;
+
 
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 
 @Configurable
+@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name = "TurretServoAssemblyAligner", group = "Test")
 public class TurretServoAssemblyAligner extends OpMode {
 
@@ -34,8 +39,7 @@ public class TurretServoAssemblyAligner extends OpMode {
     public static double largeStep = 0.01;
 
     public static boolean invertRight = false;
-    public static double leftOffset = 0.0;
-    public static double rightOffset = 0.031;
+    public static double rightOffset = 0.021;
 
     public static double verifySweepMin = 0.35;
     public static double verifySweepMax = 0.65;
@@ -45,6 +49,8 @@ public class TurretServoAssemblyAligner extends OpMode {
     public static double compareCommandTolerance = 0.01;
     public static double pwmMinUs = 500.0;
     public static double pwmMaxUs = 2500.0;
+    public static double rightOffsetSmallStep = 0.001;
+    public static double rightOffsetLargeStep = 0.005;
 
     private Servo turretL;
     private Servo turretR;
@@ -78,6 +84,9 @@ public class TurretServoAssemblyAligner extends OpMode {
     private double leftNormalizedRangeRatio = Double.NaN;
     private double rightNormalizedRangeRatio = Double.NaN;
 
+    private AnalogInput floodgateAnalog;
+    private double floodgateCurrent = Double.NaN;
+
     private long lastLoopNs;
 
     @Override
@@ -94,15 +103,17 @@ public class TurretServoAssemblyAligner extends OpMode {
         } catch (Exception ignored) {
             turretEnc = null;
         }
-
+        floodgateAnalog = hardwareMap.get(AnalogInput.class, "floodgate");
+        floodgateCurrent = floodgateAnalog.getVoltage()/3.3 * 80.0;
         lastLoopNs = System.nanoTime();
-        targetPos = clamp(targetPos, minPos, maxPos);
+        targetPos = clampTargetToSharedRange(targetPos);
     }
 
     @Override
     public void loop() {
         previous.copy(current);
         current.copy(gamepad1);
+        floodgateCurrent = floodgateAnalog.getVoltage()/3.3 * 80.0;
 
         long nowNs = System.nanoTime();
         double dtSec = Math.max(0.0, (nowNs - lastLoopNs) / 1e9);
@@ -124,7 +135,22 @@ public class TurretServoAssemblyAligner extends OpMode {
         }
 
         if (modeRunning && edge(current.back, previous.back)) {
-            targetPos = clamp(centerPos, minPos, maxPos);
+            targetPos = clampTargetToSharedRange(centerPos);
+        }
+
+        if (modeRunning) {
+            boolean rtNow = current.right_trigger > 0.6;
+            boolean rtPrev = previous.right_trigger > 0.6;
+            boolean ltNow = current.left_trigger > 0.6;
+            boolean ltPrev = previous.left_trigger > 0.6;
+
+            if (edge(current.dpad_up, previous.dpad_up)) rightOffset += rightOffsetSmallStep;
+            if (edge(current.dpad_down, previous.dpad_down)) rightOffset -= rightOffsetSmallStep;
+            if (edge(rtNow, rtPrev)) rightOffset += rightOffsetLargeStep;
+            if (edge(ltNow, ltPrev)) rightOffset -= rightOffsetLargeStep;
+
+            rightOffset = clamp(rightOffset, getRightOffsetMin(), getRightOffsetMax());
+            targetPos = clampTargetToSharedRange(targetPos);
         }
 
         if (modeRunning && !startedThisLoop) {
@@ -169,7 +195,7 @@ public class TurretServoAssemblyAligner extends OpMode {
             rightEnabled = true;
         }
 
-        targetPos = clamp(targetPos, minPos, maxPos);
+        targetPos = clampTargetToSharedRange(targetPos);
     }
 
     private void runVerifyMode(double dtSec) {
@@ -207,7 +233,7 @@ public class TurretServoAssemblyAligner extends OpMode {
             if (edge(current.left_bumper, previous.left_bumper)) targetPos -= largeStep;
         }
 
-        targetPos = clamp(targetPos, minPos, maxPos);
+        targetPos = clampTargetToSharedRange(targetPos);
     }
 
     private void runCharacterizeMode(double dtSec) {
@@ -226,7 +252,7 @@ public class TurretServoAssemblyAligner extends OpMode {
         if (edge(current.right_bumper, previous.right_bumper)) targetPos += largeStep;
         if (edge(current.left_bumper, previous.left_bumper)) targetPos -= largeStep;
         if (edge(current.back, previous.back)) targetPos = centerPos;
-        targetPos = clamp(targetPos, minPos, maxPos);
+        targetPos = clampTargetToSharedRange(targetPos);
 
         if (edge(current.a, previous.a)) {
             captureSample();
@@ -375,12 +401,36 @@ public class TurretServoAssemblyAligner extends OpMode {
     }
 
     private double computeLeftCmd() {
-        return clamp(targetPos + leftOffset, minPos, maxPos);
+        return clamp(targetPos, minPos, maxPos);
     }
 
     private double computeRightCmd() {
         double base = invertRight ? (1.0 - targetPos) : targetPos;
         return clamp(base + rightOffset, minPos, maxPos);
+    }
+
+    private double clampTargetToSharedRange(double requestedBasePos) {
+        double sharedMin = Math.max(minPos, invertRight ? (1.0 - maxPos) + rightOffset : minPos - rightOffset);
+        double sharedMax = Math.min(maxPos, invertRight ? (1.0 - minPos) + rightOffset : maxPos - rightOffset);
+        return clamp(requestedBasePos, sharedMin, sharedMax);
+    }
+
+    private double getRightOffsetMin() {
+        double lo = Math.min(minPos, maxPos);
+        double hi = Math.max(minPos, maxPos);
+        if (invertRight) {
+            return (2.0 * lo) - 1.0;
+        }
+        return -(hi - lo);
+    }
+
+    private double getRightOffsetMax() {
+        double lo = Math.min(minPos, maxPos);
+        double hi = Math.max(minPos, maxPos);
+        if (invertRight) {
+            return (2.0 * hi) - 1.0;
+        }
+        return (hi - lo);
     }
 
     private void writeServo(Servo servo, boolean enabled, double position) {
@@ -401,21 +451,54 @@ public class TurretServoAssemblyAligner extends OpMode {
     }
 
     private void showTelemetry() {
+        double leftCmd = computeLeftCmd();
+        double rightCmd = computeRightCmd();
+        double sharedMin = Math.max(minPos, invertRight ? (1.0 - maxPos) + rightOffset : minPos - rightOffset);
+        double sharedMax = Math.min(maxPos, invertRight ? (1.0 - minPos) + rightOffset : maxPos - rightOffset);
+        double encoderDeg = (turretEnc != null) ? turretEnc.getCurrentPosition() : Double.NaN;
+
+        Logger.recordOutput("TurretAligner/FloodgateAmps", floodgateCurrent);
+        Logger.recordOutput("TurretAligner/ModeRunning", modeRunning ? 1.0 : 0.0);
+        Logger.recordOutput("TurretAligner/ModeSelected", modeToNumber(selectedMode));
+        Logger.recordOutput("TurretAligner/LeftEnabled", leftEnabled ? 1.0 : 0.0);
+        Logger.recordOutput("TurretAligner/RightEnabled", rightEnabled ? 1.0 : 0.0);
+        Logger.recordOutput("TurretAligner/VerifyAutoSweep", verifyAutoSweep ? 1.0 : 0.0);
+        Logger.recordOutput("TurretAligner/VerifySweepDirection", verifySweepDirection);
+        Logger.recordOutput("TurretAligner/TargetPos", targetPos);
+        Logger.recordOutput("TurretAligner/LeftCmd", leftCmd);
+        Logger.recordOutput("TurretAligner/RightCmd", rightCmd);
+        Logger.recordOutput("TurretAligner/RightOffset", rightOffset);
+        Logger.recordOutput("TurretAligner/InvertRight", invertRight ? 1.0 : 0.0);
+        Logger.recordOutput("TurretAligner/SharedMin", sharedMin);
+        Logger.recordOutput("TurretAligner/SharedMax", sharedMax);
+        Logger.recordOutput("TurretAligner/LeftServoPos", turretL.getPosition());
+        Logger.recordOutput("TurretAligner/RightServoPos", turretR.getPosition());
+        Logger.recordOutput("TurretAligner/EncoderDeg", encoderDeg);
+        Logger.recordOutput("TurretAligner/CharacterizeServo", characterizeServo == CharacterizeServo.LEFT ? 0.0 : 1.0);
+        Logger.recordOutput("TurretAligner/LeftSampleCount", leftSampleCount);
+        Logger.recordOutput("TurretAligner/RightSampleCount", rightSampleCount);
+        Logger.recordOutput("TurretAligner/CompareMatchedCount", compareMatchedCount);
+        Logger.recordOutput("TurretAligner/CompareAvgSignedEncErr", compareAvgSignedEncErr);
+        Logger.recordOutput("TurretAligner/CompareAvgAbsEncErr", compareAvgAbsEncErr);
+        Logger.recordOutput("TurretAligner/CompareMaxAbsEncErr", compareMaxAbsEncErr);
+        Logger.recordOutput("TurretAligner/SuggestedRightOffsetDelta", suggestedRightOffsetDelta);
+
+        Logger.recordOutput("FloodgateAmps", floodgateCurrent);
         telemetry.addData("Selected Mode", selectedMode);
         telemetry.addData("Mode Running", modeRunning);
         telemetry.addData("TargetPos", "%.4f", targetPos);
-        telemetry.addData("LeftCmd", "%.4f", computeLeftCmd());
-        telemetry.addData("RightCmd", "%.4f", computeRightCmd());
+        telemetry.addData("LeftCmd", "%.4f", leftCmd);
+        telemetry.addData("RightCmd", "%.4f", rightCmd);
         telemetry.addData("Left Enabled", leftEnabled);
         telemetry.addData("Right Enabled", rightEnabled);
         telemetry.addData("Invert Right", invertRight);
-        telemetry.addData("Left Offset", "%.4f", leftOffset);
         telemetry.addData("Right Offset", "%.4f", rightOffset);
+        telemetry.addData("Right Offset Range", "%.4f .. %.4f", getRightOffsetMin(), getRightOffsetMax());
 
         telemetry.addData("L getPosition", "%.4f", turretL.getPosition());
         telemetry.addData("R getPosition", "%.4f", turretR.getPosition());
-        telemetry.addData("L PWM us", fmtPwmMicros(turretL, computeLeftCmd()));
-        telemetry.addData("R PWM us", fmtPwmMicros(turretR, computeRightCmd()));
+        telemetry.addData("L PWM us", fmtPwmMicros(turretL, leftCmd));
+        telemetry.addData("R PWM us", fmtPwmMicros(turretR, rightCmd));
 
         if (turretEnc != null) {
             telemetry.addData("Turret Enc Deg", "%.2f", turretEnc.getCurrentPosition());
@@ -436,6 +519,7 @@ public class TurretServoAssemblyAligner extends OpMode {
             telemetry.addData("AutoSweep", verifyAutoSweep);
             telemetry.addLine("VERIFY: both servos enabled and moving together.");
             telemetry.addLine("X toggle autosweep, Y reverse sweep direction, A center/stop sweep");
+            telemetry.addLine("Dpad Up/Down: rightOffset +/- small, RT/LT: rightOffset +/- large");
             telemetry.addLine("If gears chatter, stop and adjust invertRight/offsets/mechanical mesh.");
         } else {
             telemetry.addData("Characterize Servo", characterizeServo);
@@ -466,6 +550,7 @@ public class TurretServoAssemblyAligner extends OpMode {
 
             telemetry.addLine("CHAR: Y swap active servo (other PWM disabled)");
             telemetry.addLine("LS/Dpad/LB/RB move target, A capture point, B clear active set");
+            telemetry.addLine("Dpad Up/Down: rightOffset +/- small, RT/LT: rightOffset +/- large");
             telemetry.addLine("X compare left-vs-right datasets, BACK center target");
         }
 
@@ -477,7 +562,7 @@ public class TurretServoAssemblyAligner extends OpMode {
     }
 
     private static double clamp(double value, double lo, double hi) {
-        return Math.max(Math.min(value, Math.max(lo, hi)), Math.min(lo, hi));
+        return Math.max(lo, Math.min(value, hi));
     }
 
     private static double wrapSignedDeg(double degrees) {
@@ -504,5 +589,11 @@ public class TurretServoAssemblyAligner extends OpMode {
     private static String fmt(double value) {
         if (Double.isNaN(value)) return "n/a";
         return String.format("%.3f", value);
+    }
+
+    private static double modeToNumber(Mode mode) {
+        if (mode == Mode.ALIGN) return 0.0;
+        if (mode == Mode.VERIFY) return 1.0;
+        return 2.0;
     }
 }

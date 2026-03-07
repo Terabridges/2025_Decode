@@ -17,6 +17,7 @@ public class Spinner implements Subsystem {
     private AnalogInput frontInnerDistanceSensor;
     private AnalogInput backOuterDistanceSensor;
     private AnalogInput backInnerDistanceSensor;
+    private AnalogInput floodgateSensor;
     public DcMotor intakeLeft;
     public DcMotor intakeRight;
 
@@ -50,6 +51,8 @@ public class Spinner implements Subsystem {
 //    private boolean backInnerInitial = false;
 
     public boolean autoSpin = true;
+    public static double floodgateMaxCurrentAmps = 80.0;
+    private double floodgateCurrentAmps = Double.NaN;
 
     //---------------- Constructor ----------------
     public Spinner(HardwareMap map) {
@@ -57,10 +60,15 @@ public class Spinner implements Subsystem {
         frontInnerDistanceSensor = map.get(AnalogInput.class, "distance1");
         backOuterDistanceSensor = map.get(AnalogInput.class, "distance3");
         backInnerDistanceSensor = map.get(AnalogInput.class, "distance2");
-        intakeLeft = map.get(DcMotor.class, "intake");
+        try {
+            floodgateSensor = map.get(AnalogInput.class, "floodgate");
+        } catch (Exception ignored) {
+            floodgateSensor = null;
+        }
+        intakeLeft = map.get(DcMotor.class, "intakeLeft");
         intakeLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        intakeRight = map.get(DcMotor.class, "intake");
-        intakeLeft.setDirection(DcMotorSimple.Direction.FORWARD);
+        intakeRight = map.get(DcMotor.class, "intakeRight");
+        intakeRight.setDirection(DcMotorSimple.Direction.FORWARD);
 
 //        frontInnerTimer = new ElapsedTime();
 //        backInnerTimer = new ElapsedTime();
@@ -156,6 +164,18 @@ public class Spinner implements Subsystem {
 //        }
     }
 
+    private void updateFloodgateCurrent() {
+        if (floodgateSensor == null) {
+            floodgateCurrentAmps = Double.NaN;
+            return;
+        }
+        floodgateCurrentAmps = (floodgateSensor.getVoltage() / 3.3) * floodgateMaxCurrentAmps;
+    }
+
+    public double getFloodgateCurrentAmps() {
+        return floodgateCurrentAmps;
+    }
+
 
 
     public void unTrip(){
@@ -177,6 +197,7 @@ public class Spinner implements Subsystem {
         frontInnerDistance = frontInnerDistanceSensor.getVoltage();
         backOuterDistance = backOuterDistanceSensor.getVoltage();
         backInnerDistance = backInnerDistanceSensor.getVoltage();
+        updateFloodgateCurrent();
     }
 
     @Override
@@ -187,6 +208,7 @@ public class Spinner implements Subsystem {
             moveMegaSpinPow(megaSpinPow);
         }
         updateDistances();
+        updateFloodgateCurrent();
     }
 
 }

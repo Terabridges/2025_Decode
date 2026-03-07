@@ -14,6 +14,7 @@
             <AnalogInput name="distance0" port="0" />
             <AnalogInput name="distance1" port="1" />
             <AnalogInput name="kickAnalog" port="2" />
+            <AnalogInput name="floodgate" port="3" />
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
             <goBILDA5201SeriesMotor name="left_back" port="0" />

@@ -98,8 +98,7 @@ public class Turret implements Subsystem {
     public static double audienceLaunchApexX = 72.0;
     public static double audienceLaunchApexY = 24.0;
     public static boolean invertRightServo = false;
-    public static double leftServoOffset = 0.0;
-    public static double rightServoOffset = 0.031;
+    public static double rightServoOffset = 0.021;
     /**
      * Reference base servo position used for degree<->servo conversion.
      * Base position is the shared, pre-offset command in [0..1] before left/right offsets.
@@ -110,8 +109,8 @@ public class Turret implements Subsystem {
     /**
      * Calibrated slope (turret-deg per +1.0 base servo command).
      * Negative means increasing servo position decreases turret angle.
-        * Example with -341.4: requesting +20 turret-deg changes base command by
-        * deltaPos = +20 / -341.4 = -0.0586 (before offsets/inversion).
+      * Example with -341.4: requesting +20 turret-deg changes base command by
+      * deltaPos = +20 / -341.4 = -0.0586 (before right offset/inversion).
      */
     public static double turretDegPerServoCommand = -341.4;
     public static double turretServoPwmMinUs = 500.0;
@@ -149,12 +148,12 @@ public class Turret implements Subsystem {
     //---------------- Methods ----------------
     public void setTurretPos(double pos){
         // Base command shared by both servos before side-specific inversion/offsets.
-        double basePos = util.clamp(pos, 0.0, 1.0);
+        double basePos = clampBasePosToSharedRange(pos);
         // Keep software heading estimate in the same calibrated frame.
         commandedTurretDeg = baseServoPosToTurretDeg(basePos);
 
-        // Left servo follows basePos directly plus optional trim.
-        double leftPos = util.clamp(basePos + leftServoOffset, 0.0, 1.0);
+        // Left servo follows basePos directly.
+        double leftPos = util.clamp(basePos, 0.0, 1.0);
 
         // Right servo can be mirrored and independently trimmed.
         double rightBasePos = invertRightServo ? (1.0 - basePos) : basePos;
@@ -185,7 +184,19 @@ public class Turret implements Subsystem {
     private double turretDegToBaseServoPos(double turretDeg) {
         double slope = (Math.abs(turretDegPerServoCommand) < 1e-6) ? 360.0 : turretDegPerServoCommand;
         double errorDeg = wrapSignedDegrees(normalizeDegrees(turretDeg) - normalizeDegrees(turretServoRefTurretDeg));
-        return util.clamp(turretServoRefPos + (errorDeg / slope), 0.0, 1.0);
+        return clampBasePosToSharedRange(turretServoRefPos + (errorDeg / slope));
+    }
+
+    private double getSharedBaseMin() {
+        return Math.max(0.0, invertRightServo ? rightServoOffset : -rightServoOffset);
+    }
+
+    private double getSharedBaseMax() {
+        return Math.min(1.0, invertRightServo ? 1.0 + rightServoOffset : 1.0 - rightServoOffset);
+    }
+
+    private double clampBasePosToSharedRange(double requestedBasePos) {
+        return util.clamp(requestedBasePos, getSharedBaseMin(), getSharedBaseMax());
     }
 
     /**
@@ -589,7 +600,7 @@ public class Turret implements Subsystem {
 
         // Fallback to existing left-servo command frame when encoder is unavailable.
         double leftPos = util.clamp(leftTurret.getPosition(), 0.0, 1.0);
-        double basePos = util.clamp(leftPos - leftServoOffset, 0.0, 1.0);
+        double basePos = util.clamp(leftPos, 0.0, 1.0);
         commandedTurretDeg = baseServoPosToTurretDeg(basePos);
     }
 
