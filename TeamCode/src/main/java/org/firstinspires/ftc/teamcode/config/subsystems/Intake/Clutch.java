@@ -15,9 +15,9 @@ public class Clutch implements Subsystem {
     private Servo clutch;
 
     //---------------- Software ----------------
-    public static double clutchUp = 0.52;
-    public static double clutchDown = 0.38;
-    public static double clutchDownFar = 0.05;
+    public static double clutchUp = 0.5;
+    public static double clutchDown = 0.42;
+    public static double clutchDownFar = 0.2;
     private boolean isClutchDown = false;
     private boolean isClutchDownFar = false;
 

@@ -158,7 +158,7 @@ public class Robot {
                     forceShootAllThreeOnNextStart = false;
                     intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
-                    intake.spindex.setSpindexForwardZero();
+                    //intake.spindex.setSpindexForwardZero();
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
@@ -206,7 +206,7 @@ public class Robot {
                 .transitionTimed(waitTime, ShootAllStates.RESET)
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
-                    intake.spindex.setSpindexShootFour();
+                    //intake.spindex.setSpindexShootFour();
                 })
 
                 .state(ShootAllStates.RESET)
@@ -270,7 +270,7 @@ public class Robot {
                     sortedStartBall = getBallSortedShootOrder();
 
                     if(sortedStartBall == 1){
-                        intake.spindex.setSpindexForwardZero();
+                        //intake.spindex.setSpindexForwardZero();
                     } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexForwardOne();
                     } else if(sortedStartBall == 3){
@@ -307,7 +307,7 @@ public class Robot {
                     } else if(sortedStartBall == 2){
                         intake.spindex.setSpindexShootThree();
                     } else if(sortedStartBall == 3){
-                        intake.spindex.setSpindexShootFour();
+                        //intake.spindex.setSpindexShootFour();
                     }
                 })
 
@@ -323,9 +323,9 @@ public class Robot {
                     if(sortedStartBall == 1){
                         intake.spindex.setSpindexShootThree();
                     } else if(sortedStartBall == 2){
-                        intake.spindex.setSpindexShootFour();
+                        //intake.spindex.setSpindexShootFour();
                     } else if(sortedStartBall == 3){
-                        intake.spindex.setSpindexShootFive();
+                        //intake.spindex.setSpindexShootFive();
                     }
                 })
 
@@ -338,11 +338,11 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
                     if(sortedStartBall == 1){
-                        intake.spindex.setSpindexShootFour();
+                        //intake.spindex.setSpindexShootFour();
                     } else if(sortedStartBall == 2){
-                        intake.spindex.setSpindexShootFive();
+                        //intake.spindex.setSpindexShootFive();
                     } else if(sortedStartBall == 3){
-                        intake.spindex.setSpindexShootSix();
+                        //intake.spindex.setSpindexShootSix();
                     }
                 })
 
@@ -447,14 +447,14 @@ public class Robot {
         if (useSorting){
             int firstBall = getBallSortedShootOrder();
             if (firstBall == 1){
-                intake.spindex.setSpindexForwardZero();
+                //intake.spindex.setSpindexForwardZero();
             } else if (firstBall == 2){
                 intake.spindex.setSpindexForwardOne();
             } else if (firstBall == 3) {
                 intake.spindex.setSpindexForwardTwo();
             }
         } else {
-            intake.spindex.setSpindexForwardZero();
+            //intake.spindex.setSpindexForwardZero();
         }
         outtake.shooter.setHoodTarget();
     }

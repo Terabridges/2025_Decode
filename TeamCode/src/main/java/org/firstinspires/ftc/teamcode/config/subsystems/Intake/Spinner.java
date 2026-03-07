@@ -28,27 +28,16 @@ public class Spinner implements Subsystem {
     private double frontInnerDistance = 0;
     private double backOuterDistance = 0;
     private double backInnerDistance = 0;
-    private double previousFrontOuterDistance = 0;
-    private double previousFrontInnerDistance = 0;
-    private double previousBackOuterDistance = 0;
-    private double previousBackInnerDistance = 0;
     public boolean frontOuterTripped = false;
     public boolean frontInnerTripped = false;
     public boolean backOuterTripped = false;
     public boolean backInnerTripped = false;
-    public static double frontOuterDistanceLowThresh = 0.7; // lower than 0.7
-    //public static double frontOuterDistanceHighThresh = 0.35; // higher than 0.32
-    public static double frontInnerDistanceLowThresh = 0.3; //lower than 0.3
-    public static double backOuterDistanceLowThresh = 0.7; //lower than 0.7
-    //public static double backOuterDistanceHighThresh = 0.35; //higher than 0.375
-    public static double backInnerDistanceLowThresh = 0.3; //lower than 0.3
+    public static double frontOuterDistanceLowThresh = 0.5; // lower than 0.7
+    public static double frontInnerDistanceLowThresh = 0.275; //lower than 0.3
+    public static double backOuterDistanceLowThresh = 0.5; //lower than 0.7
+    public static double backInnerDistanceLowThresh = 0.275; //lower than 0.3
     public boolean spinOverride = false;
     private double overridePow = 0;
-
-//    private ElapsedTime frontInnerTimer;
-//    private ElapsedTime backInnerTimer;
-//    private boolean frontInnerInitial = false;
-//    private boolean backInnerInitial = false;
 
     public boolean autoSpin = true;
     public static double floodgateMaxCurrentAmps = 80.0;
@@ -85,12 +74,12 @@ public class Spinner implements Subsystem {
     }
 
     public void setMegaSpinIn(){
-        megaSpinPow = 0.95;
+        megaSpinPow = 0.98;
         overrideSpinZero();
     }
 
     public void setMegaSpinOut(){
-        megaSpinPow = -0.95;
+        megaSpinPow = -0.98;
         overrideSpinZero();
     }
 
@@ -100,7 +89,7 @@ public class Spinner implements Subsystem {
     }
 
     public void overrideSpinIn(){
-        overridePow = 0.95;
+        overridePow = 0.98;
         spinOverride = true;
     }
 
@@ -126,11 +115,6 @@ public class Spinner implements Subsystem {
     }
 
     public void updateDistances(){
-        previousFrontOuterDistance = frontOuterDistance;
-        previousFrontInnerDistance = frontInnerDistance;
-        previousBackOuterDistance = backOuterDistance;
-        previousBackInnerDistance = backInnerDistance;
-
         frontOuterDistance = frontOuterDistanceSensor.getVoltage();
         frontInnerDistance = frontInnerDistanceSensor.getVoltage();
         backOuterDistance = backOuterDistanceSensor.getVoltage();
@@ -140,28 +124,14 @@ public class Spinner implements Subsystem {
             frontOuterTripped = true;
         }
         if (frontInnerDistance < frontInnerDistanceLowThresh){
-//            frontInnerTimer.reset();
-//            frontInnerInitial = true;
             frontInnerTripped = true;
         }
         if (backOuterDistance < backOuterDistanceLowThresh){
             backOuterTripped = true;
         }
         if (backInnerDistance < backInnerDistanceLowThresh){
-//            backInnerTimer.reset();
-//            backInnerInitial = true;
             backInnerTripped = true;
         }
-
-//        if(frontInnerInitial && frontInnerTimer.milliseconds()>100){
-//            frontInnerTripped = true;
-//            frontInnerInitial = false;
-//        }
-//
-//        if(backInnerInitial && backInnerTimer.milliseconds()>100){
-//            backInnerTripped = true;
-//            backInnerInitial = false;
-//        }
     }
 
     private void updateFloodgateCurrent() {
