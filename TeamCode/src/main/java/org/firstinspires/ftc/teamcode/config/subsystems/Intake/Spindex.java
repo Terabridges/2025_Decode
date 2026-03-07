@@ -98,6 +98,7 @@ public class Spindex implements Subsystem {
     private double frontColorDistance = 0;
     private double backColorDistance = 0;
     private double commandedServoPos = 0.0;
+    private double commandedDegree = 0.0;
 
 
     //---------------- Constructor ----------------
@@ -131,6 +132,7 @@ public class Spindex implements Subsystem {
     }
 
     public void setSpindexDegree(double degree){
+        commandedDegree = degree;
         double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
         double biasedDeg = degree + commandBiasDeg;
         double wrappedDeg = ((biasedDeg % physicalRangeDeg) + physicalRangeDeg) % physicalRangeDeg;
@@ -424,6 +426,10 @@ public class Spindex implements Subsystem {
     public double getCommandedPos(){
         double ratio = Math.max(1e-6, Math.abs(commandGearRatio));
         return commandedServoPos * 360.0 * ratio;
+    }
+
+    public double getCommandedDegree(){
+        return commandedDegree;
     }
 
     private double clampBasePosToSharedRange(double requestedBasePos) {

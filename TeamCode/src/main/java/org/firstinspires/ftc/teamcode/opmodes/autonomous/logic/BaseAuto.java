@@ -828,7 +828,7 @@ public abstract class BaseAuto extends OpMode {
         }
         boolean shooterAtRpm = robot.outtake.shooter.isAtRPM();
         boolean requiredTagVisible = robot.outtake.vision.hasRequiredTarget();
-        boolean turretAligned = robot.outtake.turret.isVisionOnTarget(
+        boolean turretAligned = robot.outtake.isVisionOnTarget(
                 robot.outtake.vision,
                 COMPLETE_SHOOT_TURRET_TOLERANCE_DEG
         );
@@ -932,3 +932,4 @@ public abstract class BaseAuto extends OpMode {
     }
 
 }
+
