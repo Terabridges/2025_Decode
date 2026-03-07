@@ -34,6 +34,7 @@ public class Outtake implements Subsystem {
     public static double redGoalY = 144.0;
     public static double obeliskX = 72.0;
     public static double obeliskY = 144.0;
+    public static double odoAimDirection = -1.0;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
@@ -134,7 +135,7 @@ public class Outtake implements Subsystem {
         double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
         double robotHeadingDeg = Math.toDegrees(robotPose.getHeading());
         double relativeDeg = wrapSignedDegrees(headingToTargetDeg - robotHeadingDeg);
-        return turret.normalizeDegrees(Turret.turretForwardDeg + relativeDeg);
+        return turret.normalizeDegrees(Turret.turretForwardDeg + (odoAimDirection * relativeDeg));
     }
 
     private double wrapSignedDegrees(double deg) {
