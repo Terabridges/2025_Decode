@@ -44,22 +44,25 @@ public class Spindex implements Subsystem {
 
     private double spindexDegree = spindexPos*360;
 
-    private double forwardOne = 67;
-    private double forwardTwo = 132;
-    private double forwardThree = 205;
-    private double backwardOne = 170;
-    private double backwardTwo = 238;
-    private double backwardThree = 100;
-    private double forwardZero = 6;
-    private double shootOne = 20;
-    private double shootTwo = 82;
-    private double shootThree = 150;
-    private double shootFour = 222;
-    private double shootFive = 290;
-    private double shootSix = 360;
-    //290 //360
-    //shoot three half 252
+    private double forwardOne = 78;
+    private double forwardTwo = 198;
+    private double forwardThree = 318;
 
+    private double backwardOne = 258;
+    private double backwardTwo = 378;
+    private double backwardThree = 138;
+
+    private double shootOnePre = 285;
+    private double shootOne = 345;
+    private double shootTwoPre = 405;
+    private double shootTwo = 465;
+    private double shootThreePre = 165;
+    private double shootThree = 225;
+
+    //increasing goes clockwise
+    //Back is front + 180
+    //Pre shoot is back + 27
+    //Shoot is back + 87
 
     private String currentDirection = "forward";
 
@@ -71,10 +74,10 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"G", "P", "P"};
     public String balls = "";
 
-    private double frontGreenThresh = 0.0006; //If green is highest, ball is green was 0.0013 0.0009
-    private double frontBlueThresh = 0.0006; //If blue is highest, ball is purple was 0.0013 0.0009
-    private double backGreenThresh = 0.0005;
-    private double backBlueThresh = 0.0005;
+    private double frontGreenThresh = 0.0011; //If green is highest, ball is green was 0.0013 0.0009
+    private double frontBlueThresh = 0.001; //If blue is highest, ball is purple was 0.0013 0.0009
+    private double backGreenThresh = 0.0007;
+    private double backBlueThresh = 0.0007;
     NormalizedRGBA frontColors;
     public float frontRed = 0;
     public float frontGreen = 0;
@@ -137,7 +140,6 @@ public class Spindex implements Subsystem {
         setSpindexPos(wrappedDeg / (360.0 * ratio));
     }
 
-
     public void setSpindexForwardOne(){
         currentDirection = "forward";
         currentBall = "one";
@@ -187,22 +189,6 @@ public class Spindex implements Subsystem {
     public void setSpindexShootThree(){
         currentBall = "three";
         setSpindexDegree(shootThree);
-    }
-
-    public void setSpindexShootFour(){
-        setSpindexDegree(shootFour);
-    }
-
-    public void setSpindexShootFive(){
-        setSpindexDegree(shootFive);
-    }
-
-    public void setSpindexShootSix(){
-        setSpindexDegree(shootSix);
-    }
-
-    public void setSpindexForwardZero(){
-        setSpindexDegree(forwardZero);
     }
 
     public void switchSides(){
@@ -627,11 +613,11 @@ public class Spindex implements Subsystem {
     }
 
     public boolean isFrontColorDistanceTripped(){
-        return frontColorDistance > 1 && frontColorDistance < 3.5;
+        return frontColorDistance > 1.5 && frontColorDistance < 3.2;
     }
 
     public boolean isBackColorDistanceTripped(){
-        return backColorDistance > 1 && backColorDistance < 3.5;
+        return backColorDistance > 1.5 && backColorDistance < 3.2;
     }
 
     public int loadedBallCount() {

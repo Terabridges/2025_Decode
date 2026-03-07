@@ -53,13 +53,13 @@ public class Intake implements Subsystem {
         spinner.update();
         lights.update();
 
-        if (!spindex.isSpindexAtPos() && autoIntake){
-            spinner.overrideSpinIn();
-        }
-
-        if (spindex.isSpindexAtPos() && autoIntake){
-            spinner.overrideSpinZero();
-        }
+//        if (!spindex.isSpindexAtPos() && autoIntake){
+//            spinner.overrideSpinIn();
+//        }
+//
+//        if (spindex.isSpindexAtPos() && autoIntake){
+//            spinner.overrideSpinZero();
+//        }
 
         if(spinner.frontInnerTripped){
             if (spindex.isSpindexAtPos() && autoIntake) {
@@ -123,7 +123,7 @@ public class Intake implements Subsystem {
             spinner.backOuterTripped = false;
         }
 
-        if(spindex.ballOneChanged){
+        if(spindex.ballOneChanged || spindex.ballTwoChanged || spindex.ballThreeChanged){
             spindex.ballOneChanged = false;
             if(spindex.ballList[0].equals("E")){
                 lights.setFrontLight("clear");
@@ -134,9 +134,7 @@ public class Intake implements Subsystem {
             } else if(spindex.ballList[0].equals("G")){
                 lights.setFrontLight("green");
             }
-        }
 
-        if(spindex.ballTwoChanged){
             spindex.ballTwoChanged = false;
             if(spindex.ballList[1].equals("E")){
                 lights.setMiddleLight("clear");
@@ -147,9 +145,7 @@ public class Intake implements Subsystem {
             } else if(spindex.ballList[1].equals("G")){
                 lights.setMiddleLight("green");
             }
-        }
 
-        if(spindex.ballThreeChanged){
             spindex.ballThreeChanged = false;
             if(spindex.ballList[2].equals("E")){
                 lights.setBackLight("clear");
