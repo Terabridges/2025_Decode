@@ -52,8 +52,8 @@ public class Turret implements Subsystem {
     public static double turretForwardDeg = 163.0;
     public static double turretVelocity = 0;
     public static double velocityLoopTime = 250;
-    // Conservative defaults to reduce lock oscillation from frame-to-frame overcorrection.
-    public static double visionKp = 0.27;
+    // Position-servo mode: 1.0 commands the full measured heading correction each loop.
+    public static double visionKp = 1.0;
     public static double visionDeadbandDeg = 1.2;
     public static double visionMaxStepDeg = 1.2;
     public static double visionMinStepDeg = 0.16;
@@ -82,8 +82,6 @@ public class Turret implements Subsystem {
     public static double odoMaxStepDeg = 4.5;
     public static double edgeCorrectionMinScale = 0.65;
     public static double edgeCorrectionMarginDeg = 35.0;
-    public static boolean autoEnableWrapInLaunchZone = true;
-    public static boolean wrapWithinLaunchZoneOnly = true;
     // DECODE launch zones in 144x144 in field coordinates (official dimensions).
     // Goal-side zone: 6 tiles wide and 3 tiles deep triangle.
     public static double goalLaunchBaseLeftX = 0.0;
@@ -123,12 +121,9 @@ public class Turret implements Subsystem {
     private AimMode aimMode = AimMode.MANUAL;
     private LockSource activeLockSource = LockSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
-    private boolean hasFilteredTx = false;
-    private double filteredTxDeg = 0.0;
     private double commandedTurretDeg = 180.0;
     private double currentPosition = 0;
     private ElapsedTime velocityTimer;
-    private boolean turretWrapEnabled = false;
     private boolean inLaunchZone = false;
 
 
@@ -147,20 +142,12 @@ public class Turret implements Subsystem {
 
     //---------------- Methods ----------------
     public void setTurretPos(double pos){
-        // Base command shared by both servos before side-specific inversion/offsets.
-        double basePos = clampBasePosToSharedRange(pos);
-        // Keep software heading estimate in the same calibrated frame.
-        commandedTurretDeg = baseServoPosToTurretDeg(basePos);
-
-        // Left servo follows basePos directly.
-        double leftPos = util.clamp(basePos, 0.0, 1.0);
-
-        // Right servo can be mirrored and independently trimmed.
-        double rightBasePos = invertRightServo ? (1.0 - basePos) : basePos;
-        double rightPos = util.clamp(rightBasePos + rightServoOffset, 0.0, 1.0);
-
-        leftTurret.setPosition(leftPos);
-        rightTurret.setPosition(rightPos);
+        refreshWrapStateFromOdometry();
+        double requestedBasePos = clampBasePosToSharedRange(pos);
+        double desiredDeg = baseServoPosToTurretDeg(requestedBasePos);
+        double safeTargetDeg = resolveSafeTargetDeg(desiredDeg, getCurrentDegrees());
+        double safeBasePos = turretDegToBaseServoPos(safeTargetDeg);
+        applyTurretPosRaw(safeBasePos);
     }
 
     /** Applies configured PWM pulse range to a turret servo if supported by the device. */
@@ -172,9 +159,19 @@ public class Turret implements Subsystem {
     }
 
     public void setTurretDegree(double degree){
-        refreshWrapStateFromOdometry();
-        double clampedDeg = clampToSafeRange(normalizeDegrees(degree));
-        setTurretPos(turretDegToBaseServoPos(clampedDeg));
+        setTurretPos(turretDegToBaseServoPos(normalizeDegrees(degree)));
+    }
+
+    private void applyTurretPosRaw(double basePos) {
+        double clampedBasePos = util.clamp(basePos, 0.0, 1.0);
+        commandedTurretDeg = baseServoPosToTurretDeg(clampedBasePos);
+
+        double leftPos = clampedBasePos;
+        double rightBasePos = invertRightServo ? (1.0 - clampedBasePos) : clampedBasePos;
+        double rightPos = util.clamp(rightBasePos + rightServoOffset, 0.0, 1.0);
+
+        leftTurret.setPosition(leftPos);
+        rightTurret.setPosition(rightPos);
     }
 
     /**
@@ -212,17 +209,60 @@ public class Turret implements Subsystem {
         return ((degrees % 360.0) + 360.0) % 360.0;
     }
 
-    /**
-     * Restrict turret commands to safe wiring range [turretMinDeg, turretMaxDeg].
-     */
-    public double clampToSafeRange(double degrees) {
+    private boolean isWithinSafeRange(double degrees) {
+        double normalizedDeg = normalizeDegrees(degrees);
         double minDeg = Math.min(turretMinDeg, turretMaxDeg);
         double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
-        return util.clamp(degrees, minDeg, maxDeg);
+        return normalizedDeg >= minDeg && normalizedDeg <= maxDeg;
+    }
+
+    /**
+     * Route target by choosing the best valid direction candidate (CW/CCW).
+     * If both are invalid (target lies in deadzone), choose the closer safe edge.
+     */
+    private double resolveSafeTargetDeg(double desiredDeg, double currentDeg) {
+        double desiredNorm = normalizeDegrees(desiredDeg);
+        double currentNorm = normalizeDegrees(currentDeg);
+
+        double cwSafeDist = clockwiseSafeDistance(currentNorm, desiredNorm);
+        double ccwSafeDist = counterClockwiseSafeDistance(currentNorm, desiredNorm);
+        if (Math.min(cwSafeDist, ccwSafeDist) < Double.POSITIVE_INFINITY) {
+            return desiredNorm;
+        }
+
+        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+        double distToMin = nearestSafeTravelDistance(currentNorm, minDeg);
+        double distToMax = nearestSafeTravelDistance(currentNorm, maxDeg);
+        return (distToMin <= distToMax) ? minDeg : maxDeg;
+    }
+
+    private double nearestSafeTravelDistance(double fromDeg, double toDeg) {
+        double cw = clockwiseSafeDistance(fromDeg, toDeg);
+        double ccw = counterClockwiseSafeDistance(fromDeg, toDeg);
+        return Math.min(cw, ccw);
+    }
+
+    private double clockwiseSafeDistance(double fromDeg, double toDeg) {
+        double from = normalizeDegrees(fromDeg);
+        double to = normalizeDegrees(toDeg);
+        if (!isWithinSafeRange(from) || !isWithinSafeRange(to)) return Double.POSITIVE_INFINITY;
+        // In this turret's safe interval [min..max], clockwise safe travel must not wrap at 360->0.
+        if (from > to) return Double.POSITIVE_INFINITY;
+        return to - from;
+    }
+
+    private double counterClockwiseSafeDistance(double fromDeg, double toDeg) {
+        double from = normalizeDegrees(fromDeg);
+        double to = normalizeDegrees(toDeg);
+        if (!isWithinSafeRange(from) || !isWithinSafeRange(to)) return Double.POSITIVE_INFINITY;
+        // In this turret's safe interval [min..max], counterclockwise safe travel must not wrap at 0->360.
+        if (from < to) return Double.POSITIVE_INFINITY;
+        return from - to;
     }
 
     public boolean isTurretWrapEnabled() {
-        return turretWrapEnabled;
+        return true;
     }
 
     public boolean isInLaunchZone() {
@@ -304,21 +344,14 @@ public class Turret implements Subsystem {
 
     /**
      * Vision lock controller for positional-servo turret.
-     * Applies an incremental correction from tx (+ optional parallax correction from distance).
+     * Each loop, convert tx into an absolute turret heading and command that heading directly.
      */
     public void aimFromVision(double txDeg, double distanceIn) {
-        if (Math.abs(txDeg) <= visionDeadbandDeg) {
+        double aimErrorDeg = computeVisionAimErrorDeg(txDeg, distanceIn);
+        if (Math.abs(aimErrorDeg) <= visionDeadbandDeg) {
             return;
         }
         double correctionDeg = computeVisionCorrectionDeg(txDeg, distanceIn);
-        correctionDeg = util.clamp(correctionDeg, -visionMaxStepDeg, visionMaxStepDeg);
-        if (turretWrapEnabled && needsOppositeWrapDirection(correctionDeg)) {
-            correctionDeg = -Math.signum(correctionDeg) * Math.max(Math.abs(correctionDeg), visionMinStepDeg);
-        }
-        correctionDeg *= computeEdgeCorrectionScale();
-        if (Math.abs(correctionDeg) < visionMinStepDeg) {
-            return;
-        }
         double targetDeg = normalizeDegrees(getCurrentDegrees() + correctionDeg);
         setTurretDegree(targetDeg);
     }
@@ -332,7 +365,6 @@ public class Turret implements Subsystem {
             aimMode = AimMode.LOCK;
             // Avoid manual velocity nudge fighting lock.
             turretVelocity = 0.0;
-            hasFilteredTx = false;
             activeLockSource = LockSource.NONE;
         } else if (aimMode == AimMode.LOCK) {
             aimMode = AimMode.MANUAL;
@@ -394,7 +426,6 @@ public class Turret implements Subsystem {
             return;
         }
         if (aimTarget == AimTarget.OBELISK) {
-            hasFilteredTx = false;
             activeLockSource = LockSource.ODO;
             aimAtObeliskWithOdometry();
             return;
@@ -402,14 +433,13 @@ public class Turret implements Subsystem {
 
         int requiredGoalTagId = getRequiredGoalTagId(vision);
         if (vision != null && vision.seesTag(requiredGoalTagId)) {
-            double tx = filterTx(vision.getTxForTag(requiredGoalTagId));
+            double tx = vision.getTxForTag(requiredGoalTagId);
             double distanceIn = vision.getDistanceInchesForTag(requiredGoalTagId);
             activeLockSource = LockSource.TX;
             aimFromVision(tx, distanceIn);
             return;
         }
 
-        hasFilteredTx = false;
         activeLockSource = LockSource.ODO;
         updateGoalOdoLock(requiredGoalTagId);
     }
@@ -429,7 +459,7 @@ public class Turret implements Subsystem {
         if (robotPose == null) return;
         refreshWrapStateFromOdometry(robotPose);
         activeLockSource = LockSource.ODO;
-        aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), obeliskX, obeliskY);
+        aimAtFieldPoint(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), obeliskX, obeliskY);
     }
 
     private void updateGoalOdoLock(int goalTagId) {
@@ -439,18 +469,18 @@ public class Turret implements Subsystem {
         refreshWrapStateFromOdometry(robotPose);
 
         if (goalTagId == BLUE_GOAL_TAG_ID) {
-            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
+            aimAtFieldPoint(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
             return;
         }
         if (goalTagId == RED_GOAL_TAG_ID) {
-            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
+            aimAtFieldPoint(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
             return;
         }
 
         if (GlobalVariables.isBlueAlliance()) {
-            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
+            aimAtFieldPoint(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), blueGoalX, blueGoalY);
         } else {
-            aimAtFieldPointSmoothed(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
+            aimAtFieldPoint(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), redGoalX, redGoalY);
         }
     }
 
@@ -502,18 +532,6 @@ public class Turret implements Subsystem {
         return computeAimErrorDeg(desiredDeg, getCurrentDegrees());
     }
 
-    private void aimAtFieldPointSmoothed(double robotX, double robotY, double robotHeadingRad,
-                                         double targetX, double targetY) {
-        double desiredDeg = computeFieldPointTurretDeg(robotX, robotY, robotHeadingRad, targetX, targetY);
-        double errorDeg = computeAimErrorDeg(desiredDeg, getCurrentDegrees());
-        if (Math.abs(errorDeg) <= odoDeadbandDeg) {
-            return;
-        }
-        double stepDeg = util.clamp(errorDeg * odoKp, -odoMaxStepDeg, odoMaxStepDeg);
-        stepDeg *= computeEdgeCorrectionScale();
-        setTurretDegree(getCurrentDegrees() + stepDeg);
-    }
-
     private double computeFieldPointTurretDeg(double robotX, double robotY, double robotHeadingRad,
                                               double targetX, double targetY) {
         double dx = targetX - robotX;
@@ -528,17 +546,6 @@ public class Turret implements Subsystem {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
     }
 
-    private double filterTx(double txDeg) {
-        double alpha = util.clamp(visionTxAlpha, 0.0, 1.0);
-        if (!hasFilteredTx) {
-            filteredTxDeg = txDeg;
-            hasFilteredTx = true;
-            return filteredTxDeg;
-        }
-        filteredTxDeg = (alpha * txDeg) + ((1.0 - alpha) * filteredTxDeg);
-        return filteredTxDeg;
-    }
-
     public void setTurretWithVelocity(){
         if (turretVelocity != 0 && velocityTimer.milliseconds() >= velocityLoopTime) {
             // Velocity nudges are also bounded by the same soft limits.
@@ -551,40 +558,8 @@ public class Turret implements Subsystem {
         return commandedTurretDeg;
     }
 
-    private double computeEdgeCorrectionScale() {
-        double margin = Math.max(1.0, edgeCorrectionMarginDeg);
-        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
-        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
-        double currentDeg = getCurrentDegrees();
-        double distToNearLimit = Math.min(Math.abs(currentDeg - minDeg), Math.abs(maxDeg - currentDeg));
-        double t = util.clamp(distToNearLimit / margin, 0.0, 1.0);
-        return edgeCorrectionMinScale + (1.0 - edgeCorrectionMinScale) * t;
-    }
-
-    private boolean needsOppositeWrapDirection(double correctionDeg) {
-        return (atMinLimit(limitAssistMarginDeg) && correctionDeg < 0.0)
-                || (atMaxLimit(limitAssistMarginDeg) && correctionDeg > 0.0);
-    }
-
     private double computeAimErrorDeg(double desiredDeg, double currentDeg) {
-        double errorDeg = wrapSignedDegrees(desiredDeg - currentDeg);
-        if (!turretWrapEnabled) {
-            return errorDeg;
-        }
-        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
-        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
-        boolean desiredInRange = desiredDeg >= minDeg && desiredDeg <= maxDeg;
-        boolean currentInRange = currentDeg >= minDeg && currentDeg <= maxDeg;
-        if (!desiredInRange || !currentInRange) {
-            return errorDeg;
-        }
-        // If shortest-path crosses through the forbidden wrap gap, choose the long-way path.
-        boolean shortestCrossesWrapGap = (errorDeg < 0.0 && desiredDeg > currentDeg)
-                || (errorDeg > 0.0 && desiredDeg < currentDeg);
-        if (!shortestCrossesWrapGap) {
-            return errorDeg;
-        }
-        return errorDeg > 0.0 ? (errorDeg - 360.0) : (errorDeg + 360.0);
+        return wrapSignedDegrees(desiredDeg - currentDeg);
     }
 
     public double getEncoderDegrees() {
@@ -651,7 +626,6 @@ public class Turret implements Subsystem {
     private void refreshWrapStateFromOdometry() {
         if (follower == null) {
             inLaunchZone = false;
-            turretWrapEnabled = false;
             return;
         }
         Pose robotPose = follower.getPose();
@@ -661,15 +635,9 @@ public class Turret implements Subsystem {
     private void refreshWrapStateFromOdometry(Pose robotPose) {
         if (robotPose == null) {
             inLaunchZone = false;
-            turretWrapEnabled = false;
             return;
         }
         inLaunchZone = isInsideLaunchZone(robotPose.getX(), robotPose.getY());
-        if (!autoEnableWrapInLaunchZone) {
-            turretWrapEnabled = false;
-            return;
-        }
-        turretWrapEnabled = wrapWithinLaunchZoneOnly ? inLaunchZone : true;
     }
 
     private boolean isInsideLaunchZone(double x, double y) {
