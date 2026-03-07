@@ -135,5 +135,36 @@ afterEvaluate {
                 systemProperty 'highCurrentA', pHighCurrent.toString()
             }
         }
+
+        tasks.register('runSpindexTestRlogAnalysis', JavaExec) {
+            group = 'verification'
+            description = 'Analyze SpindexTest RLOG with outlier/wrap filtering and slope+bias recommendations.'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.SpindexTestRlogAnalyzeCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pMinDeg = project.findProperty('minDeg')
+            def pMaxDeg = project.findProperty('maxDeg')
+            def pWrapJumpDeg = project.findProperty('wrapJumpDeg')
+            def pWrapMismatchDeg = project.findProperty('wrapMismatchDeg')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pMinDeg != null) {
+                systemProperty 'minDeg', pMinDeg.toString()
+            }
+            if (pMaxDeg != null) {
+                systemProperty 'maxDeg', pMaxDeg.toString()
+            }
+            if (pWrapJumpDeg != null) {
+                systemProperty 'wrapJumpDeg', pWrapJumpDeg.toString()
+            }
+            if (pWrapMismatchDeg != null) {
+                systemProperty 'wrapMismatchDeg', pWrapMismatchDeg.toString()
+            }
+        }
     }
 }

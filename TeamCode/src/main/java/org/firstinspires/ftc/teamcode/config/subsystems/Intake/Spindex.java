@@ -20,6 +20,14 @@ import org.firstinspires.ftc.teamcode.config.utility.Util;
 @Configurable
 public class Spindex implements Subsystem {
 
+    public static double encoderOffsetDeg = 0.0;
+    public static double absoluteEncoderGearRatio = 2.05;
+    public static boolean absoluteEncoderInverted = true;
+    public static double commandGearRatio = 1.75;
+    public static double commandBiasDeg = -56.0;
+    public static boolean invertRight = false;
+    public static double rightServoOffset = 0.012;
+
     //---------------- Hardware ----------------
     private Servo spindexLeft;
     private Servo spindexRight;
@@ -86,6 +94,7 @@ public class Spindex implements Subsystem {
 
     private double frontColorDistance = 0;
     private double backColorDistance = 0;
+    private double commandedServoPos = 0.0;
 
 
     //---------------- Constructor ----------------
@@ -97,9 +106,10 @@ public class Spindex implements Subsystem {
         middleColor = map.get(RevColorSensorV3.class, "color2");
         backColor = map.get(RevColorSensorV3.class, "color3");
         spindexAnalog = map.get(AnalogInput.class, "spindexAnalog");
-        spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, 29, 1.17);
-        spindexEnc.setInverted(false);
-        spindexRight.setDirection(Servo.Direction.REVERSE);
+        spindexEnc = new AbsoluteAnalogEncoder(spindexAnalog, 3.3, encoderOffsetDeg, absoluteEncoderGearRatio);
+        spindexEnc.setInverted(absoluteEncoderInverted);
+        spindexLeft.setDirection(Servo.Direction.FORWARD);
+        spindexRight.setDirection(Servo.Direction.FORWARD);
         frontColors = new NormalizedRGBA();
         middleColors = new NormalizedRGBA();
         backColors = new NormalizedRGBA();
@@ -107,11 +117,22 @@ public class Spindex implements Subsystem {
 
     //---------------- Methods ----------------
     public void setSpindexPos(double pos){
-        spindexRight.setPosition(pos);
+        commandedServoPos = clampBasePosToSharedRange(pos);
+
+        double leftPos = clamp01(commandedServoPos);
+        double rightBasePos = invertRight ? (1.0 - commandedServoPos) : commandedServoPos;
+        double rightPos = clamp01(rightBasePos + rightServoOffset);
+
+        spindexLeft.setPosition(leftPos);
+        spindexRight.setPosition(rightPos);
     }
 
     public void setSpindexDegree(double degree){
-        setSpindexPos(degree/360);
+        double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
+        double biasedDeg = degree + commandBiasDeg;
+        double wrappedDeg = ((biasedDeg % physicalRangeDeg) + physicalRangeDeg) % physicalRangeDeg;
+        double ratio = Math.max(1e-6, Math.abs(commandGearRatio));
+        setSpindexPos(wrappedDeg / (360.0 * ratio));
     }
 
 
@@ -410,11 +431,28 @@ public class Spindex implements Subsystem {
     }
 
     public boolean isSpindexAtPos(){
-        return (Math.abs((spindexRight.getPosition()*360) - getAbsolutePos()) <= 7);
+        double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
+        return Math.abs(wrapSignedDegInRange(getCommandedPos() - getAbsolutePos(), physicalRangeDeg)) <= 7;
     }
 
     public double getCommandedPos(){
-        return spindexRight.getPosition()*360;
+        double ratio = Math.max(1e-6, Math.abs(commandGearRatio));
+        return commandedServoPos * 360.0 * ratio;
+    }
+
+    private double clampBasePosToSharedRange(double requestedBasePos) {
+        double sharedMin = Math.max(0.0, invertRight ? rightServoOffset : -rightServoOffset);
+        double sharedMax = Math.min(1.0, invertRight ? 1.0 + rightServoOffset : 1.0 - rightServoOffset);
+        return Math.max(sharedMin, Math.min(requestedBasePos, sharedMax));
+    }
+
+    private static double clamp01(double value) {
+        return Math.max(0.0, Math.min(value, 1.0));
+    }
+
+    private static double wrapSignedDegInRange(double deg, double rangeDeg) {
+        double range = Math.max(1e-6, Math.abs(rangeDeg));
+        return ((deg + range * 0.5) % range + range) % range - range * 0.5;
     }
 
     public void updateIntookBall(){
