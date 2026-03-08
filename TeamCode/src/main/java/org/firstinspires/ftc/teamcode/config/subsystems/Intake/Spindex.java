@@ -40,21 +40,19 @@ public class Spindex implements Subsystem {
 
     //---------------- Software ----------------
 
-    //0 0to 776
-
     private double spindexPos = 0;
 
     private double spindexDegree = spindexPos*360;
 
-    private double forwardOne = 0;
+    private double forwardOne = 260;
     private double forwardTwo = forwardOne + 120;
     private double forwardThree = forwardTwo + 120;
 
-    private double backwardOne = 0;
+    private double backwardOne = 80;
     private double backwardTwo = backwardOne + 120;
     private double backwardThree = backwardTwo + 120;
 
-    private double shootOnePre = 285;
+    private double shootOnePre = 105;
     private double shootOne = shootOnePre + 60;
     private double shootTwoPre = shootOne + 60;
     private double shootTwo = shootTwoPre + 60;
@@ -66,7 +64,8 @@ public class Spindex implements Subsystem {
     private double shootTwoPreWrap = shootTwoPre + 360;
     private double shootTwoWrap = shootTwo + 360;
     private double shootThreePreWrap = shootThreePre + 360;
-    private double shootThreeWrap = shootThree + 360;
+    private double shootThreeWrap = 620;
+    //0 to 620
 
     //increasing goes clockwise
     //Back is front + 180
