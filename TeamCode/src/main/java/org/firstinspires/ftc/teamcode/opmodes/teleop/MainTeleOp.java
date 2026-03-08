@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-//@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
@@ -219,6 +219,12 @@ public class MainTeleOp extends OpMode {
             Logger.recordOutput("MainTeleOp/TimingMs/DrawField", nanosToMillis(tAfterDrawingNs - tAfterStateMachinesNs));
             Logger.recordOutput("MainTeleOp/TimingMs/LoopTrackerSample", nanosToMillis(tLoopEndNs - tAfterDrawingNs));
             Logger.recordOutput("MainTeleOp/TimingMs/TotalLoop", nanosToMillis(tLoopEndNs - tLoopStartNs));
+            Logger.recordOutput("COMMANDEDPOS", robot.intake.spindex.getCommandedDegree());
+            Logger.recordOutput("ABSOLUTEPOS", robot.intake.spindex.getAbsolutePos());
+            Logger.recordOutput("ShootAllState", robot.getShootAllMachine().getState());
+            Logger.recordOutput("ShootAllSortState", robot.getSortedShootAllMachine().getState());
+            Logger.recordOutput("StartBall", robot.sortedStartBall);
+
         }
     }
 

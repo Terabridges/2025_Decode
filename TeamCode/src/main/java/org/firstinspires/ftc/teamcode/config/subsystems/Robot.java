@@ -88,7 +88,7 @@ public class Robot {
 
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;
-    private int sortedStartBall = 1;
+    public int sortedStartBall = 1;
 
     public boolean useSorting = true;
     private boolean wasFullLastLoop = false;

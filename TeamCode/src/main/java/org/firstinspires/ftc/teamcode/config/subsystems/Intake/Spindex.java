@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -23,10 +24,14 @@ public class Spindex implements Subsystem {
     public static double encoderOffsetDeg = 0.0;
     public static double absoluteEncoderGearRatio = 2.05;
     public static boolean absoluteEncoderInverted = true;
-    public static double commandGearRatio = 1.75;
-    public static double commandBiasDeg = -56.0;
+    public static double commandGearRatio = 1.944; //1.75
+    public static double commandBiasDeg = -23 ; //-56.0;
     public static boolean invertRight = false;
     public static double rightServoOffset = 0.012;
+
+    public static double turretServoPwmMinUs = 500.0;
+    public static double turretServoPwmMaxUs = 2500.0;
+
 
     //---------------- Hardware ----------------
     private Servo spindexLeft;
@@ -44,15 +49,15 @@ public class Spindex implements Subsystem {
 
     private double spindexDegree = spindexPos*360;
 
-    private double forwardOne = 260;
+    private double forwardOne = 175;
     private double forwardTwo = forwardOne + 120;
     private double forwardThree = forwardTwo + 120;
 
-    private double backwardOne = 80;
+    private double backwardOne = 3;
     private double backwardTwo = backwardOne + 120;
     private double backwardThree = backwardTwo + 120;
 
-    private double shootOnePre = 105;
+    private double shootOnePre = 28; //+25
     private double shootOne = shootOnePre + 60;
     private double shootTwoPre = shootOne + 60;
     private double shootTwo = shootTwoPre + 60;
@@ -64,7 +69,7 @@ public class Spindex implements Subsystem {
     private double shootTwoPreWrap = shootTwoPre + 360;
     private double shootTwoWrap = shootTwo + 360;
     private double shootThreePreWrap = shootThreePre + 360;
-    private double shootThreeWrap = 620;
+    private double shootThreeWrap = shootThree + 360;
     //0 to 620
 
     //increasing goes clockwise
@@ -112,6 +117,9 @@ public class Spindex implements Subsystem {
     public Spindex(HardwareMap map) {
         spindexLeft = map.get(Servo.class, "spindexL");
         spindexRight = map.get(Servo.class, "spindexR");
+        applyTurretServoPwmRange(spindexLeft);
+        applyTurretServoPwmRange(spindexRight);
+
         frontColor = map.get(RevColorSensorV3.class, "color1");
         middleColor = map.get(RevColorSensorV3.class, "color2");
         backColor = map.get(RevColorSensorV3.class, "color3");
@@ -501,7 +509,14 @@ public class Spindex implements Subsystem {
         double range = Math.max(1e-6, Math.abs(rangeDeg));
         return ((deg % range) + range) % range;
     }
-
+    private void applyTurretServoPwmRange(Servo servo) {
+        if (!(servo instanceof PwmControl)) {
+            return;
+        }
+        double lo = Math.min(turretServoPwmMinUs, turretServoPwmMaxUs);
+        double hi = Math.max(turretServoPwmMinUs, turretServoPwmMaxUs);
+        ((PwmControl) servo).setPwmRange(new PwmControl.PwmRange(lo, hi));
+    }
     public void updateIntookBall(){
         if(isSpindexAtPos()) {
             if (currentDirection.equals("forward")) {
