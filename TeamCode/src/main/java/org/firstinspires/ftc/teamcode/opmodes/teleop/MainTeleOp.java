@@ -85,11 +85,12 @@ public class MainTeleOp extends OpMode {
     private LoopTimeTracker loopTimeTracker;
     private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
     private boolean autoOffsetWaitingForMovement = false;
-    private double lastTurretMappedDeg = Double.NaN;
+    private double lastTurretSampleDeg = Double.NaN;
     private double lastTurretSampleTimeSec = Double.NaN;
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
+    private boolean reuseLastFollowerSelection = true;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -132,6 +133,7 @@ public class MainTeleOp extends OpMode {
         );
         loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
+        reuseLastFollowerSelection = true;
 
     }
 
@@ -155,9 +157,16 @@ public class MainTeleOp extends OpMode {
             GlobalVariables.toggleAlliance();
         }
 
+        if (currentGamepad1.x && !previousGamepad1.x) {
+            reuseLastFollowerSelection = !reuseLastFollowerSelection;
+        }
+
         telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
+        telemetry.addData("Press X to toggle follower reuse.", "");
         telemetry.addData("Motif", GlobalVariables.getMotif());
         telemetry.addData("Alliance Color", GlobalVariables.getAllianceColor());
+        telemetry.addData("Reuse Last Follower (TeleOp Start)", reuseLastFollowerSelection);
+        telemetry.addData("Auto Follower Available", GlobalVariables.isAutoFollowerValid() && FollowerManager.follower != null);
         telemetry.update();
     }
 
@@ -165,7 +174,8 @@ public class MainTeleOp extends OpMode {
     public void start() {
         robot.toInit();
         applyAllianceVisionLockConfig();
-        boolean reuseAutoFollower = GlobalVariables.isAutoFollowerValid()
+        boolean reuseAutoFollower = reuseLastFollowerSelection
+                && GlobalVariables.isAutoFollowerValid()
                 && FollowerManager.follower != null;
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
@@ -182,7 +192,7 @@ public class MainTeleOp extends OpMode {
         sortingShootAllMachine.start();
         autoOffsetStationaryTimer.reset();
         autoOffsetWaitingForMovement = false;
-        lastTurretMappedDeg = Double.NaN;
+        lastTurretSampleDeg = Double.NaN;
         lastTurretSampleTimeSec = Double.NaN;
 
         loopTimeTracker.reset();
@@ -362,6 +372,10 @@ public class MainTeleOp extends OpMode {
             return;
         }
 
+        int requiredTagId = robot.outtake.vision.getRequiredTagId();
+        boolean aimingGoal = robot.outtake.getAimTarget() == Outtake.AimTarget.GOAL;
+        boolean requiredTagIsGoal = requiredTagId == BLUE_GOAL_TAG_ID || requiredTagId == RED_GOAL_TAG_ID;
+
         double translationalSpeedInS = Double.POSITIVE_INFINITY;
         double angularSpeedDegS = Double.POSITIVE_INFINITY;
         if (FollowerManager.follower != null && FollowerManager.follower.getVelocity() != null) {
@@ -371,21 +385,24 @@ public class MainTeleOp extends OpMode {
 
         double nowSec = getRuntime();
         double turretMappedDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
+        double turretSampleDeg = (!Double.isNaN(turretMappedDeg) && !Double.isInfinite(turretMappedDeg))
+                ? turretMappedDeg
+                : robot.outtake.turret.getCurrentDegrees();
         double turretSpeedDegS = Double.POSITIVE_INFINITY;
-        if (!Double.isNaN(turretMappedDeg) && !Double.isNaN(lastTurretMappedDeg) && !Double.isNaN(lastTurretSampleTimeSec)) {
+        if (!Double.isNaN(turretSampleDeg) && !Double.isNaN(lastTurretSampleDeg) && !Double.isNaN(lastTurretSampleTimeSec)) {
             double dt = nowSec - lastTurretSampleTimeSec;
             if (dt > 1e-6) {
-                double deltaDeg = ((turretMappedDeg - lastTurretMappedDeg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+                double deltaDeg = ((turretSampleDeg - lastTurretSampleDeg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
                 turretSpeedDegS = Math.abs(deltaDeg / dt);
             }
         }
-        lastTurretMappedDeg = turretMappedDeg;
+        lastTurretSampleDeg = turretSampleDeg;
         lastTurretSampleTimeSec = nowSec;
 
         boolean robotStationary = translationalSpeedInS <= autoOffsetMaxRobotSpeedInS
                 && angularSpeedDegS <= autoOffsetMaxRobotAngularSpeedDegS;
         boolean turretStationary = turretSpeedDegS <= autoOffsetMaxTurretSpeedDegS;
-        boolean requiredTagVisible = robot.outtake.vision.hasRequiredTarget();
+        boolean requiredTagVisible = robot.outtake.vision.seesTag(requiredTagId);
 
         boolean rearmMoved = translationalSpeedInS >= autoOffsetMoveRearmSpeedInS
                 || angularSpeedDegS >= autoOffsetMoveRearmAngularSpeedDegS;
@@ -397,12 +414,14 @@ public class MainTeleOp extends OpMode {
             return;
         }
 
+        if (!aimingGoal || !requiredTagIsGoal) {
+            autoOffsetStationaryTimer.reset();
+            return;
+        }
+
         if (robotStationary && turretStationary && requiredTagVisible) {
             if (autoOffsetStationaryTimer.seconds() >= autoOffsetStationarySeconds) {
-                int requiredTagId = robot.outtake.vision.getRequiredTagId();
-                double tx = (requiredTagId >= 0)
-                        ? robot.outtake.vision.getTxForTag(requiredTagId)
-                        : robot.outtake.vision.getTx();
+                double tx = robot.outtake.vision.getTxForTag(requiredTagId);
                 Outtake.turretAimCommandOffsetDeg += -tx;
                 autoOffsetWaitingForMovement = true;
                 autoOffsetStationaryTimer.reset();

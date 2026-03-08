@@ -56,15 +56,15 @@ public class ShooterData {
         // TurtleWalkers moving-shot LUT (distance inches -> flight time seconds).
         // Thank you TurtleWalkers you guys are awesome... sorry for low key copying your values
         ShotTimeLUT.add(0.0, 0.40);
-        ShotTimeLUT.add(42.5, 0.40);
-        ShotTimeLUT.add(55.0, 0.40);
-        ShotTimeLUT.add(66.7, 0.45);
-        ShotTimeLUT.add(81.9, 0.55);
-        ShotTimeLUT.add(95.7, 0.67);
+        ShotTimeLUT.add(42.5, 0.25);
+        ShotTimeLUT.add(55.0, 0.25);
+        ShotTimeLUT.add(66.7, 0.30);
+        ShotTimeLUT.add(81.9, 0.50);
+        ShotTimeLUT.add(95.7, 0.70);
         ShotTimeLUT.add(101.9, 0.70);
-        ShotTimeLUT.add(116.6, 0.72);
-        ShotTimeLUT.add(136.6, 0.95);
-        ShotTimeLUT.add(3000.0, 1.0);
+        ShotTimeLUT.add(116.6, 0.70);
+        ShotTimeLUT.add(136.6, 0.80);
+        ShotTimeLUT.add(3000.0, 1);
     }
 
     public double getRPMVal(double distance){
