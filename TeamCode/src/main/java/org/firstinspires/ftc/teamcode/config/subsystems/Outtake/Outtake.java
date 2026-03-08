@@ -41,6 +41,12 @@ public class Outtake implements Subsystem {
     public static boolean enableMovingShotLead = true;
     public static int leadIterations = 10;
     public static double movingLeadSpeedThresholdInS = 3.0;
+    public static double launchRobotSizeIn = 17.0;
+    public static double bigLaunchApexX = 72.0;
+    public static double bigLaunchApexY = 72.0;
+    public static double smallLaunchLeftBaseX = 48.0;
+    public static double smallLaunchRightBaseX = 96.0;
+    public static double smallLaunchApexY = 24.0;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
@@ -171,6 +177,27 @@ public class Outtake implements Subsystem {
         return new double[]{dx, dy, distance};
     }
 
+    /**
+     * Returns true when any portion of the 17x17in robot footprint intersects either launch zone.
+     * Pose is treated as robot center (Pedro/Pinpoint convention).
+     */
+    public boolean isAnyPartInLaunchZone() {
+        Pose pose = (follower != null) ? follower.getPose() : null;
+        if (pose == null) {
+            return false;
+        }
+        return isAnyPartInLaunchZone(pose);
+    }
+
+    public boolean isAnyPartInLaunchZone(Pose robotPose) {
+        if (robotPose == null) {
+            return false;
+        }
+        double[][] robotFootprint = buildRobotSquare(robotPose.getX(), robotPose.getY(), robotPose.getHeading(), launchRobotSizeIn);
+        return polygonIntersects(robotFootprint, getBigLaunchTriangle())
+                || polygonIntersects(robotFootprint, getSmallLaunchTriangle());
+    }
+
     private boolean isRobotMovingForLead() {
         if (follower == null || follower.getVelocity() == null) {
             return false;
@@ -190,6 +217,125 @@ public class Outtake implements Subsystem {
 
     private double wrapSignedDegrees(double deg) {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+    }
+
+    private double[][] getBigLaunchTriangle() {
+        return new double[][]{
+                {0.0, 144.0},
+                {bigLaunchApexX, bigLaunchApexY},
+                {144.0, 144.0}
+        };
+    }
+
+    private double[][] getSmallLaunchTriangle() {
+        return new double[][]{
+                {smallLaunchLeftBaseX, 0.0},
+                {bigLaunchApexX, smallLaunchApexY},
+                {smallLaunchRightBaseX, 0.0}
+        };
+    }
+
+    private double[][] buildRobotSquare(double cx, double cy, double headingRad, double sizeIn) {
+        double half = Math.abs(sizeIn) * 0.5;
+        double cos = Math.cos(headingRad);
+        double sin = Math.sin(headingRad);
+
+        double[][] local = new double[][]{
+                {-half, -half},
+                {half, -half},
+                {half, half},
+                {-half, half}
+        };
+
+        double[][] world = new double[4][2];
+        for (int i = 0; i < 4; i++) {
+            double lx = local[i][0];
+            double ly = local[i][1];
+            world[i][0] = cx + (lx * cos - ly * sin);
+            world[i][1] = cy + (lx * sin + ly * cos);
+        }
+        return world;
+    }
+
+    private boolean polygonIntersects(double[][] polyA, double[][] polyB) {
+        for (double[] p : polyA) {
+            if (pointInConvexPolygon(polyB, p[0], p[1])) {
+                return true;
+            }
+        }
+        for (double[] p : polyB) {
+            if (pointInConvexPolygon(polyA, p[0], p[1])) {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < polyA.length; i++) {
+            double[] a1 = polyA[i];
+            double[] a2 = polyA[(i + 1) % polyA.length];
+            for (int j = 0; j < polyB.length; j++) {
+                double[] b1 = polyB[j];
+                double[] b2 = polyB[(j + 1) % polyB.length];
+                if (segmentsIntersect(a1[0], a1[1], a2[0], a2[1], b1[0], b1[1], b2[0], b2[1])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean pointInConvexPolygon(double[][] poly, double x, double y) {
+        if (poly == null || poly.length < 3) {
+            return false;
+        }
+        double sign = 0.0;
+        for (int i = 0; i < poly.length; i++) {
+            double[] a = poly[i];
+            double[] b = poly[(i + 1) % poly.length];
+            double cross = cross2d(b[0] - a[0], b[1] - a[1], x - a[0], y - a[1]);
+            if (Math.abs(cross) < 1e-9) {
+                continue;
+            }
+            if (sign == 0.0) {
+                sign = Math.signum(cross);
+            } else if (Math.signum(cross) != sign) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean segmentsIntersect(double ax, double ay, double bx, double by,
+                                      double cx, double cy, double dx, double dy) {
+        double o1 = orient(ax, ay, bx, by, cx, cy);
+        double o2 = orient(ax, ay, bx, by, dx, dy);
+        double o3 = orient(cx, cy, dx, dy, ax, ay);
+        double o4 = orient(cx, cy, dx, dy, bx, by);
+
+        if ((o1 * o2 < 0.0) && (o3 * o4 < 0.0)) {
+            return true;
+        }
+
+        double eps = 1e-9;
+        if (Math.abs(o1) < eps && onSegment(ax, ay, bx, by, cx, cy)) return true;
+        if (Math.abs(o2) < eps && onSegment(ax, ay, bx, by, dx, dy)) return true;
+        if (Math.abs(o3) < eps && onSegment(cx, cy, dx, dy, ax, ay)) return true;
+        if (Math.abs(o4) < eps && onSegment(cx, cy, dx, dy, bx, by)) return true;
+        return false;
+    }
+
+    private double orient(double ax, double ay, double bx, double by, double cx, double cy) {
+        return cross2d(bx - ax, by - ay, cx - ax, cy - ay);
+    }
+
+    private double cross2d(double ax, double ay, double bx, double by) {
+        return ax * by - ay * bx;
+    }
+
+    private boolean onSegment(double ax, double ay, double bx, double by, double px, double py) {
+        return px >= Math.min(ax, bx) - 1e-9
+                && px <= Math.max(ax, bx) + 1e-9
+                && py >= Math.min(ay, by) - 1e-9
+                && py <= Math.max(ay, by) + 1e-9;
     }
     //---------------- Interface Methods ----------------
     @Override

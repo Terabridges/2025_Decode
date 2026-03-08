@@ -72,6 +72,8 @@ public class MainTeleOp extends OpMode {
 
     StateMachine shootAllMachine;
     StateMachine sortingShootAllMachine;
+    private boolean shootRequestPending = false;
+    private boolean pendingShootUsesSorting = false;
 
     private JoinedTelemetry joinedTelemetry;
     private LoopTimeTracker loopTimeTracker;
@@ -266,6 +268,10 @@ public class MainTeleOp extends OpMode {
                     loopTimeTracker.getTrailingAverageMs()
                 );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
+            joinedTelemetry.addData("Shoot Pending", shootRequestPending);
+            if (robot != null && robot.outtake != null) {
+                joinedTelemetry.addData("In Launch Zone", robot.outtake.isAnyPartInLaunchZone());
+            }
             joinedTelemetry.addData("TXLights", robot.txLights);
             joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.turretAimCommandOffsetDeg);
             joinedTelemetry.update();
@@ -289,13 +295,38 @@ public class MainTeleOp extends OpMode {
     }
 
     public void stateMachinesUpdate(){
-        if(!robot.useSorting) {
-            if (currentGamepad1.x && !previousGamepad1.x && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
-                robot.initShootAllMachine = true;
+        boolean xPressed = currentGamepad1.x && !previousGamepad1.x;
+        if (xPressed) {
+            if (shootRequestPending) {
+                // Manual override: second press while pending starts shooting immediately.
+                if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                    robot.initShootAllMachine = true;
+                    shootRequestPending = false;
+                } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
+                    robot.initSortedShootAllMachine = true;
+                    shootRequestPending = false;
+                }
+            } else {
+                if (!robot.useSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                    shootRequestPending = true;
+                    pendingShootUsesSorting = false;
+                } else if (robot.useSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
+                    shootRequestPending = true;
+                    pendingShootUsesSorting = true;
+                }
             }
-        } else {
-            if (currentGamepad1.x && !previousGamepad1.x && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
+        }
+
+        if (shootRequestPending
+                && robot != null
+                && robot.outtake != null
+                && robot.outtake.isAnyPartInLaunchZone()) {
+            if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                robot.initShootAllMachine = true;
+                shootRequestPending = false;
+            } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
                 robot.initSortedShootAllMachine = true;
+                shootRequestPending = false;
             }
         }
         shootAllMachine.update();
