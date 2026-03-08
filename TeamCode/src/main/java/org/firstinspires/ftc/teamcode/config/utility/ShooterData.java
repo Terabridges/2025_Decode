@@ -8,7 +8,7 @@ public class ShooterData {
     public InterpLUT AngleLUT;
     public InterpLUT ShotTimeLUT;
     public double minDistance = 0;
-    public double maxDistance = 165;
+    public double maxDistance = 1000;
 
     public ShooterData(){
         RPMLUT = new InterpLUT();
@@ -34,7 +34,7 @@ public class ShooterData {
         RPMLUT.add( 90  ,2550);
         RPMLUT.add( 128.6  ,3000);
         RPMLUT.add( 135.5  ,3100);
-        RPMLUT.add(maxDistance, 3200);
+        RPMLUT.add(maxDistance, 3100);
     }
 
     private void addAngleData(){
@@ -49,7 +49,7 @@ public class ShooterData {
         AngleLUT.add( 90  ,0.81);
         AngleLUT.add( 128.6  ,0.91);
         AngleLUT.add( 135.5  ,0.92);
-        AngleLUT.add(maxDistance, 0.93);
+        AngleLUT.add(maxDistance, 0.92);
     }
 
     private void addShotTimeData() {
