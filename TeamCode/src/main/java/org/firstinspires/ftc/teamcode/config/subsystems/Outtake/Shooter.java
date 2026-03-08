@@ -47,7 +47,7 @@ public class Shooter implements Subsystem {
     private double farRPM = 3000;
     private double farAngle = 0.91;
 
-
+    public boolean autoHood = true;
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
@@ -164,6 +164,9 @@ public class Shooter implements Subsystem {
             }
         } else {
             setFlywheelPow(0);
+        }
+        if (autoHood) {
+            setHoodTarget();
         }
     }
 
