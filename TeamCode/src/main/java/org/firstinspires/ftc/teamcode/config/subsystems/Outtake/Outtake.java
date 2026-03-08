@@ -40,6 +40,7 @@ public class Outtake implements Subsystem {
     public static double odoAimDirection = -1.0;
     public static boolean enableMovingShotLead = true;
     public static int leadIterations = 10;
+    public static double movingLeadSpeedThresholdInS = 3.0;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
@@ -135,29 +136,56 @@ public class Outtake implements Subsystem {
     }
 
     private double computeFieldPointTurretDeg(Pose robotPose, double targetX, double targetY) {
-        double dx = targetX - robotPose.getX();
-        double dy = targetY - robotPose.getY();
-        double distance = Math.hypot(dx, dy);
-
-        if (enableMovingShotLead && follower != null) {
-            if (follower.getVelocity() != null) {
-                double vX = follower.getVelocity().getXComponent();
-                double vY = follower.getVelocity().getYComponent();
-                int iterations = Math.max(1, leadIterations);
-
-                for (int i = 0; i < iterations; i++) {
-                    double shotTime = shooterData.getShotTimeVal(distance);
-                    dx = targetX - robotPose.getX() - (vX * shotTime);
-                    dy = targetY - robotPose.getY() - (vY * shotTime);
-                    distance = Math.hypot(dx, dy);
-                }
-            }
-        }
+        double[] leadVector = computeLeadAdjustedVector(robotPose, targetX, targetY);
+        double dx = leadVector[0];
+        double dy = leadVector[1];
 
         double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
         double robotHeadingDeg = Math.toDegrees(robotPose.getHeading());
         double relativeDeg = wrapSignedDegrees(headingToTargetDeg - robotHeadingDeg);
         return turret.normalizeDegrees(Turret.turretForwardDeg + (odoAimDirection * relativeDeg));
+    }
+
+    private double computeLeadAdjustedDistance(Pose robotPose, double targetX, double targetY) {
+        return computeLeadAdjustedVector(robotPose, targetX, targetY)[2];
+    }
+
+    private double[] computeLeadAdjustedVector(Pose robotPose, double targetX, double targetY) {
+        double dx = targetX - robotPose.getX();
+        double dy = targetY - robotPose.getY();
+        double distance = Math.hypot(dx, dy);
+
+        if (enableMovingShotLead && follower != null && follower.getVelocity() != null) {
+            double vX = follower.getVelocity().getXComponent();
+            double vY = follower.getVelocity().getYComponent();
+            int iterations = Math.max(1, leadIterations);
+
+            for (int i = 0; i < iterations; i++) {
+                double shotTime = shooterData.getShotTimeVal(distance);
+                dx = targetX - robotPose.getX() - (vX * shotTime);
+                dy = targetY - robotPose.getY() - (vY * shotTime);
+                distance = Math.hypot(dx, dy);
+            }
+        }
+
+        return new double[]{dx, dy, distance};
+    }
+
+    private boolean isRobotMovingForLead() {
+        if (follower == null || follower.getVelocity() == null) {
+            return false;
+        }
+        return follower.getVelocity().getMagnitude() > movingLeadSpeedThresholdInS;
+    }
+
+    private double[] getActiveAimTargetFieldPoint() {
+        if (aimTarget == AimTarget.OBELISK) {
+            return new double[]{obeliskX, obeliskY};
+        }
+        if (GlobalVariables.isBlueAlliance()) {
+            return new double[]{blueGoalX, blueGoalY};
+        }
+        return new double[]{redGoalX, redGoalY};
     }
 
     private double wrapSignedDegrees(double deg) {
@@ -173,12 +201,19 @@ public class Outtake implements Subsystem {
 
     @Override
     public void update(){
+        vision.update();
+
         distanceInches = vision.getDistanceInches();
+        Pose pose = (follower != null) ? follower.getPose() : null;
+        if (pose != null && isRobotMovingForLead()) {
+            double[] targetPoint = getActiveAimTargetFieldPoint();
+            distanceInches = computeLeadAdjustedDistance(pose, targetPoint[0], targetPoint[1]);
+        }
+
         shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches);
         shooter.hoodPos = shooterData.getAngleVal(distanceInches);
         shooter.update();
         turret.update();
-        vision.update();
         updateAimLock();
     }
 
