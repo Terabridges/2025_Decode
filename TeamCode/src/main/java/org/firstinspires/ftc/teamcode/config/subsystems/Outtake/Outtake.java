@@ -57,7 +57,7 @@ public class Outtake implements Subsystem {
     public Outtake(HardwareMap map) {
         shooter = new Shooter(map);
         turret = new Turret(map);
-        vision = new Vision(map);
+        vision = new Vision(map, turret);
         shooterData = new ShooterData();
     }
 
