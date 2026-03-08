@@ -173,13 +173,13 @@ public class Outtake implements Subsystem {
 
     @Override
     public void update(){
+        vision.update();
+        updateAimLock();
         distanceInches = vision.getDistanceInches();
         shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches);
         shooter.hoodPos = shooterData.getAngleVal(distanceInches);
         shooter.update();
         turret.update();
-        vision.update();
-        updateAimLock();
     }
 
 }
