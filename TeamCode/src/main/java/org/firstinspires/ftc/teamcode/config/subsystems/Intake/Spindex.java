@@ -40,29 +40,36 @@ public class Spindex implements Subsystem {
 
     //---------------- Software ----------------
 
+    //0 0to 776
+
     private double spindexPos = 0;
 
     private double spindexDegree = spindexPos*360;
 
-    private double forwardOne = 78;
-    private double forwardTwo = 198;
-    private double forwardThree = 318;
+    private double forwardOne = 0;
+    private double forwardTwo = forwardOne + 120;
+    private double forwardThree = forwardTwo + 120;
 
-    private double backwardOne = 258;
-    private double backwardTwo = 378;
-    private double backwardThree = 138;
+    private double backwardOne = 0;
+    private double backwardTwo = backwardOne + 120;
+    private double backwardThree = backwardTwo + 120;
 
     private double shootOnePre = 285;
-    private double shootOne = 345;
-    private double shootTwoPre = 405;
-    private double shootTwo = 465;
-    private double shootThreePre = 165;
-    private double shootThree = 225;
+    private double shootOne = shootOnePre + 60;
+    private double shootTwoPre = shootOne + 60;
+    private double shootTwo = shootTwoPre + 60;
+    private double shootThreePre = shootTwo + 60;
+    private double shootThree = shootThreePre + 60;
+
+    private double shootOnePreWrap = shootOnePre + 360;
+    private double shootOneWrap = shootOne + 360;
+    private double shootTwoPreWrap = shootTwoPre + 360;
+    private double shootTwoWrap = shootTwo + 360;
+    private double shootThreePreWrap = shootThreePre + 360;
+    private double shootThreeWrap = shootThree + 360;
 
     //increasing goes clockwise
     //Back is front + 180
-    //Pre shoot is back + 27
-    //Shoot is back + 87
 
     private String currentDirection = "forward";
 
@@ -71,7 +78,7 @@ public class Spindex implements Subsystem {
     private boolean shootMode = false;
 
 
-    public String[] ballList = {"G", "P", "P"};
+    public String[] ballList = {"E", "E", "E"};
     public String balls = "";
 
     private double frontGreenThresh = 0.0011; //If green is highest, ball is green was 0.0013 0.0009
@@ -189,6 +196,51 @@ public class Spindex implements Subsystem {
     public void setSpindexShootThree(){
         currentBall = "three";
         setSpindexDegree(shootThree);
+    }
+
+    public void setSpindexShootOnePre(){
+        currentBall = "one";
+        setSpindexDegree(shootOnePre);
+    }
+
+    public void setSpindexShootTwoPre(){
+        currentBall = "two";
+        setSpindexDegree(shootTwoPre);
+    }
+
+    public void setSpindexShootThreePre(){
+        currentBall = "three";
+        setSpindexDegree(shootThreePre);
+    }
+
+    public void setSpindexShootOneWrap(){
+        currentBall = "one";
+        setSpindexDegree(shootOneWrap);
+    }
+
+    public void setSpindexShootOnePreWrap(){
+        currentBall = "one";
+        setSpindexDegree(shootOnePreWrap);
+    }
+
+    public void setSpindexShootTwoWrap(){
+        currentBall = "two";
+        setSpindexDegree(shootTwoWrap);
+    }
+
+    public void setSpindexShootTwoPreWrap(){
+        currentBall = "two";
+        setSpindexDegree(shootTwoPreWrap);
+    }
+
+    public void setSpindexShootThreeWrap(){
+        currentBall = "three";
+        setSpindexDegree(shootThreeWrap);
+    }
+
+    public void setSpindexShootThreePreWrap(){
+        currentBall = "three";
+        setSpindexDegree(shootThreePreWrap);
     }
 
     public void switchSides(){
