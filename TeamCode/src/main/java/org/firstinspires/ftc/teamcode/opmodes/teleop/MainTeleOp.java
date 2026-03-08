@@ -47,7 +47,8 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     public static boolean enableSectionTimingLogs = true;
-    public static double autoOffsetStationarySeconds = 1.0;
+    public static double autoOffsetStationarySeconds = 0.5;
+    public static double autoOffsetTxScale = 0.75;
     // Match the auto shooting "robot settled" gate.
     public static double autoOffsetMaxRobotSpeedInS = 1.5;
     public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
@@ -82,7 +83,6 @@ public class MainTeleOp extends OpMode {
     private JoinedTelemetry joinedTelemetry;
     private LoopTimeTracker loopTimeTracker;
     private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
-    private boolean autoOffsetWaitingForMovement = false;
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
@@ -177,7 +177,6 @@ public class MainTeleOp extends OpMode {
         shootAllMachine.start();
         sortingShootAllMachine.start();
         autoOffsetStationaryTimer.reset();
-        autoOffsetWaitingForMovement = false;
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -363,15 +362,6 @@ public class MainTeleOp extends OpMode {
         boolean robotStationary = isRobotMotionSettledForShot();
         boolean requiredTagVisible = robot.outtake.vision.seesTag(requiredTagId);
 
-        boolean rearmMoved = !robotStationary;
-        if (autoOffsetWaitingForMovement) {
-            if (rearmMoved) {
-                autoOffsetWaitingForMovement = false;
-                autoOffsetStationaryTimer.reset();
-            }
-            return;
-        }
-
         if (!aimingGoal || !requiredTagIsGoal) {
             autoOffsetStationaryTimer.reset();
             return;
@@ -379,9 +369,7 @@ public class MainTeleOp extends OpMode {
 
         if (robotStationary && requiredTagVisible) {
             if (autoOffsetStationaryTimer.seconds() >= autoOffsetStationarySeconds) {
-                // Match manual B behavior exactly.
-                Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
-                autoOffsetWaitingForMovement = true;
+                Outtake.turretAimCommandOffsetDeg += (-robot.outtake.vision.getTx()) * autoOffsetTxScale;
                 autoOffsetStationaryTimer.reset();
             }
         } else {

@@ -340,6 +340,7 @@ public class Outtake implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
+        turretAimCommandOffsetDeg = 0.0;
         shooter.toInit();
         turret.toInit();
         vision.toInit();
