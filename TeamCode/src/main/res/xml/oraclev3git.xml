@@ -25,8 +25,8 @@
             <Servo name="spindexR" port="1" />
             <Servo name="turretL" port="2" />
             <Servo name="turretR" port="3" />
-            <ContinousRotaionServo name="kickL" port="4" />
-            <ContinousRotaionServo name="kickR" port="5" />
+            <ContinuousRotationServo name="kickL" port="4" />
+            <ContinuousRotationServo name="kickR" port="5" />
             <AnalogInput name="spindexAnalog" port="0" />
             <AnalogInput name="turretAnalog" port="1" />
             <AnalogInput name="distance2" port="3" />
