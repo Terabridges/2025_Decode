@@ -38,6 +38,8 @@ public class Outtake implements Subsystem {
     public static double obeliskY = 144.0;
     public static double turretAimCommandOffsetDeg = 0.0;
     public static double odoAimDirection = -1.0;
+    public static boolean enableMovingShotLead = true;
+    public static int leadIterations = 10;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
@@ -135,6 +137,23 @@ public class Outtake implements Subsystem {
     private double computeFieldPointTurretDeg(Pose robotPose, double targetX, double targetY) {
         double dx = targetX - robotPose.getX();
         double dy = targetY - robotPose.getY();
+        double distance = Math.hypot(dx, dy);
+
+        if (enableMovingShotLead && follower != null) {
+            if (follower.getVelocity() != null) {
+                double vX = follower.getVelocity().getXComponent();
+                double vY = follower.getVelocity().getYComponent();
+                int iterations = Math.max(1, leadIterations);
+
+                for (int i = 0; i < iterations; i++) {
+                    double shotTime = shooterData.getShotTimeVal(distance);
+                    dx = targetX - robotPose.getX() - (vX * shotTime);
+                    dy = targetY - robotPose.getY() - (vY * shotTime);
+                    distance = Math.hypot(dx, dy);
+                }
+            }
+        }
+
         double headingToTargetDeg = Math.toDegrees(Math.atan2(dy, dx));
         double robotHeadingDeg = Math.toDegrees(robotPose.getHeading());
         double relativeDeg = wrapSignedDegrees(headingToTargetDeg - robotHeadingDeg);
