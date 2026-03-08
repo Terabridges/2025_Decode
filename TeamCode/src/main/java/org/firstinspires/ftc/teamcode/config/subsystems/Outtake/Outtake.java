@@ -203,9 +203,8 @@ public class Outtake implements Subsystem {
     public void update(){
         vision.update();
 
-        distanceInches = vision.getDistanceInches();
         Pose pose = (follower != null) ? follower.getPose() : null;
-        if (pose != null && isRobotMovingForLead()) {
+        if (pose != null) {
             double[] targetPoint = getActiveAimTargetFieldPoint();
             distanceInches = computeLeadAdjustedDistance(pose, targetPoint[0], targetPoint[1]);
         }

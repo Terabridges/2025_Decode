@@ -55,9 +55,9 @@ public class ShooterData {
     private void addShotTimeData() {
         // TurtleWalkers moving-shot LUT (distance inches -> flight time seconds).
         // Thank you TurtleWalkers you guys are awesome... sorry for low key copying your values
-        ShotTimeLUT.add(0.0, 0.63);
-        ShotTimeLUT.add(42.5, 0.53);
-        ShotTimeLUT.add(55.0, 0.41);
+        ShotTimeLUT.add(0.0, 0.40);
+        ShotTimeLUT.add(42.5, 0.40);
+        ShotTimeLUT.add(55.0, 0.40);
         ShotTimeLUT.add(66.7, 0.45);
         ShotTimeLUT.add(81.9, 0.55);
         ShotTimeLUT.add(95.7, 0.67);
