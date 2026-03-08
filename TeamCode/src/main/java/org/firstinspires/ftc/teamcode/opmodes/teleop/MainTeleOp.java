@@ -41,18 +41,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     public static boolean enableSectionTimingLogs = true;
     public static double autoOffsetStationarySeconds = 1.0;
-    public static double autoOffsetMaxRobotSpeedInS = 1.0;
-    public static double autoOffsetMaxRobotAngularSpeedDegS = 8.0;
-    public static double autoOffsetMoveRearmSpeedInS = 2.0;
-    public static double autoOffsetMoveRearmAngularSpeedDegS = 15.0;
-    public static double autoOffsetMaxTurretSpeedDegS = 2.0;
+    // Match the auto shooting "robot settled" gate.
+    public static double autoOffsetMaxRobotSpeedInS = 1.5;
+    public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -85,12 +83,9 @@ public class MainTeleOp extends OpMode {
     private LoopTimeTracker loopTimeTracker;
     private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
     private boolean autoOffsetWaitingForMovement = false;
-    private double lastTurretSampleDeg = Double.NaN;
-    private double lastTurretSampleTimeSec = Double.NaN;
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
-    private boolean reuseLastFollowerSelection = true;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -133,7 +128,6 @@ public class MainTeleOp extends OpMode {
         );
         loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
-        reuseLastFollowerSelection = true;
 
     }
 
@@ -157,16 +151,9 @@ public class MainTeleOp extends OpMode {
             GlobalVariables.toggleAlliance();
         }
 
-        if (currentGamepad1.x && !previousGamepad1.x) {
-            reuseLastFollowerSelection = !reuseLastFollowerSelection;
-        }
-
         telemetry.addData("Press A to change Motif. Press B to change alliance color.", "");
-        telemetry.addData("Press X to toggle follower reuse.", "");
         telemetry.addData("Motif", GlobalVariables.getMotif());
         telemetry.addData("Alliance Color", GlobalVariables.getAllianceColor());
-        telemetry.addData("Reuse Last Follower (TeleOp Start)", reuseLastFollowerSelection);
-        telemetry.addData("Auto Follower Available", GlobalVariables.isAutoFollowerValid() && FollowerManager.follower != null);
         telemetry.update();
     }
 
@@ -174,8 +161,7 @@ public class MainTeleOp extends OpMode {
     public void start() {
         robot.toInit();
         applyAllianceVisionLockConfig();
-        boolean reuseAutoFollower = reuseLastFollowerSelection
-                && GlobalVariables.isAutoFollowerValid()
+        boolean reuseAutoFollower = GlobalVariables.isAutoFollowerValid()
                 && FollowerManager.follower != null;
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
@@ -192,8 +178,6 @@ public class MainTeleOp extends OpMode {
         sortingShootAllMachine.start();
         autoOffsetStationaryTimer.reset();
         autoOffsetWaitingForMovement = false;
-        lastTurretSampleDeg = Double.NaN;
-        lastTurretSampleTimeSec = Double.NaN;
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -376,36 +360,10 @@ public class MainTeleOp extends OpMode {
         boolean aimingGoal = robot.outtake.getAimTarget() == Outtake.AimTarget.GOAL;
         boolean requiredTagIsGoal = requiredTagId == BLUE_GOAL_TAG_ID || requiredTagId == RED_GOAL_TAG_ID;
 
-        double translationalSpeedInS = Double.POSITIVE_INFINITY;
-        double angularSpeedDegS = Double.POSITIVE_INFINITY;
-        if (FollowerManager.follower != null && FollowerManager.follower.getVelocity() != null) {
-            translationalSpeedInS = Math.abs(FollowerManager.follower.getVelocity().getMagnitude());
-            angularSpeedDegS = Math.abs(Math.toDegrees(FollowerManager.follower.getAngularVelocity()));
-        }
-
-        double nowSec = getRuntime();
-        double turretMappedDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
-        double turretSampleDeg = (!Double.isNaN(turretMappedDeg) && !Double.isInfinite(turretMappedDeg))
-                ? turretMappedDeg
-                : robot.outtake.turret.getCurrentDegrees();
-        double turretSpeedDegS = Double.POSITIVE_INFINITY;
-        if (!Double.isNaN(turretSampleDeg) && !Double.isNaN(lastTurretSampleDeg) && !Double.isNaN(lastTurretSampleTimeSec)) {
-            double dt = nowSec - lastTurretSampleTimeSec;
-            if (dt > 1e-6) {
-                double deltaDeg = ((turretSampleDeg - lastTurretSampleDeg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
-                turretSpeedDegS = Math.abs(deltaDeg / dt);
-            }
-        }
-        lastTurretSampleDeg = turretSampleDeg;
-        lastTurretSampleTimeSec = nowSec;
-
-        boolean robotStationary = translationalSpeedInS <= autoOffsetMaxRobotSpeedInS
-                && angularSpeedDegS <= autoOffsetMaxRobotAngularSpeedDegS;
-        boolean turretStationary = turretSpeedDegS <= autoOffsetMaxTurretSpeedDegS;
+        boolean robotStationary = isRobotMotionSettledForShot();
         boolean requiredTagVisible = robot.outtake.vision.seesTag(requiredTagId);
 
-        boolean rearmMoved = translationalSpeedInS >= autoOffsetMoveRearmSpeedInS
-                || angularSpeedDegS >= autoOffsetMoveRearmAngularSpeedDegS;
+        boolean rearmMoved = !robotStationary;
         if (autoOffsetWaitingForMovement) {
             if (rearmMoved) {
                 autoOffsetWaitingForMovement = false;
@@ -419,16 +377,32 @@ public class MainTeleOp extends OpMode {
             return;
         }
 
-        if (robotStationary && turretStationary && requiredTagVisible) {
+        if (robotStationary && requiredTagVisible) {
             if (autoOffsetStationaryTimer.seconds() >= autoOffsetStationarySeconds) {
-                double tx = robot.outtake.vision.getTxForTag(requiredTagId);
-                Outtake.turretAimCommandOffsetDeg += -tx;
+                // Match manual B behavior exactly.
+                Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
                 autoOffsetWaitingForMovement = true;
                 autoOffsetStationaryTimer.reset();
             }
         } else {
             autoOffsetStationaryTimer.reset();
         }
+    }
+
+    private boolean isRobotMotionSettledForShot() {
+        if (FollowerManager.follower == null || FollowerManager.follower.getVelocity() == null) {
+            return false;
+        }
+
+        double translationalSpeedInS = Math.abs(FollowerManager.follower.getVelocity().getMagnitude());
+        double angularSpeedDegS = Math.abs(Math.toDegrees(FollowerManager.follower.getAngularVelocity()));
+        if (Double.isNaN(translationalSpeedInS) || Double.isInfinite(translationalSpeedInS)
+                || Double.isNaN(angularSpeedDegS) || Double.isInfinite(angularSpeedDegS)) {
+            return false;
+        }
+
+        return translationalSpeedInS <= autoOffsetMaxRobotSpeedInS
+                && angularSpeedDegS <= autoOffsetMaxRobotAngularSpeedDegS;
     }
 
     private void logPsiKitData() {
