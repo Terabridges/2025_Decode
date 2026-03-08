@@ -132,12 +132,10 @@ public class Spindex implements Subsystem {
     }
 
     public void setSpindexDegree(double degree){
-        commandedDegree = degree;
         double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
-        double biasedDeg = degree + commandBiasDeg;
-        double wrappedDeg = ((biasedDeg % physicalRangeDeg) + physicalRangeDeg) % physicalRangeDeg;
+        commandedDegree = wrapDegInRange(degree, physicalRangeDeg);
         double ratio = Math.max(1e-6, Math.abs(commandGearRatio));
-        setSpindexPos(wrappedDeg / (360.0 * ratio));
+        setSpindexPos(commandedDegree / (360.0 * ratio));
     }
 
     public void setSpindexForwardOne(){
@@ -415,7 +413,8 @@ public class Spindex implements Subsystem {
     }
 
     public double getAbsolutePos(){
-        return spindexEnc.getCurrentPosition();
+        double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
+        return wrapDegInRange(spindexEnc.getCurrentPosition() + commandBiasDeg, physicalRangeDeg);
     }
 
     public boolean isSpindexAtPos(){
@@ -445,6 +444,11 @@ public class Spindex implements Subsystem {
     private static double wrapSignedDegInRange(double deg, double rangeDeg) {
         double range = Math.max(1e-6, Math.abs(rangeDeg));
         return ((deg + range * 0.5) % range + range) % range - range * 0.5;
+    }
+
+    private static double wrapDegInRange(double deg, double rangeDeg) {
+        double range = Math.max(1e-6, Math.abs(rangeDeg));
+        return ((deg % range) + range) % range;
     }
 
     public void updateIntookBall(){

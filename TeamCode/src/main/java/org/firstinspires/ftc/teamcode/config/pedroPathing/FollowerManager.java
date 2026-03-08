@@ -51,6 +51,10 @@ public class FollowerManager {
         if (follower == null) {
             return initFollower(hardwareMap, defaultStartPose);
         }
+        // Rebind telemetry/drawing state when reusing follower across opmodes (e.g. auto -> teleop).
+        poseHistory = follower.getPoseHistory();
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+        Drawing.init();
         return follower;
     }
 

@@ -23,7 +23,7 @@ public class Turret implements Subsystem {
     //---------------- Software ----------------
     public static double turretMinDeg = 18.0;
     public static double turretMaxDeg = 330.0;
-    public static double turretForwardDeg = 163.0;
+    public static double turretForwardDeg = 197.0;
     public static double turretVelocity = 0.0;
     public static double velocityLoopTime = 250.0;
 
@@ -36,8 +36,8 @@ public class Turret implements Subsystem {
     public static double turretServoPwmMinUs = 500.0;
     public static double turretServoPwmMaxUs = 2500.0;
 
-    public static double encoderRefTurretDeg = 59.25;
-    public static double encoderRefDeg = 280.0;
+    public static double encoderRefTurretDeg = turretForwardDeg;
+    public static double encoderRefDeg = 200.0;
     public static double encoderToTurretScale = 1.0;
     public static boolean encoderDirectionInverted = false;
 
