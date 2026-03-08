@@ -6,16 +6,20 @@ public class ShooterData {
 
     public InterpLUT RPMLUT;
     public InterpLUT AngleLUT;
+    public InterpLUT ShotTimeLUT;
     public double minDistance = 0;
     public double maxDistance = 165;
 
     public ShooterData(){
         RPMLUT = new InterpLUT();
         AngleLUT = new InterpLUT();
+        ShotTimeLUT = new InterpLUT();
         addRPMData();
         addAngleData();
+        addShotTimeData();
         RPMLUT.createLUT();
         AngleLUT.createLUT();
+        ShotTimeLUT.createLUT();
     }
 
     private void addRPMData(){
@@ -48,6 +52,21 @@ public class ShooterData {
         AngleLUT.add(maxDistance, 0.93);
     }
 
+    private void addShotTimeData() {
+        // TurtleWalkers moving-shot LUT (distance inches -> flight time seconds).
+        // Thank you TurtleWalkers you guys are awesome... sorry for low key copying your values
+        ShotTimeLUT.add(0.0, 0.63);
+        ShotTimeLUT.add(42.5, 0.53);
+        ShotTimeLUT.add(55.0, 0.41);
+        ShotTimeLUT.add(66.7, 0.45);
+        ShotTimeLUT.add(81.9, 0.55);
+        ShotTimeLUT.add(95.7, 0.67);
+        ShotTimeLUT.add(101.9, 0.70);
+        ShotTimeLUT.add(116.6, 0.72);
+        ShotTimeLUT.add(136.6, 0.95);
+        ShotTimeLUT.add(3000.0, 1.0);
+    }
+
     public double getRPMVal(double distance){
         if (distance < minDistance || distance > maxDistance){
             return -2;
@@ -62,6 +81,16 @@ public class ShooterData {
         } else {
             return AngleLUT.get(distance);
         }
+    }
+
+    public double getShotTimeVal(double distance) {
+        if (distance <= 0.0) {
+            return ShotTimeLUT.get(0.0);
+        }
+        if (distance >= 3000.0) {
+            return ShotTimeLUT.get(3000.0);
+        }
+        return ShotTimeLUT.get(distance);
     }
 
 }
