@@ -46,7 +46,6 @@ import java.util.List;
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
-    private static final double SHOOT_HOLD_CANCEL_STICK_THRESHOLD = 0.5;
     public static boolean enableSectionTimingLogs = true;
 
     IntakeControl intakeControl;
@@ -75,11 +74,6 @@ public class MainTeleOp extends OpMode {
     StateMachine sortingShootAllMachine;
 
     private JoinedTelemetry joinedTelemetry;
-    private boolean shooterPositionHoldEnabled = true;
-    private boolean shooterPositionHoldActive = false;
-    private boolean shooterPositionHoldCanceledByDriver = false;
-    private Pose shooterHoldPose = null;
-
     private LoopTimeTracker loopTimeTracker;
 
     public ElapsedTime telemetryTimer;
@@ -89,7 +83,6 @@ public class MainTeleOp extends OpMode {
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
     EdgeDetector nextMotif = new EdgeDetector(()-> GlobalVariables.nextMotif());
     EdgeDetector flashLights = new EdgeDetector(()-> robot.toggleLightsTurret());
-    EdgeDetector toggleShooterPositionHold = new EdgeDetector(() -> shooterPositionHoldEnabled = !shooterPositionHoldEnabled);
 
     @Override
     public void init() {
@@ -209,9 +202,6 @@ public class MainTeleOp extends OpMode {
         stateMachinesUpdate();
         long tAfterStateMachinesNs = System.nanoTime();
 
-        updateShooterPositionHold();
-        long tAfterShooterHoldNs = System.nanoTime();
-
         //drawCurrentAndHistory();
         long tAfterDrawingNs = System.nanoTime();
 
@@ -226,8 +216,7 @@ public class MainTeleOp extends OpMode {
             Logger.recordOutput("MainTeleOp/TimingMs/RobotUpdate", nanosToMillis(tAfterRobotNs - tAfterControlsNs));
             Logger.recordOutput("MainTeleOp/TimingMs/ControlsTelemetry", nanosToMillis(tAfterTelemetryNs - tAfterRobotNs));
             Logger.recordOutput("MainTeleOp/TimingMs/StateMachines", nanosToMillis(tAfterStateMachinesNs - tAfterTelemetryNs));
-            Logger.recordOutput("MainTeleOp/TimingMs/ShooterHold", nanosToMillis(tAfterShooterHoldNs - tAfterStateMachinesNs));
-            Logger.recordOutput("MainTeleOp/TimingMs/DrawField", nanosToMillis(tAfterDrawingNs - tAfterShooterHoldNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/DrawField", nanosToMillis(tAfterDrawingNs - tAfterStateMachinesNs));
             Logger.recordOutput("MainTeleOp/TimingMs/LoopTrackerSample", nanosToMillis(tLoopEndNs - tAfterDrawingNs));
             Logger.recordOutput("MainTeleOp/TimingMs/TotalLoop", nanosToMillis(tLoopEndNs - tLoopStartNs));
         }
@@ -249,7 +238,6 @@ public class MainTeleOp extends OpMode {
         toggleSorting.update(gamepad1.start || gamepad2.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.right_bumper);
-        toggleShooterPositionHold.update(gamepad2.left_bumper);
     }
 
     public void controlsTelemetryUpdate() {
@@ -306,90 +294,6 @@ public class MainTeleOp extends OpMode {
         }
         shootAllMachine.update();
         sortingShootAllMachine.update();
-    }
-
-    private void updateShooterPositionHold() {
-        if (!shooterPositionHoldEnabled) {
-            releaseShooterPositionHold();
-            shooterPositionHoldCanceledByDriver = false;
-            return;
-        }
-
-        boolean shouldHold = isAnyShootMachineActive();
-        if (!shouldHold) {
-            releaseShooterPositionHold();
-            shooterPositionHoldCanceledByDriver = false;
-            return;
-        }
-
-        if (FollowerManager.follower == null) {
-            releaseShooterPositionHold();
-            return;
-        }
-
-        if (isDriverRequestingHoldCancel()) {
-            shooterPositionHoldCanceledByDriver = true;
-            releaseShooterPositionHold();
-            return;
-        }
-
-        if (shooterPositionHoldCanceledByDriver) {
-            robot.other.drive.manualDrive = true;
-            return;
-        }
-
-        if (!shooterPositionHoldActive) {
-            Pose currentPose = FollowerManager.follower.getPose();
-            if (currentPose == null) {
-                return;
-            }
-            shooterHoldPose = new Pose(currentPose.getX(), currentPose.getY(), currentPose.getHeading());
-            shooterPositionHoldActive = true;
-        }
-
-        robot.other.drive.manualDrive = false;
-        robot.other.drive.setDrivePowers(0.0, 0.0, 0.0, 0.0);
-        FollowerManager.follower.holdPoint(shooterHoldPose);
-    }
-
-    private boolean isAnyShootMachineActive() {
-        if (robot == null) {
-            return false;
-        }
-
-        StateMachine activeShootMachine = robot.useSorting ? sortingShootAllMachine : shootAllMachine;
-        if (activeShootMachine == null) {
-            return false;
-        }
-
-        Object state = activeShootMachine.getState();
-        if (state == null) {
-            return false;
-        }
-
-        // Sorted shoot machine can currently emit either enum type for INIT.
-        return !state.equals(Robot.SortedShootAllStates.INIT)
-                && !state.equals(Robot.ShootAllStates.INIT);
-    }
-
-    private void releaseShooterPositionHold() {
-        if (!shooterPositionHoldActive) {
-            return;
-        }
-
-        if (FollowerManager.follower != null) {
-            FollowerManager.follower.breakFollowing();
-        }
-        shooterPositionHoldActive = false;
-        shooterHoldPose = null;
-        robot.other.drive.manualDrive = true;
-        robot.other.drive.setDrivePowers(0.0, 0.0, 0.0, 0.0);
-    }
-
-    private boolean isDriverRequestingHoldCancel() {
-        return Math.abs(gamepad1.left_stick_x) >= SHOOT_HOLD_CANCEL_STICK_THRESHOLD
-                || Math.abs(gamepad1.left_stick_y) >= SHOOT_HOLD_CANCEL_STICK_THRESHOLD
-                || Math.abs(gamepad1.right_stick_x) >= SHOOT_HOLD_CANCEL_STICK_THRESHOLD;
     }
 
     private void applyAllianceVisionLockConfig() {
