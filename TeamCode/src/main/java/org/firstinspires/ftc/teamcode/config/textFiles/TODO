@@ -1,3 +1,4 @@
 make better unjam method.
 Cuz right now its kind of janky; maybe make a button to go to forward position and set current ball to one, etc.
 In auto pre fill the spindex GPP
+For hood angle, only change if it has target. (So it doesnt go down and up all the time) or just do something like rate limiting
