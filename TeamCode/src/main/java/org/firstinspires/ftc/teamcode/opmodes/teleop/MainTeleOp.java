@@ -47,6 +47,12 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     public static boolean enableSectionTimingLogs = true;
+    public static double autoOffsetStationarySeconds = 1.0;
+    public static double autoOffsetMaxRobotSpeedInS = 1.0;
+    public static double autoOffsetMaxRobotAngularSpeedDegS = 8.0;
+    public static double autoOffsetMoveRearmSpeedInS = 2.0;
+    public static double autoOffsetMoveRearmAngularSpeedDegS = 15.0;
+    public static double autoOffsetMaxTurretSpeedDegS = 2.0;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -77,6 +83,10 @@ public class MainTeleOp extends OpMode {
 
     private JoinedTelemetry joinedTelemetry;
     private LoopTimeTracker loopTimeTracker;
+    private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
+    private boolean autoOffsetWaitingForMovement = false;
+    private double lastTurretMappedDeg = Double.NaN;
+    private double lastTurretSampleTimeSec = Double.NaN;
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
@@ -170,6 +180,10 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
+        autoOffsetStationaryTimer.reset();
+        autoOffsetWaitingForMovement = false;
+        lastTurretMappedDeg = Double.NaN;
+        lastTurretSampleTimeSec = Double.NaN;
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -195,6 +209,7 @@ public class MainTeleOp extends OpMode {
         long tAfterControlsNs = System.nanoTime();
 
         robot.update();
+        autoUpdateTurretAimOffsetWhenSettled();
         long tAfterRobotNs = System.nanoTime();
 
         logPsiKitData();
@@ -339,6 +354,61 @@ public class MainTeleOp extends OpMode {
             robot.outtake.vision.setRequiredTagId(BLUE_GOAL_TAG_ID);
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
+        }
+    }
+
+    private void autoUpdateTurretAimOffsetWhenSettled() {
+        if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
+            return;
+        }
+
+        double translationalSpeedInS = Double.POSITIVE_INFINITY;
+        double angularSpeedDegS = Double.POSITIVE_INFINITY;
+        if (FollowerManager.follower != null && FollowerManager.follower.getVelocity() != null) {
+            translationalSpeedInS = Math.abs(FollowerManager.follower.getVelocity().getMagnitude());
+            angularSpeedDegS = Math.abs(Math.toDegrees(FollowerManager.follower.getAngularVelocity()));
+        }
+
+        double nowSec = getRuntime();
+        double turretMappedDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
+        double turretSpeedDegS = Double.POSITIVE_INFINITY;
+        if (!Double.isNaN(turretMappedDeg) && !Double.isNaN(lastTurretMappedDeg) && !Double.isNaN(lastTurretSampleTimeSec)) {
+            double dt = nowSec - lastTurretSampleTimeSec;
+            if (dt > 1e-6) {
+                double deltaDeg = ((turretMappedDeg - lastTurretMappedDeg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+                turretSpeedDegS = Math.abs(deltaDeg / dt);
+            }
+        }
+        lastTurretMappedDeg = turretMappedDeg;
+        lastTurretSampleTimeSec = nowSec;
+
+        boolean robotStationary = translationalSpeedInS <= autoOffsetMaxRobotSpeedInS
+                && angularSpeedDegS <= autoOffsetMaxRobotAngularSpeedDegS;
+        boolean turretStationary = turretSpeedDegS <= autoOffsetMaxTurretSpeedDegS;
+        boolean requiredTagVisible = robot.outtake.vision.hasRequiredTarget();
+
+        boolean rearmMoved = translationalSpeedInS >= autoOffsetMoveRearmSpeedInS
+                || angularSpeedDegS >= autoOffsetMoveRearmAngularSpeedDegS;
+        if (autoOffsetWaitingForMovement) {
+            if (rearmMoved) {
+                autoOffsetWaitingForMovement = false;
+                autoOffsetStationaryTimer.reset();
+            }
+            return;
+        }
+
+        if (robotStationary && turretStationary && requiredTagVisible) {
+            if (autoOffsetStationaryTimer.seconds() >= autoOffsetStationarySeconds) {
+                int requiredTagId = robot.outtake.vision.getRequiredTagId();
+                double tx = (requiredTagId >= 0)
+                        ? robot.outtake.vision.getTxForTag(requiredTagId)
+                        : robot.outtake.vision.getTx();
+                Outtake.turretAimCommandOffsetDeg += -tx;
+                autoOffsetWaitingForMovement = true;
+                autoOffsetStationaryTimer.reset();
+            }
+        } else {
+            autoOffsetStationaryTimer.reset();
         }
     }
 
