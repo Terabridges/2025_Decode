@@ -12,6 +12,7 @@ import com.pedropathing.util.PoseHistory;
 
 public class Drawing {
     public static final double ROBOT_RADIUS = 9; // woah
+    public static final double ROBOT_HALF_SIZE = 9;
     private static final FieldManager panelsField = PanelsField.INSTANCE.getField();
 
     private static final Style robotLook = new Style(
@@ -58,14 +59,31 @@ public class Drawing {
             return;
         }
 
-        panelsField.setStyle(style);
-        panelsField.moveCursor(pose.getX(), pose.getY());
-        panelsField.circle(ROBOT_RADIUS);
+        double x = pose.getX();
+        double y = pose.getY();
+        double left = x - ROBOT_HALF_SIZE;
+        double right = x + ROBOT_HALF_SIZE;
+        double bottom = y - ROBOT_HALF_SIZE;
+        double top = y + ROBOT_HALF_SIZE;
 
+        // Draw square footprint.
+        panelsField.setStyle(style);
+        panelsField.moveCursor(left, bottom);
+        panelsField.line(right, bottom);
+        panelsField.moveCursor(right, bottom);
+        panelsField.line(right, top);
+        panelsField.moveCursor(right, top);
+        panelsField.line(left, top);
+        panelsField.moveCursor(left, top);
+        panelsField.line(left, bottom);
+
+        // Draw short heading indicator from center toward front.
         Vector v = pose.getHeadingAsUnitVector();
         v.setMagnitude(v.getMagnitude() * ROBOT_RADIUS);
-        double x1 = pose.getX() + v.getXComponent() / 2, y1 = pose.getY() + v.getYComponent() / 2;
-        double x2 = pose.getX() + v.getXComponent(), y2 = pose.getY() + v.getYComponent();
+        double x1 = x;
+        double y1 = y;
+        double x2 = x + v.getXComponent();
+        double y2 = y + v.getYComponent();
 
         panelsField.setStyle(style);
         panelsField.moveCursor(x1, y1);

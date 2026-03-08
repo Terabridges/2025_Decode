@@ -500,7 +500,7 @@ public class Robot {
     //---------------- Interface Methods ----------------
     public void update() {
         for (org.firstinspires.ftc.teamcode.config.subsystems.Subsystem s : subsystems) {
-            s.update();
+            s.updateWithTiming();
         }
 
         boolean isFull = intake.spindex.loadedBallCount() == 3;

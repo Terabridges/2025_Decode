@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.config.subsystems.Outtake;
 
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.follower;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -9,6 +10,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 
+@Configurable
 public class Outtake implements Subsystem {
     public enum AimSource {
         NONE,
@@ -28,12 +30,13 @@ public class Outtake implements Subsystem {
     public double distanceInches = 0;
 
     //---------------- Software ----------------
-    public static double blueGoalX = 0.0;
-    public static double blueGoalY = 144.0;
-    public static double redGoalX = 144.0;
-    public static double redGoalY = 144.0;
+    public static double blueGoalX = 12.0; //0
+    public static double blueGoalY = 132.0; //144
+    public static double redGoalX = 132.0; //144
+    public static double redGoalY = 132.0; //144
     public static double obeliskX = 72.0;
     public static double obeliskY = 144.0;
+    public static double turretAimCommandOffsetDeg = 0.0;
     public static double odoAimDirection = -1.0;
 
     private boolean aimLockEnabled = false;
@@ -126,7 +129,7 @@ public class Outtake implements Subsystem {
 
     private void aimAtFieldPoint(Pose robotPose, double targetX, double targetY) {
         double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
-        turret.setTurretDegree(desiredDeg);
+        turret.setTurretDegree(desiredDeg + turretAimCommandOffsetDeg);
     }
 
     private double computeFieldPointTurretDeg(Pose robotPose, double targetX, double targetY) {

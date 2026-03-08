@@ -24,8 +24,12 @@ import org.firstinspires.ftc.teamcode.config.control.Outtake.OuttakeControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.ShooterControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.TurretControl;
 import org.firstinspires.ftc.teamcode.config.control.Outtake.VisionControl;
+import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPoses;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.LoopTimeTracker;
@@ -43,6 +47,7 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double SHOOT_HOLD_CANCEL_STICK_THRESHOLD = 0.5;
+    public static boolean enableSectionTimingLogs = true;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -160,8 +165,9 @@ public class MainTeleOp extends OpMode {
         if (reuseAutoFollower) {
             FollowerManager.getFollower(hardwareMap);
         } else {
-            double allianceHeading = GlobalVariables.isBlueAlliance() ? Math.PI : 0.0;
-            FollowerManager.initFollower(hardwareMap, new Pose(72, 72, allianceHeading));
+            Alliance alliance = GlobalVariables.isBlueAlliance() ? Alliance.BLUE : Alliance.RED;
+            Pose teleopStartPose = new AutoPoses().findStartPose(alliance, Range.LONG_RANGE);
+            FollowerManager.initFollower(hardwareMap, teleopStartPose);
         }
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
@@ -176,19 +182,55 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void loop() {
+        long tLoopStartNs = System.nanoTime();
+
         gamepadUpdate();
+        long tAfterGamepadNs = System.nanoTime();
+
         if (FollowerManager.follower != null) {
             FollowerManager.follower.update();
         }
+        long tAfterFollowerNs = System.nanoTime();
+
         updateAllianceToggle();
         applyAllianceVisionLockConfig();
+        long tAfterAllianceNs = System.nanoTime();
+
         controlsUpdate();
+        long tAfterControlsNs = System.nanoTime();
+
         robot.update();
+        long tAfterRobotNs = System.nanoTime();
+
+        logPsiKitData();
         controlsTelemetryUpdate();
+        long tAfterTelemetryNs = System.nanoTime();
+
         stateMachinesUpdate();
+        long tAfterStateMachinesNs = System.nanoTime();
+
         updateShooterPositionHold();
-        drawCurrentAndHistory();
+        long tAfterShooterHoldNs = System.nanoTime();
+
+        //drawCurrentAndHistory();
+        long tAfterDrawingNs = System.nanoTime();
+
         loopTimeTracker.sampleLoop();
+        long tLoopEndNs = System.nanoTime();
+
+        if (enableSectionTimingLogs) {
+            Logger.recordOutput("MainTeleOp/TimingMs/GamepadUpdate", nanosToMillis(tAfterGamepadNs - tLoopStartNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/FollowerUpdate", nanosToMillis(tAfterFollowerNs - tAfterGamepadNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/AllianceConfig", nanosToMillis(tAfterAllianceNs - tAfterFollowerNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/ControlsUpdate", nanosToMillis(tAfterControlsNs - tAfterAllianceNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/RobotUpdate", nanosToMillis(tAfterRobotNs - tAfterControlsNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/ControlsTelemetry", nanosToMillis(tAfterTelemetryNs - tAfterRobotNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/StateMachines", nanosToMillis(tAfterStateMachinesNs - tAfterTelemetryNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/ShooterHold", nanosToMillis(tAfterShooterHoldNs - tAfterStateMachinesNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/DrawField", nanosToMillis(tAfterDrawingNs - tAfterShooterHoldNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/LoopTrackerSample", nanosToMillis(tLoopEndNs - tAfterDrawingNs));
+            Logger.recordOutput("MainTeleOp/TimingMs/TotalLoop", nanosToMillis(tLoopEndNs - tLoopStartNs));
+        }
     }
 
     @Override
@@ -198,6 +240,10 @@ public class MainTeleOp extends OpMode {
     public void controlsUpdate() {
         for (Control c : controls) {
             c.update();
+        }
+        if (currentGamepad1.b && !previousGamepad1.b && robot != null && robot.outtake != null
+                && robot.outtake.vision != null) {
+            Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
         }
         getReadyShoot.update(gamepad2.b);
         toggleSorting.update(gamepad1.start || gamepad2.start);
@@ -227,6 +273,7 @@ public class MainTeleOp extends OpMode {
                 );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
             joinedTelemetry.addData("TXLights", robot.txLights);
+            joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.turretAimCommandOffsetDeg);
             joinedTelemetry.update();
 
             telemetryTimer.reset();
@@ -352,6 +399,60 @@ public class MainTeleOp extends OpMode {
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
         }
+    }
+
+    private void logPsiKitData() {
+        if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
+            return;
+        }
+
+        double turretCmdDeg = robot.outtake.turret.getCurrentDegrees();
+        double turretEncDeg = robot.outtake.turret.getEncoderDegrees();
+        double turretMappedDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
+        double turretMappedErrDeg = robot.outtake.turret.getMappedEncoderErrorDeg(turretCmdDeg);
+
+        Logger.recordOutput("Turret/CmdDeg", turretCmdDeg);
+        Logger.recordOutput("Turret/EncoderDeg", turretEncDeg);
+        Logger.recordOutput("Turret/MappedEncoderDeg", turretMappedDeg);
+        Logger.recordOutput("Turret/MappedErrorDeg", turretMappedErrDeg);
+        Logger.recordOutput("Turret/EncoderVoltage", robot.outtake.turret.getEncoderVoltage());
+        Logger.recordOutput("Turret/AtMinLimit", robot.outtake.turret.atMinLimit(0.0) ? 1.0 : 0.0);
+        Logger.recordOutput("Turret/AtMaxLimit", robot.outtake.turret.atMaxLimit(0.0) ? 1.0 : 0.0);
+        Logger.recordOutput("Turret/AimLockEnabled", robot.outtake.isAimLockEnabled() ? 1.0 : 0.0);
+        Logger.recordOutput("Turret/AimTarget", robot.outtake.getAimTarget().ordinal());
+        Logger.recordOutput("Turret/AimSource", robot.outtake.getActiveLockSource().ordinal());
+        Logger.recordOutput("Turret/AimOffsetDeg", Outtake.turretAimCommandOffsetDeg);
+
+        Pose followerPose = (FollowerManager.follower != null) ? FollowerManager.follower.getPose() : null;
+        if (followerPose != null) {
+            Logger.recordOutput("Pinpoint/X", followerPose.getX());
+            Logger.recordOutput("Pinpoint/Y", followerPose.getY());
+            Logger.recordOutput("Pinpoint/HeadingDeg", Math.toDegrees(followerPose.getHeading()));
+            Logger.recordOutput("Pinpoint/TotalHeadingDeg", Math.toDegrees(FollowerManager.follower.getTotalHeading()));
+        } else {
+            Logger.recordOutput("Pinpoint/X", Double.NaN);
+            Logger.recordOutput("Pinpoint/Y", Double.NaN);
+            Logger.recordOutput("Pinpoint/HeadingDeg", Double.NaN);
+            Logger.recordOutput("Pinpoint/TotalHeadingDeg", Double.NaN);
+        }
+
+        if (FollowerManager.follower != null && FollowerManager.follower.getVelocity() != null) {
+            Logger.recordOutput("Pinpoint/VelX", FollowerManager.follower.getVelocity().getXComponent());
+            Logger.recordOutput("Pinpoint/VelY", FollowerManager.follower.getVelocity().getYComponent());
+            Logger.recordOutput("Pinpoint/Speed", FollowerManager.follower.getVelocity().getMagnitude());
+        } else {
+            Logger.recordOutput("Pinpoint/VelX", Double.NaN);
+            Logger.recordOutput("Pinpoint/VelY", Double.NaN);
+            Logger.recordOutput("Pinpoint/Speed", Double.NaN);
+        }
+
+        Logger.recordOutput("Limelight/HasTarget", robot.outtake.vision.hasTarget() ? 1.0 : 0.0);
+        Logger.recordOutput("Limelight/TagId", robot.outtake.vision.getCurrentTagId());
+        Logger.recordOutput("Limelight/Tx", robot.outtake.vision.getTx());
+    }
+
+    private static double nanosToMillis(long nanos) {
+        return nanos / 1_000_000.0;
     }
 }
 

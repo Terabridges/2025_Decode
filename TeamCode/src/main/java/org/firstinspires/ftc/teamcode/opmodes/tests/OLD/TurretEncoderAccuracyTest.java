@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 
-@Disabled
+//@Disabled
 //Configurable
 @TeleOp(name = "TurretEncoderAccuracyTest", group = "Test")
 public class TurretEncoderAccuracyTest extends OpMode {
