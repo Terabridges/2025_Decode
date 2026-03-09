@@ -47,15 +47,6 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     public static boolean enableSectionTimingLogs = true;
-    public static double autoOffsetStationarySeconds = 0.5;
-    public static double autoOffsetTxScale = 1.0;
-    public static boolean enableAutoVisionTurretOffset = true;
-    public static double autoOffsetTxDeadbandDeg = 0.25;
-    public static double turretAimOffsetMaxAbsDeg = 25.0;
-    public static double bHoldResetSeconds = 0.6;
-    // Match the auto shooting "robot settled" gate.
-    public static double autoOffsetMaxRobotSpeedInS = 1.5;
-    public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -86,10 +77,6 @@ public class MainTeleOp extends OpMode {
 
     private JoinedTelemetry joinedTelemetry;
     private LoopTimeTracker loopTimeTracker;
-    private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
-    private final ElapsedTime bHoldTimer = new ElapsedTime();
-    private boolean bHoldActive = false;
-    private boolean bHoldResetFired = false;
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
@@ -183,7 +170,6 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
-        autoOffsetStationaryTimer.reset();
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -209,7 +195,6 @@ public class MainTeleOp extends OpMode {
         long tAfterControlsNs = System.nanoTime();
 
         robot.update();
-        autoUpdateTurretAimOffsetWhenSettled();
         long tAfterRobotNs = System.nanoTime();
 
         logPsiKitData();
@@ -250,10 +235,12 @@ public class MainTeleOp extends OpMode {
     }
 
     public void controlsUpdate() {
-        handleManualTurretOffsetBControl();
-
         for (Control c : controls) {
             c.update();
+        }
+        if (currentGamepad1.b && !previousGamepad1.b
+                && robot != null && robot.outtake != null && robot.outtake.vision != null) {
+            Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
         }
         getReadyShoot.update(gamepad2.b);
         toggleSorting.update(gamepad1.start || gamepad2.start);
@@ -359,96 +346,6 @@ public class MainTeleOp extends OpMode {
         }
     }
 
-    private void autoUpdateTurretAimOffsetWhenSettled() {
-        if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
-            return;
-        }
-        if (!enableAutoVisionTurretOffset) {
-            autoOffsetStationaryTimer.reset();
-            return;
-        }
-
-        int requiredTagId = robot.outtake.vision.getRequiredTagId();
-        boolean aimingGoal = robot.outtake.getAimTarget() == Outtake.AimTarget.GOAL;
-        boolean requiredTagIsGoal = requiredTagId == BLUE_GOAL_TAG_ID || requiredTagId == RED_GOAL_TAG_ID;
-
-        boolean robotStationary = isRobotMotionSettledForShot();
-        boolean requiredTagVisible = robot.outtake.vision.seesTag(requiredTagId);
-
-        if (!aimingGoal || !requiredTagIsGoal) {
-            autoOffsetStationaryTimer.reset();
-            return;
-        }
-
-        if (robotStationary && requiredTagVisible) {
-            if (autoOffsetStationaryTimer.seconds() >= autoOffsetStationarySeconds) {
-                double tx = robot.outtake.vision.getTxForTag(requiredTagId);
-                if (Math.abs(tx) >= autoOffsetTxDeadbandDeg) {
-                    Outtake.turretAimCommandOffsetDeg = clamp(
-                            Outtake.turretAimCommandOffsetDeg + (tx * autoOffsetTxScale),
-                            -Math.abs(turretAimOffsetMaxAbsDeg),
-                            Math.abs(turretAimOffsetMaxAbsDeg)
-                    );
-                }
-                autoOffsetStationaryTimer.reset();
-            }
-        } else {
-            autoOffsetStationaryTimer.reset();
-        }
-    }
-
-    private void handleManualTurretOffsetBControl() {
-        if (robot == null || robot.outtake == null || robot.outtake.vision == null) {
-            return;
-        }
-
-        if (currentGamepad1.b && !previousGamepad1.b) {
-            bHoldActive = true;
-            bHoldResetFired = false;
-            bHoldTimer.reset();
-        }
-
-        if (currentGamepad1.b && bHoldActive && !bHoldResetFired
-                && bHoldTimer.seconds() >= bHoldResetSeconds) {
-            Outtake.turretAimCommandOffsetDeg = 0.0;
-            bHoldResetFired = true;
-        }
-
-        if (!currentGamepad1.b && previousGamepad1.b) {
-            if (!bHoldResetFired) {
-                int requiredTagId = robot.outtake.vision.getRequiredTagId();
-                boolean canUseVision = requiredTagId < 0 || robot.outtake.vision.seesTag(requiredTagId);
-                if (canUseVision) {
-                    double tx = (requiredTagId >= 0)
-                            ? robot.outtake.vision.getTxForTag(requiredTagId)
-                            : robot.outtake.vision.getTx();
-                    Outtake.turretAimCommandOffsetDeg = clamp(
-                            Outtake.turretAimCommandOffsetDeg + tx,
-                            -Math.abs(turretAimOffsetMaxAbsDeg),
-                            Math.abs(turretAimOffsetMaxAbsDeg)
-                    );
-                }
-            }
-            bHoldActive = false;
-        }
-    }
-
-    private boolean isRobotMotionSettledForShot() {
-        if (FollowerManager.follower == null || FollowerManager.follower.getVelocity() == null) {
-            return false;
-        }
-
-        double translationalSpeedInS = Math.abs(FollowerManager.follower.getVelocity().getMagnitude());
-        double angularSpeedDegS = Math.abs(Math.toDegrees(FollowerManager.follower.getAngularVelocity()));
-        if (Double.isNaN(translationalSpeedInS) || Double.isInfinite(translationalSpeedInS)
-                || Double.isNaN(angularSpeedDegS) || Double.isInfinite(angularSpeedDegS)) {
-            return false;
-        }
-
-        return translationalSpeedInS <= autoOffsetMaxRobotSpeedInS
-                && angularSpeedDegS <= autoOffsetMaxRobotAngularSpeedDegS;
-    }
-
     private void logPsiKitData() {
         if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
             return;
@@ -509,10 +406,6 @@ public class MainTeleOp extends OpMode {
 
     private static double nanosToMillis(long nanos) {
         return nanos / 1_000_000.0;
-    }
-
-    private static double clamp(double value, double min, double max) {
-        return Math.max(min, Math.min(max, value));
     }
 }
 
