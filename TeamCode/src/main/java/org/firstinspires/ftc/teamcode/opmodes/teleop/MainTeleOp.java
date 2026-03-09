@@ -5,12 +5,15 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.Intake.ClutchControl;
 import org.firstinspires.ftc.teamcode.config.control.Intake.IntakeControl;
@@ -34,6 +37,8 @@ import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.LoopTimeTracker;
 import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
@@ -47,6 +52,9 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double GP1_B_LONG_PRESS_RESET_SEC = 0.6;
+    private static final double INCHES_TO_METERS = 0.0254;
+    private static final double FIELD_SIZE_IN = 144.0;
+    private static final double FIELD_HALF_IN = FIELD_SIZE_IN * 0.5;
     public static boolean enableSectionTimingLogs = true;
 
     IntakeControl intakeControl;
@@ -397,6 +405,7 @@ public class MainTeleOp extends OpMode {
             Logger.recordOutput("Pinpoint/Y", followerPose.getY());
             Logger.recordOutput("Pinpoint/HeadingDeg", Math.toDegrees(followerPose.getHeading()));
             Logger.recordOutput("Pinpoint/TotalHeadingDeg", Math.toDegrees(FollowerManager.follower.getTotalHeading()));
+            Logger.recordOutput("Localization/Pinpoint/Pose2d", toPose2dFromPedroInchesAsFtcCenterRotated(followerPose));
         } else {
             Logger.recordOutput("Pinpoint/X", Double.NaN);
             Logger.recordOutput("Pinpoint/Y", Double.NaN);
@@ -417,6 +426,69 @@ public class MainTeleOp extends OpMode {
         Logger.recordOutput("Limelight/HasTarget", robot.outtake.vision.hasTarget() ? 1.0 : 0.0);
         Logger.recordOutput("Limelight/TagId", robot.outtake.vision.getCurrentTagId());
         Logger.recordOutput("Limelight/Tx", robot.outtake.vision.getTx());
+
+        LLResult latest = robot.outtake.vision.latest;
+        Pose3D mt2Pose = getMt2Pose(latest);
+        Pose3D mt1Pose = getMt1Pose(latest);
+
+        Logger.recordOutput("Localization/LimelightMT2/Valid", mt2Pose != null ? 1.0 : 0.0);
+        if (mt2Pose != null) {
+            Logger.recordOutput("Localization/LimelightMT2/Pose2d", toPose2dFromLimelightMeters(mt2Pose));
+        }
+
+        Logger.recordOutput("Localization/LimelightMT1/Valid", mt1Pose != null ? 1.0 : 0.0);
+        if (mt1Pose != null) {
+            Logger.recordOutput("Localization/LimelightMT1/Pose2d", toPose2dFromLimelightMeters(mt1Pose));
+        }
+    }
+
+    private Pose3D getMt2Pose(LLResult latest) {
+        if (latest == null || !latest.isValid()) {
+            return null;
+        }
+        try {
+            return latest.getBotpose_MT2();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private Pose3D getMt1Pose(LLResult latest) {
+        if (latest == null || !latest.isValid()) {
+            return null;
+        }
+        try {
+            return latest.getBotpose();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private Pose2d toPose2dFromPedroInchesAsFtcCenterRotated(Pose pedroPose) {
+        double pedroXIn = pedroPose.getX();
+        double pedroYIn = pedroPose.getY();
+        double pedroHeadingRad = pedroPose.getHeading();
+
+        double ftcXIn = FIELD_HALF_IN - pedroYIn;
+        double ftcYIn = pedroXIn - FIELD_HALF_IN;
+        double ftcHeadingRad = wrapRad(pedroHeadingRad + (Math.PI * 0.5));
+
+        return new Pose2d(
+                ftcXIn * INCHES_TO_METERS,
+                ftcYIn * INCHES_TO_METERS,
+                Rotation2d.fromRadians(ftcHeadingRad)
+        );
+    }
+
+    private Pose2d toPose2dFromLimelightMeters(Pose3D llPose) {
+        double xMeters = llPose.getPosition().x;
+        double yMeters = llPose.getPosition().y;
+        double headingRad = Math.toRadians(llPose.getOrientation().getYaw(AngleUnit.DEGREES));
+        return new Pose2d(xMeters, yMeters, Rotation2d.fromRadians(headingRad));
+    }
+
+    private static double wrapRad(double radians) {
+        return Math.atan2(Math.sin(radians), Math.cos(radians));
     }
 
     private static double nanosToMillis(long nanos) {
