@@ -198,16 +198,23 @@ public final class RlogSummaryCliMain {
         LoggableType t = value.type;
         switch (t) {
             case Double:
-                return value.getDouble();
+                return finiteOrNull(value.getDouble());
             case Float:
-                return (double) value.getFloat();
+                return finiteOrNull((double) value.getFloat());
             case Integer:
-                return (double) value.getInteger();
+                return finiteOrNull((double) value.getInteger());
             case Boolean:
                 return value.getBoolean() ? 1.0 : 0.0;
             default:
                 return null;
         }
+    }
+
+    private static Double finiteOrNull(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return null;
+        }
+        return value;
     }
 
     private static String resolveString(String prop, String defaultValue) {
@@ -237,6 +244,9 @@ public final class RlogSummaryCliMain {
         double p99 = 0.0;
 
         void add(double v) {
+            if (Double.isNaN(v) || Double.isInfinite(v)) {
+                return;
+            }
             values.add(v);
             count++;
             sum += v;

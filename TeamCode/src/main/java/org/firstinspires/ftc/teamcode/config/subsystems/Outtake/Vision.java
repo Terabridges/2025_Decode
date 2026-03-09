@@ -9,6 +9,8 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
+import java.lang.reflect.Method;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
@@ -20,11 +22,24 @@ public class Vision implements Subsystem {
     public static final int RED_GOAL_TAG_ID = 24;
     public static boolean sendRobotYawToLimelight = true;
     public static boolean includeTurretRelativeYawInFeed = true;
-    public static double turretRelativeYawSign = 1.0;
+    public static boolean useEncoderTurretYawForFeed = true;
+    public static double turretRelativeYawSign = -1.0;
     public static double turretRelativeYawOffsetDeg = 0.0;
     public static double ftcRotatedFrameBaseDeg = 90.0;
     public static double robotYawSign = 1.0;
     public static double robotYawOffsetDeg = 0.0;
+    public static boolean updateCameraPoseRobotSpaceAtRuntime = false;
+    public static double cameraPoseRobotXMeter = -0.069;
+    public static double cameraPoseRobotYMeter = -0.069;
+    public static double cameraPoseRobotZMeter = 0.388;
+    public static double cameraPoseRobotRollDeg = -90.0;
+    public static double cameraPoseRobotPitchDeg = 12.5;
+    public static double cameraPoseRobotYawBaseDeg = 0.0;
+    public static double cameraPoseRobotYawTurretSign = 1.0;
+    public static double cameraPoseRobotYawOffsetDeg = 0.0;
+    public static boolean rotateCameraPositionWithTurretYaw = false;
+    public static double cameraPoseTurretOffsetXMeter = 0.0;
+    public static double cameraPoseTurretOffsetYMeter = 0.0;
 
     //---------------- Hardware ----------------
     private Limelight3A limelight;
@@ -39,7 +54,17 @@ public class Vision implements Subsystem {
     private double lastRobotYawSentDeg = Double.NaN;
     private double lastChassisYawDeg = Double.NaN;
     private double lastTurretRelativeYawDeg = 0.0;
+    private double lastTurretRelativeYawFromCommandDeg = Double.NaN;
+    private double lastTurretRelativeYawFromEncoderDeg = Double.NaN;
     private boolean lastRobotYawSendSuccess = false;
+    private boolean lastCameraPoseUpdateSuccess = false;
+    private String lastCameraPoseUpdateMethod = "disabled";
+    private double lastCameraPoseYawSentDeg = Double.NaN;
+    private double lastCameraPoseXSentMeter = Double.NaN;
+    private double lastCameraPoseYSentMeter = Double.NaN;
+    private double lastCameraPoseZSentMeter = Double.NaN;
+    private Method cachedCameraPoseSetterMethod = null;
+    private boolean triedCameraPoseSetterLookup = false;
     public static double tagTxSign = 1.0;
     private int requiredTagId = -1; // -1 means "any tag"
     private int motifTagId = -1; // -1 means motif not selected
@@ -68,20 +93,49 @@ public class Vision implements Subsystem {
 
     private void sendRobotYawIfAvailable() {
         lastRobotYawSendSuccess = false;
-        if (!sendRobotYawToLimelight || limelight == null || follower == null) {
+        if (limelight == null) {
+            lastCameraPoseUpdateSuccess = false;
+            lastCameraPoseUpdateMethod = "no_limelight";
+            lastCameraPoseYawSentDeg = Double.NaN;
+            logYawFeedToLogger();
+            return;
+        }
+
+        double turretRelativeYawDeg = 0.0;
+        lastTurretRelativeYawFromCommandDeg = Double.NaN;
+        lastTurretRelativeYawFromEncoderDeg = Double.NaN;
+        if (includeTurretRelativeYawInFeed && turret != null) {
+            double fromCommand = wrapSignedDegrees(turret.getCurrentDegrees() - Turret.turretForwardDeg);
+            lastTurretRelativeYawFromCommandDeg =
+                    (fromCommand * turretRelativeYawSign) + turretRelativeYawOffsetDeg;
+
+            double mappedTurretDeg = turret.getMappedEncoderTurretDegrees();
+            if (!Double.isNaN(mappedTurretDeg) && !Double.isInfinite(mappedTurretDeg)) {
+                double fromEncoder = wrapSignedDegrees(mappedTurretDeg - Turret.turretForwardDeg);
+                lastTurretRelativeYawFromEncoderDeg =
+                        (fromEncoder * turretRelativeYawSign) + turretRelativeYawOffsetDeg;
+            }
+
+            if (useEncoderTurretYawForFeed && !Double.isNaN(lastTurretRelativeYawFromEncoderDeg)) {
+                turretRelativeYawDeg = lastTurretRelativeYawFromEncoderDeg;
+            } else {
+                turretRelativeYawDeg = lastTurretRelativeYawFromCommandDeg;
+            }
+        }
+        lastTurretRelativeYawDeg = turretRelativeYawDeg;
+        updateCameraPoseRobotSpaceIfEnabled(turretRelativeYawDeg);
+
+        if (!sendRobotYawToLimelight || follower == null) {
+            if (follower == null) {
+                lastChassisYawDeg = Double.NaN;
+                lastRobotYawSentDeg = Double.NaN;
+            }
             logYawFeedToLogger();
             return;
         }
 
         double chassisYawDeg = Math.toDegrees(follower.getHeading());
         lastChassisYawDeg = chassisYawDeg;
-
-        double turretRelativeYawDeg = 0.0;
-        if (includeTurretRelativeYawInFeed && turret != null) {
-            turretRelativeYawDeg = wrapSignedDegrees(turret.getCurrentDegrees() - Turret.turretForwardDeg);
-            turretRelativeYawDeg = (turretRelativeYawDeg * turretRelativeYawSign) + turretRelativeYawOffsetDeg;
-        }
-        lastTurretRelativeYawDeg = turretRelativeYawDeg;
 
         double yawDeg = chassisYawDeg + turretRelativeYawDeg;
         yawDeg += ftcRotatedFrameBaseDeg;
@@ -97,13 +151,171 @@ public class Vision implements Subsystem {
         logYawFeedToLogger();
     }
 
+    private void updateCameraPoseRobotSpaceIfEnabled(double turretRelativeYawDeg) {
+        if (!updateCameraPoseRobotSpaceAtRuntime) {
+            lastCameraPoseUpdateSuccess = false;
+            lastCameraPoseUpdateMethod = "disabled";
+            lastCameraPoseYawSentDeg = Double.NaN;
+            lastCameraPoseXSentMeter = Double.NaN;
+            lastCameraPoseYSentMeter = Double.NaN;
+            lastCameraPoseZSentMeter = Double.NaN;
+            return;
+        }
+
+        double turretYawRad = Math.toRadians(turretRelativeYawDeg);
+        double xMeter = cameraPoseRobotXMeter;
+        double yMeter = cameraPoseRobotYMeter;
+        if (rotateCameraPositionWithTurretYaw) {
+            double offsetX = cameraPoseTurretOffsetXMeter;
+            double offsetY = cameraPoseTurretOffsetYMeter;
+            double cos = Math.cos(turretYawRad);
+            double sin = Math.sin(turretYawRad);
+            xMeter += (offsetX * cos) - (offsetY * sin);
+            yMeter += (offsetX * sin) + (offsetY * cos);
+        }
+
+        double yawDeg = cameraPoseRobotYawBaseDeg
+                + (turretRelativeYawDeg * cameraPoseRobotYawTurretSign)
+                + cameraPoseRobotYawOffsetDeg;
+        yawDeg = AngleUnit.normalizeDegrees(yawDeg);
+
+        lastCameraPoseXSentMeter = xMeter;
+        lastCameraPoseYSentMeter = yMeter;
+        lastCameraPoseZSentMeter = cameraPoseRobotZMeter;
+        lastCameraPoseYawSentDeg = yawDeg;
+
+        try {
+            Method setter = getCameraPoseSetterMethod();
+            if (setter == null) {
+                lastCameraPoseUpdateSuccess = false;
+                lastCameraPoseUpdateMethod = "no_api";
+                return;
+            }
+
+            Class<?>[] params = setter.getParameterTypes();
+            if (params.length == 1 && params[0].isArray()) {
+                setter.invoke(limelight, (Object) new double[]{
+                        xMeter,
+                        yMeter,
+                        cameraPoseRobotZMeter,
+                        cameraPoseRobotRollDeg,
+                        cameraPoseRobotPitchDeg,
+                        yawDeg
+                });
+            } else if (params.length == 6) {
+                setter.invoke(
+                        limelight,
+                        xMeter,
+                        yMeter,
+                        cameraPoseRobotZMeter,
+                        cameraPoseRobotRollDeg,
+                        cameraPoseRobotPitchDeg,
+                        yawDeg
+                );
+            } else {
+                lastCameraPoseUpdateSuccess = false;
+                lastCameraPoseUpdateMethod = "bad_signature";
+                return;
+            }
+
+            lastCameraPoseUpdateSuccess = true;
+            lastCameraPoseUpdateMethod = setter.getName();
+        } catch (Throwable ignored) {
+            lastCameraPoseUpdateSuccess = false;
+            if (lastCameraPoseUpdateMethod == null || lastCameraPoseUpdateMethod.isEmpty()) {
+                lastCameraPoseUpdateMethod = "invoke_failed";
+            }
+        }
+    }
+
+    private Method getCameraPoseSetterMethod() {
+        if (cachedCameraPoseSetterMethod != null) {
+            return cachedCameraPoseSetterMethod;
+        }
+        if (triedCameraPoseSetterLookup || limelight == null) {
+            return null;
+        }
+        triedCameraPoseSetterLookup = true;
+
+        String[] preferredNames = new String[] {
+                "updateCameraPoseRobotSpace",
+                "setCameraPoseRobotSpace",
+                "setCameraPose_RobotSpace",
+                "setCameraPoseRobotspace",
+                "setCameraPose"
+        };
+
+        for (String name : preferredNames) {
+            Method candidate = findCameraPoseSetterByName(name);
+            if (candidate != null) {
+                cachedCameraPoseSetterMethod = candidate;
+                return cachedCameraPoseSetterMethod;
+            }
+        }
+
+        for (Method method : limelight.getClass().getMethods()) {
+            if (isCompatibleCameraPoseSetter(method)) {
+                cachedCameraPoseSetterMethod = method;
+                return cachedCameraPoseSetterMethod;
+            }
+        }
+        return null;
+    }
+
+    private Method findCameraPoseSetterByName(String methodName) {
+        for (Method method : limelight.getClass().getMethods()) {
+            if (method.getName().equals(methodName) && isCompatibleCameraPoseSetter(method)) {
+                return method;
+            }
+        }
+        return null;
+    }
+
+    private boolean isCompatibleCameraPoseSetter(Method method) {
+        Class<?>[] params = method.getParameterTypes();
+        if (params.length == 1 && params[0] == double[].class) {
+            return true;
+        }
+        if (params.length != 6) {
+            return false;
+        }
+        for (Class<?> param : params) {
+            if (!(param == double.class || param == Double.class)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void logYawFeedToLogger() {
         Logger.recordOutput("Vision/LimelightYawFeed/ChassisYawDeg", lastChassisYawDeg);
+        Logger.recordOutput("Vision/LimelightYawFeed/UseEncoderTurretYawForFeed", useEncoderTurretYawForFeed ? 1.0 : 0.0);
         Logger.recordOutput("Vision/LimelightYawFeed/TurretRelativeYawDeg", lastTurretRelativeYawDeg);
+        Logger.recordOutput("Vision/LimelightYawFeed/TurretRelativeYawFromCommandDeg", lastTurretRelativeYawFromCommandDeg);
+        Logger.recordOutput("Vision/LimelightYawFeed/TurretRelativeYawFromEncoderDeg", lastTurretRelativeYawFromEncoderDeg);
+        if (!Double.isNaN(lastTurretRelativeYawFromCommandDeg) && !Double.isInfinite(lastTurretRelativeYawFromCommandDeg)) {
+            Logger.recordOutput("Vision/LimelightYawFeed/Diag/ChassisPlusTurretCmdDeg",
+                AngleUnit.normalizeDegrees(lastChassisYawDeg + lastTurretRelativeYawFromCommandDeg));
+            Logger.recordOutput("Vision/LimelightYawFeed/Diag/ChassisMinusTurretCmdDeg",
+                AngleUnit.normalizeDegrees(lastChassisYawDeg - lastTurretRelativeYawFromCommandDeg));
+        }
+        if (!Double.isNaN(lastTurretRelativeYawFromEncoderDeg) && !Double.isInfinite(lastTurretRelativeYawFromEncoderDeg)) {
+            Logger.recordOutput("Vision/LimelightYawFeed/Diag/ChassisPlusTurretEncDeg",
+                AngleUnit.normalizeDegrees(lastChassisYawDeg + lastTurretRelativeYawFromEncoderDeg));
+            Logger.recordOutput("Vision/LimelightYawFeed/Diag/ChassisMinusTurretEncDeg",
+                AngleUnit.normalizeDegrees(lastChassisYawDeg - lastTurretRelativeYawFromEncoderDeg));
+        }
         Logger.recordOutput("Vision/LimelightYawFeed/FtcBaseDeg", ftcRotatedFrameBaseDeg);
         Logger.recordOutput("Vision/LimelightYawFeed/ExtraOffsetDeg", robotYawOffsetDeg);
         Logger.recordOutput("Vision/LimelightYawFeed/YawSentDeg", lastRobotYawSentDeg);
         Logger.recordOutput("Vision/LimelightYawFeed/SendSuccess", lastRobotYawSendSuccess ? 1.0 : 0.0);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeEnabled", updateCameraPoseRobotSpaceAtRuntime ? 1.0 : 0.0);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeSuccess", lastCameraPoseUpdateSuccess ? 1.0 : 0.0);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeMethod", lastCameraPoseUpdateMethod);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeYawDeg", lastCameraPoseYawSentDeg);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeXMeter", lastCameraPoseXSentMeter);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeYMeter", lastCameraPoseYSentMeter);
+        Logger.recordOutput("Vision/LimelightYawFeed/CameraPoseRuntimeZMeter", lastCameraPoseZSentMeter);
     }
 
     public double getLastRobotYawSentDeg() {
