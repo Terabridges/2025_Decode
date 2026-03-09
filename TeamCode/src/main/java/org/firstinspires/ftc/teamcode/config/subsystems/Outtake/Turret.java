@@ -21,9 +21,9 @@ public class Turret implements Subsystem {
     private final Util util;
 
     //---------------- Software ----------------
-    public static double turretMinDeg = 18.0;
-    public static double turretMaxDeg = 330.0;
-    public static double turretForwardDeg = 197.0;
+    public static double turretMinDeg = 16.418;
+    public static double turretMaxDeg = 328.418;
+    public static double turretForwardDeg = 198.055;
     public static double turretVelocity = 0.0;
     public static double velocityLoopTime = 250.0;
 

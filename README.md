@@ -8,6 +8,10 @@ This GitHub repository contains the source code that is used to build an Android
 ## Requirements
 To use this Android Studio project, you will need Android Studio Ladybug (2024.2) or later.
 
+### Team Calibration Runbooks
+
+- Turret yaw calibration: [doc/turret-yaw-calibration-runbook.md](doc/turret-yaw-calibration-runbook.md)
+
 ### Local PsiKit + Android SDK setup (TeraBridges)
 
 This repo can be configured to use a locally cloned PsiKit (composite build). In that setup, Gradle evaluates *both* builds (this repo and the included PsiKit repo), so your machine needs an Android SDK path that Gradle can discover.
