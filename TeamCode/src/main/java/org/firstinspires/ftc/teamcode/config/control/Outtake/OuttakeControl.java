@@ -41,6 +41,9 @@ public class OuttakeControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("Recoil Comp Enabled", Outtake.enableRpmRecoilComp);
+        telemetry.addData("Recoil RPM Error", "%.1f", outtake.getLastRecoilRpmError());
+        telemetry.addData("Recoil Hood Delta", "%.4f", outtake.getLastRecoilHoodDelta());
+        telemetry.addData("Hood Base/Comp", "%.4f / %.4f", outtake.getLastBaseHoodPos(), outtake.getLastCompedHoodPos());
     }
 }

@@ -47,11 +47,6 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     public static boolean enableSectionTimingLogs = true;
-    public static double autoOffsetStationarySeconds = 0.5;
-    public static double autoOffsetTxScale = 0.75;
-    // Match the auto shooting "robot settled" gate.
-    public static double autoOffsetMaxRobotSpeedInS = 1.5;
-    public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -82,7 +77,6 @@ public class MainTeleOp extends OpMode {
 
     private JoinedTelemetry joinedTelemetry;
     private LoopTimeTracker loopTimeTracker;
-    private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
@@ -176,7 +170,6 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
-        autoOffsetStationaryTimer.reset();
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -202,7 +195,6 @@ public class MainTeleOp extends OpMode {
         long tAfterControlsNs = System.nanoTime();
 
         robot.update();
-        autoUpdateTurretAimOffsetWhenSettled();
         long tAfterRobotNs = System.nanoTime();
 
         logPsiKitData();
@@ -246,8 +238,8 @@ public class MainTeleOp extends OpMode {
         for (Control c : controls) {
             c.update();
         }
-        if (currentGamepad1.b && !previousGamepad1.b && robot != null && robot.outtake != null
-                && robot.outtake.vision != null) {
+        if (currentGamepad1.b && !previousGamepad1.b
+                && robot != null && robot.outtake != null && robot.outtake.vision != null) {
             Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
         }
         getReadyShoot.update(gamepad2.b);
@@ -348,49 +340,10 @@ public class MainTeleOp extends OpMode {
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
         }
-    }
-
-    private void autoUpdateTurretAimOffsetWhenSettled() {
-        if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
-            return;
+        // Teleop should always be goal-targeted; this prevents stray obelisk targeting.
+        if (robot.outtake.getAimTarget() != Outtake.AimTarget.GOAL) {
+            robot.outtake.setAimTargetGoal();
         }
-
-        int requiredTagId = robot.outtake.vision.getRequiredTagId();
-        boolean aimingGoal = robot.outtake.getAimTarget() == Outtake.AimTarget.GOAL;
-        boolean requiredTagIsGoal = requiredTagId == BLUE_GOAL_TAG_ID || requiredTagId == RED_GOAL_TAG_ID;
-
-        boolean robotStationary = isRobotMotionSettledForShot();
-        boolean requiredTagVisible = robot.outtake.vision.seesTag(requiredTagId);
-
-        if (!aimingGoal || !requiredTagIsGoal) {
-            autoOffsetStationaryTimer.reset();
-            return;
-        }
-
-        if (robotStationary && requiredTagVisible) {
-            if (autoOffsetStationaryTimer.seconds() >= autoOffsetStationarySeconds) {
-                Outtake.turretAimCommandOffsetDeg += (-robot.outtake.vision.getTx()) * autoOffsetTxScale;
-                autoOffsetStationaryTimer.reset();
-            }
-        } else {
-            autoOffsetStationaryTimer.reset();
-        }
-    }
-
-    private boolean isRobotMotionSettledForShot() {
-        if (FollowerManager.follower == null || FollowerManager.follower.getVelocity() == null) {
-            return false;
-        }
-
-        double translationalSpeedInS = Math.abs(FollowerManager.follower.getVelocity().getMagnitude());
-        double angularSpeedDegS = Math.abs(Math.toDegrees(FollowerManager.follower.getAngularVelocity()));
-        if (Double.isNaN(translationalSpeedInS) || Double.isInfinite(translationalSpeedInS)
-                || Double.isNaN(angularSpeedDegS) || Double.isInfinite(angularSpeedDegS)) {
-            return false;
-        }
-
-        return translationalSpeedInS <= autoOffsetMaxRobotSpeedInS
-                && angularSpeedDegS <= autoOffsetMaxRobotAngularSpeedDegS;
     }
 
     private void logPsiKitData() {
@@ -414,6 +367,14 @@ public class MainTeleOp extends OpMode {
         Logger.recordOutput("Turret/AimTarget", robot.outtake.getAimTarget().ordinal());
         Logger.recordOutput("Turret/AimSource", robot.outtake.getActiveLockSource().ordinal());
         Logger.recordOutput("Turret/AimOffsetDeg", Outtake.turretAimCommandOffsetDeg);
+        Logger.recordOutput("Outtake/RecoilCompEnabled", Outtake.enableRpmRecoilComp ? 1.0 : 0.0);
+        Logger.recordOutput("Outtake/RecoilCompGainPerRPM", Outtake.recoilCompGainPerRPM);
+        Logger.recordOutput("Outtake/RecoilCompDeadbandRPM", Outtake.recoilCompDeadbandRPM);
+        Logger.recordOutput("Outtake/RecoilCompMaxHoodDelta", Outtake.recoilCompMaxHoodDelta);
+        Logger.recordOutput("Outtake/RecoilRpmError", robot.outtake.getLastRecoilRpmError());
+        Logger.recordOutput("Outtake/RecoilHoodDelta", robot.outtake.getLastRecoilHoodDelta());
+        Logger.recordOutput("Outtake/HoodBasePos", robot.outtake.getLastBaseHoodPos());
+        Logger.recordOutput("Outtake/HoodCompedPos", robot.outtake.getLastCompedHoodPos());
 
         Pose followerPose = (FollowerManager.follower != null) ? FollowerManager.follower.getPose() : null;
         if (followerPose != null) {
