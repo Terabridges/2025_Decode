@@ -262,7 +262,8 @@ public class Outtake implements Subsystem {
             return;
         }
 
-        double txDeg = vision.getTxForTag(vision.getRequiredTagId());
+        // Match the proven manual GP1-B correction sign/path.
+        double txDeg = vision.getTx();
         if (!Double.isFinite(txDeg)) {
             return;
         }
