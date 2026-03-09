@@ -52,6 +52,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private boolean shootPreload;
     private boolean allowPickupCycles;
     private boolean backRowLoopEnabled;
+    private boolean closeLoopEnabled;
     private int backRowLoopCyclesTarget;
     private int backRowLoopCyclesCompleted;
     private AutoRoutePlanner routePlanner;
@@ -91,6 +92,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
         releaseAfterClosePickup = spec.releaseAfterClosePickup;
         shootPreload = spec.shootPreload;
         backRowLoopEnabled = spec.backRowLoopEnabled;
+        closeLoopEnabled = spec.closeLoopEnabled;
         backRowLoopCyclesTarget = spec.backRowLoopCycles;
         rowSequence = spec.rowSequence;
         allowPickupCycles = rowSequence.length > 0;
@@ -318,14 +320,18 @@ public abstract class BaseAutoPathTesting extends OpMode {
                 pickupPath = pathLibrary.pickup(currentPose, alliance, range, currentAbsoluteRow);
                 break;
             case GO_TO_FAR_PICKUP_ZONE:
-                backRowLoopPickupPath = pathLibrary.farPickupZone(currentPose, alliance);
+                backRowLoopPickupPath = buildBackRowLoopGoToPickupPath(currentPose);
                 break;
             case BACKROW_COMPLETE_PICKUP:
                 backRowLoopCompletePickupPath = pathLibrary.pickup(currentPose, alliance, Range.LONG_RANGE, 4);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                goToScorePath = pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
+                if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT) {
+                    goToScorePath = buildBackRowLoopGoToScorePath(currentPose);
+                } else {
+                    goToScorePath = pathLibrary.goToScore(currentPose, getScorePoseForCurrentShot());
+                }
                 break;
             case GO_TO_RELEASE:
                 releaseGoToPath = pathLibrary.releaseGoTo(currentPose, alliance, range);
@@ -358,12 +364,39 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected Pose getScorePoseForCurrentShot() {
-        Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
-        if (getScoreRangeForCurrentShot() == Range.CLOSE_RANGE && preloadComplete) {
+        Range scoreRange = getScoreRangeForCurrentShot();
+        Pose base = poses.getScore(alliance, scoreRange);
+        if (scoreRange == Range.CLOSE_RANGE && preloadComplete && !shouldStartNextCycle() && !shouldEnterBackRowLoop()) {
+            return poses.getFinalShootClose(alliance);
+        }
+        if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
             double headingDeg = (alliance == Alliance.RED) ? 160.0 : 180.0;
             return new Pose(base.getX(), base.getY(), Math.toRadians(headingDeg));
         }
         return base;
+    }
+
+    protected PathChain buildBackRowLoopGoToPickupPath(Pose currentPose) {
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            return pathLibrary.closeLoopPickup(currentPose, alliance);
+        }
+        return pathLibrary.farPickupZone(currentPose, alliance);
+    }
+
+    protected PathChain buildBackRowLoopGoToScorePath(Pose currentPose) {
+        Pose scorePose = getBackRowLoopScorePoseForCurrentShot();
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            boolean isFinalLoopShot = shouldExitBackRowLoop();
+            return pathLibrary.closeLoopGoToShoot(currentPose, alliance, scorePose, isFinalLoopShot);
+        }
+        return pathLibrary.goToScore(currentPose, scorePose);
+    }
+
+    protected Pose getBackRowLoopScorePoseForCurrentShot() {
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE && shouldExitBackRowLoop()) {
+            return poses.getFinalShootClose(alliance);
+        }
+        return getScorePoseForCurrentShot();
     }
 
     protected void followPath(PathChain path) {

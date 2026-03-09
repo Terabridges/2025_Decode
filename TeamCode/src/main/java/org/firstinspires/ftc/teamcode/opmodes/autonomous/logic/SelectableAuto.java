@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close2RowNo
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close2RowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.main.Close3RowNoReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.main.Close3RowReleaseAuto;
+import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.main.CloseMainReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close4RowNoReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close4RowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.ClosePreloadOnlyNoReleaseAuto;
@@ -45,6 +46,7 @@ public class SelectableAuto extends SelectableOpMode {
         super("Select Auto", c -> {
             c.folder("Blue Alliance", p -> {
                 p.folder("Close", m -> {
+                    m.add("Main Release (R: P, 1, 2, close loop)", () -> new CloseMainReleaseAuto(Alliance.BLUE));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> new Close3RowReleaseAuto(Alliance.BLUE));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> new Close3RowNoReleaseAuto(Alliance.BLUE));
                     m.folder("Other", s -> {
@@ -79,6 +81,7 @@ public class SelectableAuto extends SelectableOpMode {
             });
             c.folder("Red Alliance", p -> {
                 p.folder("Close", m -> {
+                    m.add("Main Release (R: P, 1, 2, close loop)", () -> new CloseMainReleaseAuto(Alliance.RED));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> new Close3RowReleaseAuto(Alliance.RED));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> new Close3RowNoReleaseAuto(Alliance.RED));
                     m.folder("Other", s -> {

@@ -38,9 +38,10 @@ public class AutoTurretAim {
             robot.outtake.setAimTargetObelisk();
             robot.outtake.aimAtObeliskWithOdometry();
         } else {
-            // All non-acquire states use the same aimLock flow as teleop.
-            if (!robot.outtake.isAimLockEnabled()) {
-                robot.outtake.setAimLockEnabled(true);
+            // Auto shooting now precomputes turret angle from shoot pose in GO_TO_SHOOT.
+            // Keep aimLock disabled so command is not continuously rewritten each loop.
+            if (robot.outtake.isAimLockEnabled()) {
+                robot.outtake.setAimLockEnabled(false);
             }
             robot.outtake.setAimTargetGoal();
         }

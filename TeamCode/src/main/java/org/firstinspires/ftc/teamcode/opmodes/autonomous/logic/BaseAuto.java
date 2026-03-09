@@ -74,6 +74,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean allowPickupCycles;
     @SuppressWarnings("unused")
     private boolean backRowLoopEnabled;
+    private boolean closeLoopEnabled;
     private int backRowLoopCyclesTarget;
     private int backRowLoopCyclesCompleted;
     private AutoRoutePlanner routePlanner;
@@ -136,6 +137,7 @@ public abstract class BaseAuto extends OpMode {
         releaseAfterClosePickup = spec.releaseAfterClosePickup;
         shootPreload = spec.shootPreload;
         backRowLoopEnabled = spec.backRowLoopEnabled;
+        closeLoopEnabled = spec.closeLoopEnabled;
         backRowLoopCyclesTarget = spec.backRowLoopCycles;
         rowSequence = spec.rowSequence;
         allowPickupCycles = rowSequence.length > 0;
@@ -144,6 +146,8 @@ public abstract class BaseAuto extends OpMode {
         startPose = poses.findStartPose(alliance, range);
 
         robot.other.drive.manualDrive = false;
+        // Keep flywheel running throughout auto so shots can start faster.
+        robot.outtake.shooter.useFlywheelPID = true;
 
         shootAllMachine = robot.getShootAllMachine();
         sortingShootAllMachine = robot.getSortedShootAllMachine();
@@ -395,6 +399,7 @@ public abstract class BaseAuto extends OpMode {
         }
 
         prepareForShootWhileDriving();
+        commandTurretForUpcomingShot();
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
@@ -492,6 +497,7 @@ public abstract class BaseAuto extends OpMode {
 
         // Stop intake transfer and pre-stage shot while driving to score.
         prepareForShootWhileDriving();
+        commandTurretForPose(getBackRowLoopScorePoseForCurrentShot());
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
@@ -542,14 +548,18 @@ public abstract class BaseAuto extends OpMode {
                 pickupPath = buildPickupPath(currentPose);
                 break;
             case GO_TO_FAR_PICKUP_ZONE:
-                backRowLoopPickupPath = buildFarPickupZonePath(currentPose);
+                backRowLoopPickupPath = buildBackRowLoopGoToPickupPath(currentPose);
                 break;
             case BACKROW_COMPLETE_PICKUP:
                 backRowLoopCompletePickupPath = buildBackRowLoopCompletePickupPath(currentPose);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
-                goToScorePath = buildGoToScorePath(currentPose);
+                if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT) {
+                    goToScorePath = buildBackRowLoopGoToScorePath(currentPose);
+                } else {
+                    goToScorePath = buildGoToScorePath(currentPose);
+                }
                 break;
             case GO_TO_RELEASE:
                 releaseGoToPath = buildReleaseGoToPath(currentPose);
@@ -579,9 +589,25 @@ public abstract class BaseAuto extends OpMode {
         return pathLibrary.farPickupZone(currentPose, alliance);
     }
 
+    protected PathChain buildBackRowLoopGoToPickupPath(Pose currentPose) {
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            return pathLibrary.closeLoopPickup(currentPose, alliance);
+        }
+        return buildFarPickupZonePath(currentPose);
+    }
+
     protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
         // Back-row loop always intakes from absolute row 4.
         return pathLibrary.pickup(currentPose, alliance, Range.LONG_RANGE, 4);
+    }
+
+    protected PathChain buildBackRowLoopGoToScorePath(Pose currentPose) {
+        Pose scorePose = getBackRowLoopScorePoseForCurrentShot();
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            boolean isFinalLoopShot = shouldExitBackRowLoop();
+            return pathLibrary.closeLoopGoToShoot(currentPose, alliance, scorePose, isFinalLoopShot);
+        }
+        return pathLibrary.goToScore(currentPose, scorePose);
     }
 
     protected PathChain buildReleaseGoToPath(Pose currentPose) {
@@ -616,8 +642,12 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected Pose getScorePoseForCurrentShot() {
-        Pose base = poses.getScore(alliance, getScoreRangeForCurrentShot());
-        if (getScoreRangeForCurrentShot() == Range.CLOSE_RANGE && preloadComplete) {
+        Range scoreRange = getScoreRangeForCurrentShot();
+        Pose base = poses.getScore(alliance, scoreRange);
+        if (scoreRange == Range.CLOSE_RANGE && preloadComplete && !shouldStartNextCycle() && !shouldEnterBackRowLoop()) {
+            return poses.getFinalShootClose(alliance);
+        }
+        if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
             // Close-range cycle shots: blue at 180 deg, red at 160 deg.
             double headingDeg = (alliance == Alliance.RED) ? 160.0 : 180.0;
             return new Pose(base.getX(), base.getY(), Math.toRadians(headingDeg));
@@ -644,6 +674,17 @@ public abstract class BaseAuto extends OpMode {
         }
         robot.outtake.shooter.useFlywheelPID = true;
         robot.getReadyShoot();
+    }
+
+    protected void commandTurretForUpcomingShot() {
+        commandTurretForPose(getScorePoseForCurrentShot());
+    }
+
+    protected void commandTurretForPose(Pose scorePose) {
+        if (robot == null || robot.outtake == null || robot.outtake.turret == null) {
+            return;
+        }
+        robot.outtake.commandGoalTurretFromPose(scorePose);
     }
 
     protected boolean followerIdle() {
@@ -890,6 +931,13 @@ public abstract class BaseAuto extends OpMode {
             return true;
         }
         return (backRowLoopCyclesCompleted + 1) < backRowLoopCyclesTarget;
+    }
+
+    protected Pose getBackRowLoopScorePoseForCurrentShot() {
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE && shouldExitBackRowLoop()) {
+            return poses.getFinalShootClose(alliance);
+        }
+        return getScorePoseForCurrentShot();
     }
     
     // ===== Telemetry Helpers =====

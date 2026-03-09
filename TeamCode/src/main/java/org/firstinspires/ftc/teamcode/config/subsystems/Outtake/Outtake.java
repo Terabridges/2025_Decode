@@ -164,8 +164,42 @@ public class Outtake implements Subsystem {
     }
 
     public boolean isVisionOnTarget(Vision vision, double toleranceDeg) {
-        // Vision aiming logic is intentionally not implemented in Outtake yet.
-        return false;
+        if (vision == null) {
+            return false;
+        }
+        if (!vision.hasRequiredTarget()) {
+            return false;
+        }
+
+        double txDeg = vision.getTxForTag(vision.getRequiredTagId());
+        if (!Double.isFinite(txDeg)) {
+            return false;
+        }
+
+        return Math.abs(txDeg) <= Math.abs(toleranceDeg);
+    }
+
+    /**
+     * Computes the turret command needed to hit the alliance goal from a supplied field pose.
+     */
+    public double computeGoalTurretDegFromPose(Pose robotPose) {
+        if (robotPose == null) {
+            return Double.NaN;
+        }
+        double targetX = GlobalVariables.isBlueAlliance() ? blueGoalX : redGoalX;
+        double targetY = GlobalVariables.isBlueAlliance() ? blueGoalY : redGoalY;
+        double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
+        return turret.normalizeDegrees(desiredDeg + turretAimCommandOffsetDeg);
+    }
+
+    /**
+     * Commands turret to the alliance-goal angle computed from the supplied field pose.
+     */
+    public void commandGoalTurretFromPose(Pose robotPose) {
+        double desiredDeg = computeGoalTurretDegFromPose(robotPose);
+        if (Double.isFinite(desiredDeg)) {
+            turret.setTurretDegree(desiredDeg);
+        }
     }
 
     private void aimAtFieldPoint(Pose robotPose, double targetX, double targetY) {

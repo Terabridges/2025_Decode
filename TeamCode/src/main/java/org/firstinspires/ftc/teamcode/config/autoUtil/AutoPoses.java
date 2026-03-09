@@ -26,6 +26,8 @@ public class AutoPoses {
     public Pose scoreLB = poseDeg(54.0, 16.0, 0.0);
     public Pose scoreCR = poseDeg(96.0, 96.0, 128);
     public Pose scoreLR = poseDeg(90.0, 16.0, 0.0);
+    public Pose finalShootCloseB = poseDeg(44.0, 115.0, 140.0);
+    public Pose finalShootCloseR = poseDeg(FIELD_SIZE - 44.0, 115.0, 40.0);
 
     // ===== Load Poses =====
     public Pose loadB = poseDeg(ROBOT_WIDTH / 2.0, ROBOT_LENGTH / 2.0, 0);
@@ -38,9 +40,9 @@ public class AutoPoses {
     public Pose releaseCompleteCloseR = poseDeg(126.5, 74.0, 180);
 
     // ===== Leave Poses =====
-    public Pose leaveCB = poseDeg(36.0, 84.0, 180.0);
+    public Pose leaveCB = poseDeg(44.0, 115.0, 140.0);
     public Pose leaveLB = poseDeg(15.0, 15.0, 0.0);
-    public Pose leaveCR = poseDeg(108.0, 84.0, 180);
+    public Pose leaveCR = poseDeg(FIELD_SIZE - 44.0, 115.0, 40.0);
     public Pose leaveLR = poseDeg(129.0, 15.0, 0.0);
 
     // ===== Pickup Start Poses =====
@@ -59,9 +61,17 @@ public class AutoPoses {
 
     public Pose pick4StartLB = poseDeg(13.5, 16.0, 20.0);
     public Pose pick4StartLR = poseDeg(130.5, 16.0, 340.0);
+    public Pose pick4Step1LB = poseDeg(12.5, 12.5, 15.0);
+    public Pose pick4Step1LR = poseDeg(FIELD_SIZE - 12.5, 12.5, 345.0);
 
     public Pose farPickupZoneB = poseDeg(10.0, 11.5, 0.0);
     public Pose farPickupZoneR = poseDeg(134.0, 11.5, 0.0);
+    public Pose closeLoopPickupB = poseDeg(11.0, 61.0, 140.0);
+    public Pose closeLoopPickupR = poseDeg(FIELD_SIZE - 11.0, 61.0, 40.0);
+    public Pose closeLoopSharedControlB = poseDeg(33.0, 72.5, 0.0);
+    public Pose closeLoopSharedControlR = poseDeg(FIELD_SIZE - 33.0, 72.5, 0.0);
+    public Pose closeLoopFinalShootControlB = poseDeg(35.0, 81.0, 0.0);
+    public Pose closeLoopFinalShootControlR = poseDeg(FIELD_SIZE - 35.0, 81.0, 0.0);
 
     // ===== Pickup End Poses =====
     public Pose pick1EndCB = poseDeg(24.0, 84.0, 180.0);
@@ -77,8 +87,8 @@ public class AutoPoses {
     public Pose pick3EndCR = poseDeg(120.0, 36.0, 180.0);
     public Pose pick3EndLR = poseDeg(120.0, 36.0, 0);
 
-    public Pose pick4EndLB = poseDeg(13.5, 11.25, 20.0);
-    public Pose pick4EndLR = poseDeg(130.5, 11.25, 340.0);
+    public Pose pick4EndLB = poseDeg(9.0, 8.5, 0.0);
+    public Pose pick4EndLR = poseDeg(FIELD_SIZE - 9.0, 8.5, 0.0);
 
     // ===== Goal / Obelisk =====
     public Pose goalBlueAnchor = poseDeg(0.0, 144.0, 90.0);
@@ -146,9 +156,9 @@ public class AutoPoses {
         setPickupEndAbsolute(Alliance.RED, 3, pick3EndCR);
         setPickupEndAbsolute(Alliance.RED, 4, pick4EndLR);
 
-        setLeave(Alliance.BLUE, Range.CLOSE_RANGE, leaveCB);
+        setLeave(Alliance.BLUE, Range.CLOSE_RANGE, finalShootCloseB);
         setLeave(Alliance.BLUE, Range.LONG_RANGE, leaveLB);
-        setLeave(Alliance.RED, Range.CLOSE_RANGE, leaveCR);
+        setLeave(Alliance.RED, Range.CLOSE_RANGE, finalShootCloseR);
         setLeave(Alliance.RED, Range.LONG_RANGE, leaveLR);
 
         setReleaseGoTo(Alliance.BLUE, Range.CLOSE_RANGE, releaseGoToCloseB);
@@ -200,6 +210,10 @@ public class AutoPoses {
 
     public Pose getScore(Alliance a, Range r) {
         return score[a.ordinal()][r.ordinal()];
+    }
+
+    public Pose getFinalShootClose(Alliance a) {
+        return (a == Alliance.BLUE) ? finalShootCloseB : finalShootCloseR;
     }
 
     public Pose getPickupStart(Alliance a, int absoluteRow) {
@@ -254,8 +268,24 @@ public class AutoPoses {
         }
     }
 
+    public Pose getPickupRow4Step1(Alliance a) {
+        return (a == Alliance.BLUE) ? pick4Step1LB : pick4Step1LR;
+    }
+
     public Pose getFarPickupZone(Alliance a) {
         return (a == Alliance.BLUE) ? farPickupZoneB : farPickupZoneR;
+    }
+
+    public Pose getCloseLoopPickup(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopPickupB : closeLoopPickupR;
+    }
+
+    public Pose getCloseLoopSharedControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopSharedControlB : closeLoopSharedControlR;
+    }
+
+    public Pose getCloseLoopFinalShootControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopFinalShootControlB : closeLoopFinalShootControlR;
     }
 
     public Pose getLeave(Alliance a, Range r) {
