@@ -51,6 +51,12 @@ public class Outtake implements Subsystem {
     public static double recoilCompGainPerRPM = 0.00005;
     public static double recoilCompDeadbandRPM = 30.0;
     public static double recoilCompMaxHoodDelta = 0.08;
+    public static boolean enableAutoTxAimOffset = true;
+    public static double autoTxAimOffsetGain = 0.02;
+    public static double autoTxAimOffsetDeadbandDeg = 0.2;
+    public static double autoTxAimOffsetMaxStepPerLoopDeg = 0.25;
+    public static double autoTxAimOffsetMaxAbsDeg = 15.0;
+    public static boolean autoTxAimOffsetOnlyWhenStill = true;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
@@ -128,6 +134,8 @@ public class Outtake implements Subsystem {
         } else {
             aimAtGoalWithOdometry();
         }
+
+        applyAutoTxAimOffset();
     }
 
     public void aimAtObeliskWithOdometry() {
@@ -241,6 +249,33 @@ public class Outtake implements Subsystem {
 
     private double wrapSignedDegrees(double deg) {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+    }
+
+    private void applyAutoTxAimOffset() {
+        if (!enableAutoTxAimOffset || aimTarget != AimTarget.GOAL || vision == null) {
+            return;
+        }
+        if (autoTxAimOffsetOnlyWhenStill && isRobotMovingForLead()) {
+            return;
+        }
+        if (!vision.hasRequiredTarget()) {
+            return;
+        }
+
+        double txDeg = vision.getTxForTag(vision.getRequiredTagId());
+        if (!Double.isFinite(txDeg)) {
+            return;
+        }
+
+        double errorDeg = -txDeg;
+        if (Math.abs(errorDeg) < autoTxAimOffsetDeadbandDeg) {
+            return;
+        }
+
+        double deltaDeg = autoTxAimOffsetGain * errorDeg;
+        deltaDeg = Math.max(-autoTxAimOffsetMaxStepPerLoopDeg, Math.min(autoTxAimOffsetMaxStepPerLoopDeg, deltaDeg));
+        turretAimCommandOffsetDeg += deltaDeg;
+        turretAimCommandOffsetDeg = Math.max(-autoTxAimOffsetMaxAbsDeg, Math.min(autoTxAimOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
     }
 
     private double[][] getBigLaunchTriangle() {
