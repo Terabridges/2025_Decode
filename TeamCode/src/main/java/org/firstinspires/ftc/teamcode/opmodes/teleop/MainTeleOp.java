@@ -46,6 +46,7 @@ import java.util.List;
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
+    private static final double GP1_B_LONG_PRESS_RESET_SEC = 0.6;
     public static boolean enableSectionTimingLogs = true;
 
     IntakeControl intakeControl;
@@ -80,6 +81,8 @@ public class MainTeleOp extends OpMode {
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
+    private ElapsedTime gp1BHoldTimer;
+    private boolean gp1BLongPressHandled = false;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -122,6 +125,7 @@ public class MainTeleOp extends OpMode {
         );
         loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
+        gp1BHoldTimer = new ElapsedTime();
 
     }
 
@@ -238,9 +242,20 @@ public class MainTeleOp extends OpMode {
         for (Control c : controls) {
             c.update();
         }
-        if (currentGamepad1.b && !previousGamepad1.b
-                && robot != null && robot.outtake != null && robot.outtake.vision != null) {
-            Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
+
+        if (currentGamepad1.b && !previousGamepad1.b) {
+            gp1BHoldTimer.reset();
+            gp1BLongPressHandled = false;
+            if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
+                Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
+            }
+        }
+        if (currentGamepad1.b && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {
+            Outtake.turretAimCommandOffsetDeg = 0.0;
+            gp1BLongPressHandled = true;
+        }
+        if (!currentGamepad1.b && previousGamepad1.b) {
+            gp1BLongPressHandled = false;
         }
         getReadyShoot.update(gamepad2.b);
         toggleSorting.update(gamepad1.start || gamepad2.start);
