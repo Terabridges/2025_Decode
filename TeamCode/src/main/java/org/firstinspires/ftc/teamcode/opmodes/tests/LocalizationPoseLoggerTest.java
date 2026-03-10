@@ -13,6 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.PoseLoggingUtil;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Vision;
@@ -90,6 +91,7 @@ public class LocalizationPoseLoggerTest extends OpMode {
         applyMecanumDrive();
         handleYawOffsetControls();
         robot.update();
+        PoseLoggingUtil.logMainPoseDetails(robot);
 
         boolean aPressed = gamepad1.a;
         if (aPressed && !previousA) {
@@ -164,40 +166,13 @@ public class LocalizationPoseLoggerTest extends OpMode {
         Pose3D mt2Pose3d = getMt2Pose(latest);
         Pose3D botPose3d = getBotPose(latest);
 
-        Logger.recordOutput("PoseCompare/Pinpoint/Valid", followerPose != null ? 1.0 : 0.0);
-        Logger.recordOutput("PoseCompare/Pinpoint/Pose2d", pinpointPose2d);
-        Logger.recordOutput("PoseCompare/PinpointPedro/Pose2d", pinpointPedroPose2d);
-        Logger.recordOutput("PoseCompare/PinpointFtc/Pose2d", pinpointFtcPose2d);
-        if (followerPose != null) {
-            Logger.recordOutput("PoseCompare/PinpointRawInches/XIn", followerPose.getX());
-            Logger.recordOutput("PoseCompare/PinpointRawInches/YIn", followerPose.getY());
-            Logger.recordOutput("PoseCompare/PinpointRawInches/HeadingRad", followerPose.getHeading());
-            Logger.recordOutput("PoseCompare/PinpointRawInches/HeadingDeg", Math.toDegrees(followerPose.getHeading()));
-        }
-
-        Logger.recordOutput("PoseCompare/Config/StartXIn", startXIn);
-        Logger.recordOutput("PoseCompare/Config/StartYIn", startYIn);
-        Logger.recordOutput("PoseCompare/Config/StartHeadingDeg", startHeadingDeg);
-        Logger.recordOutput("PoseCompare/Config/UseAllianceDefaultHeading", useAllianceDefaultHeading ? 1.0 : 0.0);
         Logger.recordOutput("PoseCompare/Config/LogPinpointAsFtc", logPinpointInFtcCenterRotated ? 1.0 : 0.0);
-
-        Logger.recordOutput("PoseCompare/LimelightMT2/HasTarget", robot.outtake.vision.hasTarget() ? 1.0 : 0.0);
-        Logger.recordOutput("PoseCompare/LimelightMT2/Valid", mt2Pose3d != null ? 1.0 : 0.0);
-        if (mt2Pose3d != null) {
-            Logger.recordOutput("PoseCompare/LimelightMT2/Pose2d", toPose2dFromLimelightMeters(mt2Pose3d));
-        }
-
-        Logger.recordOutput("PoseCompare/LimelightBotpose/HasTarget", robot.outtake.vision.hasTarget() ? 1.0 : 0.0);
-        Logger.recordOutput("PoseCompare/LimelightBotpose/Valid", botPose3d != null ? 1.0 : 0.0);
-        if (botPose3d != null) {
-            Logger.recordOutput("PoseCompare/LimelightBotpose/Pose2d", toPose2dFromLimelightMeters(botPose3d));
-        }
 
         Logger.recordOutput("PoseCompare/Align/MT2HasOffset", hasMt2Offset ? 1.0 : 0.0);
         Logger.recordOutput("PoseCompare/Align/BotposeHasOffset", hasBotposeOffset ? 1.0 : 0.0);
 
         if (followerPose != null && mt2Pose3d != null) {
-            Pose2d mt2Raw = toPose2dFromLimelightMeters(mt2Pose3d);
+            Pose2d mt2Raw = toPose2dFromLimelightMetersCompensated(mt2Pose3d);
             logRawDelta("PoseCompare/Delta/MT2", pinpointPose2d, mt2Raw);
             if (hasMt2Offset) {
                 Logger.recordOutput("PoseCompare/LimelightMT2Aligned/Pose2d", applyOffset(mt2Raw, mt2DxMeters, mt2DyMeters, mt2DHeadingRad));
@@ -205,19 +180,12 @@ public class LocalizationPoseLoggerTest extends OpMode {
         }
 
         if (followerPose != null && botPose3d != null) {
-            Pose2d botRaw = toPose2dFromLimelightMeters(botPose3d);
+            Pose2d botRaw = toPose2dFromLimelightMetersCompensated(botPose3d);
             logRawDelta("PoseCompare/Delta/Botpose", pinpointPose2d, botRaw);
             if (hasBotposeOffset) {
                 Logger.recordOutput("PoseCompare/LimelightBotposeAligned/Pose2d", applyOffset(botRaw, botDxMeters, botDyMeters, botDHeadingRad));
             }
         }
-
-        Logger.recordOutput("PoseCompare/Limelight/TagId", robot.outtake.vision.getCurrentTagId());
-        Logger.recordOutput("PoseCompare/Limelight/RobotYawOffsetDeg", Vision.robotYawOffsetDeg);
-        Logger.recordOutput("PoseCompare/Limelight/ChassisYawDeg", robot.outtake.vision.getLastChassisYawDeg());
-        Logger.recordOutput("PoseCompare/Limelight/TurretRelativeYawDeg", robot.outtake.vision.getLastTurretRelativeYawDeg());
-        Logger.recordOutput("PoseCompare/Limelight/RobotYawSentDeg", robot.outtake.vision.getLastRobotYawSentDeg());
-        Logger.recordOutput("PoseCompare/Limelight/RobotYawSendSuccess", robot.outtake.vision.wasLastRobotYawSendSuccessful() ? 1.0 : 0.0);
     }
 
     private void logRawDelta(String keyPrefix, Pose2d reference, Pose2d measured) {
@@ -253,7 +221,7 @@ public class LocalizationPoseLoggerTest extends OpMode {
         Pose3D botPose3d = getBotPose(latest);
 
         if (mt2Pose3d != null) {
-            Pose2d mt2Pose2d = toPose2dFromLimelightMeters(mt2Pose3d);
+            Pose2d mt2Pose2d = toPose2dFromLimelightMetersCompensated(mt2Pose3d);
             mt2DxMeters = pinpointPose2d.getX() - mt2Pose2d.getX();
             mt2DyMeters = pinpointPose2d.getY() - mt2Pose2d.getY();
             mt2DHeadingRad = wrapRad(pinpointPose2d.getRotation().getRadians() - mt2Pose2d.getRotation().getRadians());
@@ -261,7 +229,7 @@ public class LocalizationPoseLoggerTest extends OpMode {
         }
 
         if (botPose3d != null) {
-            Pose2d botPose2d = toPose2dFromLimelightMeters(botPose3d);
+            Pose2d botPose2d = toPose2dFromLimelightMetersCompensated(botPose3d);
             botDxMeters = pinpointPose2d.getX() - botPose2d.getX();
             botDyMeters = pinpointPose2d.getY() - botPose2d.getY();
             botDHeadingRad = wrapRad(pinpointPose2d.getRotation().getRadians() - botPose2d.getRotation().getRadians());
@@ -332,6 +300,23 @@ public class LocalizationPoseLoggerTest extends OpMode {
         double yMeters = llPose.getPosition().y;
         double headingRad = Math.toRadians(llPose.getOrientation().getYaw(AngleUnit.DEGREES));
         return new Pose2d(xMeters, yMeters, Rotation2d.fromRadians(headingRad));
+    }
+
+    private Pose2d toPose2dFromLimelightMetersCompensated(Pose3D llPose) {
+        if (robot == null || robot.outtake == null || robot.outtake.vision == null || llPose == null) {
+            return toPose2dFromLimelightMeters(llPose);
+        }
+
+        double[] corrected = robot.outtake.vision.getTurretCompensatedPose2dMetersFromPose3d(llPose);
+        if (corrected == null || corrected.length < 3) {
+            return toPose2dFromLimelightMeters(llPose);
+        }
+
+        return new Pose2d(
+                corrected[0],
+                corrected[1],
+                Rotation2d.fromRadians(Math.toRadians(corrected[2]))
+        );
     }
 
     private void addTelemetry() {

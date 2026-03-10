@@ -5,15 +5,12 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
-import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.control.Control;
 import org.firstinspires.ftc.teamcode.config.control.Intake.ClutchControl;
 import org.firstinspires.ftc.teamcode.config.control.Intake.IntakeControl;
@@ -36,29 +33,30 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.utility.EdgeDetector;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.LoopTimeTracker;
+import org.firstinspires.ftc.teamcode.config.utility.PoseLoggingUtil;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.math.Pose2d;
-import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
+import org.psilynx.psikit.ftc.autolog.PsiKitNoFieldAutoLog;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-//@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitFieldAutoLog
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
-    private static final double INCHES_TO_METERS = 0.0254;
-    private static final double FIELD_SIZE_IN = 144.0;
-    private static final double FIELD_HALF_IN = FIELD_SIZE_IN * 0.5;
     public static boolean enableSectionTimingLogs = true;
     public static double autoOffsetStationarySeconds = 1.0;
     // Match the auto shooting "robot settled" gate.
     public static double autoOffsetMaxRobotSpeedInS = 1.5;
     public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
+    public static boolean enableFieldAutoLog = true;
+    public static double fieldAutoLogPeriodSec = 0.10;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -88,6 +86,7 @@ public class MainTeleOp extends OpMode {
     private boolean pendingShootUsesSorting = false;
 
     private JoinedTelemetry joinedTelemetry;
+    @PsiKitNoFieldAutoLog
     private LoopTimeTracker loopTimeTracker;
     private final ElapsedTime autoOffsetStationaryTimer = new ElapsedTime();
     private boolean autoOffsetWaitingForMovement = false;
@@ -140,10 +139,15 @@ public class MainTeleOp extends OpMode {
     }
 
     private void configureLowOverheadPsiKitLogging() {
+        FtcLogTuning.bulkOnlyLogging = false;
         FtcLogTuning.nonBulkReadPeriodSec = 0.10;
         FtcLogTuning.processColorDistanceSensorsInBackground = false;
         FtcLogTuning.pinpointLoggerCallsUpdate = false;
         FtcLogTuning.pinpointReadPeriodSec = .10;
+        FtcLogTuning.fieldAutoLogEnabled = enableFieldAutoLog;
+        FtcLogTuning.fieldAutoLogPeriodSec = fieldAutoLogPeriodSec;
+        FtcLogTuning.fieldAutoLogMaxDepth = 4;
+        FtcLogTuning.fieldAutoLogIncludeStaticFields = false;
     }
 
     @Override
@@ -414,117 +418,7 @@ public class MainTeleOp extends OpMode {
     }
 
     private void logPsiKitData() {
-        if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
-            return;
-        }
-
-        double turretCmdDeg = robot.outtake.turret.getCurrentDegrees();
-        double turretEncDeg = robot.outtake.turret.getEncoderDegrees();
-        double turretMappedDeg = robot.outtake.turret.getMappedEncoderTurretDegrees();
-        double turretMappedErrDeg = robot.outtake.turret.getMappedEncoderErrorDeg(turretCmdDeg);
-
-        Logger.recordOutput("Turret/CmdDeg", turretCmdDeg);
-        Logger.recordOutput("Turret/EncoderDeg", turretEncDeg);
-        Logger.recordOutput("Turret/MappedEncoderDeg", turretMappedDeg);
-        Logger.recordOutput("Turret/MappedErrorDeg", turretMappedErrDeg);
-        Logger.recordOutput("Turret/EncoderVoltage", robot.outtake.turret.getEncoderVoltage());
-        Logger.recordOutput("Turret/AtMinLimit", robot.outtake.turret.atMinLimit(0.0) ? 1.0 : 0.0);
-        Logger.recordOutput("Turret/AtMaxLimit", robot.outtake.turret.atMaxLimit(0.0) ? 1.0 : 0.0);
-        Logger.recordOutput("Turret/AimLockEnabled", robot.outtake.isAimLockEnabled() ? 1.0 : 0.0);
-        Logger.recordOutput("Turret/AimTarget", robot.outtake.getAimTarget().ordinal());
-        Logger.recordOutput("Turret/AimSource", robot.outtake.getActiveLockSource().ordinal());
-        Logger.recordOutput("Turret/AimOffsetDeg", Outtake.turretAimCommandOffsetDeg);
-
-        Pose followerPose = (FollowerManager.follower != null) ? FollowerManager.follower.getPose() : null;
-        if (followerPose != null) {
-            Logger.recordOutput("Pinpoint/X", followerPose.getX());
-            Logger.recordOutput("Pinpoint/Y", followerPose.getY());
-            Logger.recordOutput("Pinpoint/HeadingDeg", Math.toDegrees(followerPose.getHeading()));
-            Logger.recordOutput("Pinpoint/TotalHeadingDeg", Math.toDegrees(FollowerManager.follower.getTotalHeading()));
-            Logger.recordOutput("Localization/Pinpoint/Pose2d", toPose2dFromPedroInchesAsFtcCenterRotated(followerPose));
-        } else {
-            Logger.recordOutput("Pinpoint/X", Double.NaN);
-            Logger.recordOutput("Pinpoint/Y", Double.NaN);
-            Logger.recordOutput("Pinpoint/HeadingDeg", Double.NaN);
-            Logger.recordOutput("Pinpoint/TotalHeadingDeg", Double.NaN);
-        }
-
-        if (FollowerManager.follower != null && FollowerManager.follower.getVelocity() != null) {
-            Logger.recordOutput("Pinpoint/VelX", FollowerManager.follower.getVelocity().getXComponent());
-            Logger.recordOutput("Pinpoint/VelY", FollowerManager.follower.getVelocity().getYComponent());
-            Logger.recordOutput("Pinpoint/Speed", FollowerManager.follower.getVelocity().getMagnitude());
-        } else {
-            Logger.recordOutput("Pinpoint/VelX", Double.NaN);
-            Logger.recordOutput("Pinpoint/VelY", Double.NaN);
-            Logger.recordOutput("Pinpoint/Speed", Double.NaN);
-        }
-
-        Logger.recordOutput("Limelight/HasTarget", robot.outtake.vision.hasTarget() ? 1.0 : 0.0);
-        Logger.recordOutput("Limelight/TagId", robot.outtake.vision.getCurrentTagId());
-        Logger.recordOutput("Limelight/Tx", robot.outtake.vision.getTx());
-
-        LLResult latest = robot.outtake.vision.latest;
-        Pose3D mt2Pose = getMt2Pose(latest);
-        Pose3D mt1Pose = getMt1Pose(latest);
-
-        Logger.recordOutput("Localization/LimelightMT2/Valid", mt2Pose != null ? 1.0 : 0.0);
-        if (mt2Pose != null) {
-            Logger.recordOutput("Localization/LimelightMT2/Pose2d", toPose2dFromLimelightMeters(mt2Pose));
-        }
-
-        Logger.recordOutput("Localization/LimelightMT1/Valid", mt1Pose != null ? 1.0 : 0.0);
-        if (mt1Pose != null) {
-            Logger.recordOutput("Localization/LimelightMT1/Pose2d", toPose2dFromLimelightMeters(mt1Pose));
-        }
-    }
-
-    private Pose3D getMt2Pose(LLResult latest) {
-        if (latest == null || !latest.isValid()) {
-            return null;
-        }
-        try {
-            return latest.getBotpose_MT2();
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private Pose3D getMt1Pose(LLResult latest) {
-        if (latest == null || !latest.isValid()) {
-            return null;
-        }
-        try {
-            return latest.getBotpose();
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private Pose2d toPose2dFromPedroInchesAsFtcCenterRotated(Pose pedroPose) {
-        double pedroXIn = pedroPose.getX();
-        double pedroYIn = pedroPose.getY();
-        double pedroHeadingRad = pedroPose.getHeading();
-
-        double ftcXIn = FIELD_HALF_IN - pedroYIn;
-        double ftcYIn = pedroXIn - FIELD_HALF_IN;
-        double ftcHeadingRad = wrapRad(pedroHeadingRad + (Math.PI * 0.5));
-
-        return new Pose2d(
-                ftcXIn * INCHES_TO_METERS,
-                ftcYIn * INCHES_TO_METERS,
-                Rotation2d.fromRadians(ftcHeadingRad)
-        );
-    }
-
-    private Pose2d toPose2dFromLimelightMeters(Pose3D llPose) {
-        double xMeters = llPose.getPosition().x;
-        double yMeters = llPose.getPosition().y;
-        double headingRad = Math.toRadians(llPose.getOrientation().getYaw(AngleUnit.DEGREES));
-        return new Pose2d(xMeters, yMeters, Rotation2d.fromRadians(headingRad));
-    }
-
-    private static double wrapRad(double radians) {
-        return Math.atan2(Math.sin(radians), Math.cos(radians));
+        PoseLoggingUtil.logMainPoseDetails(robot);
     }
 
     private static double nanosToMillis(long nanos) {
