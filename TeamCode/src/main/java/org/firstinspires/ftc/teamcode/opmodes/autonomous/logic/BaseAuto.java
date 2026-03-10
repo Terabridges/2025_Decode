@@ -30,6 +30,8 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 
+import org.firstinspires.ftc.teamcode.config.utility.PoseLoggingUtil;
+
 @PsiKitAutoLog(rlogPort = 5802)
 public abstract class BaseAuto extends OpMode {
 
@@ -232,6 +234,7 @@ public abstract class BaseAuto extends OpMode {
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
         robot.update();
         maybeResolveMotifDuringFirstPickupAfterPreload();
+        PoseLoggingUtil.logMainPoseDetails(robot);
         if (shootAllMachine != null) {
             shootAllMachine.update();
         }
