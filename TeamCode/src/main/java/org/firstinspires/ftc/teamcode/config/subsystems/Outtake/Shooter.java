@@ -13,8 +13,10 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Shooter implements Subsystem {
 
     //---------------- Hardware ----------------

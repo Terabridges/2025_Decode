@@ -9,8 +9,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Outtake implements Subsystem {
     public enum AimSource {
         NONE,

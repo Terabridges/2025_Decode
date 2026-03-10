@@ -9,8 +9,10 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Turret implements Subsystem {
 
     //---------------- Hardware ----------------
