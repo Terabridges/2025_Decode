@@ -6,6 +6,11 @@
             "label": "$(radio-tower) ADB Connect",
             "task": "ADB: Connect Robot (192.168.43.1)",
             "tooltip": "Connect adb to 192.168.43.1:5555"
+        },
+        {
+            "label": "$(package) Install APK",
+            "task": "APK: Install Full Debug APK (TeamCode)",
+            "tooltip": "Build and install full TeamCode debug APK"
         }
     ]
 }

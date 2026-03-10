@@ -100,6 +100,27 @@
 			}
 		},
 		{
+			"label": "Sloth: Full Rebuild + Deploy (TeamCode+PsiKit)",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				"clean",
+				":TeamCode:removeSlothRemote",
+				":TeamCode:deploySloth",
+				"--rerun-tasks",
+				"--no-daemon",
+				"--stacktrace"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": true
+			}
+		},
+		{
 			"label": "Gradle: TeamCode assembleDebug (2025_Decode)",
 			"type": "shell",
 			"command": "${workspaceFolder}\\\\gradlew.bat",
@@ -110,6 +131,44 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "APK: Install Full Debug APK (TeamCode)",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				":TeamCode:installDebug",
+				"--no-daemon",
+				"--stacktrace"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": true
+			}
+		},
+		{
+			"label": "APK: Uninstall + Install Full Debug APK",
+			"type": "shell",
+			"command": "${workspaceFolder}\\\\gradlew.bat",
+			"args": [
+				":TeamCode:uninstallDebug",
+				":TeamCode:installDebug",
+				"--rerun-tasks",
+				"--no-daemon",
+				"--stacktrace"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": true
+			}
 		},
 		{
 			"label": "Gradle: TeamCode compileDebugJavaWithJavac (info)",
