@@ -17,8 +17,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Spindex implements Subsystem {
 
     public static double encoderOffsetDeg = 0.0;
@@ -108,7 +110,9 @@ public class Spindex implements Subsystem {
 
     private double frontColorDistance = 0;
     private double backColorDistance = 0;
+    @PsiKitFieldAutoLog
     private double commandedServoPos = 0.0;
+    @PsiKitFieldAutoLog
     private double commandedDegree = 0.0;
 
 

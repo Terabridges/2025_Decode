@@ -9,8 +9,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Outtake implements Subsystem {
     public enum AimSource {
         NONE,
@@ -72,7 +74,7 @@ public class Outtake implements Subsystem {
     public Outtake(HardwareMap map) {
         shooter = new Shooter(map);
         turret = new Turret(map);
-        vision = new Vision(map);
+        vision = new Vision(map, turret);
         shooterData = new ShooterData();
     }
 
@@ -313,7 +315,8 @@ public class Outtake implements Subsystem {
             return;
         }
 
-        double txDeg = vision.getTxForTag(vision.getRequiredTagId());
+        // Match the proven manual GP1-B correction sign/path.
+        double txDeg = vision.getTx();
         if (!Double.isFinite(txDeg)) {
             return;
         }

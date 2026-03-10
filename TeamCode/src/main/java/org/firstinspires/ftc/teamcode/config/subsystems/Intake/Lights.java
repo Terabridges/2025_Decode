@@ -7,7 +7,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
+@PsiKitFieldAutoLog
 public class Lights implements Subsystem {
 
     //---------------- Hardware ----------------

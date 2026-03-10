@@ -10,7 +10,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
+@PsiKitFieldAutoLog
 public class Lift implements Subsystem {
 
     //---------------- Hardware ----------------
