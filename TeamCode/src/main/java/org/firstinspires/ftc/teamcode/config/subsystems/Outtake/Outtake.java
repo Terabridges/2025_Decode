@@ -49,10 +49,24 @@ public class Outtake implements Subsystem {
     public static double smallLaunchLeftBaseX = 48.0;
     public static double smallLaunchRightBaseX = 96.0;
     public static double smallLaunchApexY = 24.0;
+    public static boolean enableRpmRecoilComp = true;
+    public static double recoilCompGainPerRPM = 0.00005;
+    public static double recoilCompDeadbandRPM = 30.0;
+    public static double recoilCompMaxHoodDelta = 0.08;
+    public static boolean enableAutoTxAimOffset = true;
+    public static double autoTxAimOffsetGain = 0.02;
+    public static double autoTxAimOffsetDeadbandDeg = 0.2;
+    public static double autoTxAimOffsetMaxStepPerLoopDeg = 0.25;
+    public static double autoTxAimOffsetMaxAbsDeg = 15.0;
+    public static boolean autoTxAimOffsetOnlyWhenStill = true;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
+    private double lastRecoilRpmError = 0.0;
+    private double lastRecoilHoodDelta = 0.0;
+    private double lastBaseHoodPos = 0.0;
+    private double lastCompedHoodPos = 0.0;
 
 
     //---------------- Constructor ----------------
@@ -77,6 +91,22 @@ public class Outtake implements Subsystem {
 
     public boolean isAimLockEnabled() {
         return aimLockEnabled;
+    }
+
+    public double getLastRecoilRpmError() {
+        return lastRecoilRpmError;
+    }
+
+    public double getLastRecoilHoodDelta() {
+        return lastRecoilHoodDelta;
+    }
+
+    public double getLastBaseHoodPos() {
+        return lastBaseHoodPos;
+    }
+
+    public double getLastCompedHoodPos() {
+        return lastCompedHoodPos;
     }
 
     public AimSource getActiveLockSource() {
@@ -106,6 +136,8 @@ public class Outtake implements Subsystem {
         } else {
             aimAtGoalWithOdometry();
         }
+
+        applyAutoTxAimOffset();
     }
 
     public void aimAtObeliskWithOdometry() {
@@ -219,6 +251,34 @@ public class Outtake implements Subsystem {
 
     private double wrapSignedDegrees(double deg) {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
+    }
+
+    private void applyAutoTxAimOffset() {
+        if (!enableAutoTxAimOffset || aimTarget != AimTarget.GOAL || vision == null) {
+            return;
+        }
+        if (autoTxAimOffsetOnlyWhenStill && isRobotMovingForLead()) {
+            return;
+        }
+        if (!vision.hasRequiredTarget()) {
+            return;
+        }
+
+        // Match the proven manual GP1-B correction sign/path.
+        double txDeg = vision.getTx();
+        if (!Double.isFinite(txDeg)) {
+            return;
+        }
+
+        double errorDeg = -txDeg;
+        if (Math.abs(errorDeg) < autoTxAimOffsetDeadbandDeg) {
+            return;
+        }
+
+        double deltaDeg = autoTxAimOffsetGain * errorDeg;
+        deltaDeg = Math.max(-autoTxAimOffsetMaxStepPerLoopDeg, Math.min(autoTxAimOffsetMaxStepPerLoopDeg, deltaDeg));
+        turretAimCommandOffsetDeg += deltaDeg;
+        turretAimCommandOffsetDeg = Math.max(-autoTxAimOffsetMaxAbsDeg, Math.min(autoTxAimOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
     }
 
     private double[][] getBigLaunchTriangle() {
@@ -342,6 +402,7 @@ public class Outtake implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
+        turretAimCommandOffsetDeg = 0.0;
         shooter.toInit();
         turret.toInit();
         vision.toInit();
@@ -358,10 +419,36 @@ public class Outtake implements Subsystem {
         }
 
         shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches);
-        shooter.hoodPos = shooterData.getAngleVal(distanceInches);
+        double baseHoodPos = shooterData.getAngleVal(distanceInches);
+        lastBaseHoodPos = baseHoodPos;
+        shooter.hoodPos = applyRpmRecoilComp(baseHoodPos);
+        lastCompedHoodPos = shooter.hoodPos;
         shooter.update();
         turret.update();
         updateAimLock();
+    }
+
+    private double applyRpmRecoilComp(double baseHoodPos) {
+        lastRecoilRpmError = shooter.getTargetRPM() - shooter.getCurrentRPM();
+        lastRecoilHoodDelta = 0.0;
+
+        if (!enableRpmRecoilComp || !shooter.useFlywheelPID || !shooter.autoHood) {
+            return clamp01(baseHoodPos);
+        }
+
+        if (Math.abs(lastRecoilRpmError) <= recoilCompDeadbandRPM) {
+            return clamp01(baseHoodPos);
+        }
+
+        // Positive RPM error means flywheel is under target, so raise hood angle.
+        double hoodDelta = recoilCompGainPerRPM * lastRecoilRpmError;
+        hoodDelta = Math.max(-recoilCompMaxHoodDelta, Math.min(recoilCompMaxHoodDelta, hoodDelta));
+        lastRecoilHoodDelta = hoodDelta;
+        return clamp01(baseHoodPos + hoodDelta);
+    }
+
+    private double clamp01(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
     }
 
 }

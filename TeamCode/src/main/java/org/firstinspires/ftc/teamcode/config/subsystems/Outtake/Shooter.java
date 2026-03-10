@@ -29,7 +29,8 @@ public class Shooter implements Subsystem {
     private final double TICKS_PER_REV = 28.0; // goBILDA 5202/5203
     private final double SHOOTER_GEAR_RATIO = 1.0;
 
-    private double hoodDown = 0.0;
+    //Hood range 0.43 to 1.0
+    private double hoodDown = 0.43;
     private double hoodUp = 1.0;
     public double hoodPos = 0.5;
 
