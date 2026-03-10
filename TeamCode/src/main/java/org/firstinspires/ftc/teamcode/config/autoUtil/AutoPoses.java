@@ -50,8 +50,8 @@ public class AutoPoses {
     // ===== Release Poses =====
     public Pose releaseGoToCloseB = poseDeg(25.0, 66.0, 180.0);
     public Pose releaseCompleteCloseB = poseDeg(17.5, 66.0, 180.0);
-    public Pose releaseGoToCloseR = mirrorBluePose(releaseGoToCloseB);
-    public Pose releaseCompleteCloseR = mirrorBluePose(releaseCompleteCloseB);
+    public Pose releaseGoToCloseR = poseDeg(FIELD_SIZE - releaseGoToCloseB.getX(), releaseGoToCloseB.getY(), 180.0);
+    public Pose releaseCompleteCloseR = poseDeg(FIELD_SIZE - releaseCompleteCloseB.getX(), releaseCompleteCloseB.getY(), 180.0);
 
     // ===== Leave Poses =====
     public Pose leaveCB = poseDeg(44.0, 115.0, 140.0);
@@ -61,11 +61,11 @@ public class AutoPoses {
 
     // ===== Pickup Start Poses =====
     public Pose pick1StartCB = poseDeg(44.0, 84.0, 180.0);
-    public Pose pick1StartCR = mirrorBluePose(pick1StartCB);
+    public Pose pick1StartCR = poseDeg(FIELD_SIZE - pick1StartCB.getX(), pick1StartCB.getY(), 180.0);
 
     public Pose pick2StartLB = poseDeg(44.0, 60.0, 0.0);
     public Pose pick2StartCB = poseDeg(44.0, 60.0, 180.0);
-    public Pose pick2StartCR = mirrorBluePose(pick2StartCB);
+    public Pose pick2StartCR = poseDeg(FIELD_SIZE - pick2StartCB.getX(), pick2StartCB.getY(), 180.0);
     public Pose pick2StartLR = poseDeg(FIELD_SIZE - pick2StartLB.getX(), pick2StartLB.getY(), 0.0);
 
     public Pose pick3StartLB = poseDeg(44.0, 36.0, 0.0);
@@ -81,7 +81,7 @@ public class AutoPoses {
     public Pose farPickupZoneB = poseDeg(10.0, 11.5, 0.0);
     public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 0.0);
     public Pose closeLoopPickupB = poseDeg(14.0, 62.0, 160.0);
-    public Pose closeLoopPickupR = mirrorBluePose(closeLoopPickupB);
+    public Pose closeLoopPickupR = poseDeg(FIELD_SIZE - closeLoopPickupB.getX(), closeLoopPickupB.getY(), 160.0);
     public Pose closeLoopPickupControlB = poseDeg(50.0, 60.0, 0.0);
     public Pose closeLoopPickupControlR = mirrorBluePose(closeLoopPickupControlB);
     public Pose closeLoopGoToScoreControlB = poseDeg(50.0, 55.0, 0.0);
@@ -89,7 +89,7 @@ public class AutoPoses {
     public Pose row2GoToScoreControlB = poseDeg(50.0, 60.0, 0.0);
     public Pose row2GoToScoreControlR = mirrorBluePose(row2GoToScoreControlB);
     public Pose closeLoopCompletePickupB = poseDeg(10.0, 50.0, 160.0);
-    public Pose closeLoopCompletePickupR = mirrorBluePose(closeLoopCompletePickupB);
+    public Pose closeLoopCompletePickupR = poseDeg(FIELD_SIZE - closeLoopCompletePickupB.getX(), closeLoopCompletePickupB.getY(), 160.0);
     public Pose closeLoopCompletePickupControlB = poseDeg(25.0, 55.0, 0.0);
     public Pose closeLoopCompletePickupControlR = mirrorBluePose(closeLoopCompletePickupControlB);
     public Pose closeLoopSharedControlB = poseDeg(33.0, 60.0, 0.0);
@@ -99,11 +99,11 @@ public class AutoPoses {
 
     // ===== Pickup End Poses =====
     public Pose pick1EndCB = poseDeg(24.0, 84.0, 180.0);
-    public Pose pick1EndCR = mirrorBluePose(pick1EndCB);
+    public Pose pick1EndCR = poseDeg(FIELD_SIZE - pick1EndCB.getX(), pick1EndCB.getY(), 180.0);
 
     public Pose pick2EndLB = poseDeg(24.0, 60.0, 0.0);
     public Pose pick2EndCB = poseDeg(24.0, 60.0, 180.0);
-    public Pose pick2EndCR = mirrorBluePose(pick2EndCB);
+    public Pose pick2EndCR = poseDeg(FIELD_SIZE - pick2EndCB.getX(), pick2EndCB.getY(), 180.0);
     public Pose pick2EndLR = poseDeg(FIELD_SIZE - pick2EndLB.getX(), pick2EndLB.getY(), 0.0);
 
     public Pose pick3EndLB = poseDeg(24.0, 36.0, 0.0);
