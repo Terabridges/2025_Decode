@@ -7,8 +7,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Clutch implements Subsystem {
 
     //---------------- Hardware ----------------
