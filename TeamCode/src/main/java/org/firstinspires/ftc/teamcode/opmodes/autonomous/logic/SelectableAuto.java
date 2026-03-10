@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configurable
-//@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitAutoLog(rlogPort = 5802)
 @Autonomous(name = "MainAuto", group = "Auto")
 public class SelectableAuto extends SelectableOpMode {
     @IgnoreConfigurable
@@ -46,7 +46,7 @@ public class SelectableAuto extends SelectableOpMode {
         super("Select Auto", c -> {
             c.folder("Blue Alliance", p -> {
                 p.folder("Close", m -> {
-                    m.add("Main Release (R: P, 1, 2, close loop)", () -> new CloseMainReleaseAuto(Alliance.BLUE));
+                    m.add("Main Release (R: P, 2, close loop, 1)", () -> new CloseMainReleaseAuto(Alliance.BLUE));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> new Close3RowReleaseAuto(Alliance.BLUE));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> new Close3RowNoReleaseAuto(Alliance.BLUE));
                     m.folder("Other", s -> {
@@ -81,7 +81,7 @@ public class SelectableAuto extends SelectableOpMode {
             });
             c.folder("Red Alliance", p -> {
                 p.folder("Close", m -> {
-                    m.add("Main Release (R: P, 1, 2, close loop)", () -> new CloseMainReleaseAuto(Alliance.RED));
+                    m.add("Main Release (R: P, 2, close loop, 1)", () -> new CloseMainReleaseAuto(Alliance.RED));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> new Close3RowReleaseAuto(Alliance.RED));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> new Close3RowNoReleaseAuto(Alliance.RED));
                     m.folder("Other", s -> {

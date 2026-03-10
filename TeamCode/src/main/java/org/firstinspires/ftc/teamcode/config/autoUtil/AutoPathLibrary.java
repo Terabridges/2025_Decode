@@ -12,13 +12,14 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 
 public class AutoPathLibrary {
     private final AutoPoses poses;
+    private static final double SCORE_SMOOTH_END_DISTANCE_IN = 6.0;
 
     public AutoPathLibrary(AutoPoses poses) {
         this.poses = poses;
     }
 
     public PathChain goToPickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
-        return buildLinear(currentPose, poses.getPickupStart(alliance, range, absoluteRow), true);
+        return buildLinear(currentPose, poses.getPickupStart(alliance, range, absoluteRow));
     }
 
     public PathChain pickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
@@ -27,38 +28,52 @@ public class AutoPathLibrary {
             Pose step2 = poses.getPickupEnd(alliance, range, absoluteRow);
             return buildLinearTwoStep(currentPose, step1, step2);
         }
-        return buildLinear(currentPose, poses.getPickupEnd(alliance, range, absoluteRow), false);
+        return buildLinear(currentPose, poses.getPickupEnd(alliance, range, absoluteRow));
     }
 
     public PathChain farPickupZone(Pose currentPose, Alliance alliance) {
-        return buildLinear(currentPose, poses.getFarPickupZone(alliance), false);
+        return buildLinear(currentPose, poses.getFarPickupZone(alliance));
     }
 
     public PathChain closeLoopPickup(Pose currentPose, Alliance alliance) {
         return buildCurve(
                 currentPose,
-                poses.getCloseLoopSharedControl(alliance),
+                poses.getCloseLoopPickupControl(alliance),
                 poses.getCloseLoopPickup(alliance)
         );
     }
 
+    public PathChain closeLoopCompletePickup(Pose currentPose, Alliance alliance) {
+        return buildCurve(
+                currentPose,
+                poses.getCloseLoopCompletePickupControl(alliance),
+                poses.getCloseLoopCompletePickup(alliance)
+        );
+    }
+
     public PathChain goToScore(Pose currentPose, Pose scorePose) {
-        return buildLinear(currentPose, scorePose, true);
+        return buildLinearSmoothEnd(currentPose, scorePose, SCORE_SMOOTH_END_DISTANCE_IN);
     }
 
     public PathChain closeLoopGoToShoot(Pose currentPose, Alliance alliance, Pose shootPose, boolean useFinalShootControl) {
-        Pose control = useFinalShootControl
-                ? poses.getCloseLoopFinalShootControl(alliance)
-                : poses.getCloseLoopSharedControl(alliance);
-        return buildCurve(currentPose, control, shootPose);
+        // All close-loop go-to-shoot paths use the same control point.
+        return buildCurve(currentPose, poses.getCloseLoopGoToScoreControl(alliance), shootPose);
+    }
+
+    public PathChain row2GoToShoot(Pose currentPose, Alliance alliance, Pose shootPose) {
+        return buildCurve(currentPose, poses.getRow2GoToScoreControl(alliance), shootPose);
     }
 
     public PathChain releaseGoTo(Pose currentPose, Alliance alliance, Range range) {
-        return buildLinear(currentPose, poses.getReleaseGoTo(alliance, range), false);
+        return buildLinear(currentPose, poses.getReleaseGoTo(alliance, range));
     }
 
     public PathChain releaseComplete(Pose currentPose, Alliance alliance, Range range) {
-        return buildLinear(currentPose, poses.getReleaseComplete(alliance, range), false);
+        return buildCurve(
+                currentPose,
+                poses.getReleaseGoTo(alliance, range),
+                poses.getReleaseComplete(alliance, range)
+        );
     }
 
     public PathChain leave(Pose currentPose, Alliance alliance, Range range) {
@@ -66,7 +81,7 @@ public class AutoPathLibrary {
         if (AutoPoses.ReturnToStart) {
             return buildTurnThenDrive(currentPose, leavePose);
         }
-        return buildLinear(currentPose, leavePose, false);
+        return buildLinear(currentPose, leavePose);
     }
 
     private PathChain buildTurnThenDrive(Pose start, Pose end) {
@@ -86,7 +101,7 @@ public class AutoPathLibrary {
                 .build();
     }
 
-    public PathChain buildLinear(Pose start, Pose end, boolean smoothEnd) {
+    public PathChain buildLinear(Pose start, Pose end) {
         if (follower == null || start == null || end == null) {
             return null;
         }
@@ -118,6 +133,35 @@ public class AutoPathLibrary {
         return follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    private PathChain buildLinearSmoothEnd(Pose start, Pose end, double smoothDistanceIn) {
+        if (follower == null || start == null || end == null) {
+            return null;
+        }
+
+        double dx = end.getX() - start.getX();
+        double dy = end.getY() - start.getY();
+        double dist = Math.hypot(dx, dy);
+
+        if (!Double.isFinite(dist) || dist <= smoothDistanceIn + 0.5) {
+            return buildLinear(start, end);
+        }
+
+        double ux = dx / dist;
+        double uy = dy / dist;
+        Pose preEnd = new Pose(
+                end.getX() - ux * smoothDistanceIn,
+                end.getY() - uy * smoothDistanceIn,
+                end.getHeading()
+        );
+
+        return follower.pathBuilder()
+                .addPath(new BezierLine(start, preEnd))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .addPath(new BezierLine(preEnd, end))
+                .setLinearHeadingInterpolation(end.getHeading(), end.getHeading())
                 .build();
     }
 }

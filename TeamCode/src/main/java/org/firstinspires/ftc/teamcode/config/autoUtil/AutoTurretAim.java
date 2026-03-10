@@ -20,7 +20,7 @@ public class AutoTurretAim {
         this.telemetry = telemetry;
     }
 
-    public void updateAim(AutoStates activeState, boolean preloadComplete) {
+    public void updateAim(AutoStates activeState, boolean forceObeliskAim) {
         if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
             return;
         }
@@ -29,8 +29,8 @@ public class AutoTurretAim {
         robot.outtake.vision.setRequiredTagId(requiredGoalTagId);
         robot.outtake.turret.turretVelocity = 0;
 
-        boolean acquireMotif = activeState == AutoStates.ACQUIRE_MOTIF;
-        if (activeState == AutoStates.ACQUIRE_MOTIF) {
+        boolean obeliskAim = activeState == AutoStates.ACQUIRE_MOTIF || forceObeliskAim;
+        if (obeliskAim) {
             // Acquire motif uses only direct ODO obelisk aim (no aimLock).
             if (robot.outtake.isAimLockEnabled()) {
                 robot.outtake.setAimLockEnabled(false);
@@ -38,15 +38,14 @@ public class AutoTurretAim {
             robot.outtake.setAimTargetObelisk();
             robot.outtake.aimAtObeliskWithOdometry();
         } else {
-            // Auto shooting now precomputes turret angle from shoot pose in GO_TO_SHOOT.
-            // Keep aimLock disabled so command is not continuously rewritten each loop.
-            if (robot.outtake.isAimLockEnabled()) {
-                robot.outtake.setAimLockEnabled(false);
+            // All non-acquire states use teleop-style continuous goal tracking.
+            if (!robot.outtake.isAimLockEnabled()) {
+                robot.outtake.setAimLockEnabled(true);
             }
             robot.outtake.setAimTargetGoal();
         }
 
-        telemetry.addData("Auto Acquire Motif", acquireMotif);
+        telemetry.addData("Auto Obelisk Aim", obeliskAim);
         telemetry.addData("Auto Aim Lock", robot.outtake.isAimLockEnabled());
         telemetry.addData("Auto Aim Source", robot.outtake.getActiveLockSource());
         telemetry.addData("Auto Aim Target", robot.outtake.getAimTarget());
