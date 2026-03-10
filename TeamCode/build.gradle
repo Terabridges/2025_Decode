@@ -166,5 +166,40 @@ afterEvaluate {
                 systemProperty 'wrapMismatchDeg', pWrapMismatchDeg.toString()
             }
         }
+
+        tasks.register('runRlogKeyCompare', JavaExec) {
+            group = 'verification'
+            description = 'Compare two keys entry-by-entry in an RLOG file (PC CLI).'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.RlogKeyCompareCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pKeyA = project.findProperty('compareKeyA')
+            def pKeyB = project.findProperty('compareKeyB')
+            def pIgnoreZeroPose2dRaw = project.findProperty('compareIgnoreZeroPose2dRaw')
+            def pValidityKey = project.findProperty('compareValidityKey')
+            def pRequireValid = project.findProperty('compareRequireValid')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pKeyA != null) {
+                systemProperty 'compareKeyA', pKeyA.toString()
+            }
+            if (pKeyB != null) {
+                systemProperty 'compareKeyB', pKeyB.toString()
+            }
+            if (pIgnoreZeroPose2dRaw != null) {
+                systemProperty 'compareIgnoreZeroPose2dRaw', pIgnoreZeroPose2dRaw.toString()
+            }
+            if (pValidityKey != null) {
+                systemProperty 'compareValidityKey', pValidityKey.toString()
+            }
+            if (pRequireValid != null) {
+                systemProperty 'compareRequireValid', pRequireValid.toString()
+            }
+        }
     }
 }
