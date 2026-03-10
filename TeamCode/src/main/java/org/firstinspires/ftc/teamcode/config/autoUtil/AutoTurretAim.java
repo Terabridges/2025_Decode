@@ -28,6 +28,8 @@ public class AutoTurretAim {
         int requiredGoalTagId = (alliance == Alliance.BLUE) ? BLUE_GOAL_TAG_ID : RED_GOAL_TAG_ID;
         robot.outtake.vision.setRequiredTagId(requiredGoalTagId);
         robot.outtake.turret.turretVelocity = 0;
+        // Auto behavior: do not allow turret wrap moves; clamp at limits instead.
+        robot.outtake.setPreventTurretWrap(true);
 
         boolean obeliskAim = activeState == AutoStates.ACQUIRE_MOTIF || forceObeliskAim;
         if (obeliskAim) {

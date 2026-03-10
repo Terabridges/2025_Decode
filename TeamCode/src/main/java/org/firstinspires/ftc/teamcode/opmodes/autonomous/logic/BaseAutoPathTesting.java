@@ -43,7 +43,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private static final double STATE_TIMEOUT_SECONDS = 5.0;
     private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.5;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 0.75;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.25;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
     private static final double PICKUP_POWER = 0.25;
     private static final double FAR_PICKUP_ZONE_POWER = 0.5;
@@ -446,7 +446,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
             return poses.getFinalShootClose(alliance);
         }
         if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
-            double headingDeg = (alliance == Alliance.RED) ? 160.0 : 180.0;
+            double headingDeg = (alliance == Alliance.RED) ? 0.0 : 180.0;
             if (currentAbsoluteRow == 2) {
                 Pose row2Pose = poses.getRow2ShootClose(alliance);
                 return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(headingDeg));

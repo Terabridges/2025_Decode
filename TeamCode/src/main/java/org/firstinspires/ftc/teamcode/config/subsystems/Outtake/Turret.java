@@ -76,6 +76,26 @@ public class Turret implements Subsystem {
         setTurretPos(turretDegToBaseServoPos(clamped));
     }
 
+    /**
+     * Commands turret angle, but if getting there would require a 0/360 wrap move,
+     * hold at the nearest physical limit instead.
+     */
+    public void setTurretDegreeNoWrap(double degree) {
+        double normalized = normalizeDegrees(degree);
+        double clampedTarget = clampToSafeRange(normalized);
+        double current = normalizeDegrees(getCurrentDegrees());
+
+        if (Math.abs(clampedTarget - current) > 180.0) {
+            double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+            double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+            double holdLimit = (Math.abs(current - maxDeg) <= Math.abs(current - minDeg)) ? maxDeg : minDeg;
+            setTurretPos(turretDegToBaseServoPos(holdLimit));
+            return;
+        }
+
+        setTurretPos(turretDegToBaseServoPos(clampedTarget));
+    }
+
     public double getCurrentDegrees() {
         return commandedTurretDeg;
     }

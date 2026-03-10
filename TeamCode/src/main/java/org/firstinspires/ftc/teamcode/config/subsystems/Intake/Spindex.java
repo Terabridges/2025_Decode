@@ -82,7 +82,7 @@ public class Spindex implements Subsystem {
     private boolean shootMode = false;
 
 
-    public String[] ballList = {"E", "E", "E"};
+    public String[] ballList = {"G", "P", "P"};
     public String balls = "";
 
     private double frontGreenThresh = 0.0011; //If green is highest, ball is green was 0.0013 0.0009

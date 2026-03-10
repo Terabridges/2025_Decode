@@ -59,6 +59,7 @@ public class Outtake implements Subsystem {
     public static boolean autoTxAimOffsetOnlyWhenStill = true;
 
     private boolean aimLockEnabled = false;
+    private boolean preventTurretWrap = false;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
     private double lastRecoilRpmError = 0.0;
@@ -89,6 +90,14 @@ public class Outtake implements Subsystem {
 
     public boolean isAimLockEnabled() {
         return aimLockEnabled;
+    }
+
+    public void setPreventTurretWrap(boolean prevent) {
+        preventTurretWrap = prevent;
+    }
+
+    public boolean isPreventTurretWrap() {
+        return preventTurretWrap;
     }
 
     public double getLastRecoilRpmError() {
@@ -198,13 +207,21 @@ public class Outtake implements Subsystem {
     public void commandGoalTurretFromPose(Pose robotPose) {
         double desiredDeg = computeGoalTurretDegFromPose(robotPose);
         if (Double.isFinite(desiredDeg)) {
-            turret.setTurretDegree(desiredDeg);
+            commandTurretDegree(desiredDeg);
         }
     }
 
     private void aimAtFieldPoint(Pose robotPose, double targetX, double targetY) {
         double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
-        turret.setTurretDegree(desiredDeg + turretAimCommandOffsetDeg);
+        commandTurretDegree(desiredDeg + turretAimCommandOffsetDeg);
+    }
+
+    private void commandTurretDegree(double desiredDeg) {
+        if (preventTurretWrap) {
+            turret.setTurretDegreeNoWrap(desiredDeg);
+        } else {
+            turret.setTurretDegree(desiredDeg);
+        }
     }
 
     private double computeFieldPointTurretDeg(Pose robotPose, double targetX, double targetY) {
