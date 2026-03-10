@@ -24,7 +24,7 @@ public class ShooterData {
 
     private void addRPMData(){
         RPMLUT.add(minDistance, 1500);
-        RPMLUT.add( 27.5 ,2100);
+        RPMLUT.add( 27.5 ,2200); //2100
         RPMLUT.add( 45.6 ,2200);
         RPMLUT.add( 47.2 ,2210);
         RPMLUT.add( 54.6  ,2250);
@@ -39,7 +39,7 @@ public class ShooterData {
 
     private void addAngleData(){
         AngleLUT.add(minDistance, 0.46);
-        AngleLUT.add( 27.5 ,0.46);
+        AngleLUT.add( 27.5 ,0.52); //.46
         AngleLUT.add( 45.6 ,0.6);
         AngleLUT.add( 47.2 ,0.65);
         AngleLUT.add( 54.6  ,0.7);
@@ -54,10 +54,10 @@ public class ShooterData {
 
     private void addShotTimeData() {
         // TurtleWalkers moving-shot LUT (distance inches -> flight time seconds).
-        // Thank you TurtleWalkers you guys are awesome... sorry for low key copying your values
-        ShotTimeLUT.add(0.0, 0.25);
-        ShotTimeLUT.add(42.5, 0.25);
-        ShotTimeLUT.add(55.0, 0.25);
+        // Thank you TurtleWalkers you guys are awesome
+        ShotTimeLUT.add(0.0, 0.4); //.25
+        ShotTimeLUT.add(42.5, 0.35); //.25
+        ShotTimeLUT.add(55.0, 0.35); //.25
         ShotTimeLUT.add(66.7, 0.30);
         ShotTimeLUT.add(81.9, 0.50);
         ShotTimeLUT.add(95.7, 0.70);

@@ -65,9 +65,10 @@ public abstract class BaseAuto extends OpMode {
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
     private static final double FAR_PICKUP_ZONE_POWER = 0.5;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
+    private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 0.75;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_POWER = 0.75;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.5;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.25;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.0;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 0.75;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
     private static final double PICKUP_HEADING_TOLERANCE_DEG = 3.0;
     private static final int PICKUP_TARGET_BALL_COUNT = 3;
@@ -134,6 +135,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean delayIntakeUntilPostPreload = false;
     private boolean goToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupIdleSeen = false;
+    private boolean closeLoopGoToPickupPart2Started = false;
 
     protected BaseAuto(Alliance alliance) {
         this.alliance = alliance;
@@ -535,6 +537,7 @@ public abstract class BaseAuto extends OpMode {
         resetStateTimer();
         closeLoopGoToPickupIdleSeen = false;
         closeLoopGoToPickupIdleTimer.reset();
+        closeLoopGoToPickupPart2Started = false;
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
@@ -660,7 +663,16 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected PathChain buildGoToPickupPath(Pose currentPose) {
+        if (shouldUseCurvedRow2GoToPickup()
+                && range == Range.CLOSE_RANGE
+                && currentAbsoluteRow == 2) {
+            return pathLibrary.row2GoToPickup(currentPose, alliance, range);
+        }
         return pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
+    }
+
+    protected boolean shouldUseCurvedRow2GoToPickup() {
+        return false;
     }
 
     protected PathChain buildPickupPath(Pose currentPose) {
@@ -753,8 +765,8 @@ public abstract class BaseAuto extends OpMode {
             return poses.getFinalShootClose(alliance);
         }
         if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
-            // Close-range cycle shots mirror across the field centerline.
-            double headingDeg = (alliance == Alliance.RED) ? 0.0 : 180.0;
+            // Close-range cycle shots run at 180 deg for both alliances.
+            double headingDeg = 180.0;
             if (currentAbsoluteRow == 2) {
                 Pose row2Pose = poses.getRow2ShootClose(alliance);
                 return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(headingDeg));
@@ -782,7 +794,7 @@ public abstract class BaseAuto extends OpMode {
             return;
         }
         robot.outtake.shooter.useFlywheelPID = true;
-        robot.getReadyShoot();
+        //robot.getReadyShoot();
     }
 
     protected void ensureIntakeRunningForGoToShoot() {
@@ -877,10 +889,25 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowGoToPickupAdvanceReady() {
-        if (stateTimedOut()) {
-            return true;
-        }
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            if (!closeLoopGoToPickupPart2Started) {
+                boolean startPart2 = followerIdle()
+                        || stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
+                if (!startPart2) {
+                    return false;
+                }
+                Pose currentPose = (follower != null) ? follower.getPose() : null;
+                PathChain part2Path = pathLibrary.closeLoopPickupPart2(currentPose, alliance);
+                followPath(part2Path, CLOSE_LOOP_PICKUP_PART2_POWER);
+                closeLoopGoToPickupPart2Started = true;
+                closeLoopGoToPickupIdleSeen = false;
+                closeLoopGoToPickupIdleTimer.reset();
+                resetStateTimer();
+                return false;
+            }
+            if (stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS) {
+                return true;
+            }
             if (followerIdle()) {
                 if (!closeLoopGoToPickupIdleSeen) {
                     closeLoopGoToPickupIdleSeen = true;
@@ -890,6 +917,9 @@ public abstract class BaseAuto extends OpMode {
             }
             closeLoopGoToPickupIdleSeen = false;
             return stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
+        }
+        if (stateTimedOut()) {
+            return true;
         }
         return followerIdle();
     }

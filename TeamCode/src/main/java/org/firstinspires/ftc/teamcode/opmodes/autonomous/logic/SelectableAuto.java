@@ -27,6 +27,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.FarBackRowPlus
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.Far3Then2Auto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.FarBackrowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.FarPreloadOnlyAuto;
+import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
@@ -121,8 +122,21 @@ public class SelectableAuto extends SelectableOpMode {
     public void onSelect() {
         FollowerManager.initFollower(hardwareMap, new Pose());
         PanelsConfigurables.INSTANCE.refreshClass(this);
+        configureLowOverheadPsiKitLogging();
     }
 
     @Override
     public void onLog(List<String> lines) {}
+
+    private void configureLowOverheadPsiKitLogging() {
+        FtcLogTuning.bulkOnlyLogging = true;
+        FtcLogTuning.nonBulkReadPeriodSec = 0.10;
+        FtcLogTuning.processColorDistanceSensorsInBackground = false;
+        FtcLogTuning.pinpointLoggerCallsUpdate = false;
+        FtcLogTuning.pinpointReadPeriodSec = .10;
+        FtcLogTuning.fieldAutoLogEnabled = true;
+        FtcLogTuning.fieldAutoLogPeriodSec = 0.1;
+        FtcLogTuning.fieldAutoLogMaxDepth = 6;
+        FtcLogTuning.fieldAutoLogIncludeStaticFields = false;
+    }
 }

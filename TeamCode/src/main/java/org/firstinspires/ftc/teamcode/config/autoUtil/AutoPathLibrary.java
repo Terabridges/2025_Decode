@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 public class AutoPathLibrary {
     private final AutoPoses poses;
     private static final double SCORE_SMOOTH_END_DISTANCE_IN = 6.0;
+    private static final double CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN = 5.0;
 
     public AutoPathLibrary(AutoPoses poses) {
         this.poses = poses;
@@ -20,6 +21,11 @@ public class AutoPathLibrary {
 
     public PathChain goToPickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
         return buildLinear(currentPose, poses.getPickupStart(alliance, range, absoluteRow));
+    }
+
+    public PathChain row2GoToPickup(Pose currentPose, Alliance alliance, Range range) {
+        Pose endPose = poses.getPickupStart(alliance, range, 2);
+        return buildCurve(currentPose, poses.getRow2GoToScoreControl(alliance), endPose);
     }
 
     public PathChain pickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
@@ -36,11 +42,21 @@ public class AutoPathLibrary {
     }
 
     public PathChain closeLoopPickup(Pose currentPose, Alliance alliance) {
+        Pose pickupPose = poses.getCloseLoopPickup(alliance);
+        double stageX = (alliance == Alliance.BLUE)
+                ? pickupPose.getX() + CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN
+                : pickupPose.getX() - CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN;
+        Pose stagePose = new Pose(stageX, pickupPose.getY(), pickupPose.getHeading());
+
         return buildCurve(
                 currentPose,
                 poses.getCloseLoopPickupControl(alliance),
-                poses.getCloseLoopPickup(alliance)
+                stagePose
         );
+    }
+
+    public PathChain closeLoopPickupPart2(Pose currentPose, Alliance alliance) {
+        return buildLinear(currentPose, poses.getCloseLoopPickup(alliance));
     }
 
     public PathChain closeLoopCompletePickup(Pose currentPose, Alliance alliance) {

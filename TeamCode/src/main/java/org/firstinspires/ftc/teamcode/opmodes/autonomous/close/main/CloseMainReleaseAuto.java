@@ -25,4 +25,9 @@ public class CloseMainReleaseAuto extends SequenceAuto {
                 2, 1
         );
     }
+
+    @Override
+    protected boolean shouldUseCurvedRow2GoToPickup() {
+        return true;
+    }
 }
