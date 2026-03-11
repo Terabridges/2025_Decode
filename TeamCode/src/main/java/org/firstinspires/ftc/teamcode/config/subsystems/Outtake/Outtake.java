@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.firstinspires.ftc.teamcode.config.utility.LocalizationDriftCorrection;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
@@ -411,6 +412,7 @@ public class Outtake implements Subsystem {
     @Override
     public void update(){
         vision.update();
+        LocalizationDriftCorrection.apply(vision, turret);
 
         Pose pose = (follower != null) ? follower.getPose() : null;
         if (pose != null) {

@@ -367,18 +367,27 @@ public class Vision implements Subsystem {
      * Returns Limelight robot pose estimate (MT2 preferred, then standard botpose), else null.
      */
     public Pose3D getLatestBotPose() {
+        Pose3D mt2 = getLatestMt2Pose();
+        return (mt2 != null) ? mt2 : getLatestMt1Pose();
+    }
+
+    public Pose3D getLatestMt1Pose() {
         if (latest == null || !latest.isValid()) {
             return null;
         }
         try {
-            Pose3D mt2 = latest.getBotpose_MT2();
-            if (mt2 != null) {
-                return mt2;
-            }
+            return latest.getBotpose();
         } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    public Pose3D getLatestMt2Pose() {
+        if (latest == null || !latest.isValid()) {
+            return null;
         }
         try {
-            return latest.getBotpose();
+            return latest.getBotpose_MT2();
         } catch (Throwable ignored) {
             return null;
         }

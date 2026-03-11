@@ -12,6 +12,8 @@ import java.util.Properties;
 public final class LocalizationBiasFileStore {
 
     private static final File STORE_FILE = new File("/sdcard/FIRST/TeraBridges/localization-bias.properties");
+    private static GlobalVariables.AllianceColor lastLoadedAlliance = null;
+    private static LoadResult lastLoadResult = new LoadResult(Bias.invalid(), false, "not_loaded");
 
     private LocalizationBiasFileStore() {
     }
@@ -99,6 +101,42 @@ public final class LocalizationBiasFileStore {
         LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg = bias.headingDeg;
     }
 
+    public static void clearCalculatorBias() {
+        LocalizationCandidateCalculator.mt1FieldOffsetXMeters = 0.0;
+        LocalizationCandidateCalculator.mt1FieldOffsetYMeters = 0.0;
+        LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg = 0.0;
+    }
+
+    public static LoadResult ensureAllianceBiasLoaded(GlobalVariables.AllianceColor allianceColor) {
+        if (allianceColor == null) {
+            clearCalculatorBias();
+            lastLoadedAlliance = null;
+            lastLoadResult = new LoadResult(Bias.invalid(), false, "missing_alliance");
+            return lastLoadResult;
+        }
+
+        if (allianceColor == lastLoadedAlliance) {
+            return lastLoadResult;
+        }
+
+        lastLoadedAlliance = allianceColor;
+        try {
+            Bias bias = loadAllianceBias(allianceColor);
+            if (bias.valid) {
+                applyBiasToCalculator(bias);
+                lastLoadResult = new LoadResult(bias, true, "loaded");
+            } else {
+                clearCalculatorBias();
+                lastLoadResult = new LoadResult(Bias.invalid(), false, "missing");
+            }
+        } catch (Exception e) {
+            clearCalculatorBias();
+            lastLoadResult = new LoadResult(Bias.invalid(), false, "error:" + e.getClass().getSimpleName());
+        }
+
+        return lastLoadResult;
+    }
+
     public static Bias getCalculatorBias() {
         return new Bias(
                 LocalizationCandidateCalculator.mt1FieldOffsetXMeters,
@@ -157,6 +195,18 @@ public final class LocalizationBiasFileStore {
 
         public static Bias invalid() {
             return new Bias(0.0, 0.0, 0.0, false);
+        }
+    }
+
+    public static final class LoadResult {
+        public final Bias bias;
+        public final boolean loadedFromFile;
+        public final String status;
+
+        public LoadResult(Bias bias, boolean loadedFromFile, String status) {
+            this.bias = (bias != null) ? bias : Bias.invalid();
+            this.loadedFromFile = loadedFromFile;
+            this.status = (status != null) ? status : "unknown";
         }
     }
 }

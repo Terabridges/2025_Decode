@@ -477,7 +477,7 @@ public class Robot {
             return new GoalTagRelocalizeResult(false, -1, "No goal tag (20/24) visible", before, null);
         }
 
-        Pose3D llPose = outtake.vision.getLatestBotPose();
+        Pose3D llPose = outtake.vision.getLatestMt1Pose();
         if (llPose == null) {
             return new GoalTagRelocalizeResult(false, tagId, "Goal tag visible but no Limelight botpose", before, null);
         }
