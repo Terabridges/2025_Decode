@@ -8,8 +8,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Spinner implements Subsystem {
 
     //---------------- Hardware ----------------
@@ -41,6 +43,7 @@ public class Spinner implements Subsystem {
 
     public boolean autoSpin = true;
     public static double floodgateMaxCurrentAmps = 80.0;
+    @PsiKitFieldAutoLog
     private double floodgateCurrentAmps = Double.NaN;
 
     //---------------- Constructor ----------------

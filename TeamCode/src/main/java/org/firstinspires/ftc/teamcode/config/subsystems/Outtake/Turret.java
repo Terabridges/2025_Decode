@@ -9,8 +9,10 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Turret implements Subsystem {
 
     //---------------- Hardware ----------------
@@ -21,9 +23,9 @@ public class Turret implements Subsystem {
     private final Util util;
 
     //---------------- Software ----------------
-    public static double turretMinDeg = 18.0;
-    public static double turretMaxDeg = 330.0;
-    public static double turretForwardDeg = 197.0;
+    public static double turretMinDeg = 16.418;
+    public static double turretMaxDeg = 328.418;
+    public static double turretForwardDeg = 198.055;
     public static double turretVelocity = 0.0;
     public static double velocityLoopTime = 250.0;
 
@@ -74,6 +76,26 @@ public class Turret implements Subsystem {
         double normalized = normalizeDegrees(degree);
         double clamped = clampToSafeRange(normalized);
         setTurretPos(turretDegToBaseServoPos(clamped));
+    }
+
+    /**
+     * Commands turret angle, but if getting there would require a 0/360 wrap move,
+     * hold at the nearest physical limit instead.
+     */
+    public void setTurretDegreeNoWrap(double degree) {
+        double normalized = normalizeDegrees(degree);
+        double clampedTarget = clampToSafeRange(normalized);
+        double current = normalizeDegrees(getCurrentDegrees());
+
+        if (Math.abs(clampedTarget - current) > 180.0) {
+            double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+            double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+            double holdLimit = (Math.abs(current - maxDeg) <= Math.abs(current - minDeg)) ? maxDeg : minDeg;
+            setTurretPos(turretDegToBaseServoPos(holdLimit));
+            return;
+        }
+
+        setTurretPos(turretDegToBaseServoPos(clampedTarget));
     }
 
     public double getCurrentDegrees() {

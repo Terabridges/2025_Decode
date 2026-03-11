@@ -30,6 +30,8 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
             new AutoSpec(Range.CLOSE_RANGE, true, false, true, 1, 2);
     private static final AutoSpec CLOSE_2_NO_RELEASE =
             new AutoSpec(Range.CLOSE_RANGE, false, false, true, 1, 2);
+    private static final AutoSpec CLOSE_MAIN_RELEASE =
+            AutoSpec.withCloseLoopCycles(Range.CLOSE_RANGE, true, true, 1, 2, 1);
     private static final AutoSpec CLOSE_3_RELEASE =
             new AutoSpec(Range.CLOSE_RANGE, true, false, true, 1, 2, 3);
     private static final AutoSpec CLOSE_3_NO_RELEASE =
@@ -62,6 +64,7 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
         super("Select Auto Path Test", c -> {
             c.folder("Blue Alliance", p -> {
                 p.folder("Close", m -> {
+                    m.add("Main Release (R: P, 2, close loop, 1)", () -> make(Alliance.BLUE, CLOSE_MAIN_RELEASE));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> make(Alliance.BLUE, CLOSE_3_RELEASE));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> make(Alliance.BLUE, CLOSE_3_NO_RELEASE));
                     m.folder("Other", s -> {
@@ -96,6 +99,7 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
             });
             c.folder("Red Alliance", p -> {
                 p.folder("Close", m -> {
+                    m.add("Main Release (R: P, 2, close loop, 1)", () -> make(Alliance.RED, CLOSE_MAIN_RELEASE));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> make(Alliance.RED, CLOSE_3_RELEASE));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> make(Alliance.RED, CLOSE_3_NO_RELEASE));
                     m.folder("Other", s -> {

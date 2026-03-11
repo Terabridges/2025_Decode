@@ -17,8 +17,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
+@PsiKitFieldAutoLog
 public class Spindex implements Subsystem {
 
     public static double encoderOffsetDeg = 0.0;
@@ -82,7 +84,7 @@ public class Spindex implements Subsystem {
     private boolean shootMode = false;
 
 
-    public String[] ballList = {"E", "E", "E"};
+    public String[] ballList = {"G", "P", "P"};
     public String balls = "";
 
     private double frontGreenThresh = 0.0011; //If green is highest, ball is green was 0.0013 0.0009
@@ -108,7 +110,9 @@ public class Spindex implements Subsystem {
 
     private double frontColorDistance = 0;
     private double backColorDistance = 0;
+    @PsiKitFieldAutoLog
     private double commandedServoPos = 0.0;
+    @PsiKitFieldAutoLog
     private double commandedDegree = 0.0;
 
 

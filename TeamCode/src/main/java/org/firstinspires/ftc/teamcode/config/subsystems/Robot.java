@@ -478,9 +478,19 @@ public class Robot {
             return new GoalTagRelocalizeResult(false, tagId, "Goal tag visible but no Limelight botpose", before, null);
         }
 
-        double xIn = llPose.getPosition().x * METERS_TO_INCHES;
-        double yIn = llPose.getPosition().y * METERS_TO_INCHES;
-        double headingRad = Math.toRadians(llPose.getOrientation().getYaw(AngleUnit.DEGREES));
+        double[] compensated = outtake.vision.getTurretCompensatedPose2dMetersFromPose3d(llPose);
+        double xMeters = llPose.getPosition().x;
+        double yMeters = llPose.getPosition().y;
+        double headingDeg = llPose.getOrientation().getYaw(AngleUnit.DEGREES);
+        if (compensated != null && compensated.length >= 3) {
+            xMeters = compensated[0];
+            yMeters = compensated[1];
+            headingDeg = compensated[2];
+        }
+
+        double xIn = xMeters * METERS_TO_INCHES;
+        double yIn = yMeters * METERS_TO_INCHES;
+        double headingRad = Math.toRadians(headingDeg);
         Pose relocalized = new Pose(xIn, yIn, headingRad);
         follower.setPose(relocalized);
         return new GoalTagRelocalizeResult(true, tagId, "Relocalized from goal tag", before, snapshotPose(relocalized));
