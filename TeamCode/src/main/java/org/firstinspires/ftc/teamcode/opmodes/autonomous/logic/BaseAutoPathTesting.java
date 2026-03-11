@@ -42,9 +42,12 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     private static final double STATE_TIMEOUT_SECONDS = 5.0;
     private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.0;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 0.75;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
+    private static final double GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
+    private static final double GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
+    private static final int GO_TO_PICKUP_SLOWDOWN_MAX_ROW = 2;
     private static final double PICKUP_POWER = 0.25;
     private static final double FAR_PICKUP_ZONE_POWER = 0.5;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
@@ -86,6 +89,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private final ElapsedTime closeLoopGoToPickupIdleTimer = new ElapsedTime();
     private boolean previousGamepad1A = false;
     private boolean gamepad1APressedEdge = false;
+    private boolean goToPickupSlowdownApplied = false;
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
 
@@ -142,6 +146,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
         follower.update();
         autoMachine.update();
+        maybeStartGoToPickupSlowdown();
 
         Pose pose = (follower != null) ? follower.getPose() : null;
         telemetryM.debug("PathTest: " + this.getClass().getSimpleName() + " | State: " + activeState);
@@ -269,6 +274,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected void onEnterGoToPickup() {
         setActiveState(AutoStates.GO_TO_PICKUP);
         resetStateTimer();
+        goToPickupSlowdownApplied = false;
         refreshCurrentAbsoluteRow();
         buildPath(PathRequest.GO_TO_PICKUP);
         followPath(goToPickupPath);
@@ -506,6 +512,28 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     protected boolean followerIdle() {
         return follower != null && !follower.isBusy();
+    }
+
+    protected void maybeStartGoToPickupSlowdown() {
+        if (activeState != AutoStates.GO_TO_PICKUP || goToPickupSlowdownApplied) {
+            return;
+        }
+        if (currentAbsoluteRow > GO_TO_PICKUP_SLOWDOWN_MAX_ROW) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < GO_TO_PICKUP_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        PathChain finalApproachPath = pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
+        followPath(finalApproachPath, GO_TO_PICKUP_SLOWDOWN_POWER);
+        goToPickupSlowdownApplied = true;
     }
 
     protected boolean shouldShootPreload() {

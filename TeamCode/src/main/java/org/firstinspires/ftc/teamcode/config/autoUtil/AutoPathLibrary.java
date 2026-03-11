@@ -20,12 +20,17 @@ public class AutoPathLibrary {
     }
 
     public PathChain goToPickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
-        return buildLinear(currentPose, poses.getPickupStart(alliance, range, absoluteRow));
+        Pose endPose = poses.getPickupStart(alliance, range, absoluteRow);
+        return buildLinear(currentPose, endPose);
     }
 
     public PathChain row2GoToPickup(Pose currentPose, Alliance alliance, Range range) {
         Pose endPose = poses.getPickupStart(alliance, range, 2);
-        return buildCurve(currentPose, poses.getRow2GoToScoreControl(alliance), endPose);
+        return buildCurve(
+                currentPose,
+                poses.getRow2GoToScoreControl(alliance),
+                endPose
+        );
     }
 
     public PathChain pickup(Pose currentPose, Alliance alliance, Range range, int absoluteRow) {
@@ -149,6 +154,34 @@ public class AutoPathLibrary {
         return follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    private PathChain buildCurveSmoothEnd(Pose start, Pose control, Pose end, double smoothDistanceIn) {
+        if (follower == null || start == null || control == null || end == null) {
+            return null;
+        }
+
+        double dx = end.getX() - start.getX();
+        double dy = end.getY() - start.getY();
+        double dist = Math.hypot(dx, dy);
+        if (!Double.isFinite(dist) || dist <= smoothDistanceIn + 0.5) {
+            return buildCurve(start, control, end);
+        }
+
+        double ux = dx / dist;
+        double uy = dy / dist;
+        Pose preEnd = new Pose(
+                end.getX() - ux * smoothDistanceIn,
+                end.getY() - uy * smoothDistanceIn,
+                end.getHeading()
+        );
+
+        return follower.pathBuilder()
+                .addPath(new BezierCurve(start, control, preEnd))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .addPath(new BezierLine(preEnd, end))
+                .setLinearHeadingInterpolation(end.getHeading(), end.getHeading())
                 .build();
     }
 

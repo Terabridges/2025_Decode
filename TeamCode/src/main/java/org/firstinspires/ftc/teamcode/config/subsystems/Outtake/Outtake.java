@@ -50,14 +50,14 @@ public class Outtake implements Subsystem {
     public static double smallLaunchRightBaseX = 96.0;
     public static double smallLaunchApexY = 24.0;
     public static boolean enableRpmRecoilComp = true;
-    public static double recoilCompGainPerRPM = 0.00005;
+    public static double recoilCompGainPerRPM = 0.0000125;
     public static double recoilCompDeadbandRPM = 30.0;
     public static double recoilCompMaxHoodDelta = 0.08;
     public static boolean enableAutoTxAimOffset = true;
     public static double autoTxAimOffsetGain = 0.02;
     public static double autoTxAimOffsetDeadbandDeg = 0.2;
     public static double autoTxAimOffsetMaxStepPerLoopDeg = 0.25;
-    public static double autoTxAimOffsetMaxAbsDeg = 15.0;
+    public static double autoTxAimOffsetMaxAbsDeg = 35.0;
     public static boolean autoTxAimOffsetOnlyWhenStill = true;
 
     private boolean aimLockEnabled = false;

@@ -62,13 +62,16 @@ public abstract class BaseAuto extends OpMode {
     private static final double MOTIF_ACQUIRE_AIM_WINDOW_SECONDS = 0.5;
     private static final double STATE_TIMEOUT_SECONDS = 4.0; // fallback: force state advance after this time
     private static final double GO_TO_PICKUP_IDLE_HOLD_SECONDS = 0.1;
+    private static final double GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
+    private static final double GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
+    private static final int GO_TO_PICKUP_SLOWDOWN_MAX_ROW = 2;
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
     private static final double FAR_PICKUP_ZONE_POWER = 0.5;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 0.75;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_POWER = 0.75;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.0;
-    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 0.75;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
+    private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
     private static final double PICKUP_HEADING_TOLERANCE_DEG = 3.0;
     private static final int PICKUP_TARGET_BALL_COUNT = 3;
@@ -77,8 +80,8 @@ public abstract class BaseAuto extends OpMode {
     private static final double RELEASE_IDLE_SECONDS = 1.0;
     private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
     private static final double RELEASE_COMPLETE_POWER = 0.75;
-    private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.75;
-    private static final double SHOOT_START_PATH_PROGRESS = 0.75;
+    private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.85;
+    private static final double SHOOT_START_PATH_PROGRESS = 0.85;
 
     private final Alliance alliance;
     private Range range;
@@ -134,6 +137,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean shootStartedInGoToShoot = false;
     private boolean delayIntakeUntilPostPreload = false;
     private boolean goToPickupIdleSeen = false;
+    private boolean goToPickupSlowdownApplied = false;
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
 
@@ -232,6 +236,7 @@ public abstract class BaseAuto extends OpMode {
         follower.update();
 
         autoMachine.update();
+        maybeStartGoToPickupSlowdown();
         maybeStartShootAtPathProgress();
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
         robot.update();
@@ -488,11 +493,36 @@ public abstract class BaseAuto extends OpMode {
 
         resetStateTimer();
         goToPickupIdleSeen = false;
+        goToPickupSlowdownApplied = false;
         goToPickupIdleTimer.reset();
 
         refreshCurrentAbsoluteRow();
         buildPath(PathRequest.GO_TO_PICKUP);
         followPath(goToPickupPath);
+    }
+
+    protected void maybeStartGoToPickupSlowdown() {
+        if (activeState != AutoStates.GO_TO_PICKUP || goToPickupSlowdownApplied) {
+            return;
+        }
+        if (currentAbsoluteRow > GO_TO_PICKUP_SLOWDOWN_MAX_ROW) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < GO_TO_PICKUP_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        PathChain finalApproachPath = pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
+        followPath(finalApproachPath, GO_TO_PICKUP_SLOWDOWN_POWER);
+        goToPickupSlowdownApplied = true;
+        goToPickupIdleSeen = false;
+        goToPickupIdleTimer.reset();
     }
 
     protected void onEnterCompletePickup() {
