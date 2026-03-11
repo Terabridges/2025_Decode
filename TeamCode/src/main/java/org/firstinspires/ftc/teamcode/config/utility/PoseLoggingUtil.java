@@ -129,7 +129,6 @@ public final class PoseLoggingUtil {
 
     private static void logLocalizationCandidates(Robot robot, LLResult latest, Pose2d pinpointFtcPose, Pose2d mt1PoseComp) {
         LocalizationBiasFileStore.LoadResult loadResult = LocalizationBiasFileStore.ensureAllianceBiasLoaded(GlobalVariables.getAllianceColor());
-
         int tagCount = getTagCount(latest);
         double planarDistanceIn = (robot != null && robot.outtake != null && robot.outtake.vision != null)
                 ? robot.outtake.vision.getPlanarDistanceInches()

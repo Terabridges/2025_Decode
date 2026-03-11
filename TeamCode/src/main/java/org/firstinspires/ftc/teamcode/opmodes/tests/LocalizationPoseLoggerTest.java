@@ -384,7 +384,6 @@ public class LocalizationPoseLoggerTest extends OpMode {
             LocalizationCandidateCalculator.mt1FieldOffsetXMeters,
             LocalizationCandidateCalculator.mt1FieldOffsetYMeters,
             LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg);
-
         joinedTelemetry.update();
     }
 }

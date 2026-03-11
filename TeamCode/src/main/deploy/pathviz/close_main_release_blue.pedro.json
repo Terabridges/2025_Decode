@@ -1,0 +1,95 @@
+{
+  "name": "CloseMainRelease_BLUE",
+  "units": "in",
+  "field": {
+    "width": 144.0,
+    "height": 144.0
+  },
+  "startPose": {
+    "x": 23.567,
+    "y": 124.916,
+    "headingDeg": 232.0
+  },
+  "paths": [
+    {
+      "id": "01_preload_go_to_shoot",
+      "type": "BezierLine",
+      "startPoint": { "x": 23.567, "y": 124.916 },
+      "endPoint": { "x": 48.0, "y": 96.0 }
+    },
+    {
+      "id": "02_row2_go_to_pickup",
+      "type": "BezierLine",
+      "startPoint": { "x": 48.0, "y": 96.0 },
+      "endPoint": { "x": 44.0, "y": 60.0 }
+    },
+    {
+      "id": "03_row2_complete_pickup",
+      "type": "BezierLine",
+      "startPoint": { "x": 44.0, "y": 60.0 },
+      "endPoint": { "x": 24.0, "y": 60.0 }
+    },
+    {
+      "id": "04_release_complete",
+      "type": "BezierLine",
+      "startPoint": { "x": 24.0, "y": 60.0 },
+      "endPoint": { "x": 17.5, "y": 71.0 }
+    },
+    {
+      "id": "05_row2_go_to_shoot",
+      "type": "BezierCurve",
+      "startPoint": { "x": 17.5, "y": 71.0 },
+      "controlPoint1": { "x": 50.0, "y": 55.0 },
+      "controlPoint2": { "x": 50.0, "y": 55.0 },
+      "endPoint": { "x": 48.0, "y": 96.0 }
+    },
+    {
+      "id": "06_close_loop_go_to_pickup",
+      "type": "BezierCurve",
+      "startPoint": { "x": 48.0, "y": 96.0 },
+      "controlPoint1": { "x": 48.0, "y": 72.0 },
+      "controlPoint2": { "x": 48.0, "y": 72.0 },
+      "endPoint": { "x": 14.0, "y": 62.0 }
+    },
+    {
+      "id": "07_close_loop_complete_pickup",
+      "type": "BezierCurve",
+      "startPoint": { "x": 14.0, "y": 62.0 },
+      "controlPoint1": { "x": 25.0, "y": 55.0 },
+      "controlPoint2": { "x": 25.0, "y": 55.0 },
+      "endPoint": { "x": 10.0, "y": 50.0 }
+    },
+    {
+      "id": "08_close_loop_go_to_shoot",
+      "type": "BezierCurve",
+      "startPoint": { "x": 10.0, "y": 50.0 },
+      "controlPoint1": { "x": 50.0, "y": 55.0 },
+      "controlPoint2": { "x": 50.0, "y": 55.0 },
+      "endPoint": { "x": 48.0, "y": 96.0 }
+    },
+    {
+      "id": "09_row1_go_to_pickup",
+      "type": "BezierLine",
+      "startPoint": { "x": 48.0, "y": 96.0 },
+      "endPoint": { "x": 44.0, "y": 84.0 }
+    },
+    {
+      "id": "10_row1_complete_pickup",
+      "type": "BezierLine",
+      "startPoint": { "x": 44.0, "y": 84.0 },
+      "endPoint": { "x": 24.0, "y": 84.0 }
+    },
+    {
+      "id": "11_final_go_to_shoot",
+      "type": "BezierLine",
+      "startPoint": { "x": 24.0, "y": 84.0 },
+      "endPoint": { "x": 49.0, "y": 120.0 }
+    },
+    {
+      "id": "12_leave",
+      "type": "BezierLine",
+      "startPoint": { "x": 49.0, "y": 120.0 },
+      "endPoint": { "x": 49.0, "y": 120.0 }
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close2RowNo
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close2RowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.main.Close3RowNoReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.main.Close3RowReleaseAuto;
+import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.main.CloseMainReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close4RowNoReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.Close4RowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.close.other.ClosePreloadOnlyNoReleaseAuto;
@@ -26,6 +27,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.FarBackRowPlus
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.main.Far3Then2Auto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.FarBackrowReleaseAuto;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.far.other.FarPreloadOnlyAuto;
+import org.psilynx.psikit.ftc.FtcLogTuning;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
@@ -35,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configurable
-//@PsiKitAutoLog(rlogPort = 5802)
+@PsiKitAutoLog(rlogPort = 5802)
 @Autonomous(name = "MainAuto", group = "Auto")
 public class SelectableAuto extends SelectableOpMode {
     @IgnoreConfigurable
@@ -45,6 +47,7 @@ public class SelectableAuto extends SelectableOpMode {
         super("Select Auto", c -> {
             c.folder("Blue Alliance", p -> {
                 p.folder("Close", m -> {
+                    m.add("Main Release (R: P, 2, close loop, 1)", () -> new CloseMainReleaseAuto(Alliance.BLUE));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> new Close3RowReleaseAuto(Alliance.BLUE));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> new Close3RowNoReleaseAuto(Alliance.BLUE));
                     m.folder("Other", s -> {
@@ -79,6 +82,7 @@ public class SelectableAuto extends SelectableOpMode {
             });
             c.folder("Red Alliance", p -> {
                 p.folder("Close", m -> {
+                    m.add("Main Release (R: P, 2, close loop, 1)", () -> new CloseMainReleaseAuto(Alliance.RED));
                     m.add("3 Row Release (R: P, 1, 2, 3)", () -> new Close3RowReleaseAuto(Alliance.RED));
                     m.add("3 Row No Release (R: P, 1, 2, 3)", () -> new Close3RowNoReleaseAuto(Alliance.RED));
                     m.folder("Other", s -> {
@@ -118,8 +122,21 @@ public class SelectableAuto extends SelectableOpMode {
     public void onSelect() {
         FollowerManager.initFollower(hardwareMap, new Pose());
         PanelsConfigurables.INSTANCE.refreshClass(this);
+        configureLowOverheadPsiKitLogging();
     }
 
     @Override
     public void onLog(List<String> lines) {}
+
+    private void configureLowOverheadPsiKitLogging() {
+        FtcLogTuning.bulkOnlyLogging = true;
+        FtcLogTuning.nonBulkReadPeriodSec = 0.10;
+        FtcLogTuning.processColorDistanceSensorsInBackground = false;
+        FtcLogTuning.pinpointLoggerCallsUpdate = false;
+        FtcLogTuning.pinpointReadPeriodSec = .10;
+        FtcLogTuning.fieldAutoLogEnabled = true;
+        FtcLogTuning.fieldAutoLogPeriodSec = 0.1;
+        FtcLogTuning.fieldAutoLogMaxDepth = 6;
+        FtcLogTuning.fieldAutoLogIncludeStaticFields = false;
+    }
 }

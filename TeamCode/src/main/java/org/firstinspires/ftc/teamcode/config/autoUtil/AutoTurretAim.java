@@ -20,7 +20,7 @@ public class AutoTurretAim {
         this.telemetry = telemetry;
     }
 
-    public void updateAim(AutoStates activeState, boolean preloadComplete) {
+    public void updateAim(AutoStates activeState, boolean forceObeliskAim) {
         if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
             return;
         }
@@ -28,9 +28,11 @@ public class AutoTurretAim {
         int requiredGoalTagId = (alliance == Alliance.BLUE) ? BLUE_GOAL_TAG_ID : RED_GOAL_TAG_ID;
         robot.outtake.vision.setRequiredTagId(requiredGoalTagId);
         robot.outtake.turret.turretVelocity = 0;
+        // Auto behavior: do not allow turret wrap moves; clamp at limits instead.
+        robot.outtake.setPreventTurretWrap(true);
 
-        boolean acquireMotif = activeState == AutoStates.ACQUIRE_MOTIF;
-        if (activeState == AutoStates.ACQUIRE_MOTIF) {
+        boolean obeliskAim = activeState == AutoStates.ACQUIRE_MOTIF || forceObeliskAim;
+        if (obeliskAim) {
             // Acquire motif uses only direct ODO obelisk aim (no aimLock).
             if (robot.outtake.isAimLockEnabled()) {
                 robot.outtake.setAimLockEnabled(false);
@@ -38,14 +40,14 @@ public class AutoTurretAim {
             robot.outtake.setAimTargetObelisk();
             robot.outtake.aimAtObeliskWithOdometry();
         } else {
-            // All non-acquire states use the same aimLock flow as teleop.
+            // All non-acquire states use teleop-style continuous goal tracking.
             if (!robot.outtake.isAimLockEnabled()) {
                 robot.outtake.setAimLockEnabled(true);
             }
             robot.outtake.setAimTargetGoal();
         }
 
-        telemetry.addData("Auto Acquire Motif", acquireMotif);
+        telemetry.addData("Auto Obelisk Aim", obeliskAim);
         telemetry.addData("Auto Aim Lock", robot.outtake.isAimLockEnabled());
         telemetry.addData("Auto Aim Source", robot.outtake.getActiveLockSource());
         telemetry.addData("Auto Aim Target", robot.outtake.getAimTarget());

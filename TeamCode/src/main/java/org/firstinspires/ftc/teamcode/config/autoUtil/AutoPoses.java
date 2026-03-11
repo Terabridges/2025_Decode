@@ -15,6 +15,18 @@ public class AutoPoses {
         return new Pose(x, y, Math.toRadians(headingDeg));
     }
 
+    private double mirrorHeadingDeg(double headingDeg) {
+        return ((180.0 - headingDeg) % 360.0 + 360.0) % 360.0;
+    }
+
+    private Pose mirrorBluePose(Pose bluePose) {
+        return poseDeg(
+                FIELD_SIZE - bluePose.getX(),
+                bluePose.getY(),
+                mirrorHeadingDeg(Math.toDegrees(bluePose.getHeading()))
+        );
+    }
+
     // ===== Start Poses =====
     public Pose blueCloseStartPose = poseDeg(23.567, 124.916, 232.0);
     public Pose blueFarStartPose = poseDeg(48.0 + ROBOT_LENGTH / 2.0, ROBOT_WIDTH / 2.0, 0.0);
@@ -24,67 +36,89 @@ public class AutoPoses {
     // ===== Score Poses =====
     public Pose scoreCB = poseDeg(48.0, 96.0, 232.0);
     public Pose scoreLB = poseDeg(54.0, 16.0, 0.0);
-    public Pose scoreCR = poseDeg(96.0, 96.0, 128);
-    public Pose scoreLR = poseDeg(90.0, 16.0, 0.0);
+    public Pose scoreCR = poseDeg(FIELD_SIZE - scoreCB.getX(), scoreCB.getY(), 128.0);
+    public Pose scoreLR = poseDeg(FIELD_SIZE - scoreLB.getX(), scoreLB.getY(), 0.0);
+    public Pose row2ShootCloseB = poseDeg(55.0, 96.0, 180.0);
+    public Pose row2ShootCloseR = poseDeg(FIELD_SIZE - row2ShootCloseB.getX(), row2ShootCloseB.getY(), 180.0);
+    public Pose finalShootCloseB = poseDeg(49.0, 120.0, 180.0);
+    public Pose finalShootCloseR = poseDeg(FIELD_SIZE - finalShootCloseB.getX(), finalShootCloseB.getY(), 180.0);
 
     // ===== Load Poses =====
     public Pose loadB = poseDeg(ROBOT_WIDTH / 2.0, ROBOT_LENGTH / 2.0, 0);
     public Pose loadR = poseDeg(FIELD_SIZE - ROBOT_WIDTH / 2.0, ROBOT_LENGTH / 2.0, 0);
 
     // ===== Release Poses =====
-    public Pose releaseGoToCloseB = poseDeg(23.0, 74.0, 180.0);
-    public Pose releaseCompleteCloseB = poseDeg(17.5, 74.0, 180.0);
-    public Pose releaseGoToCloseR = poseDeg(121.0, 74.0, 180);
-    public Pose releaseCompleteCloseR = poseDeg(126.5, 74.0, 180);
+    public Pose releaseGoToCloseB = poseDeg(25.0, 66.0, 180.0);
+    public Pose releaseCompleteCloseB = poseDeg(17.5, 66.0, 180.0);
+    public Pose releaseGoToCloseR = poseDeg(FIELD_SIZE - releaseGoToCloseB.getX(), releaseGoToCloseB.getY(), 180.0);
+    public Pose releaseCompleteCloseR = poseDeg(FIELD_SIZE - releaseCompleteCloseB.getX(), releaseCompleteCloseB.getY(), 180.0);
 
     // ===== Leave Poses =====
-    public Pose leaveCB = poseDeg(36.0, 84.0, 180.0);
+    public Pose leaveCB = poseDeg(44.0, 115.0, 140.0);
     public Pose leaveLB = poseDeg(15.0, 15.0, 0.0);
-    public Pose leaveCR = poseDeg(108.0, 84.0, 180);
-    public Pose leaveLR = poseDeg(129.0, 15.0, 0.0);
+    public Pose leaveCR = mirrorBluePose(leaveCB);
+    public Pose leaveLR = poseDeg(FIELD_SIZE - leaveLB.getX(), leaveLB.getY(), 0.0);
 
     // ===== Pickup Start Poses =====
     public Pose pick1StartCB = poseDeg(44.0, 84.0, 180.0);
-    public Pose pick1StartCR = poseDeg(100.0, 84.0, 180.0);
+    public Pose pick1StartCR = poseDeg(FIELD_SIZE - pick1StartCB.getX(), pick1StartCB.getY(), 180.0);
 
     public Pose pick2StartLB = poseDeg(44.0, 60.0, 0.0);
     public Pose pick2StartCB = poseDeg(44.0, 60.0, 180.0);
-    public Pose pick2StartCR = poseDeg(100.0, 60.0, 180.0);
-    public Pose pick2StartLR = poseDeg(100.0, 60.0, 0);
+    public Pose pick2StartCR = poseDeg(FIELD_SIZE - pick2StartCB.getX(), pick2StartCB.getY(), 180.0);
+    public Pose pick2StartLR = poseDeg(FIELD_SIZE - pick2StartLB.getX(), pick2StartLB.getY(), 0.0);
 
     public Pose pick3StartLB = poseDeg(44.0, 36.0, 0.0);
     public Pose pick3StartCB = poseDeg(44.0, 36.0, 180.0);
-    public Pose pick3StartCR = poseDeg(97.5, 36.0, 180.0);
-    public Pose pick3StartLR = poseDeg(100.0, 36.0, 0);
+    public Pose pick3StartCR = poseDeg(FIELD_SIZE - pick3StartCB.getX(), pick3StartCB.getY(), 180.0);
+    public Pose pick3StartLR = poseDeg(FIELD_SIZE - pick3StartLB.getX(), pick3StartLB.getY(), 0.0);
 
     public Pose pick4StartLB = poseDeg(13.5, 16.0, 20.0);
-    public Pose pick4StartLR = poseDeg(130.5, 16.0, 340.0);
+    public Pose pick4StartLR = poseDeg(FIELD_SIZE - pick4StartLB.getX(), pick4StartLB.getY(), 340.0);
+    public Pose pick4Step1LB = poseDeg(12.5, 12.5, 15.0);
+    public Pose pick4Step1LR = poseDeg(FIELD_SIZE - pick4Step1LB.getX(), pick4Step1LB.getY(), 345.0);
 
     public Pose farPickupZoneB = poseDeg(10.0, 11.5, 0.0);
-    public Pose farPickupZoneR = poseDeg(134.0, 11.5, 0.0);
+    public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 0.0);
+    public Pose closeLoopPickupB = poseDeg(16.5, 62.0, 180.0);
+    public Pose closeLoopPickupR = poseDeg(FIELD_SIZE - closeLoopPickupB.getX(), closeLoopPickupB.getY(), 180.0);
+    public Pose closeLoopPickupControlB = poseDeg(53.0, 60.0, 0.0);
+    public Pose closeLoopPickupControlR = mirrorBluePose(closeLoopPickupControlB);
+    public Pose closeLoopGoToScoreControlB = poseDeg(50.0, 55.0, 0.0);
+    public Pose closeLoopGoToScoreControlR = mirrorBluePose(closeLoopGoToScoreControlB);
+    public Pose row2GoToScoreControlB = poseDeg(53.0, 60.0, 0.0);
+    public Pose row2GoToScoreControlR = mirrorBluePose(row2GoToScoreControlB);
+    public Pose closeLoopCompletePickupB = poseDeg(10.0, 50.0, 160.0);
+    public Pose closeLoopCompletePickupR = poseDeg(FIELD_SIZE - closeLoopCompletePickupB.getX(), closeLoopCompletePickupB.getY(), 160.0);
+    public Pose closeLoopCompletePickupControlB = poseDeg(25.0, 55.0, 0.0);
+    public Pose closeLoopCompletePickupControlR = mirrorBluePose(closeLoopCompletePickupControlB);
+    public Pose closeLoopSharedControlB = poseDeg(33.0, 60.0, 0.0);
+    public Pose closeLoopSharedControlR = mirrorBluePose(closeLoopSharedControlB);
+    public Pose closeLoopFinalShootControlB = poseDeg(35.0, 81.0, 0.0);
+    public Pose closeLoopFinalShootControlR = mirrorBluePose(closeLoopFinalShootControlB);
 
     // ===== Pickup End Poses =====
     public Pose pick1EndCB = poseDeg(24.0, 84.0, 180.0);
-    public Pose pick1EndCR = poseDeg(120.0, 84.0, 180.0);
+    public Pose pick1EndCR = poseDeg(FIELD_SIZE - pick1EndCB.getX(), pick1EndCB.getY(), 180.0);
 
     public Pose pick2EndLB = poseDeg(24.0, 60.0, 0.0);
     public Pose pick2EndCB = poseDeg(24.0, 60.0, 180.0);
-    public Pose pick2EndCR = poseDeg(120.0, 60.0, 180.0);
-    public Pose pick2EndLR = poseDeg(120.0, 60.0, 0);
+    public Pose pick2EndCR = poseDeg(FIELD_SIZE - pick2EndCB.getX(), pick2EndCB.getY(), 180.0);
+    public Pose pick2EndLR = poseDeg(FIELD_SIZE - pick2EndLB.getX(), pick2EndLB.getY(), 0.0);
 
     public Pose pick3EndLB = poseDeg(24.0, 36.0, 0.0);
     public Pose pick3EndCB = poseDeg(24.0, 36.0, 180.0);
-    public Pose pick3EndCR = poseDeg(120.0, 36.0, 180.0);
-    public Pose pick3EndLR = poseDeg(120.0, 36.0, 0);
+    public Pose pick3EndCR = poseDeg(FIELD_SIZE - pick3EndCB.getX(), pick3EndCB.getY(), 180.0);
+    public Pose pick3EndLR = poseDeg(FIELD_SIZE - pick3EndLB.getX(), pick3EndLB.getY(), 0.0);
 
-    public Pose pick4EndLB = poseDeg(13.5, 11.25, 20.0);
-    public Pose pick4EndLR = poseDeg(130.5, 11.25, 340.0);
+    public Pose pick4EndLB = poseDeg(9.0, 8.5, 0.0);
+    public Pose pick4EndLR = poseDeg(FIELD_SIZE - pick4EndLB.getX(), pick4EndLB.getY(), 0.0);
 
     // ===== Goal / Obelisk =====
     public Pose goalBlueAnchor = poseDeg(0.0, 144.0, 90.0);
-    public Pose goalRedAnchor = poseDeg(144.0, 144.0, 90.0);
+    public Pose goalRedAnchor = mirrorBluePose(goalBlueAnchor);
     public Pose obeliskB = poseDeg(72.0, 144.0, 90.0);
-    public Pose obeliskR = poseDeg(72.0, 144.0, 90.0);
+    public Pose obeliskR = mirrorBluePose(obeliskB);
 
     public Pose getGoalPose(Alliance alliance, Range range, boolean preloadComplete) {
         Pose anchor = (alliance == Alliance.BLUE) ? goalBlueAnchor : goalRedAnchor;
@@ -146,9 +180,9 @@ public class AutoPoses {
         setPickupEndAbsolute(Alliance.RED, 3, pick3EndCR);
         setPickupEndAbsolute(Alliance.RED, 4, pick4EndLR);
 
-        setLeave(Alliance.BLUE, Range.CLOSE_RANGE, leaveCB);
+        setLeave(Alliance.BLUE, Range.CLOSE_RANGE, finalShootCloseB);
         setLeave(Alliance.BLUE, Range.LONG_RANGE, leaveLB);
-        setLeave(Alliance.RED, Range.CLOSE_RANGE, leaveCR);
+        setLeave(Alliance.RED, Range.CLOSE_RANGE, finalShootCloseR);
         setLeave(Alliance.RED, Range.LONG_RANGE, leaveLR);
 
         setReleaseGoTo(Alliance.BLUE, Range.CLOSE_RANGE, releaseGoToCloseB);
@@ -200,6 +234,14 @@ public class AutoPoses {
 
     public Pose getScore(Alliance a, Range r) {
         return score[a.ordinal()][r.ordinal()];
+    }
+
+    public Pose getFinalShootClose(Alliance a) {
+        return (a == Alliance.BLUE) ? finalShootCloseB : finalShootCloseR;
+    }
+
+    public Pose getRow2ShootClose(Alliance a) {
+        return (a == Alliance.BLUE) ? row2ShootCloseB : row2ShootCloseR;
     }
 
     public Pose getPickupStart(Alliance a, int absoluteRow) {
@@ -254,8 +296,44 @@ public class AutoPoses {
         }
     }
 
+    public Pose getPickupRow4Step1(Alliance a) {
+        return (a == Alliance.BLUE) ? pick4Step1LB : pick4Step1LR;
+    }
+
     public Pose getFarPickupZone(Alliance a) {
         return (a == Alliance.BLUE) ? farPickupZoneB : farPickupZoneR;
+    }
+
+    public Pose getCloseLoopPickup(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopPickupB : closeLoopPickupR;
+    }
+
+    public Pose getCloseLoopPickupControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopPickupControlB : closeLoopPickupControlR;
+    }
+
+    public Pose getCloseLoopGoToScoreControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopGoToScoreControlB : closeLoopGoToScoreControlR;
+    }
+
+    public Pose getRow2GoToScoreControl(Alliance a) {
+        return (a == Alliance.BLUE) ? row2GoToScoreControlB : row2GoToScoreControlR;
+    }
+
+    public Pose getCloseLoopSharedControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopSharedControlB : closeLoopSharedControlR;
+    }
+
+    public Pose getCloseLoopCompletePickup(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopCompletePickupB : closeLoopCompletePickupR;
+    }
+
+    public Pose getCloseLoopCompletePickupControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopCompletePickupControlB : closeLoopCompletePickupControlR;
+    }
+
+    public Pose getCloseLoopFinalShootControl(Alliance a) {
+        return (a == Alliance.BLUE) ? closeLoopFinalShootControlB : closeLoopFinalShootControlR;
     }
 
     public Pose getLeave(Alliance a, Range r) {

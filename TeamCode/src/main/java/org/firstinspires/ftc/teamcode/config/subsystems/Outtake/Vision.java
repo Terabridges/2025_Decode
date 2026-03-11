@@ -199,7 +199,6 @@ public class Vision implements Subsystem {
         lastCompDeltaYawDeg = deltaYawDeg;
         lastCompDeltaXRobotMeter = deltaXRobot;
         lastCompDeltaYRobotMeter = deltaYRobot;
-
         double rawHeadingRad = Math.toRadians(rawHeadingDeg);
         double cosRaw = Math.cos(rawHeadingRad);
         double sinRaw = Math.sin(rawHeadingRad);
@@ -226,7 +225,6 @@ public class Vision implements Subsystem {
                 turretPivotRobotYMeter + rotatedOffsetY
         };
     }
-
     private void logYawFeedToLogger() {
         Logger.recordOutput("Vision/LimelightYawFeed/ChassisYawDeg", lastChassisYawDeg);
         Logger.recordOutput("Vision/LimelightYawFeed/UseEncoderTurretYawForFeed", useEncoderTurretYawForFeed ? 1.0 : 0.0);

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.autonomous.logic;
 
+import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 
 /**
@@ -16,5 +17,14 @@ public class SequenceAutoPathTesting extends BaseAutoPathTesting {
     @Override
     protected AutoSpec getSpec() {
         return spec;
+    }
+
+    @Override
+    protected boolean shouldUseCurvedRow2GoToPickup() {
+        return spec.range == Range.CLOSE_RANGE
+                && spec.closeLoopEnabled
+                && spec.rowSequence.length == 2
+                && spec.rowSequence[0] == 2
+                && spec.rowSequence[1] == 1;
     }
 }

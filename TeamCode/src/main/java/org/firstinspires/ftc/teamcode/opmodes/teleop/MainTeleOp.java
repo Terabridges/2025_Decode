@@ -263,7 +263,7 @@ public class MainTeleOp extends OpMode {
             gp1BHoldTimer.reset();
             gp1BLongPressHandled = false;
             if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
-            Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
+                Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
             }
         }
         if (currentGamepad1.b && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {

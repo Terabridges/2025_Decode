@@ -64,6 +64,7 @@ public class Outtake implements Subsystem {
     public static double turretPivotLeftOffsetIn = 2.75;
 
     private boolean aimLockEnabled = false;
+    private boolean preventTurretWrap = false;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
     private double lastRecoilRpmError = 0.0;
@@ -96,6 +97,13 @@ public class Outtake implements Subsystem {
         return aimLockEnabled;
     }
 
+    public void setPreventTurretWrap(boolean prevent) {
+        preventTurretWrap = prevent;
+    }
+
+    public boolean isPreventTurretWrap() {
+        return preventTurretWrap;
+    }
     public double getLastRecoilRpmError() {
         return lastRecoilRpmError;
     }
@@ -169,13 +177,55 @@ public class Outtake implements Subsystem {
     }
 
     public boolean isVisionOnTarget(Vision vision, double toleranceDeg) {
-        // Vision aiming logic is intentionally not implemented in Outtake yet.
-        return false;
+        if (vision == null) {
+            return false;
+        }
+        if (!vision.hasRequiredTarget()) {
+            return false;
+        }
+
+        double txDeg = vision.getTxForTag(vision.getRequiredTagId());
+        if (!Double.isFinite(txDeg)) {
+            return false;
+        }
+
+        return Math.abs(txDeg) <= Math.abs(toleranceDeg);
+    }
+
+    /**
+     * Computes the turret command needed to hit the alliance goal from a supplied field pose.
+     */
+    public double computeGoalTurretDegFromPose(Pose robotPose) {
+        if (robotPose == null) {
+            return Double.NaN;
+        }
+        double targetX = GlobalVariables.isBlueAlliance() ? blueGoalX : redGoalX;
+        double targetY = GlobalVariables.isBlueAlliance() ? blueGoalY : redGoalY;
+        double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
+        return turret.normalizeDegrees(desiredDeg + turretAimCommandOffsetDeg);
+    }
+
+    /**
+     * Commands turret to the alliance-goal angle computed from the supplied field pose.
+     */
+    public void commandGoalTurretFromPose(Pose robotPose) {
+        double desiredDeg = computeGoalTurretDegFromPose(robotPose);
+        if (Double.isFinite(desiredDeg)) {
+            commandTurretDegree(desiredDeg);
+        }
     }
 
     private void aimAtFieldPoint(Pose robotPose, double targetX, double targetY) {
         double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
-        turret.setTurretDegree(desiredDeg + turretAimCommandOffsetDeg);
+        commandTurretDegree(desiredDeg + turretAimCommandOffsetDeg);
+    }
+
+    private void commandTurretDegree(double desiredDeg) {
+        if (preventTurretWrap) {
+            turret.setTurretDegreeNoWrap(desiredDeg);
+        } else {
+            turret.setTurretDegree(desiredDeg);
+        }
     }
 
     private double computeFieldPointTurretDeg(Pose robotPose, double targetX, double targetY) {
