@@ -60,6 +60,8 @@ public class Outtake implements Subsystem {
     public static double autoTxAimOffsetMaxStepPerLoopDeg = 0.25;
     public static double autoTxAimOffsetMaxAbsDeg = 15.0;
     public static boolean autoTxAimOffsetOnlyWhenStill = true;
+    public static double turretPivotForwardOffsetIn = 0.0;
+    public static double turretPivotLeftOffsetIn = 2.75;
 
     private boolean aimLockEnabled = false;
     private AimSource activeAimSource = AimSource.NONE;
@@ -192,8 +194,10 @@ public class Outtake implements Subsystem {
     }
 
     private double[] computeLeadAdjustedVector(Pose robotPose, double targetX, double targetY) {
-        double dx = targetX - robotPose.getX();
-        double dy = targetY - robotPose.getY();
+        double turretPivotX = getTurretPivotX(robotPose);
+        double turretPivotY = getTurretPivotY(robotPose);
+        double dx = targetX - turretPivotX;
+        double dy = targetY - turretPivotY;
         double distance = Math.hypot(dx, dy);
 
         if (enableMovingShotLead && follower != null && follower.getVelocity() != null) {
@@ -203,13 +207,31 @@ public class Outtake implements Subsystem {
 
             for (int i = 0; i < iterations; i++) {
                 double shotTime = shooterData.getShotTimeVal(distance);
-                dx = targetX - robotPose.getX() - (vX * shotTime);
-                dy = targetY - robotPose.getY() - (vY * shotTime);
+                dx = targetX - turretPivotX - (vX * shotTime);
+                dy = targetY - turretPivotY - (vY * shotTime);
                 distance = Math.hypot(dx, dy);
             }
         }
 
         return new double[]{dx, dy, distance};
+    }
+
+    private double getTurretPivotX(Pose robotPose) {
+        double heading = robotPose.getHeading();
+        double forwardX = Math.cos(heading);
+        double leftX = -Math.sin(heading);
+        return robotPose.getX()
+                + (turretPivotForwardOffsetIn * forwardX)
+                + (turretPivotLeftOffsetIn * leftX);
+    }
+
+    private double getTurretPivotY(Pose robotPose) {
+        double heading = robotPose.getHeading();
+        double forwardY = Math.sin(heading);
+        double leftY = Math.cos(heading);
+        return robotPose.getY()
+                + (turretPivotForwardOffsetIn * forwardY)
+                + (turretPivotLeftOffsetIn * leftY);
     }
 
     /**

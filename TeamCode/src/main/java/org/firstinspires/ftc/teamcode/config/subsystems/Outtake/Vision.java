@@ -28,14 +28,20 @@ public class Vision implements Subsystem {
     public static double ftcRotatedFrameBaseDeg = 90.0;
     public static double robotYawSign = 1.0;
     public static double robotYawOffsetDeg = 0.0;
-    public static double cameraPoseRobotXMeter = -0.069;
-    public static double cameraPoseRobotYMeter = -0.069;
+    public static double turretPivotRobotXMeter = -0.06985;
+    public static double turretPivotRobotYMeter = 0.0;
+    public static double cameraPoseRobotXMeter = -0.06985;
+    public static double cameraPoseRobotYMeter = -0.070866;
+    public static double cameraPoseRobotZMeter = 0.385191;
     public static double cameraPoseRobotYawBaseDeg = 0.0;
+    public static double cameraPoseRobotPitchDeg = 12.5;
+    public static double cameraPoseRobotRollDeg = 90.0;
     public static double cameraPoseRobotYawTurretSign = 1.0;
     public static double cameraPoseRobotYawOffsetDeg = 0.0;
-    public static boolean rotateCameraPositionWithTurretYaw = false;
+    public static boolean rotateCameraPositionWithTurretYaw = true;
     public static double cameraPoseTurretOffsetXMeter = 0.0;
-    public static double cameraPoseTurretOffsetYMeter = 0.0;
+    public static double cameraPoseTurretOffsetZMeter = 0.0;
+    public static double cameraPoseTurretOffsetYMeter = -0.070866;
     public static boolean applyTurretGeometryPoseCompensation = true;
 
     //---------------- Hardware ----------------
@@ -57,6 +63,15 @@ public class Vision implements Subsystem {
     public static double tagTxSign = 1.0;
     private int requiredTagId = -1; // -1 means "any tag"
     private int motifTagId = -1; // -1 means motif not selected
+    private double lastCompBaselineCameraXMeter = Double.NaN;
+    private double lastCompBaselineCameraYMeter = Double.NaN;
+    private double lastCompCurrentCameraXMeter = Double.NaN;
+    private double lastCompCurrentCameraYMeter = Double.NaN;
+    private double lastCompBaselineYawDeg = Double.NaN;
+    private double lastCompCurrentYawDeg = Double.NaN;
+    private double lastCompDeltaYawDeg = Double.NaN;
+    private double lastCompDeltaXRobotMeter = Double.NaN;
+    private double lastCompDeltaYRobotMeter = Double.NaN;
 
     //---------------- Constructor ----------------
     public Vision(HardwareMap map) {
@@ -157,18 +172,13 @@ public class Vision implements Subsystem {
                         + cameraPoseRobotYawOffsetDeg
         );
 
-        double baselineX = cameraPoseRobotXMeter;
-        double baselineY = cameraPoseRobotYMeter;
+        double[] baselineTranslation = getCameraRobotTranslationMeters(0.0);
+        double baselineX = baselineTranslation[0];
+        double baselineY = baselineTranslation[1];
 
-        double currentX = cameraPoseRobotXMeter;
-        double currentY = cameraPoseRobotYMeter;
-        if (rotateCameraPositionWithTurretYaw) {
-            double turretRad = Math.toRadians(turretYawDeg);
-            double cos = Math.cos(turretRad);
-            double sin = Math.sin(turretRad);
-            currentX += (cameraPoseTurretOffsetXMeter * cos) - (cameraPoseTurretOffsetYMeter * sin);
-            currentY += (cameraPoseTurretOffsetXMeter * sin) + (cameraPoseTurretOffsetYMeter * cos);
-        }
+        double[] currentTranslation = getCameraRobotTranslationMeters(turretYawDeg);
+        double currentX = currentTranslation[0];
+        double currentY = currentTranslation[1];
 
         double deltaYawDeg = AngleUnit.normalizeDegrees(baselineYawDeg - currentYawDeg);
         double deltaYawRad = Math.toRadians(deltaYawDeg);
@@ -180,6 +190,16 @@ public class Vision implements Subsystem {
         double deltaXRobot = baselineX - rotatedCurrentX;
         double deltaYRobot = baselineY - rotatedCurrentY;
 
+        lastCompBaselineCameraXMeter = baselineX;
+        lastCompBaselineCameraYMeter = baselineY;
+        lastCompCurrentCameraXMeter = currentX;
+        lastCompCurrentCameraYMeter = currentY;
+        lastCompBaselineYawDeg = baselineYawDeg;
+        lastCompCurrentYawDeg = currentYawDeg;
+        lastCompDeltaYawDeg = deltaYawDeg;
+        lastCompDeltaXRobotMeter = deltaXRobot;
+        lastCompDeltaYRobotMeter = deltaYRobot;
+
         double rawHeadingRad = Math.toRadians(rawHeadingDeg);
         double cosRaw = Math.cos(rawHeadingRad);
         double sinRaw = Math.sin(rawHeadingRad);
@@ -189,6 +209,22 @@ public class Vision implements Subsystem {
         double correctedHeadingDeg = AngleUnit.normalizeDegrees(rawHeadingDeg + deltaYawDeg);
 
         return new double[] { correctedX, correctedY, correctedHeadingDeg };
+    }
+
+    private double[] getCameraRobotTranslationMeters(double turretYawDeg) {
+        if (!rotateCameraPositionWithTurretYaw) {
+            return new double[] { cameraPoseRobotXMeter, cameraPoseRobotYMeter };
+        }
+
+        double turretRad = Math.toRadians(turretYawDeg);
+        double cos = Math.cos(turretRad);
+        double sin = Math.sin(turretRad);
+        double rotatedOffsetX = (cameraPoseTurretOffsetXMeter * cos) - (cameraPoseTurretOffsetYMeter * sin);
+        double rotatedOffsetY = (cameraPoseTurretOffsetXMeter * sin) + (cameraPoseTurretOffsetYMeter * cos);
+        return new double[] {
+                turretPivotRobotXMeter + rotatedOffsetX,
+                turretPivotRobotYMeter + rotatedOffsetY
+        };
     }
 
     private void logYawFeedToLogger() {
@@ -213,6 +249,24 @@ public class Vision implements Subsystem {
         Logger.recordOutput("Vision/LimelightYawFeed/ExtraOffsetDeg", robotYawOffsetDeg);
         Logger.recordOutput("Vision/LimelightYawFeed/YawSentDeg", lastRobotYawSentDeg);
         Logger.recordOutput("Vision/LimelightYawFeed/SendSuccess", lastRobotYawSendSuccess ? 1.0 : 0.0);
+        Logger.recordOutput("Vision/LimelightPoseComp/ApplyTurretGeometryPoseCompensation", applyTurretGeometryPoseCompensation ? 1.0 : 0.0);
+        Logger.recordOutput("Vision/LimelightPoseComp/RotateCameraPositionWithTurretYaw", rotateCameraPositionWithTurretYaw ? 1.0 : 0.0);
+        Logger.recordOutput("Vision/LimelightPoseComp/TurretPivotRobotXMeter", turretPivotRobotXMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/TurretPivotRobotYMeter", turretPivotRobotYMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/CameraTurretOffsetXMeter", cameraPoseTurretOffsetXMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/CameraTurretOffsetYMeter", cameraPoseTurretOffsetYMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/CameraRobotZMeter", cameraPoseRobotZMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/CameraRobotPitchDeg", cameraPoseRobotPitchDeg);
+        Logger.recordOutput("Vision/LimelightPoseComp/CameraRobotRollDeg", cameraPoseRobotRollDeg);
+        Logger.recordOutput("Vision/LimelightPoseComp/BaselineCameraXMeter", lastCompBaselineCameraXMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/BaselineCameraYMeter", lastCompBaselineCameraYMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/CurrentCameraXMeter", lastCompCurrentCameraXMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/CurrentCameraYMeter", lastCompCurrentCameraYMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/BaselineYawDeg", lastCompBaselineYawDeg);
+        Logger.recordOutput("Vision/LimelightPoseComp/CurrentYawDeg", lastCompCurrentYawDeg);
+        Logger.recordOutput("Vision/LimelightPoseComp/DeltaYawDeg", lastCompDeltaYawDeg);
+        Logger.recordOutput("Vision/LimelightPoseComp/DeltaXRobotMeter", lastCompDeltaXRobotMeter);
+        Logger.recordOutput("Vision/LimelightPoseComp/DeltaYRobotMeter", lastCompDeltaYRobotMeter);
     }
 
     public double getLastRobotYawSentDeg() {

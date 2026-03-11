@@ -13,6 +13,8 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
+import java.lang.reflect.Method;
+
 @Configurable
 public final class LocalizationDriftCorrection {
 
@@ -35,6 +37,9 @@ public final class LocalizationDriftCorrection {
     private static final double FIELD_HALF_IN = FIELD_SIZE_IN * 0.5;
 
     private static int consecutiveAcceptedFrames = 0;
+    private static Object lastFollowerRef = null;
+    private static double appliedFollowerXOffsetIn = 0.0;
+    private static double appliedFollowerYOffsetIn = 0.0;
 
     private LocalizationDriftCorrection() {
     }
@@ -48,17 +53,24 @@ public final class LocalizationDriftCorrection {
         result.biasLoadStatus = loadResult.status;
 
         if (!enabled || vision == null || follower == null) {
+            syncFollowerReference();
             consecutiveAcceptedFrames = 0;
             result.rejectDisabled = !enabled;
             result.rejectFollowerMissing = (follower == null);
+            result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+            result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
             recordOutputs(result);
             return;
         }
+
+        syncFollowerReference();
 
         Pose followerPose = follower.getPose();
         if (followerPose == null) {
             consecutiveAcceptedFrames = 0;
             result.rejectFollowerMissing = true;
+            result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+            result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
             recordOutputs(result);
             return;
         }
@@ -70,6 +82,8 @@ public final class LocalizationDriftCorrection {
         if (mt1Pose3d == null) {
             consecutiveAcceptedFrames = 0;
             result.rejectNoObservation = true;
+            result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+            result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
             recordOutputs(result);
             return;
         }
@@ -80,6 +94,8 @@ public final class LocalizationDriftCorrection {
         if (mt1CalibratedPose == null) {
             consecutiveAcceptedFrames = 0;
             result.rejectNoObservation = true;
+            result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+            result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
             recordOutputs(result);
             return;
         }
@@ -105,6 +121,8 @@ public final class LocalizationDriftCorrection {
         if (!result.accepted) {
             consecutiveAcceptedFrames = 0;
             result.consecutiveAcceptedFrames = 0;
+            result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+            result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
             recordOutputs(result);
             return;
         }
@@ -117,6 +135,8 @@ public final class LocalizationDriftCorrection {
                 : translationAlphaSingleTag;
 
         if (!result.stableAccepted) {
+            result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+            result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
             recordOutputs(result);
             return;
         }
@@ -140,9 +160,60 @@ public final class LocalizationDriftCorrection {
                 Rotation2d.fromRadians(followerFtcPose.getRotation().getRadians())
         );
 
-        follower.setPose(toPedroPoseFromFtcCenteredMeters(result.correctedPose));
+        Pose desiredPedroPose = toPedroPoseFromFtcCenteredMeters(result.correctedPose);
+        double deltaPedroXIn = desiredPedroPose.getX() - followerPose.getX();
+        double deltaPedroYIn = desiredPedroPose.getY() - followerPose.getY();
+
+        double nextXOffsetIn = appliedFollowerXOffsetIn + deltaPedroXIn;
+        double nextYOffsetIn = appliedFollowerYOffsetIn + deltaPedroYIn;
+
+        if (applyFollowerOffsets(nextXOffsetIn, nextYOffsetIn)) {
+            appliedFollowerXOffsetIn = nextXOffsetIn;
+            appliedFollowerYOffsetIn = nextYOffsetIn;
+            result.usedOffsetApi = true;
+        } else {
+            follower.setPose(desiredPedroPose);
+            appliedFollowerXOffsetIn = 0.0;
+            appliedFollowerYOffsetIn = 0.0;
+            result.usedSetPoseFallback = true;
+        }
+
+        result.appliedFollowerXOffsetIn = appliedFollowerXOffsetIn;
+        result.appliedFollowerYOffsetIn = appliedFollowerYOffsetIn;
         result.applied = true;
         recordOutputs(result);
+    }
+
+    private static void syncFollowerReference() {
+        if (follower == lastFollowerRef) {
+            return;
+        }
+
+        lastFollowerRef = follower;
+        appliedFollowerXOffsetIn = 0.0;
+        appliedFollowerYOffsetIn = 0.0;
+        if (follower != null) {
+            applyFollowerOffsets(0.0, 0.0);
+        }
+    }
+
+    private static boolean applyFollowerOffsets(double xOffsetIn, double yOffsetIn) {
+        if (follower == null) {
+            return false;
+        }
+        boolean xOk = invokeSingleDoubleMethod(follower, "setXOffset", xOffsetIn);
+        boolean yOk = invokeSingleDoubleMethod(follower, "setYOffset", yOffsetIn);
+        return xOk && yOk;
+    }
+
+    private static boolean invokeSingleDoubleMethod(Object target, String methodName, double value) {
+        try {
+            Method method = target.getClass().getMethod(methodName, double.class);
+            method.invoke(target, value);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static void recordOutputs(DriftCorrectionResult result) {
@@ -158,8 +229,12 @@ public final class LocalizationDriftCorrection {
         Logger.recordOutput(base + "/Diagnostics/TranslationErrorM", result.translationErrorM);
         Logger.recordOutput(base + "/Diagnostics/TranslationAlpha", result.translationAlpha);
         Logger.recordOutput(base + "/Diagnostics/AppliedStepMeters", result.appliedStepMeters);
+        Logger.recordOutput(base + "/Diagnostics/AppliedFollowerXOffsetIn", result.appliedFollowerXOffsetIn);
+        Logger.recordOutput(base + "/Diagnostics/AppliedFollowerYOffsetIn", result.appliedFollowerYOffsetIn);
         Logger.recordOutput(base + "/Diagnostics/Calibration/LoadedFromFile", result.biasLoadedFromFile ? 1.0 : 0.0);
         Logger.recordOutput(base + "/Diagnostics/Calibration/LoadStatus", result.biasLoadStatus);
+        Logger.recordOutput(base + "/Diagnostics/UsedOffsetApi", result.usedOffsetApi ? 1.0 : 0.0);
+        Logger.recordOutput(base + "/Diagnostics/UsedSetPoseFallback", result.usedSetPoseFallback ? 1.0 : 0.0);
         Logger.recordOutput(base + "/Diagnostics/Reject/Disabled", result.rejectDisabled ? 1.0 : 0.0);
         Logger.recordOutput(base + "/Diagnostics/Reject/FollowerMissing", result.rejectFollowerMissing ? 1.0 : 0.0);
         Logger.recordOutput(base + "/Diagnostics/Reject/NoObservation", result.rejectNoObservation ? 1.0 : 0.0);
@@ -270,6 +345,8 @@ public final class LocalizationDriftCorrection {
         boolean rejectRobotSpeed;
         boolean rejectTranslationJump;
         boolean rejectTurretOrientation;
+        boolean usedOffsetApi;
+        boolean usedSetPoseFallback;
         int consecutiveAcceptedFrames;
         int tagCount;
         double planarDistanceIn = Double.NaN;
@@ -277,6 +354,8 @@ public final class LocalizationDriftCorrection {
         double translationErrorM = Double.NaN;
         double translationAlpha = Double.NaN;
         double appliedStepMeters = Double.NaN;
+        double appliedFollowerXOffsetIn = Double.NaN;
+        double appliedFollowerYOffsetIn = Double.NaN;
         Pose2d followerPose;
         Pose2d mt1Pose;
         Pose2d correctedPose;
