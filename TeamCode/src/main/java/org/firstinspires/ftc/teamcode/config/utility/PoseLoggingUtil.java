@@ -17,24 +17,9 @@ public final class PoseLoggingUtil {
     private static final double INCHES_TO_METERS = 0.0254;
     private static final double FIELD_SIZE_IN = 144.0;
     private static final double FIELD_HALF_IN = FIELD_SIZE_IN * 0.5;
-    private static final CandidatePoseState mt1SmoothedState = new CandidatePoseState();
+    private static final LocalizationCandidateCalculator localizationCandidateCalculator = new LocalizationCandidateCalculator();
 
     public static boolean enableLocalizationCandidateLogging = true;
-    public static int mt1MinTagCount = 1;
-    public static int mt1PreferredMultiTagCount = 2;
-    public static double mt1MaxPlanarDistanceIn = 140.0;
-    public static double mt1MaxRobotSpeedInS = 24.0;
-    public static double mt1MaxTranslationJumpMeters = 1.25;
-    public static double mt1MaxHeadingJumpDeg = 75.0;
-    public static double mt1StateResetJumpMeters = 2.0;
-    public static double mt1StateResetHeadingJumpDeg = 120.0;
-    public static double mt1PositionAlphaSingleTag = 0.08;
-    public static double mt1PositionAlphaMultiTag = 0.22;
-    public static double mt1HeadingAlphaSingleTag = 0.04;
-    public static double mt1HeadingAlphaMultiTag = 0.14;
-    public static double hybridTranslationGain = 0.45;
-    public static double hybridVisionHeadingGainSingleTag = 0.08;
-    public static double hybridVisionHeadingGainMultiTag = 0.22;
 
     private PoseLoggingUtil() {
     }
@@ -148,88 +133,14 @@ public final class PoseLoggingUtil {
                 ? robot.outtake.vision.getPlanarDistanceInches()
                 : Double.NaN;
         double robotSpeedInS = getFollowerSpeedInS();
-
-        boolean rejectNoObservation = (mt1PoseComp == null);
-        boolean rejectTagCount = !rejectNoObservation && tagCount < mt1MinTagCount;
-        boolean rejectDistance = !rejectNoObservation && Double.isFinite(planarDistanceIn) && planarDistanceIn > mt1MaxPlanarDistanceIn;
-        boolean rejectRobotSpeed = !rejectNoObservation && Double.isFinite(robotSpeedInS) && robotSpeedInS > mt1MaxRobotSpeedInS;
-
-        double translationErrorMeters = Double.NaN;
-        double headingErrorDeg = Double.NaN;
-        boolean rejectTranslationJump = false;
-        boolean rejectHeadingJump = false;
-        if (pinpointFtcPose != null && mt1PoseComp != null) {
-            translationErrorMeters = distanceMeters(pinpointFtcPose, mt1PoseComp);
-            headingErrorDeg = Math.toDegrees(angleDifferenceRad(
-                    pinpointFtcPose.getRotation().getRadians(),
-                    mt1PoseComp.getRotation().getRadians()
-            ));
-            rejectTranslationJump = translationErrorMeters > mt1MaxTranslationJumpMeters;
-            rejectHeadingJump = Math.abs(headingErrorDeg) > mt1MaxHeadingJumpDeg;
-        }
-
-        boolean accepted = !rejectNoObservation
-                && !rejectTagCount
-                && !rejectDistance
-                && !rejectRobotSpeed
-                && !rejectTranslationJump
-                && !rejectHeadingJump;
-
-        Logger.recordOutput("Localization/Candidates/MT1Smoothed/Accepted", accepted ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/MT1Smoothed/Valid", mt1SmoothedState.valid ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/TagCount", tagCount);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/PlanarDistanceIn", planarDistanceIn);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/RobotSpeedInS", robotSpeedInS);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/PinpointVsMT1TranslationErrorM", translationErrorMeters);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/PinpointVsMT1HeadingErrorDeg", headingErrorDeg);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/Reject/NoObservation", rejectNoObservation ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/Reject/TagCount", rejectTagCount ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/Reject/Distance", rejectDistance ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/Reject/RobotSpeed", rejectRobotSpeed ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/Reject/TranslationJump", rejectTranslationJump ? 1.0 : 0.0);
-        Logger.recordOutput("Localization/Candidates/Diagnostics/Reject/HeadingJump", rejectHeadingJump ? 1.0 : 0.0);
-
-        if (accepted && mt1PoseComp != null) {
-            double positionAlpha = getPositionAlpha(tagCount);
-            double headingAlpha = getHeadingAlpha(tagCount);
-            Logger.recordOutput("Localization/Candidates/Diagnostics/PositionAlpha", positionAlpha);
-            Logger.recordOutput("Localization/Candidates/Diagnostics/HeadingAlpha", headingAlpha);
-            updateMt1SmoothedState(mt1PoseComp, positionAlpha, headingAlpha);
-        }
-
-        if (mt1SmoothedState.valid) {
-            Pose2d mt1SmoothedPose = mt1SmoothedState.toPose2d();
-            Logger.recordOutput("Localization/Candidates/MT1Smoothed/Pose2d", mt1SmoothedPose);
-
-            if (pinpointFtcPose != null) {
-                Pose2d hybridPinpointHeading = new Pose2d(
-                        lerp(pinpointFtcPose.getX(), mt1SmoothedPose.getX(), hybridTranslationGain),
-                        lerp(pinpointFtcPose.getY(), mt1SmoothedPose.getY(), hybridTranslationGain),
-                        Rotation2d.fromRadians(pinpointFtcPose.getRotation().getRadians())
-                );
-                Logger.recordOutput("Localization/Candidates/HybridPinpointHeading/Pose2d", hybridPinpointHeading);
-
-                double visionHeadingGain = getHybridVisionHeadingGain(tagCount);
-                Pose2d hybridVisionHeading = new Pose2d(
-                        hybridPinpointHeading.getX(),
-                        hybridPinpointHeading.getY(),
-                        Rotation2d.fromRadians(angleLerp(
-                                pinpointFtcPose.getRotation().getRadians(),
-                                mt1SmoothedPose.getRotation().getRadians(),
-                                visionHeadingGain
-                        ))
-                );
-                Logger.recordOutput("Localization/Candidates/HybridVisionHeading/Pose2d", hybridVisionHeading);
-                Logger.recordOutput("Localization/Candidates/Diagnostics/HybridVisionHeadingGain", visionHeadingGain);
-                Logger.recordOutput("Localization/Candidates/Diagnostics/PinpointVsSmoothedTranslationErrorM",
-                        distanceMeters(pinpointFtcPose, mt1SmoothedPose));
-                Logger.recordOutput("Localization/Candidates/Diagnostics/PinpointVsSmoothedHeadingErrorDeg",
-                        Math.toDegrees(angleDifferenceRad(
-                                pinpointFtcPose.getRotation().getRadians(),
-                                mt1SmoothedPose.getRotation().getRadians()
-                        )));
-            }
-        }
+        LocalizationCandidateCalculator.CandidateResult result = localizationCandidateCalculator.update(
+            pinpointFtcPose,
+            mt1PoseComp,
+            tagCount,
+            planarDistanceIn,
+            robotSpeedInS
+        );
+        localizationCandidateCalculator.recordOutputs("Localization/Candidates", result);
     }
 
     private static Pose3D getMt2Pose(LLResult latest) {
@@ -310,84 +221,5 @@ public final class PoseLoggingUtil {
             return Double.NaN;
         }
         return FollowerManager.follower.getVelocity().getMagnitude();
-    }
-
-    private static double getPositionAlpha(int tagCount) {
-        return (tagCount >= mt1PreferredMultiTagCount) ? mt1PositionAlphaMultiTag : mt1PositionAlphaSingleTag;
-    }
-
-    private static double getHeadingAlpha(int tagCount) {
-        return (tagCount >= mt1PreferredMultiTagCount) ? mt1HeadingAlphaMultiTag : mt1HeadingAlphaSingleTag;
-    }
-
-    private static double getHybridVisionHeadingGain(int tagCount) {
-        return (tagCount >= mt1PreferredMultiTagCount) ? hybridVisionHeadingGainMultiTag : hybridVisionHeadingGainSingleTag;
-    }
-
-    private static void updateMt1SmoothedState(Pose2d observation, double positionAlpha, double headingAlpha) {
-        if (observation == null) {
-            return;
-        }
-
-        if (!mt1SmoothedState.valid) {
-            mt1SmoothedState.set(observation);
-            return;
-        }
-
-        double jumpMeters = distanceMeters(mt1SmoothedState.toPose2d(), observation);
-        double jumpHeadingDeg = Math.toDegrees(angleDifferenceRad(
-                mt1SmoothedState.headingRad,
-                observation.getRotation().getRadians()
-        ));
-        if (jumpMeters > mt1StateResetJumpMeters || Math.abs(jumpHeadingDeg) > mt1StateResetHeadingJumpDeg) {
-            mt1SmoothedState.set(observation);
-            return;
-        }
-
-        mt1SmoothedState.xMeters = lerp(mt1SmoothedState.xMeters, observation.getX(), positionAlpha);
-        mt1SmoothedState.yMeters = lerp(mt1SmoothedState.yMeters, observation.getY(), positionAlpha);
-        mt1SmoothedState.headingRad = angleLerp(mt1SmoothedState.headingRad, observation.getRotation().getRadians(), headingAlpha);
-        mt1SmoothedState.valid = true;
-    }
-
-    private static double distanceMeters(Pose2d a, Pose2d b) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        return Math.hypot(dx, dy);
-    }
-
-    private static double lerp(double start, double end, double alpha) {
-        double clampedAlpha = Math.max(0.0, Math.min(1.0, alpha));
-        return start + ((end - start) * clampedAlpha);
-    }
-
-    private static double angleLerp(double startRad, double endRad, double alpha) {
-        return wrapRad(startRad + (angleDifferenceRad(startRad, endRad) * Math.max(0.0, Math.min(1.0, alpha))));
-    }
-
-    private static double angleDifferenceRad(double fromRad, double toRad) {
-        return wrapRad(toRad - fromRad);
-    }
-
-    private static class CandidatePoseState {
-        private boolean valid = false;
-        private double xMeters = 0.0;
-        private double yMeters = 0.0;
-        private double headingRad = 0.0;
-
-        private void set(Pose2d pose) {
-            if (pose == null) {
-                valid = false;
-                return;
-            }
-            xMeters = pose.getX();
-            yMeters = pose.getY();
-            headingRad = pose.getRotation().getRadians();
-            valid = true;
-        }
-
-        private Pose2d toPose2d() {
-            return new Pose2d(xMeters, yMeters, Rotation2d.fromRadians(headingRad));
-        }
     }
 }

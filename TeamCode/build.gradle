@@ -201,5 +201,28 @@ afterEvaluate {
                 systemProperty 'compareRequireValid', pRequireValid.toString()
             }
         }
+
+        tasks.register('runLocalizationCandidateReplay', JavaExec) {
+            group = 'verification'
+            description = 'Replay an RLOG and write ReplayOutputs for localization candidate calculations.'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.LocalizationCandidateReplayCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pOutputDir = project.findProperty('psikitReplayOutputDir')
+            def pOutputName = project.findProperty('psikitReplayOutputName')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pOutputDir != null) {
+                systemProperty 'psikitReplayOutputDir', pOutputDir.toString()
+            }
+            if (pOutputName != null) {
+                systemProperty 'psikitReplayOutputName', pOutputName.toString()
+            }
+        }
     }
 }
