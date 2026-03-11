@@ -89,7 +89,12 @@ public class Spinner implements Subsystem {
     }
 
     public void overrideSpinIn(){
-        overridePow = 0.7;
+        overridePow = 0.8;
+        spinOverride = true;
+    }
+
+    public void overrideSpinOut(){
+        overridePow = -0.8;
         spinOverride = true;
     }
 
