@@ -213,6 +213,9 @@ afterEvaluate {
             def pLog = project.findProperty('psikitReplayLog')
             def pOutputDir = project.findProperty('psikitReplayOutputDir')
             def pOutputName = project.findProperty('psikitReplayOutputName')
+            def pCalX = project.findProperty('mt1CalibrationXMeters')
+            def pCalY = project.findProperty('mt1CalibrationYMeters')
+            def pCalHeading = project.findProperty('mt1CalibrationHeadingDeg')
 
             if (pLog != null) {
                 systemProperty 'psikitReplayLog', pLog.toString()
@@ -222,6 +225,38 @@ afterEvaluate {
             }
             if (pOutputName != null) {
                 systemProperty 'psikitReplayOutputName', pOutputName.toString()
+            }
+            if (pCalX != null) {
+                systemProperty 'mt1CalibrationXMeters', pCalX.toString()
+            }
+            if (pCalY != null) {
+                systemProperty 'mt1CalibrationYMeters', pCalY.toString()
+            }
+            if (pCalHeading != null) {
+                systemProperty 'mt1CalibrationHeadingDeg', pCalHeading.toString()
+            }
+        }
+
+        tasks.register('runMt1CalibrationSummary', JavaExec) {
+            group = 'verification'
+            description = 'Estimate signed MT1 field offset versus Pinpoint from an RLOG file.'
+
+            dependsOn(unitTestTask.dependsOn)
+            classpath = unitTestTask.classpath
+            mainClass = 'org.firstinspires.ftc.teamcode.psikit.Mt1CalibrationSummaryCliMain'
+
+            def pLog = project.findProperty('psikitReplayLog')
+            def pMaxSpeed = project.findProperty('mt1CalibrationMaxRobotSpeedInS')
+            def pRequireAccepted = project.findProperty('mt1CalibrationRequireAccepted')
+
+            if (pLog != null) {
+                systemProperty 'psikitReplayLog', pLog.toString()
+            }
+            if (pMaxSpeed != null) {
+                systemProperty 'mt1CalibrationMaxRobotSpeedInS', pMaxSpeed.toString()
+            }
+            if (pRequireAccepted != null) {
+                systemProperty 'mt1CalibrationRequireAccepted', pRequireAccepted.toString()
             }
         }
     }

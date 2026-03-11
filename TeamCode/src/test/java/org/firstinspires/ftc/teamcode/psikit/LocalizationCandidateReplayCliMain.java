@@ -16,6 +16,9 @@ public final class LocalizationCandidateReplayCliMain {
     private static final String LOG_PATH_PROPERTY = "psikitReplayLog";
     private static final String OUTPUT_DIR_PROPERTY = "psikitReplayOutputDir";
     private static final String OUTPUT_NAME_PROPERTY = "psikitReplayOutputName";
+    private static final String CAL_X_PROPERTY = "mt1CalibrationXMeters";
+    private static final String CAL_Y_PROPERTY = "mt1CalibrationYMeters";
+    private static final String CAL_HEADING_PROPERTY = "mt1CalibrationHeadingDeg";
 
     private LocalizationCandidateReplayCliMain() {
     }
@@ -24,6 +27,7 @@ public final class LocalizationCandidateReplayCliMain {
         Path logPath = resolveRequiredPath(LOG_PATH_PROPERTY);
         Path outputDir = resolveOutputDir();
         String outputName = resolveOutputName(logPath);
+        configureCalibrationFromProperties();
 
         Files.createDirectories(outputDir);
 
@@ -79,9 +83,27 @@ public final class LocalizationCandidateReplayCliMain {
         System.out.println("[LocalizationReplay] input=" + logPath.toAbsolutePath());
         System.out.println("[LocalizationReplay] outputDir=" + outputDir.toAbsolutePath());
         System.out.println("[LocalizationReplay] outputName=" + outputName);
+        System.out.println("[LocalizationReplay] mt1CalibrationXMeters=" + LocalizationCandidateCalculator.mt1FieldOffsetXMeters);
+        System.out.println("[LocalizationReplay] mt1CalibrationYMeters=" + LocalizationCandidateCalculator.mt1FieldOffsetYMeters);
+        System.out.println("[LocalizationReplay] mt1CalibrationHeadingDeg=" + LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg);
         System.out.println("[LocalizationReplay] cycles=" + cycles);
         System.out.println("[LocalizationReplay] accepted=" + acceptedCount);
     }
+
+        private static void configureCalibrationFromProperties() {
+        LocalizationCandidateCalculator.mt1FieldOffsetXMeters = resolveDouble(
+            CAL_X_PROPERTY,
+            LocalizationCandidateCalculator.mt1FieldOffsetXMeters
+        );
+        LocalizationCandidateCalculator.mt1FieldOffsetYMeters = resolveDouble(
+            CAL_Y_PROPERTY,
+            LocalizationCandidateCalculator.mt1FieldOffsetYMeters
+        );
+        LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg = resolveDouble(
+            CAL_HEADING_PROPERTY,
+            LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg
+        );
+        }
 
     private static Pose2d readPose2d(LogTable entry, String key, boolean valid) {
         if (!valid) {
@@ -117,5 +139,13 @@ public final class LocalizationCandidateReplayCliMain {
             fileName = fileName.substring(0, fileName.length() - 5);
         }
         return fileName + "_LocalizationReplay";
+    }
+
+    private static double resolveDouble(String propertyName, double defaultValue) {
+        String raw = System.getProperty(propertyName);
+        if (raw == null || raw.trim().isEmpty()) {
+            return defaultValue;
+        }
+        return Double.parseDouble(raw.trim());
     }
 }

@@ -18,6 +18,9 @@ public final class PoseLoggingUtil {
     private static final double FIELD_SIZE_IN = 144.0;
     private static final double FIELD_HALF_IN = FIELD_SIZE_IN * 0.5;
     private static final LocalizationCandidateCalculator localizationCandidateCalculator = new LocalizationCandidateCalculator();
+    private static GlobalVariables.AllianceColor lastLoadedBiasAlliance = null;
+    private static boolean lastLoadedBiasValid = false;
+    private static String lastLoadedBiasStatus = "not_loaded";
 
     public static boolean enableLocalizationCandidateLogging = true;
 
@@ -128,6 +131,8 @@ public final class PoseLoggingUtil {
     }
 
     private static void logLocalizationCandidates(Robot robot, LLResult latest, Pose2d pinpointFtcPose, Pose2d mt1PoseComp) {
+        ensureAllianceBiasLoaded();
+
         int tagCount = getTagCount(latest);
         double planarDistanceIn = (robot != null && robot.outtake != null && robot.outtake.vision != null)
                 ? robot.outtake.vision.getPlanarDistanceInches()
@@ -141,6 +146,38 @@ public final class PoseLoggingUtil {
             robotSpeedInS
         );
         localizationCandidateCalculator.recordOutputs("Localization/Candidates", result);
+        Logger.recordOutput("Localization/Candidates/Diagnostics/Calibration/Alliance", GlobalVariables.getAllianceColorName());
+        Logger.recordOutput("Localization/Candidates/Diagnostics/Calibration/LoadedFromFile", lastLoadedBiasValid ? 1.0 : 0.0);
+        Logger.recordOutput("Localization/Candidates/Diagnostics/Calibration/LoadStatus", lastLoadedBiasStatus);
+    }
+
+    private static void ensureAllianceBiasLoaded() {
+        GlobalVariables.AllianceColor allianceColor = GlobalVariables.getAllianceColor();
+        if (allianceColor == lastLoadedBiasAlliance) {
+            return;
+        }
+
+        lastLoadedBiasAlliance = allianceColor;
+        try {
+            LocalizationBiasFileStore.Bias bias = LocalizationBiasFileStore.loadAllianceBias(allianceColor);
+            if (bias.valid) {
+                LocalizationBiasFileStore.applyBiasToCalculator(bias);
+                lastLoadedBiasValid = true;
+                lastLoadedBiasStatus = "loaded";
+            } else {
+                LocalizationCandidateCalculator.mt1FieldOffsetXMeters = 0.0;
+                LocalizationCandidateCalculator.mt1FieldOffsetYMeters = 0.0;
+                LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg = 0.0;
+                lastLoadedBiasValid = false;
+                lastLoadedBiasStatus = "missing";
+            }
+        } catch (Exception e) {
+            LocalizationCandidateCalculator.mt1FieldOffsetXMeters = 0.0;
+            LocalizationCandidateCalculator.mt1FieldOffsetYMeters = 0.0;
+            LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg = 0.0;
+            lastLoadedBiasValid = false;
+            lastLoadedBiasStatus = "error:" + e.getClass().getSimpleName();
+        }
     }
 
     private static Pose3D getMt2Pose(LLResult latest) {

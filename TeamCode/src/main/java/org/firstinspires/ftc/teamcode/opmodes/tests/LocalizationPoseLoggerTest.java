@@ -12,6 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
+import org.firstinspires.ftc.teamcode.config.utility.LocalizationCandidateCalculator;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.PoseLoggingUtil;
 import org.psilynx.psikit.core.Logger;
@@ -34,6 +35,7 @@ public class LocalizationPoseLoggerTest extends OpMode {
     public static double startHeadingDeg = 30.0; //0.0;
     public static boolean useAllianceDefaultHeading = false;
     public static boolean autoCaptureOffsetsAtStart = true;
+    public static boolean applyCapturedBotposeOffsetToCandidateCalibration = true;
     public static boolean logPinpointInFtcCenterRotated = true;
     public static double yawOffsetStepDeg = 1.0;
     public static double yawOffsetFastStepDeg = 5.0;
@@ -234,6 +236,12 @@ public class LocalizationPoseLoggerTest extends OpMode {
             botDyMeters = pinpointPose2d.getY() - botPose2d.getY();
             botDHeadingRad = wrapRad(pinpointPose2d.getRotation().getRadians() - botPose2d.getRotation().getRadians());
             hasBotposeOffset = true;
+
+            if (applyCapturedBotposeOffsetToCandidateCalibration) {
+                LocalizationCandidateCalculator.mt1FieldOffsetXMeters = botDxMeters;
+                LocalizationCandidateCalculator.mt1FieldOffsetYMeters = botDyMeters;
+                LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg = Math.toDegrees(botDHeadingRad);
+            }
         }
     }
 
@@ -338,6 +346,7 @@ public class LocalizationPoseLoggerTest extends OpMode {
         joinedTelemetry.addData("LL Yaw Send OK", robot.outtake.vision.wasLastRobotYawSendSuccessful());
         joinedTelemetry.addData("MT2 Offset Captured", hasMt2Offset);
         joinedTelemetry.addData("Botpose Offset Captured", hasBotposeOffset);
+        joinedTelemetry.addData("Apply Bot Offset -> Candidates", applyCapturedBotposeOffsetToCandidateCalibration);
         joinedTelemetry.addData("Pinpoint Valid", followerPose != null);
         if (followerPose != null) {
             joinedTelemetry.addData("Pinpoint (in)", "x=%.1f y=%.1f h=%.1f",
@@ -361,6 +370,20 @@ public class LocalizationPoseLoggerTest extends OpMode {
                     botPose3d.getPosition().y,
                     botPose3d.getOrientation().getYaw(AngleUnit.DEGREES));
         }
+
+        if (hasBotposeOffset) {
+            joinedTelemetry.addData("Bot Offset Suggest (m)", "dx=%.3f dy=%.3f dh=%.1f",
+                botDxMeters,
+                botDyMeters,
+                Math.toDegrees(botDHeadingRad));
+            joinedTelemetry.addData("Bot Offset Suggest (in)", "dx=%.1f dy=%.1f",
+                botDxMeters / INCHES_TO_METERS,
+                botDyMeters / INCHES_TO_METERS);
+        }
+        joinedTelemetry.addData("Candidate Cal (m)", "x=%.3f y=%.3f h=%.1f",
+            LocalizationCandidateCalculator.mt1FieldOffsetXMeters,
+            LocalizationCandidateCalculator.mt1FieldOffsetYMeters,
+            LocalizationCandidateCalculator.mt1FieldOffsetHeadingDeg);
 
         joinedTelemetry.update();
     }

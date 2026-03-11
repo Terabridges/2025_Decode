@@ -9,6 +9,9 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 @Configurable
 public class LocalizationCandidateCalculator {
 
+    public static double mt1FieldOffsetXMeters = 0.0;
+    public static double mt1FieldOffsetYMeters = 0.0;
+    public static double mt1FieldOffsetHeadingDeg = 0.0;
     public static int mt1MinTagCount = 1;
     public static int mt1PreferredMultiTagCount = 2;
     public static double mt1MaxPlanarDistanceIn = 140.0;
@@ -30,20 +33,21 @@ public class LocalizationCandidateCalculator {
     public CandidateResult update(Pose2d pinpointFtcPose, Pose2d mt1PoseComp, int tagCount,
                                   double planarDistanceIn, double robotSpeedInS) {
         CandidateResult result = new CandidateResult();
+        result.mt1CalibratedPose = applyMt1Calibration(mt1PoseComp);
         result.tagCount = tagCount;
         result.planarDistanceIn = planarDistanceIn;
         result.robotSpeedInS = robotSpeedInS;
 
-        result.rejectNoObservation = (mt1PoseComp == null);
+        result.rejectNoObservation = (result.mt1CalibratedPose == null);
         result.rejectTagCount = !result.rejectNoObservation && tagCount < mt1MinTagCount;
         result.rejectDistance = !result.rejectNoObservation && Double.isFinite(planarDistanceIn) && planarDistanceIn > mt1MaxPlanarDistanceIn;
         result.rejectRobotSpeed = !result.rejectNoObservation && Double.isFinite(robotSpeedInS) && robotSpeedInS > mt1MaxRobotSpeedInS;
 
-        if (pinpointFtcPose != null && mt1PoseComp != null) {
-            result.translationErrorMeters = distanceMeters(pinpointFtcPose, mt1PoseComp);
+        if (pinpointFtcPose != null && result.mt1CalibratedPose != null) {
+            result.translationErrorMeters = distanceMeters(pinpointFtcPose, result.mt1CalibratedPose);
             result.headingErrorDeg = Math.toDegrees(angleDifferenceRad(
                     pinpointFtcPose.getRotation().getRadians(),
-                    mt1PoseComp.getRotation().getRadians()
+                result.mt1CalibratedPose.getRotation().getRadians()
             ));
             result.rejectTranslationJump = result.translationErrorMeters > mt1MaxTranslationJumpMeters;
             result.rejectHeadingJump = Math.abs(result.headingErrorDeg) > mt1MaxHeadingJumpDeg;
@@ -53,16 +57,18 @@ public class LocalizationCandidateCalculator {
         }
 
         result.accepted = !result.rejectNoObservation
-                && !result.rejectTagCount
-                && !result.rejectDistance
-                && !result.rejectRobotSpeed
-                && !result.rejectTranslationJump
-                && !result.rejectHeadingJump;
+            && !result.rejectTagCount
+            && !result.rejectDistance
+            && !result.rejectRobotSpeed
+            && !result.rejectTranslationJump
+            && !result.rejectHeadingJump;
+        result.translationAccepted = result.accepted;
+        result.headingAccepted = result.accepted;
 
-        if (result.accepted && mt1PoseComp != null) {
+        if (result.accepted && result.mt1CalibratedPose != null) {
             result.positionAlpha = getPositionAlpha(tagCount);
             result.headingAlpha = getHeadingAlpha(tagCount);
-            updateMt1SmoothedState(mt1PoseComp, result.positionAlpha, result.headingAlpha);
+            updateMt1SmoothedState(result.mt1CalibratedPose, result.positionAlpha, result.headingAlpha, true);
         }
 
         result.smoothedValid = mt1SmoothedState.valid;
@@ -98,10 +104,16 @@ public class LocalizationCandidateCalculator {
 
     public void recordOutputs(String basePrefix, CandidateResult result) {
         Logger.recordOutput(basePrefix + "/MT1Smoothed/Accepted", result.accepted ? 1.0 : 0.0);
+        Logger.recordOutput(basePrefix + "/MT1Smoothed/TranslationAccepted", result.translationAccepted ? 1.0 : 0.0);
+        Logger.recordOutput(basePrefix + "/MT1Smoothed/HeadingAccepted", result.headingAccepted ? 1.0 : 0.0);
         Logger.recordOutput(basePrefix + "/MT1Smoothed/Valid", result.smoothedValid ? 1.0 : 0.0);
+        Logger.recordOutput(basePrefix + "/MT1Calibrated/Valid", result.mt1CalibratedPose != null ? 1.0 : 0.0);
         Logger.recordOutput(basePrefix + "/Diagnostics/TagCount", result.tagCount);
         Logger.recordOutput(basePrefix + "/Diagnostics/PlanarDistanceIn", result.planarDistanceIn);
         Logger.recordOutput(basePrefix + "/Diagnostics/RobotSpeedInS", result.robotSpeedInS);
+        Logger.recordOutput(basePrefix + "/Diagnostics/Calibration/XMeters", mt1FieldOffsetXMeters);
+        Logger.recordOutput(basePrefix + "/Diagnostics/Calibration/YMeters", mt1FieldOffsetYMeters);
+        Logger.recordOutput(basePrefix + "/Diagnostics/Calibration/HeadingDeg", mt1FieldOffsetHeadingDeg);
         Logger.recordOutput(basePrefix + "/Diagnostics/PinpointVsMT1TranslationErrorM", result.translationErrorMeters);
         Logger.recordOutput(basePrefix + "/Diagnostics/PinpointVsMT1HeadingErrorDeg", result.headingErrorDeg);
         Logger.recordOutput(basePrefix + "/Diagnostics/Reject/NoObservation", result.rejectNoObservation ? 1.0 : 0.0);
@@ -116,6 +128,9 @@ public class LocalizationCandidateCalculator {
         }
         if (Double.isFinite(result.headingAlpha)) {
             Logger.recordOutput(basePrefix + "/Diagnostics/HeadingAlpha", result.headingAlpha);
+        }
+        if (result.mt1CalibratedPose != null) {
+            Logger.recordOutput(basePrefix + "/MT1Calibrated/Pose2d", result.mt1CalibratedPose);
         }
         if (result.mt1SmoothedPose != null) {
             Logger.recordOutput(basePrefix + "/MT1Smoothed/Pose2d", result.mt1SmoothedPose);
@@ -139,6 +154,20 @@ public class LocalizationCandidateCalculator {
         mt1SmoothedState.valid = false;
     }
 
+    public static Pose2d applyMt1Calibration(Pose2d mt1Pose) {
+        if (mt1Pose == null) {
+            return null;
+        }
+
+        return new Pose2d(
+                mt1Pose.getX() + mt1FieldOffsetXMeters,
+                mt1Pose.getY() + mt1FieldOffsetYMeters,
+                Rotation2d.fromRadians(wrapRad(
+                        mt1Pose.getRotation().getRadians() + Math.toRadians(mt1FieldOffsetHeadingDeg)
+                ))
+        );
+    }
+
     private static double getPositionAlpha(int tagCount) {
         return (tagCount >= mt1PreferredMultiTagCount) ? mt1PositionAlphaMultiTag : mt1PositionAlphaSingleTag;
     }
@@ -151,7 +180,7 @@ public class LocalizationCandidateCalculator {
         return (tagCount >= mt1PreferredMultiTagCount) ? hybridVisionHeadingGainMultiTag : hybridVisionHeadingGainSingleTag;
     }
 
-    private void updateMt1SmoothedState(Pose2d observation, double positionAlpha, double headingAlpha) {
+    private void updateMt1SmoothedState(Pose2d observation, double positionAlpha, double headingAlpha, boolean updateHeading) {
         if (observation == null) {
             return;
         }
@@ -173,7 +202,9 @@ public class LocalizationCandidateCalculator {
 
         mt1SmoothedState.xMeters = lerp(mt1SmoothedState.xMeters, observation.getX(), positionAlpha);
         mt1SmoothedState.yMeters = lerp(mt1SmoothedState.yMeters, observation.getY(), positionAlpha);
-        mt1SmoothedState.headingRad = angleLerp(mt1SmoothedState.headingRad, observation.getRotation().getRadians(), headingAlpha);
+        if (updateHeading) {
+            mt1SmoothedState.headingRad = angleLerp(mt1SmoothedState.headingRad, observation.getRotation().getRadians(), headingAlpha);
+        }
         mt1SmoothedState.valid = true;
     }
 
@@ -233,6 +264,8 @@ public class LocalizationCandidateCalculator {
         public boolean rejectTranslationJump;
         public boolean rejectHeadingJump;
         public boolean accepted;
+        public boolean translationAccepted;
+        public boolean headingAccepted;
         public boolean smoothedValid;
         public double translationErrorMeters = Double.NaN;
         public double headingErrorDeg = Double.NaN;
@@ -241,6 +274,7 @@ public class LocalizationCandidateCalculator {
         public double hybridVisionHeadingGain = Double.NaN;
         public double pinpointVsSmoothedTranslationErrorM = Double.NaN;
         public double pinpointVsSmoothedHeadingErrorDeg = Double.NaN;
+        public Pose2d mt1CalibratedPose;
         public Pose2d mt1SmoothedPose;
         public Pose2d hybridPinpointHeadingPose;
         public Pose2d hybridVisionHeadingPose;
