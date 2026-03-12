@@ -187,6 +187,8 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
+        // Keep recoil-comp code available, but disable it during teleop runtime.
+        Outtake.enableRpmRecoilComp = false;
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
