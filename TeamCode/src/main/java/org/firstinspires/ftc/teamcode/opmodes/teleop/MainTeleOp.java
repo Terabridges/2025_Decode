@@ -275,7 +275,7 @@ public class MainTeleOp extends OpMode {
         if (!currentGamepad1.b && previousGamepad1.b) {
             gp1BLongPressHandled = false;
         }
-        toggleSorting.update(gamepad1.start || gamepad2.start);
+        toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.b);
     }
@@ -300,12 +300,12 @@ public class MainTeleOp extends OpMode {
                     loopTimeTracker.getTrailingAverageMs()
                 );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
-            joinedTelemetry.addData("Shoot Pending", shootRequestPending);
-            if (robot != null && robot.outtake != null) {
-                joinedTelemetry.addData("In Launch Zone", robot.outtake.isAnyPartInLaunchZone());
-            }
-            joinedTelemetry.addData("TXLights", robot.txLights);
-            joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.turretAimCommandOffsetDeg);
+            //joinedTelemetry.addData("Shoot Pending", shootRequestPending);
+//            if (robot != null && robot.outtake != null) {
+//                joinedTelemetry.addData("In Launch Zone", robot.outtake.isAnyPartInLaunchZone());
+//            }
+            //joinedTelemetry.addData("TXLights", robot.txLights);
+            //joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.turretAimCommandOffsetDeg);
             joinedTelemetry.update();
 
             telemetryTimer.reset();

@@ -22,7 +22,7 @@ Start: Toggle Sorting
 Touchpad:
 
 GAMEPAD2
-A: Toggle Turret Lock
+A: //switch between offsets
 X: reset follower
 Y: change motif
 B: flash color
@@ -31,15 +31,15 @@ Left: // change to reset blue far
 Up: setLongValues
 Right: // change to reset red far
 LeftBump: //decrease turret offset
-RightBump: Flash Color if See Turret //increase turret offset
+RightBump: //increase turret offset
 LeftTrig: //turret manual left
 RightTrig: //turret manual right
 LStX:
-LStY: //control kicker
+LStY: control kicker
 RStX:
 RStY:
 LStBut: clutch mega up
 RStBut: Empty Balls
 Back: unjam
-Start: Toggle Sorting
+Start: Reset Offset
 Touchpad:

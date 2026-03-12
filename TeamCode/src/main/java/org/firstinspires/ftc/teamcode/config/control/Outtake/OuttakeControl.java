@@ -16,6 +16,10 @@ public class OuttakeControl implements Control {
     Gamepad gp1;
     Gamepad gp2;
     Robot robot;
+    EdgeDetector increaseOffset = new EdgeDetector(()-> outtake.increaseOffset());
+    EdgeDetector decreaseOffset = new EdgeDetector(()-> outtake.decreaseOffset());
+    EdgeDetector changeOffset = new EdgeDetector(()-> outtake.changeOffsetType());
+    EdgeDetector resetOffset = new EdgeDetector(()-> outtake.resetOffset());
 
 
     //---------------- Constructor ----------------
@@ -36,14 +40,22 @@ public class OuttakeControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        increaseOffset.update(gp2.right_bumper);
+        decreaseOffset.update(gp2.left_bumper);
+        changeOffset.update(gp2.a);
+        resetOffset.update(gp2.start);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Recoil Comp Enabled", Outtake.enableRpmRecoilComp);
-        telemetry.addData("Recoil RPM Error", "%.1f", outtake.getLastRecoilRpmError());
-        telemetry.addData("Recoil Hood Delta", "%.4f", outtake.getLastRecoilHoodDelta());
-        telemetry.addData("Hood Base/Comp", "%.4f / %.4f", outtake.getLastBaseHoodPos(), outtake.getLastCompedHoodPos());
+        //telemetry.addData("Recoil Comp Enabled", Outtake.enableRpmRecoilComp);
+        //telemetry.addData("Recoil RPM Error", "%.1f", outtake.getLastRecoilRpmError());
+        //telemetry.addData("Recoil Hood Delta", "%.4f", outtake.getLastRecoilHoodDelta());
+        //telemetry.addData("Hood Base/Comp", "%.4f / %.4f", outtake.getLastBaseHoodPos(), outtake.getLastCompedHoodPos());
+
+        telemetry.addData("Offset Type", outtake.currentOffsetType);
+        telemetry.addData("Heading Offset", outtake.autoTxAimOffsetDeadbandDeg);
+        telemetry.addData("RPM Type", outtake.shooter.flywheelOffset);
+        telemetry.addData("Hood Type", outtake.shooter.hoodOffset);
     }
 }
