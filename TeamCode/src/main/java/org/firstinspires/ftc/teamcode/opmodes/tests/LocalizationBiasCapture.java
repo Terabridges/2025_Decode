@@ -33,8 +33,8 @@ public class LocalizationBiasCapture extends OpMode {
     private static final double FIELD_SIZE_IN = 144.0;
     private static final double FIELD_HALF_IN = FIELD_SIZE_IN * 0.5;
 
-    public static double startXIn = 72.0;
-    public static double startYIn = 72.0;
+    public static double startXIn =57.0; // 72.0;
+    public static double startYIn =8.75; // 72.0;
     public static double startHeadingDeg = 0.0;
     public static boolean useAllianceDefaultHeading = true;
     public static boolean autoLoadStoredBiasAtStart = true;
@@ -67,7 +67,7 @@ public class LocalizationBiasCapture extends OpMode {
     public void start() {
         double headingRad = Math.toRadians(startHeadingDeg);
         if (useAllianceDefaultHeading) {
-            headingRad = GlobalVariables.isBlueAlliance() ? Math.PI : 0.0;
+        //    headingRad = GlobalVariables.isBlueAlliance() ? Math.PI : 0.0;
         }
         FollowerManager.initFollower(hardwareMap, new Pose(startXIn, startYIn, headingRad));
 

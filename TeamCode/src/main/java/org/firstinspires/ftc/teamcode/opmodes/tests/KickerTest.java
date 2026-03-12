@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -53,11 +54,13 @@ public class KickerTest extends OpMode {
         kickerLeft = hardwareMap.get(CRServo.class, "kickL");
         kickerRight = hardwareMap.get(CRServo.class, "kickR");
         kickerAnalog = hardwareMap.get(AnalogInput.class, "kickAnalog");
-        kickerEnc = new AbsoluteAnalogEncoder(kickerAnalog, 3.3, 0, 1);
+        kickerEnc = new AbsoluteAnalogEncoder(kickerAnalog, 3.3, 80, 1);
         kickerLeft.setDirection(CRServo.Direction.FORWARD);
-        kickerRight.setDirection(CRServo.Direction.FORWARD);
+        kickerRight.setDirection(CRServo.Direction.REVERSE);
 
     }
+
+    //355 down, goes down until 10
 
     @Override
     public void start(){

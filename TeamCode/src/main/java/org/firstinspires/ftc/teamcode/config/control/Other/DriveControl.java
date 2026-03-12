@@ -37,7 +37,11 @@ public class DriveControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        slowModeRE.update(gp1.dpad_down);
+        if (gp1.right_trigger > 0.1){
+            drive.useSlowMode = true;
+        } else {
+            drive.useSlowMode = false;
+        }
         resetFollower.update(gp2.x);
 
         if (drive.useFieldCentric){

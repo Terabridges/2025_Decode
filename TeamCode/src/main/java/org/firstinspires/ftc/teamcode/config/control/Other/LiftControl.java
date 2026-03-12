@@ -35,11 +35,12 @@ public class LiftControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        lift.moveKicker(gp2.left_stick_y);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-
+        telemetry.addData("Kicker Pos", lift.kickerCurrentPos);
+        telemetry.addData("Kicker Pow", lift.speed);
     }
 }
