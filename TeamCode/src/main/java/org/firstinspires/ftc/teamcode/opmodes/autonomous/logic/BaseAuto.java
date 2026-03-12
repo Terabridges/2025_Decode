@@ -61,7 +61,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double MOTIF_ACQUIRE_TIMEOUT = 1.5;
     private static final double MOTIF_ACQUIRE_AIM_WINDOW_SECONDS = 0.5;
     private static final double STATE_TIMEOUT_SECONDS = 4.0; // fallback: force state advance after this time
-    private static final double GO_TO_PICKUP_IDLE_HOLD_SECONDS = 0.1;
+    private static final double GO_TO_PICKUP_IDLE_HOLD_SECONDS = 0.0;
     private static final double GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
     private static final double GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
     private static final int GO_TO_PICKUP_SLOWDOWN_MAX_ROW = 2;
@@ -82,10 +82,9 @@ public abstract class BaseAuto extends OpMode {
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_POWER = 0.75;
     private static final double BACKROW_COMPLETE_PICKUP_POWER = 1.0;
     private static final double ROW4_COMPLETE_PICKUP_POWER = 0.60;
-    private static final double ROW4_INTERMEDIATE_PICKUP_POWER = 0.75;
-    private static final double ROW4_GO_TO_PICKUP_HOLD_SECONDS = 0.1;
-    private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.2;
-    private static final double ROW4_PRE_SHOOT_HEADING_DEG_BLUE = 25.0;
+    private static final double ROW4_INTERMEDIATE_PICKUP_POWER = 0.85;
+    private static final double ROW4_GO_TO_PICKUP_HOLD_SECONDS = 0.0;
+    private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.0;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
@@ -163,7 +162,6 @@ public abstract class BaseAuto extends OpMode {
     private boolean farBackrowForwardStarted = false;
     private boolean row4CompletePickupIdleSeen = false;
     private boolean row4IntermediatePickupStarted = false;
-    private boolean row4PreShootHeadingAlignStarted = false;
     private boolean backRowGoToShootReverseActive = false;
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
@@ -593,7 +591,6 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.COMPLETE_PICKUP);
         resetStateTimer();
         row4CompletePickupIdleSeen = false;
-        row4PreShootHeadingAlignStarted = false;
         row4CompletePickupHoldTimer.reset();
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
@@ -1066,7 +1063,12 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean shouldAcquireMotifAfterPreloadShot() {
-        return range == Range.CLOSE_RANGE && !preloadComplete;
+        // Close auto resolves motif during first pickup after preload.
+        // Long auto only re-acquires after preload if motif is still unresolved.
+        boolean motifAlreadyResolved = acquiredMotifId == AutoMotifTracker.TAG_MOTIF_1
+                || acquiredMotifId == AutoMotifTracker.TAG_MOTIF_2
+                || acquiredMotifId == AutoMotifTracker.TAG_MOTIF_3;
+        return range == Range.LONG_RANGE && !preloadComplete && !motifAlreadyResolved;
     }
 
     protected boolean shouldBypassAcquireMotif() {
@@ -1107,35 +1109,12 @@ public abstract class BaseAuto extends OpMode {
                     row4CompletePickupIdleSeen = true;
                     row4CompletePickupHoldTimer.reset();
                 }
-                if (!row4PreShootHeadingAlignStarted) {
-                    Pose currentPose = (follower != null) ? follower.getPose() : null;
-                    if (currentPose == null) {
-                        return true;
-                    }
-                    Pose headingAlignPose = new Pose(
-                            currentPose.getX() + 0.01,
-                            currentPose.getY(),
-                            getRow4PreShootHeadingRad()
-                    );
-                    followPath(pathLibrary.buildLinear(currentPose, headingAlignPose), ROW4_COMPLETE_PICKUP_POWER);
-                    row4PreShootHeadingAlignStarted = true;
-                    row4CompletePickupIdleSeen = false;
-                    row4CompletePickupHoldTimer.reset();
-                    return false;
-                }
                 return row4CompletePickupHoldTimer.seconds() >= ROW4_COMPLETE_PICKUP_HOLD_SECONDS;
             }
             row4CompletePickupIdleSeen = false;
             return false;
         }
         return hasReachedPickupBallTarget() || followerIdle() || row4PickupTimedOut();
-    }
-
-    protected double getRow4PreShootHeadingRad() {
-        if (alliance == Alliance.BLUE) {
-            return Math.toRadians(ROW4_PRE_SHOOT_HEADING_DEG_BLUE);
-        }
-        return Math.toRadians(180.0 - ROW4_PRE_SHOOT_HEADING_DEG_BLUE);
     }
 
     protected boolean goToPickupAdvanceReady() {
