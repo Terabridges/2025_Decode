@@ -65,11 +65,27 @@ public abstract class BaseAuto extends OpMode {
     private static final double GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
     private static final double GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
     private static final int GO_TO_PICKUP_SLOWDOWN_MAX_ROW = 2;
+    private static final double GO_TO_SHOOT_SLOWDOWN_START_T = 0.60;
+    private static final double GO_TO_SHOOT_SLOWDOWN_POWER = 0.60;
+    private static final double BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T = 0.60;
+    private static final double BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER = 0.60;
+    private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
+    private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
+    private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 1.5;
     private static final double FAR_PICKUP_ZONE_POWER = 0.5;
+    private static final double FAR_BACKROW_REPOSITION_POWER = 0.5;
+    private static final double FAR_BACKROW_REPOSITION_BACK_DELTA_X = 8.0;
+    private static final double FAR_BACKROW_REPOSITION_FORWARD_DELTA_X = 4.0;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 0.75;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_POWER = 0.75;
+    private static final double BACKROW_COMPLETE_PICKUP_POWER = 1.0;
+    private static final double ROW4_COMPLETE_PICKUP_POWER = 0.60;
+    private static final double ROW4_INTERMEDIATE_PICKUP_POWER = 0.75;
+    private static final double ROW4_GO_TO_PICKUP_HOLD_SECONDS = 0.1;
+    private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.2;
+    private static final double ROW4_PRE_SHOOT_HEADING_DEG_BLUE = 25.0;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
@@ -82,6 +98,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double RELEASE_COMPLETE_POWER = 0.75;
     private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.85;
     private static final double SHOOT_START_PATH_PROGRESS = 0.85;
+    private static final double LONG_RANGE_GO_TO_SHOOT_END_PROGRESS_T = 0.90;
 
     private final Alliance alliance;
     private Range range;
@@ -128,6 +145,7 @@ public abstract class BaseAuto extends OpMode {
     private final ElapsedTime completeShootReadyTimer = new ElapsedTime();
     private final ElapsedTime motifAcquireTimer = new ElapsedTime();
     private final ElapsedTime goToPickupIdleTimer = new ElapsedTime();
+    private final ElapsedTime row4CompletePickupHoldTimer = new ElapsedTime();
     private final ElapsedTime closeLoopGoToPickupIdleTimer = new ElapsedTime();
     private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
     private AutoStates acquireMotifReturnState = AutoStates.GO_TO_SHOOT;
@@ -138,6 +156,15 @@ public abstract class BaseAuto extends OpMode {
     private boolean delayIntakeUntilPostPreload = false;
     private boolean goToPickupIdleSeen = false;
     private boolean goToPickupSlowdownApplied = false;
+    private boolean goToShootSlowdownApplied = false;
+    private boolean backRowCompletePickupSlowdownApplied = false;
+    private boolean backRowGoToPickupSlowdownApplied = false;
+    private boolean farBackrowRetreatStarted = false;
+    private boolean farBackrowForwardStarted = false;
+    private boolean row4CompletePickupIdleSeen = false;
+    private boolean row4IntermediatePickupStarted = false;
+    private boolean row4PreShootHeadingAlignStarted = false;
+    private boolean backRowGoToShootReverseActive = false;
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
 
@@ -174,6 +201,8 @@ public abstract class BaseAuto extends OpMode {
         robot.outtake.shooter.useFlywheelPID = true;
         // Ensure shoot-while-moving lead compensation is active in auto.
         Outtake.enableMovingShotLead = true;
+        // Keep recoil-comp code available, but disable it during auto runtime.
+        Outtake.enableRpmRecoilComp = false;
         if (delayIntakeUntilPostPreload) {
             // Keep intake idle until preload shooting is completed.
             robot.intake.autoIntake = false;
@@ -237,6 +266,10 @@ public abstract class BaseAuto extends OpMode {
 
         autoMachine.update();
         maybeStartGoToPickupSlowdown();
+        maybeStartBackRowGoToPickupSlowdown();
+        maybeStartBackRowCompletePickupSlowdown();
+        maybeStartGoToShootSlowdown();
+        maybeReverseIntakeLateLongRangeGoToShoot();
         maybeStartShootAtPathProgress();
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
         robot.update();
@@ -450,6 +483,7 @@ public abstract class BaseAuto extends OpMode {
     protected void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
         resetStateTimer();
+        goToShootSlowdownApplied = false;
 
         if (!preloadComplete && !shouldShootPreload()) {
             return;
@@ -495,6 +529,9 @@ public abstract class BaseAuto extends OpMode {
         goToPickupIdleSeen = false;
         goToPickupSlowdownApplied = false;
         goToPickupIdleTimer.reset();
+        row4IntermediatePickupStarted = false;
+        robot.intake.spinner.setMegaSpinIn();
+        robot.intake.clutch.setClutchUp();
 
         refreshCurrentAbsoluteRow();
         buildPath(PathRequest.GO_TO_PICKUP);
@@ -505,7 +542,8 @@ public abstract class BaseAuto extends OpMode {
         if (activeState != AutoStates.GO_TO_PICKUP || goToPickupSlowdownApplied) {
             return;
         }
-        if (currentAbsoluteRow > GO_TO_PICKUP_SLOWDOWN_MAX_ROW) {
+        boolean applyLongRangeSmoothing = range == Range.LONG_RANGE;
+        if (!applyLongRangeSmoothing && currentAbsoluteRow > GO_TO_PICKUP_SLOWDOWN_MAX_ROW) {
             return;
         }
         if (follower == null || follower.getCurrentPath() == null) {
@@ -518,22 +556,55 @@ public abstract class BaseAuto extends OpMode {
         }
 
         Pose currentPose = follower.getPose();
-        PathChain finalApproachPath = pathLibrary.goToPickup(currentPose, alliance, range, currentAbsoluteRow);
+        PathChain finalApproachPath = buildGoToPickupPath(currentPose);
+        if (finalApproachPath == null) {
+            return;
+        }
         followPath(finalApproachPath, GO_TO_PICKUP_SLOWDOWN_POWER);
         goToPickupSlowdownApplied = true;
         goToPickupIdleSeen = false;
         goToPickupIdleTimer.reset();
     }
 
+    protected void maybeStartGoToShootSlowdown() {
+        if (goToShootSlowdownApplied || !isLongRangeGoToShootState()) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < GO_TO_SHOOT_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        if (currentPose == null) {
+            return;
+        }
+
+        PathChain finalApproachPath = buildLongRangeGoToShootPath(currentPose);
+        followPath(finalApproachPath, GO_TO_SHOOT_SLOWDOWN_POWER);
+        goToShootSlowdownApplied = true;
+    }
+
     protected void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
         resetStateTimer();
+        row4CompletePickupIdleSeen = false;
+        row4PreShootHeadingAlignStarted = false;
+        row4CompletePickupHoldTimer.reset();
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
         buildPath(PathRequest.COMPLETE_PICKUP);
         // TODO: run intake command while completing pickup path.
-        followPath(pickupPath, intakeSpeed);
+        if (currentAbsoluteRow == 4) {
+            followPath(pickupPath, ROW4_COMPLETE_PICKUP_POWER);
+        } else {
+            followPath(pickupPath, intakeSpeed);
+        }
     }
 
     protected void onExitCompletePickup() {
@@ -568,6 +639,9 @@ public abstract class BaseAuto extends OpMode {
         closeLoopGoToPickupIdleSeen = false;
         closeLoopGoToPickupIdleTimer.reset();
         closeLoopGoToPickupPart2Started = false;
+        backRowGoToPickupSlowdownApplied = false;
+        farBackrowRetreatStarted = false;
+        farBackrowForwardStarted = false;
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
@@ -575,7 +649,8 @@ public abstract class BaseAuto extends OpMode {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             followPath(backRowLoopPickupPath, CLOSE_LOOP_PICKUP_ZONE_POWER);
         } else {
-            followPath(backRowLoopPickupPath, FAR_PICKUP_ZONE_POWER);
+            // Far back-row go-to-pickup: full speed first, then smooth down after 60%.
+            followPath(backRowLoopPickupPath);
         }
     }
 
@@ -588,6 +663,7 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_SHOOT);
 
         resetStateTimer();
+        goToShootSlowdownApplied = false;
 
         ensureIntakeRunningForGoToShoot();
         // Stop intake transfer and pre-stage shot while driving to score.
@@ -606,11 +682,12 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP);
 
         resetStateTimer();
+        backRowCompletePickupSlowdownApplied = false;
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
         buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
-        followPath(backRowLoopCompletePickupPath, intakeSpeed);
+        followPath(backRowLoopCompletePickupPath, BACKROW_COMPLETE_PICKUP_POWER);
     }
 
     protected void onEnterCloseLoopCompletePickup() {
@@ -693,6 +770,9 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected PathChain buildGoToPickupPath(Pose currentPose) {
+        if (currentAbsoluteRow == 4) {
+            return pathLibrary.buildLinear(currentPose, poses.getRow4GoToPickup(alliance));
+        }
         if (shouldUseCurvedRow2GoToPickup()
                 && range == Range.CLOSE_RANGE
                 && currentAbsoluteRow == 2) {
@@ -706,11 +786,107 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected PathChain buildPickupPath(Pose currentPose) {
+        if (currentAbsoluteRow == 4) {
+            return pathLibrary.row4CompletePickup(currentPose, alliance);
+        }
         return pathLibrary.pickup(currentPose, alliance, range, currentAbsoluteRow);
+    }
+
+    protected void maybeStartBackRowCompletePickupSlowdown() {
+        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP
+                || backRowCompletePickupSlowdownApplied) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        PathChain finalApproachPath = buildBackRowLoopCompletePickupPath(currentPose);
+        if (finalApproachPath == null) {
+            return;
+        }
+        followPath(finalApproachPath, BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER);
+        backRowCompletePickupSlowdownApplied = true;
+    }
+
+    protected void maybeStartBackRowGoToPickupSlowdown() {
+        if (activeState != AutoStates.BACKROW_LOOP_GO_TO_PICKUP
+                || (closeLoopEnabled && range == Range.CLOSE_RANGE)
+                || backRowGoToPickupSlowdownApplied) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < BACKROW_GO_TO_PICKUP_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        PathChain finalApproachPath = buildBackRowLoopGoToPickupPath(currentPose);
+        followPath(finalApproachPath, BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER);
+        backRowGoToPickupSlowdownApplied = true;
+    }
+
+    protected void maybeReverseIntakeLateLongRangeGoToShoot() {
+        if (robot == null || robot.intake == null || robot.intake.spinner == null) {
+            return;
+        }
+
+        boolean longRangeShootPathState = range == Range.LONG_RANGE
+                && (activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT);
+
+        if (!longRangeShootPathState) {
+            if (backRowGoToShootReverseActive) {
+                robot.intake.autoIntake = true;
+                robot.intake.spinner.autoSpin = true;
+                robot.intake.spinner.setMegaSpinIn();
+                backRowGoToShootReverseActive = false;
+            }
+            return;
+        }
+
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT)) {
+            return;
+        }
+
+        if (pathT >= 0.60) {
+            if (!backRowGoToShootReverseActive) {
+                // Reverse intake for the final 40% of back-row go-to-shoot.
+                robot.intake.autoIntake = false;
+                robot.intake.spinner.autoSpin = true;
+                robot.intake.spinner.overrideSpinZero();
+                robot.intake.spinner.setMegaSpinOut();
+                backRowGoToShootReverseActive = true;
+            }
+        } else if (backRowGoToShootReverseActive) {
+            robot.intake.autoIntake = true;
+            robot.intake.spinner.autoSpin = true;
+            robot.intake.spinner.setMegaSpinIn();
+            backRowGoToShootReverseActive = false;
+        }
     }
 
     protected PathChain buildGoToScorePath(Pose currentPose) {
         Pose scorePose = getScorePoseForCurrentShot();
+        if (range == Range.LONG_RANGE) {
+            return pathLibrary.goToScoreAtProgress(currentPose, scorePose, LONG_RANGE_GO_TO_SHOOT_END_PROGRESS_T);
+        }
         boolean isRow2GoToShoot = currentAbsoluteRow == 2;
         boolean closeNonFinalShot = range == Range.CLOSE_RANGE
                 && preloadComplete
@@ -739,8 +915,8 @@ public abstract class BaseAuto extends OpMode {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             return pathLibrary.closeLoopCompletePickup(currentPose, alliance);
         }
-        // Back-row loop always intakes from absolute row 4.
-        return pathLibrary.pickup(currentPose, alliance, Range.LONG_RANGE, 4);
+        // Far back-row loop does movement in GO_TO_PICKUP + hold; no extra complete-pickup path.
+        return null;
     }
 
     protected PathChain buildBackRowLoopGoToScorePath(Pose currentPose) {
@@ -749,7 +925,30 @@ public abstract class BaseAuto extends OpMode {
             boolean isFinalLoopShot = shouldExitBackRowLoop();
             return pathLibrary.closeLoopGoToShoot(currentPose, alliance, scorePose, isFinalLoopShot);
         }
+        if (range == Range.LONG_RANGE) {
+            return pathLibrary.goToScoreAtProgress(currentPose, scorePose, LONG_RANGE_GO_TO_SHOOT_END_PROGRESS_T);
+        }
         return pathLibrary.goToScore(currentPose, scorePose);
+    }
+
+    protected PathChain buildLongRangeGoToShootPath(Pose currentPose) {
+        if (currentPose == null) {
+            return null;
+        }
+        if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT) {
+            return buildBackRowLoopGoToScorePath(currentPose);
+        }
+        return buildGoToScorePath(currentPose);
+    }
+
+    protected boolean isLongRangeGoToShootState() {
+        if (range != Range.LONG_RANGE) {
+            return false;
+        }
+        return activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT;
     }
 
     protected PathChain buildReleaseCompletePath(Pose currentPose) {
@@ -899,7 +1098,44 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean pickupAdvanceReady() {
+        if (activeState == AutoStates.COMPLETE_PICKUP && currentAbsoluteRow == 4) {
+            if (row4PickupTimedOut()) {
+                return true;
+            }
+            if (followerIdle()) {
+                if (!row4CompletePickupIdleSeen) {
+                    row4CompletePickupIdleSeen = true;
+                    row4CompletePickupHoldTimer.reset();
+                }
+                if (!row4PreShootHeadingAlignStarted) {
+                    Pose currentPose = (follower != null) ? follower.getPose() : null;
+                    if (currentPose == null) {
+                        return true;
+                    }
+                    Pose headingAlignPose = new Pose(
+                            currentPose.getX() + 0.01,
+                            currentPose.getY(),
+                            getRow4PreShootHeadingRad()
+                    );
+                    followPath(pathLibrary.buildLinear(currentPose, headingAlignPose), ROW4_COMPLETE_PICKUP_POWER);
+                    row4PreShootHeadingAlignStarted = true;
+                    row4CompletePickupIdleSeen = false;
+                    row4CompletePickupHoldTimer.reset();
+                    return false;
+                }
+                return row4CompletePickupHoldTimer.seconds() >= ROW4_COMPLETE_PICKUP_HOLD_SECONDS;
+            }
+            row4CompletePickupIdleSeen = false;
+            return false;
+        }
         return hasReachedPickupBallTarget() || followerIdle() || row4PickupTimedOut();
+    }
+
+    protected double getRow4PreShootHeadingRad() {
+        if (alliance == Alliance.BLUE) {
+            return Math.toRadians(ROW4_PRE_SHOOT_HEADING_DEG_BLUE);
+        }
+        return Math.toRadians(180.0 - ROW4_PRE_SHOOT_HEADING_DEG_BLUE);
     }
 
     protected boolean goToPickupAdvanceReady() {
@@ -910,6 +1146,26 @@ public abstract class BaseAuto extends OpMode {
             if (!goToPickupIdleSeen) {
                 goToPickupIdleSeen = true;
                 goToPickupIdleTimer.reset();
+            }
+            if (currentAbsoluteRow == 4) {
+                if (!row4IntermediatePickupStarted) {
+                    if (goToPickupIdleTimer.seconds() < ROW4_GO_TO_PICKUP_HOLD_SECONDS) {
+                        return false;
+                    }
+                    Pose currentPose = (follower != null) ? follower.getPose() : null;
+                    PathChain intermediatePath = pathLibrary.buildLinear(
+                            currentPose,
+                            poses.getRow4IntermediatePickup(alliance)
+                    );
+                    followPath(intermediatePath, ROW4_INTERMEDIATE_PICKUP_POWER);
+                    row4IntermediatePickupStarted = true;
+                    // Keep this sub-step at the requested 75% power.
+                    goToPickupSlowdownApplied = true;
+                    goToPickupIdleSeen = false;
+                    goToPickupIdleTimer.reset();
+                    return false;
+                }
+                return goToPickupIdleTimer.seconds() >= ROW4_GO_TO_PICKUP_HOLD_SECONDS;
             }
             return goToPickupIdleTimer.seconds() >= GO_TO_PICKUP_IDLE_HOLD_SECONDS
                     && isHeadingSettledForGoToPickup();
@@ -948,10 +1204,41 @@ public abstract class BaseAuto extends OpMode {
             closeLoopGoToPickupIdleSeen = false;
             return stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
         }
-        if (stateTimedOut()) {
+        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS) {
             return true;
         }
-        return followerIdle();
+        if (!followerIdle()) {
+            return false;
+        }
+        if (!farBackrowRetreatStarted) {
+            Pose retreatTarget = offsetFarBackrowPickupPose(FAR_BACKROW_REPOSITION_BACK_DELTA_X);
+            followPath(pathLibrary.buildLinear(follower.getPose(), retreatTarget), FAR_BACKROW_REPOSITION_POWER);
+            farBackrowRetreatStarted = true;
+            farBackrowForwardStarted = false;
+            // Disable smooth-end rebuild after starting reposition legs.
+            backRowGoToPickupSlowdownApplied = true;
+            return false;
+        }
+        if (!farBackrowForwardStarted) {
+            Pose forwardTarget = offsetFarBackrowPickupPose(-FAR_BACKROW_REPOSITION_FORWARD_DELTA_X);
+            followPath(pathLibrary.buildLinear(follower.getPose(), forwardTarget), FAR_BACKROW_REPOSITION_POWER);
+            farBackrowForwardStarted = true;
+            return false;
+        }
+        return followerIdle() || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS;
+    }
+
+    protected Pose offsetFarBackrowPickupPose(double blueDeltaX) {
+        if (follower == null || follower.getPose() == null) {
+            return null;
+        }
+        Pose currentPose = follower.getPose();
+        double signedDeltaX = (alliance == Alliance.BLUE) ? blueDeltaX : -blueDeltaX;
+        return new Pose(
+                currentPose.getX() + signedDeltaX,
+                currentPose.getY(),
+                currentPose.getHeading()
+        );
     }
 
     protected boolean backRowCompletePickupAdvanceReady() {
@@ -976,7 +1263,7 @@ public abstract class BaseAuto extends OpMode {
                 && activeState != AutoStates.CLOSE_LOOP_COMPLETE_PICKUP) {
             return false;
         }
-        return stateTimer.seconds() >= ROW4_PICKUP_TIMEOUT_SECONDS;
+        return stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS;
     }
 
     protected boolean hasReachedPickupBallTarget() {
@@ -1141,6 +1428,10 @@ public abstract class BaseAuto extends OpMode {
         if (shootStartedInGoToShoot) {
             return;
         }
+        // Shoot-while-moving is only for close-range autos.
+        if (range != Range.CLOSE_RANGE) {
+            return;
+        }
         boolean shootPathState = activeState == AutoStates.GO_TO_SHOOT
                 || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
                 || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT;
@@ -1172,10 +1463,6 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean shouldStartShootSequence() {
-        // Require a brief settle window after entering COMPLETE_SHOOT so first shot is consistent.
-        if (completeShootReadyTimer.seconds() < COMPLETE_SHOOT_MIN_SETTLE_SECONDS) {
-            return false;
-        }
         return hasCompleteShootReadyConditions()
                 || completeShootReadyTimer.seconds() >= COMPLETE_SHOOT_READY_TIMEOUT_SECONDS;
     }

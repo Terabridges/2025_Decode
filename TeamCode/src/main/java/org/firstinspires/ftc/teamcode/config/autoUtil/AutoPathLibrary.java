@@ -42,8 +42,30 @@ public class AutoPathLibrary {
         return buildLinear(currentPose, poses.getPickupEnd(alliance, range, absoluteRow));
     }
 
+    /**
+     * Dedicated row-4 three-step pickup path for regular cycle pickup:
+     * current -> row4 start -> row4 step1 -> row4 end.
+     */
+    public PathChain pickupRow4ThreeStep(Pose currentPose, Alliance alliance, Range range) {
+        Pose step0 = poses.getPickupStart(alliance, range, 4);
+        Pose step1 = poses.getPickupRow4Step1(alliance);
+        Pose step2 = poses.getPickupEnd(alliance, range, 4);
+        return buildLinearThreeStep(currentPose, step0, step1, step2);
+    }
+
     public PathChain farPickupZone(Pose currentPose, Alliance alliance) {
         return buildLinear(currentPose, poses.getFarPickupZone(alliance));
+    }
+
+    /**
+     * Far back-row pickup uses a single intake path segment to the far pickup point.
+     */
+    public PathChain farBackRowCombinedPickup(Pose currentPose, Alliance alliance) {
+        return buildLinear(currentPose, poses.getFarPickupZone(alliance));
+    }
+
+    public PathChain row4CompletePickup(Pose currentPose, Alliance alliance) {
+        return buildLinear(currentPose, poses.getRow4CompletePickup(alliance));
     }
 
     public PathChain closeLoopPickup(Pose currentPose, Alliance alliance) {
@@ -74,6 +96,21 @@ public class AutoPathLibrary {
 
     public PathChain goToScore(Pose currentPose, Pose scorePose) {
         return buildLinearSmoothEnd(currentPose, scorePose, SCORE_SMOOTH_END_DISTANCE_IN);
+    }
+
+    /**
+     * Drives toward the score pose but ends early at a fraction of the segment length.
+     * Useful when final correction near the exact endpoint wastes cycle time.
+     */
+    public PathChain goToScoreAtProgress(Pose currentPose, Pose scorePose, double progressT) {
+        if (currentPose == null || scorePose == null) {
+            return null;
+        }
+        double t = Math.max(0.0, Math.min(1.0, progressT));
+        double x = currentPose.getX() + ((scorePose.getX() - currentPose.getX()) * t);
+        double y = currentPose.getY() + ((scorePose.getY() - currentPose.getY()) * t);
+        Pose earlyEndPose = new Pose(x, y, scorePose.getHeading());
+        return buildLinearSmoothEnd(currentPose, earlyEndPose, SCORE_SMOOTH_END_DISTANCE_IN);
     }
 
     public PathChain closeLoopGoToShoot(Pose currentPose, Alliance alliance, Pose shootPose, boolean useFinalShootControl) {
@@ -143,6 +180,21 @@ public class AutoPathLibrary {
                 .setLinearHeadingInterpolation(start.getHeading(), mid.getHeading())
                 .addPath(new BezierLine(mid, end))
                 .setLinearHeadingInterpolation(mid.getHeading(), end.getHeading())
+                .build();
+    }
+
+    private PathChain buildLinearThreeStep(Pose start, Pose mid1, Pose mid2, Pose end) {
+        if (follower == null || start == null || mid1 == null || mid2 == null || end == null) {
+            return null;
+        }
+
+        return follower.pathBuilder()
+                .addPath(new BezierLine(start, mid1))
+                .setLinearHeadingInterpolation(start.getHeading(), mid1.getHeading())
+                .addPath(new BezierLine(mid1, mid2))
+                .setLinearHeadingInterpolation(mid1.getHeading(), mid2.getHeading())
+                .addPath(new BezierLine(mid2, end))
+                .setLinearHeadingInterpolation(mid2.getHeading(), end.getHeading())
                 .build();
     }
 
