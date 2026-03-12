@@ -70,10 +70,10 @@ public abstract class BaseAuto extends OpMode {
     private static final double BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T = 0.60;
     private static final double BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER = 0.60;
     private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
-    private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
+    private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER = 0.75;
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
     private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 1.5;
-    private static final double FAR_PICKUP_ZONE_POWER = 0.5;
+    private static final double FAR_PICKUP_ZONE_POWER = 0.75;
     private static final double FAR_BACKROW_REPOSITION_POWER = 0.5;
     private static final double FAR_BACKROW_REPOSITION_BACK_DELTA_X = 8.0;
     private static final double FAR_BACKROW_REPOSITION_FORWARD_DELTA_X = 4.0;
@@ -649,8 +649,8 @@ public abstract class BaseAuto extends OpMode {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             followPath(backRowLoopPickupPath, CLOSE_LOOP_PICKUP_ZONE_POWER);
         } else {
-            // Far back-row go-to-pickup: full speed first, then smooth down after 60%.
-            followPath(backRowLoopPickupPath);
+            // Far back-row go-to-pickup: run full segment at requested 75% speed.
+            followPath(backRowLoopPickupPath, FAR_PICKUP_ZONE_POWER);
         }
     }
 

@@ -56,9 +56,9 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
     private static final AutoSpec FAR_BACKROW_RELEASE =
             new AutoSpec(Range.LONG_RANGE, true, false, true, 4, 3, 2);
     private static final AutoSpec FAR_BACKROW_ONLY =
-            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 2, 4);
+            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 1, 4);
     private static final AutoSpec FAR_BACKROW_PLUS_ONE =
-            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 2, 4, 3);
+            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 1, 4, 3);
 
     public SelectableAutoPathTesting() {
         super("Select Auto Path Test", c -> {

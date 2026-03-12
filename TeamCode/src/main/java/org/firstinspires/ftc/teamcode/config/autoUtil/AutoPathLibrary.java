@@ -54,7 +54,11 @@ public class AutoPathLibrary {
     }
 
     public PathChain farPickupZone(Pose currentPose, Alliance alliance) {
-        return buildLinear(currentPose, poses.getFarPickupZone(alliance));
+        return buildCurve(
+                currentPose,
+                poses.getFarPickupZoneControl(alliance),
+                poses.getFarPickupZone(alliance)
+        );
     }
 
     /**

@@ -80,6 +80,8 @@ public class AutoPoses {
 
     public Pose farPickupZoneB = poseDeg(15.5, 13.0, 30.0);
     public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 150.0);
+    public Pose farPickupZoneControlB = poseDeg(36.0, 24.0, 0.0);
+    public Pose farPickupZoneControlR = mirrorBluePose(farPickupZoneControlB);
     public Pose row4GoToPickupB = poseDeg(13.0, 16.0, 30.0);
     public Pose row4GoToPickupR = poseDeg(FIELD_SIZE - row4GoToPickupB.getX(), row4GoToPickupB.getY(), 150.0);
     public Pose row4IntermediatePickupB = poseDeg(13.0, 13.5, 30.0);
@@ -310,6 +312,10 @@ public class AutoPoses {
 
     public Pose getFarPickupZone(Alliance a) {
         return (a == Alliance.BLUE) ? farPickupZoneB : farPickupZoneR;
+    }
+
+    public Pose getFarPickupZoneControl(Alliance a) {
+        return (a == Alliance.BLUE) ? farPickupZoneControlB : farPickupZoneControlR;
     }
 
     public Pose getRow4GoToPickup(Alliance a) {
