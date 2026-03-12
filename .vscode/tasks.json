@@ -60,6 +60,27 @@
 			}
 		},
 		{
+			"label": "ADB: Capture Offline Diagnostics (192.168.43.1)",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\tools\\adb-capture-offline-diagnostics.ps1",
+				"-Endpoint",
+				"192.168.43.1:5555"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"focus": true
+			}
+		},
+		{
 			"label": "Sloth: Deploy TeamCode (deploySloth)",
 			"type": "shell",
 			"command": "${workspaceFolder}\\\\gradlew.bat",
