@@ -3,3 +3,4 @@ make kicker in teleop
 spin out before shooting to prevent 4 ball jam?
 Auto unjam based on timeout, or just let sam press button?
 make turret dead zone larger
+make offset buttons for gp2 make reset zones for gp2
