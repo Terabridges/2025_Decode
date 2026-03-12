@@ -40,9 +40,6 @@ public class ShooterControl implements Control {
     @Override
     public void update(){
         toggleUseFlywheel.update(gp1.y);
-        //setHoodTarget.update(gp1.b);
-        toggleCloseOverride.update(gp2.dpad_down);
-        toggleFarOverride.update(gp2.dpad_up);
     }
 
     @Override

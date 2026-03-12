@@ -23,38 +23,40 @@ public class Lift implements Subsystem {
     private AbsoluteAnalogEncoder kickerEnc;
 
     //---------------- Software ----------------
-
-    //forward limit: 95
-    //backward limit: 80
-    //motion goes from 80 to 0/360 down to 95
-    //should offset it
-
-    public double kickerPos = 0;
+    //355 up, goes down until 10
+    private double upLimit = 345;
+    private double downLimit = 20;
+    public double speed;
+    public double kickerCurrentPos = 330;
+    //also, note that gp y is inverted; pushing up yields -1
 
     //---------------- Constructor ----------------
     public Lift(HardwareMap map) {
         kickerLeft = map.get(CRServo.class, "kickL");
         kickerRight = map.get(CRServo.class, "kickR");
         kickerAnalog = map.get(AnalogInput.class, "kickAnalog");
-        kickerEnc = new AbsoluteAnalogEncoder(kickerAnalog, 3.3, 0, 1);
+        kickerEnc = new AbsoluteAnalogEncoder(kickerAnalog, 3.3, 86, 1);
         kickerLeft.setDirection(CRServo.Direction.FORWARD);
         kickerRight.setDirection(CRServo.Direction.REVERSE);
     }
 
     //---------------- Methods ----------------
+    //pow greater than one moves spindex down, aka using lift
+    public void moveKicker(double pow){
+        if (pow > 0.2) {
+            speed = Math.min(1.0, Math.pow(Math.abs(10 - kickerCurrentPos) / 160.0, 4));
+            kickerLeft.setPower(speed/4);
+            kickerRight.setPower(speed/4);
 
-    public void setKickerForward(double pow){
-        kickerLeft.setPower(-pow);
-        kickerRight.setPower(-pow);
-    }
+        } else if (pow < -0.2) {
+            speed = Math.min(1.0, Math.pow(Math.abs(355 - kickerCurrentPos) / 160.0, 4));
+            kickerLeft.setPower(-speed/4);
+            kickerRight.setPower(-speed/4);
 
-    public void setKickerBackward(double pow){
-        kickerLeft.setPower(pow);
-        kickerRight.setPower(pow);
-    }
-
-    public void getKickerPos(){
-        kickerPos = kickerEnc.getCurrentPosition();
+        } else {
+            kickerLeft.setPower(0);
+            kickerRight.setPower(0);
+        }
     }
 
     //---------------- Interface Methods ----------------
@@ -65,7 +67,7 @@ public class Lift implements Subsystem {
 
     @Override
     public void update(){
+        kickerCurrentPos = kickerEnc.getCurrentPosition();
 
     }
-
 }

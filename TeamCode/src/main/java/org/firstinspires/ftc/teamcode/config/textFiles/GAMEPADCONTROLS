@@ -1,16 +1,16 @@
 GAMEPAD1
-A: Toggle Turret Lock
+A:
 X: Shoot All Macro
 Y: Toggle Shooter
 B: Tap = Tx offset nudge, Hold 0.6s = Reset turret offset
-Down: Toggle Slowmode
+Down:
 Left: One Ball Left
 Up: Switch Sides
 Right: One Ball Right
 LeftBump: Spin In
 RightBump: Spin Out
-LeftTrig:
-RightTrig:
+LeftTrig: //hold for hold position
+RightTrig: hold for slowmode
 LStX: Movement
 LStY: Movement
 RStX: Movement
@@ -25,20 +25,20 @@ GAMEPAD2
 A: Toggle Turret Lock
 X: reset follower
 Y: change motif
-B: Get ready for shoot
+B: flash color
 Down: setShortValues
-Left: toggle auto intake
+Left: // change to reset blue far
 Up: setLongValues
-Right: put clutch mega up
-LeftBump:
-RightBump: Flash Color if See Turret
-LeftTrig:
-RightTrig:
+Right: // change to reset red far
+LeftBump: //decrease turret offset
+RightBump: Flash Color if See Turret //increase turret offset
+LeftTrig: //turret manual left
+RightTrig: //turret manual right
 LStX:
-LStY:
+LStY: //control kicker
 RStX:
 RStY:
-LStBut:
+LStBut: clutch mega up
 RStBut: Empty Balls
 Back: unjam
 Start: Toggle Sorting

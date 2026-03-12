@@ -36,7 +36,7 @@ public class IntakeControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        toggleAutoIntake.update(gp2.dpad_left);
+
     }
 
     @Override

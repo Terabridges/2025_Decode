@@ -273,10 +273,9 @@ public class MainTeleOp extends OpMode {
         if (!currentGamepad1.b && previousGamepad1.b) {
             gp1BLongPressHandled = false;
         }
-        getReadyShoot.update(gamepad2.b);
         toggleSorting.update(gamepad1.start || gamepad2.start);
         nextMotif.update(gamepad2.y);
-        flashLights.update(gamepad2.right_bumper);
+        flashLights.update(gamepad2.b);
     }
 
     public void controlsTelemetryUpdate() {
