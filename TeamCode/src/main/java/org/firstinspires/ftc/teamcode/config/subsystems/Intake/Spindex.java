@@ -84,6 +84,7 @@ public class Spindex implements Subsystem {
 
     private boolean shootMode = false;
 
+    public String currentSpindexServo = "both";
 
     public String[] ballList = {"G", "P", "P"};
     public String balls = "";
@@ -146,8 +147,30 @@ public class Spindex implements Subsystem {
         double rightBasePos = invertRight ? (1.0 - commandedServoPos) : commandedServoPos;
         double rightPos = clamp01(rightBasePos + rightServoOffset);
 
-        spindexLeft.setPosition(leftPos);
-        spindexRight.setPosition(rightPos);
+        if (currentSpindexServo.equals("both")) {
+            spindexLeft.setPosition(leftPos);
+            spindexRight.setPosition(rightPos);
+        } else if (currentSpindexServo.equals("left")){
+            spindexLeft.setPosition(leftPos);
+        } else if (currentSpindexServo.equals("right")){
+            spindexRight.setPosition(rightPos);
+        }
+    }
+
+    public void switchCurrentSpindexServo(){
+        if(currentSpindexServo.equals("both")){
+            currentSpindexServo = "left";
+            ((PwmControl) spindexLeft).setPwmEnable();
+            ((PwmControl) spindexRight).setPwmDisable();
+        } else if(currentSpindexServo.equals("left")){
+            currentSpindexServo = "right";
+            ((PwmControl) spindexLeft).setPwmDisable();
+            ((PwmControl) spindexRight).setPwmEnable();
+        } else if(currentSpindexServo.equals("right")){
+            currentSpindexServo = "both";
+            ((PwmControl) spindexLeft).setPwmEnable();
+            ((PwmControl) spindexRight).setPwmEnable();
+        }
     }
 
     public void setSpindexDegree(double degree){

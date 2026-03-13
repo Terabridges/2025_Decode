@@ -22,7 +22,7 @@ Start: Toggle Sorting
 Touchpad:
 
 GAMEPAD2
-A:
+A: switch current spindex servo
 X: flash color
 Y: change motif
 B: Same as gp1
