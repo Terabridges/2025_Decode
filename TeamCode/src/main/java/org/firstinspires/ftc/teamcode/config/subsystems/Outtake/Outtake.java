@@ -69,6 +69,7 @@ public class Outtake implements Subsystem {
     private double lastBaseHoodPos = 0.0;
     private double lastCompedHoodPos = 0.0;
 
+    public String currentOffsetType = "heading";
 
     //---------------- Constructor ----------------
     public Outtake(HardwareMap map) {
@@ -502,4 +503,43 @@ public class Outtake implements Subsystem {
         return Math.max(0.0, Math.min(1.0, value));
     }
 
+    public void increaseOffset(){
+        if (currentOffsetType.equals("heading")) {
+            autoTxAimOffsetDeadbandDeg += 1;
+        } else if (currentOffsetType.equals("rpm")) {
+            shooter.flywheelOffset += 25;
+        } else if (currentOffsetType.equals("hood")){
+            shooter.hoodOffset += 0.05;
+        }
+    }
+
+    public void decreaseOffset(){
+        if (currentOffsetType.equals("heading")) {
+            autoTxAimOffsetDeadbandDeg -= 1;
+        } else if (currentOffsetType.equals("rpm")) {
+            shooter.flywheelOffset -= 25;
+        } else if (currentOffsetType.equals("hood")){
+            shooter.hoodOffset -= 0.05;
+        }
+    }
+
+    public void changeOffsetType(){
+        if (currentOffsetType.equals("heading")) {
+            currentOffsetType = "rpm";
+        } else if (currentOffsetType.equals("rpm")) {
+            currentOffsetType = "hood";
+        } else if (currentOffsetType.equals("hood")){
+            currentOffsetType = "heading";
+        }
+    }
+
+    public void resetOffset(){
+        if (currentOffsetType.equals("heading")) {
+            autoTxAimOffsetDeadbandDeg = 0;
+        } else if (currentOffsetType.equals("rpm")) {
+            shooter.flywheelOffset = 0;
+        } else if (currentOffsetType.equals("hood")){
+            shooter.hoodOffset = 0;
+        }
+    }
 }

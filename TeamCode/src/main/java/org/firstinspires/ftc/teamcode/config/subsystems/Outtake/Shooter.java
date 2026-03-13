@@ -52,6 +52,9 @@ public class Shooter implements Subsystem {
 
     public boolean autoHood = true;
 
+    public double flywheelOffset = 0;
+    public double hoodOffset = 0;
+
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
         leftFlywheel = map.get(DcMotorEx.class, "fly_left");
@@ -124,7 +127,7 @@ public class Shooter implements Subsystem {
     }
 
     public void setHoodTarget(){
-        hood.setPosition(hoodPos);
+        hood.setPosition(util.clamp(hoodPos+hoodOffset, 0.46, 0.92));
     }
 
     public boolean isAtRPM(){
@@ -134,20 +137,24 @@ public class Shooter implements Subsystem {
     public void toggleCloseOverride(){
         if(flywheelOverride){
             flywheelOverride = false;
+            autoHood = true;
         } else {
             flywheelOverride = true;
+            autoHood = false;
             flywheelTargetRPM = closeRPM;
-            hoodPos = closeAngle;
+            hood.setPosition(closeAngle);
         }
     }
 
     public void toggleFarOverride(){
         if(flywheelOverride){
             flywheelOverride = false;
+            autoHood = true;
         } else {
             flywheelOverride = true;
+            autoHood = false;
             flywheelTargetRPM = farRPM;
-            hoodPos = farAngle;
+            hood.setPosition(farAngle);
         }
     }
 
@@ -161,9 +168,9 @@ public class Shooter implements Subsystem {
     public void update(){
         if (useFlywheelPID){
             if(!flywheelOverride) {
-                setFlywheel(flywheelTargetRPM);
+                setFlywheel(flywheelTargetRPM+flywheelOffset);
             } else {
-                setFlywheel(flywheelOverrideRPM);
+                setFlywheel(flywheelOverrideRPM+flywheelOffset);
             }
         } else {
             setFlywheelPow(0);
