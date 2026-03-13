@@ -51,6 +51,9 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double GP1_B_LONG_PRESS_RESET_SEC = 0.6;
+    private static final double FIELD_SIZE_IN = 144.0;
+    private static final double ROBOT_WIDTH_IN = 17.5;
+    private static final double ROBOT_LENGTH_IN = 18.0;
     public static boolean enableSectionTimingLogs = true;
     public static double autoOffsetStationarySeconds = 1.0;
     // Match the auto shooting "robot settled" gate.
@@ -278,6 +281,7 @@ public class MainTeleOp extends OpMode {
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.b);
+        updateManualFollowerPoseReset();
     }
 
     public void controlsTelemetryUpdate() {
@@ -380,6 +384,52 @@ public class MainTeleOp extends OpMode {
 
     private void logPsiKitData() {
         PoseLoggingUtil.logMainPoseDetails(robot);
+    }
+
+    private void updateManualFollowerPoseReset() {
+        if (FollowerManager.follower == null) {
+            return;
+        }
+
+        boolean gp2LeftPressed = currentGamepad2.dpad_left && !previousGamepad2.dpad_left;
+        boolean gp2RightPressed = currentGamepad2.dpad_right && !previousGamepad2.dpad_right;
+
+        if (!gp2LeftPressed && !gp2RightPressed) {
+            return;
+        }
+
+        Pose resetPose;
+        if (gp2LeftPressed) {
+            if (GlobalVariables.isBlueAlliance()) {
+                resetPose = new Pose(
+                        FIELD_SIZE_IN - (ROBOT_LENGTH_IN / 2.0),
+                        ROBOT_WIDTH_IN / 2.0,
+                        Math.toRadians(0.0)
+                );
+            } else {
+                resetPose = new Pose(
+                        ROBOT_LENGTH_IN / 2.0,
+                        ROBOT_WIDTH_IN / 2.0,
+                        Math.toRadians(0.0)
+                );
+            }
+        } else {
+            if (GlobalVariables.isBlueAlliance()) {
+                resetPose = new Pose(
+                        48.0 + (ROBOT_LENGTH_IN / 2.0),
+                        FIELD_SIZE_IN - (ROBOT_WIDTH_IN / 2.0),
+                        Math.toRadians(180.0)
+                );
+            } else {
+                resetPose = new Pose(
+                        FIELD_SIZE_IN - 48.0 - (ROBOT_LENGTH_IN / 2.0),
+                        FIELD_SIZE_IN - (ROBOT_WIDTH_IN / 2.0),
+                        Math.toRadians(180.0)
+                );
+            }
+        }
+
+        FollowerManager.follower.setPose(resetPose);
     }
 
     private static double nanosToMillis(long nanos) {
