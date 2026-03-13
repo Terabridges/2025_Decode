@@ -52,9 +52,10 @@ public abstract class BaseAuto extends OpMode {
 //            -0.02, 0.47, 0.18, 0.24, -0.01, 0.01);
 
     // ===== Constants =====
-    private static final double SHOOT_ACTION_SECONDS = 5.0;
+    private static final double SHOOT_ACTION_SECONDS = 2.5;
     private static final double COMPLETE_SHOOT_MIN_SETTLE_SECONDS = 0.25;
-    private static final double COMPLETE_SHOOT_READY_TIMEOUT_SECONDS = 2.0;
+    private static final double COMPLETE_SHOOT_READY_TIMEOUT_SECONDS = 0.6;
+    private static final double LONG_PRELOAD_COMPLETE_SHOOT_READY_TIMEOUT_SECONDS = 1.5;
     private static final double COMPLETE_SHOOT_TURRET_TOLERANCE_DEG = 2.0;
     private static final double SHOOT_SETTLE_MAX_TRANSLATIONAL_SPEED_IN_S = 1.5;
     private static final double SHOOT_SETTLE_MAX_ANGULAR_SPEED_DEG_S = 12.0;
@@ -87,7 +88,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double ROW4_COMPLETE_PICKUP_POWER = 0.60;
     private static final double ROW4_INTERMEDIATE_PICKUP_POWER = 0.85;
     private static final double ROW4_GO_TO_PICKUP_HOLD_SECONDS = 0.0;
-    private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.0;
+    private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.5;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 2.0;
@@ -105,6 +106,10 @@ public abstract class BaseAuto extends OpMode {
     private static final double LONG_RANGE_REVERSE_INTAKE_START_T = 0.60;
     private static final double CLOSE_RANGE_REVERSE_INTAKE_START_T = 0.55;
     private static final double CLOSE_RANGE_REVERSE_INTAKE_END_T = 0.80;
+    private static final double AUTO_LONG_TRIM_OFFSET_DEG = 2.0;
+    private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 6.0;
+    private static final double AUTO_TOTAL_SECONDS = 30.0;
+    private static final double FORCE_LEAVE_TIME_REMAINING_SECONDS = 2.0;
 
     private final Alliance alliance;
     private Range range;
@@ -174,6 +179,10 @@ public abstract class BaseAuto extends OpMode {
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
     private boolean closeLoopCompletePickupIdleSeen = false;
+    private int backRowLoopEntryBallCount = 0;
+    private boolean backRowLoopRetryUsed = false;
+    private boolean forceOneMoreBackRowLoop = false;
+    private boolean forceLeaveActivated = false;
 
     protected BaseAuto(Alliance alliance) {
         this.alliance = alliance;
@@ -210,6 +219,9 @@ public abstract class BaseAuto extends OpMode {
         Outtake.enableMovingShotLead = true;
         // Keep recoil-comp code available, but disable it during auto runtime.
         Outtake.enableRpmRecoilComp = false;
+        // Auto should not inherit teleop baseline trim by default.
+        Outtake.defaultTurretAimTrimOffsetDeg = 0.0;
+        Outtake.turretAimTrimOffsetDeg = 0.0;
         if (delayIntakeUntilPostPreload) {
             // Keep intake idle until preload shooting is completed.
             robot.intake.autoIntake = false;
@@ -239,6 +251,10 @@ public abstract class BaseAuto extends OpMode {
         currentAbsoluteRow = (rowsToRun > 0) ? rowSequence[0] : routePlanner.getStartingAbsoluteRow();
         preloadComplete = false;
         backRowLoopCyclesCompleted = 0;
+        backRowLoopEntryBallCount = 0;
+        backRowLoopRetryUsed = false;
+        forceOneMoreBackRowLoop = false;
+        forceLeaveActivated = false;
 
         FollowerManager.initFollower(hardwareMap, startPose);
         GlobalVariables.setAutoFollowerValid(false);
@@ -259,6 +275,7 @@ public abstract class BaseAuto extends OpMode {
     public void start() {
         autoMachine.start();
         robot.toInit();
+        Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
         if (shootAllMachine != null) {
             shootAllMachine.start();
         }
@@ -271,13 +288,19 @@ public abstract class BaseAuto extends OpMode {
     public void loop() {
         follower.update();
 
-        autoMachine.update();
+        if (shouldForceLeaveForMatchEnd()) {
+            forceLeaveActivated = true;
+            onEnterLeave();
+        } else if (!forceLeaveActivated) {
+            autoMachine.update();
+        }
         maybeStartGoToPickupSlowdown();
         maybeStartBackRowGoToPickupSlowdown();
         maybeStartBackRowCompletePickupSlowdown();
         maybeStartGoToShootSlowdown();
         maybeReverseIntakeLateLongRangeGoToShoot();
         maybeStartShootAtPathProgress();
+        Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
         robot.update();
         maybeResolveMotifDuringFirstPickupAfterPreload();
@@ -322,6 +345,24 @@ public abstract class BaseAuto extends OpMode {
         telemetry.update();
 
         drawCurrentAndHistory();
+    }
+
+    private boolean shouldForceLeaveForMatchEnd() {
+        if (forceLeaveActivated) {
+            return false;
+        }
+        if (robot == null || robot.outtake == null) {
+            return false;
+        }
+        if (activeState == AutoStates.LEAVE) {
+            return false;
+        }
+        double timeRemaining = AUTO_TOTAL_SECONDS - getRuntime();
+        if (timeRemaining > FORCE_LEAVE_TIME_REMAINING_SECONDS) {
+            return false;
+        }
+        // "Not outside shoot zone" means robot is still in the shoot zone.
+        return robot.outtake.isAnyPartInLaunchZone();
     }
 
     @Override
@@ -719,6 +760,7 @@ public abstract class BaseAuto extends OpMode {
         // Preserve whether shooting already started during GO_TO_SHOOT path progress.
         shootSequenceStarted = shootStartedInGoToShoot;
         skipCurrentShot = preloadComplete && getLoadedBallCount() <= 0;
+        backRowLoopEntryBallCount = getLoadedBallCount();
 
         // Run the same shoot sequence logic used by COMPLETE_SHOOT for back-row loop shots.
     }
@@ -729,6 +771,13 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void onExitBackRowLoopCompleteShoot() {
+        int ballsAfter = getLoadedBallCount();
+        int ballsShotThisCycle = Math.max(0, backRowLoopEntryBallCount - ballsAfter);
+        if (backRowLoopCyclesCompleted == 0 && ballsShotThisCycle == 0 && !backRowLoopRetryUsed) {
+            // If first back-row loop shot didn't fire anything, force one extra retry before leaving.
+            forceOneMoreBackRowLoop = true;
+            backRowLoopRetryUsed = true;
+        }
         backRowLoopCyclesCompleted++;
     }
 
@@ -1358,7 +1407,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected AutoStates computePostAcquireTargetState() {
-        if (range == Range.CLOSE_RANGE && preloadComplete) {
+        if (preloadComplete) {
             if (shouldStartNextCycle()) {
                 return AutoStates.GO_TO_PICKUP;
             }
@@ -1446,7 +1495,7 @@ public abstract class BaseAuto extends OpMode {
         if (shootTimedOut() || stateTimedOut()) {
             return true;
         }
-        return shootActionComplete() && allShotBallsCleared();
+        return shootActionComplete();
     }
 
     protected boolean allShotBallsCleared() {
@@ -1525,8 +1574,21 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean shouldStartShootSequence() {
-        return hasCompleteShootReadyConditions()
-                || completeShootReadyTimer.seconds() >= COMPLETE_SHOOT_READY_TIMEOUT_SECONDS;
+        // For long-range preload, keep the larger ready timeout gate.
+        if (range == Range.LONG_RANGE && !preloadComplete) {
+            return hasCompleteShootReadyConditions()
+                    || completeShootReadyTimer.seconds() >= getCompleteShootReadyTimeoutSeconds();
+        }
+        // After preload, start immediately and let the shoot state machine handle RPM gating.
+        return true;
+    }
+
+    private double getCompleteShootReadyTimeoutSeconds() {
+        boolean longAutoPreloadShot = range == Range.LONG_RANGE && !preloadComplete;
+        if (longAutoPreloadShot) {
+            return LONG_PRELOAD_COMPLETE_SHOOT_READY_TIMEOUT_SECONDS;
+        }
+        return COMPLETE_SHOOT_READY_TIMEOUT_SECONDS;
     }
 
     protected boolean hasCompleteShootReadyConditions() {
@@ -1535,13 +1597,8 @@ public abstract class BaseAuto extends OpMode {
             return false;
         }
         boolean shooterAtRpm = robot.outtake.shooter.isAtRPM();
-        boolean requiredTagVisible = robot.outtake.vision.hasRequiredTarget();
-        boolean turretAligned = robot.outtake.isVisionOnTarget(
-                robot.outtake.vision,
-                COMPLETE_SHOOT_TURRET_TOLERANCE_DEG
-        );
         boolean robotSettled = isRobotMotionSettledForShot();
-        return shooterAtRpm && requiredTagVisible && turretAligned && robotSettled;
+        return shooterAtRpm && robotSettled;
     }
 
     protected boolean isRobotMotionSettledForShot() {
@@ -1567,6 +1624,17 @@ public abstract class BaseAuto extends OpMode {
         activeState = state;
     }
 
+    private double getAutoTurretTrimOffsetForState() {
+        if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_SHOOT) {
+            return AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG;
+        }
+        if (range == Range.LONG_RANGE) {
+            return AUTO_LONG_TRIM_OFFSET_DEG;
+        }
+        return 0.0;
+    }
+
     protected void resetStateTimer() {
         stateTimer.reset();
     }
@@ -1584,6 +1652,9 @@ public abstract class BaseAuto extends OpMode {
         if (!backRowLoopShootComplete()) {
             return false;
         }
+        if (forceOneMoreBackRowLoop) {
+            return false;
+        }
         if (backRowLoopCyclesTarget <= 0) {
             return false;
         }
@@ -1593,6 +1664,10 @@ public abstract class BaseAuto extends OpMode {
     protected boolean shouldContinueBackRowLoop() {
         if (!backRowLoopShootComplete()) {
             return false;
+        }
+        if (forceOneMoreBackRowLoop) {
+            forceOneMoreBackRowLoop = false;
+            return true;
         }
         if (backRowLoopCyclesTarget <= 0) {
             return true;

@@ -31,23 +31,13 @@ public class AutoTurretAim {
         // Auto behavior: do not allow turret wrap moves; clamp at limits instead.
         robot.outtake.setPreventTurretWrap(true);
 
-        boolean obeliskAim = activeState == AutoStates.ACQUIRE_MOTIF || forceObeliskAim;
-        if (obeliskAim) {
-            // Acquire motif uses only direct ODO obelisk aim (no aimLock).
-            if (robot.outtake.isAimLockEnabled()) {
-                robot.outtake.setAimLockEnabled(false);
-            }
-            robot.outtake.setAimTargetObelisk();
-            robot.outtake.aimAtObeliskWithOdometry();
-        } else {
-            // All non-acquire states use teleop-style continuous goal tracking.
-            if (!robot.outtake.isAimLockEnabled()) {
-                robot.outtake.setAimLockEnabled(true);
-            }
-            robot.outtake.setAimTargetGoal();
+        // Match teleop behavior: always use continuous goal tracking in auto.
+        if (!robot.outtake.isAimLockEnabled()) {
+            robot.outtake.setAimLockEnabled(true);
         }
+        robot.outtake.setAimTargetGoal();
 
-        telemetry.addData("Auto Obelisk Aim", obeliskAim);
+        telemetry.addData("Auto Obelisk Aim", false);
         telemetry.addData("Auto Aim Lock", robot.outtake.isAimLockEnabled());
         telemetry.addData("Auto Aim Source", robot.outtake.getActiveLockSource());
         telemetry.addData("Auto Aim Target", robot.outtake.getAimTarget());
