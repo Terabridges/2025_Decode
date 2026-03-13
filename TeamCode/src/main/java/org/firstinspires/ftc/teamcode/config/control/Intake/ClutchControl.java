@@ -36,7 +36,7 @@ public class ClutchControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        toggleClutchFar.update(gp2.left_stick_button);
+        //toggleClutchFar.update(gp2.left_stick_button);
     }
 
     @Override
