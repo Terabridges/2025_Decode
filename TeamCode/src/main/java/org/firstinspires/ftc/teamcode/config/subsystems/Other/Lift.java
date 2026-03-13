@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @PsiKitFieldAutoLog
@@ -70,4 +71,11 @@ public class Lift implements Subsystem {
         kickerCurrentPos = kickerEnc.getCurrentPosition();
 
     }
+
+    @Override
+    public void logPsiKitData() {
+        Logger.recordOutput("Subsystems/Other/Lift/EncoderDegree", kickerEnc.getCurrentPosition());
+        Logger.recordOutput("Subsystems/Other/Lift/EncoderVoltage", kickerAnalog.getVoltage());
+    }
+
 }
