@@ -503,4 +503,23 @@ public class Vision implements Subsystem {
         limelightUpdate();
     }
 
+    @Override
+    public void logPsiKitData() {
+        Logger.recordOutput("Subsystems/Outtake/Vision/HasTarget", hasTarget());
+        Logger.recordOutput("Subsystems/Outtake/Vision/HasRequiredTarget", hasRequiredTarget());
+        Logger.recordOutput("Subsystems/Outtake/Vision/CurrentPipeline", currentPipeline);
+        Logger.recordOutput("Subsystems/Outtake/Vision/CurrentTagId", getCurrentTagId());
+        Logger.recordOutput("Subsystems/Outtake/Vision/VisibleGoalTagId", getVisibleGoalTagId());
+        Logger.recordOutput("Subsystems/Outtake/Vision/RequiredTagId", requiredTagId);
+        Logger.recordOutput("Subsystems/Outtake/Vision/MotifTagId", motifTagId);
+        Logger.recordOutput("Subsystems/Outtake/Vision/Tx", getTx());
+        Logger.recordOutput("Subsystems/Outtake/Vision/Ty", getTy());
+        Logger.recordOutput("Subsystems/Outtake/Vision/DistanceInches", getDistanceInches());
+        Logger.recordOutput("Subsystems/Outtake/Vision/PlanarDistanceInches", getPlanarDistanceInches());
+        Logger.recordOutput("Subsystems/Outtake/Vision/CameraBearingDeg", getCameraBearingDeg());
+        Logger.recordOutput("Subsystems/Outtake/Vision/FiducialX", getFiducialX());
+        Logger.recordOutput("Subsystems/Outtake/Vision/FiducialY", getFiducialY());
+        Logger.recordOutput("Subsystems/Outtake/Vision/FiducialZ", getFiducialZ());
+    }
+
 }

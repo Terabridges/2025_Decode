@@ -124,6 +124,39 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Gradle: TeamCode assembleDebug (2025_Decode)",
+			"type": "shell",
+			"command": "c:\\code\\TeraBridges\\2025_Decode\\\\gradlew.bat",
+			"args": [
+				":TeamCode:assembleDebug",
+				"--no-daemon"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Gradle: TeamCode assembleDebug (2025_Decode)",
+			"type": "shell",
+			"command": "c:\\code\\TeraBridges\\2025_Decode\\\\gradlew.bat",
+			"args": [
+				":TeamCode:assembleDebug",
+				"--no-daemon"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Gradle: TeamCode assembleDebug (2025_Decode)",
+			"type": "shell",
+			"command": "c:\\code\\TeraBridges\\2025_Decode\\\\gradlew.bat",
+			"args": [
+				":TeamCode:assembleDebug",
+				"--no-daemon"
+			],
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }
