@@ -3,7 +3,7 @@ A:
 X: Shoot All Macro
 Y: Toggle Shooter
 B: Tap = Tx offset nudge, Hold 0.6s = Reset turret offset
-Down:
+Down: Toggle Auto intake
 Left: One Ball Left
 Up: Switch Sides
 Right: One Ball Right

@@ -32,15 +32,14 @@ public class IntakeControl implements Control {
 
     //---------------- Methods ----------------
 
-
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-
+        toggleAutoIntake.update(gp1.dpad_down);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        //telemetry.addData("Auto Intake", intake.autoIntake);
+        telemetry.addData("Auto Intake", intake.autoIntake);
     }
 }
