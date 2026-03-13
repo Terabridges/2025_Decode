@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Intake.Lights;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @PsiKitFieldAutoLog
@@ -37,6 +38,13 @@ public class Other implements Subsystem {
     public void update(){
         drive.update();
         lift.update();
+    }
+
+    @Override
+    public void logPsiKitData() {
+        Logger.recordOutput("Subsystems/Other/UnJam", unJam);
+        drive.logPsiKitData();
+        lift.logPsiKitData();
     }
 
 }

@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
@@ -206,5 +207,22 @@ public class Turret implements Subsystem {
     @Override
     public void update() {
         // Movement is explicit via setTurretDegree/setTurretPos.
+    }
+
+    @Override
+    public void logPsiKitData() {
+        double baseServoPosition = turretDegToBaseServoPos(commandedTurretDeg);
+        double rightServoPosition = util.clamp((invertRightServo ? (1.0 - baseServoPosition) : baseServoPosition) + rightServoOffset, 0.0, 1.0);
+
+        Logger.recordOutput("Subsystems/Outtake/Turret/CommandedDegree", commandedTurretDeg);
+        Logger.recordOutput("Subsystems/Outtake/Turret/ServoBasePosition", baseServoPosition);
+        Logger.recordOutput("Subsystems/Outtake/Turret/LeftServoPosition", baseServoPosition);
+        Logger.recordOutput("Subsystems/Outtake/Turret/RightServoPosition", rightServoPosition);
+        Logger.recordOutput("Subsystems/Outtake/Turret/EncoderDegree", getEncoderDegrees());
+        Logger.recordOutput("Subsystems/Outtake/Turret/MappedEncoderDegree", getMappedEncoderTurretDegrees());
+        Logger.recordOutput("Subsystems/Outtake/Turret/MappedEncoderErrorDegree", getMappedEncoderErrorDeg(commandedTurretDeg));
+        Logger.recordOutput("Subsystems/Outtake/Turret/EncoderVoltage", turretAnalog.getVoltage());
+        Logger.recordOutput("Subsystems/Outtake/Turret/AtMinLimit", atMinLimit(0.0));
+        Logger.recordOutput("Subsystems/Outtake/Turret/AtMaxLimit", atMaxLimit(0.0));
     }
 }

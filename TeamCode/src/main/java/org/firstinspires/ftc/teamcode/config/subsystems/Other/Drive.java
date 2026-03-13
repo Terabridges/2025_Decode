@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @PsiKitFieldAutoLog
@@ -152,5 +153,22 @@ public class Drive implements Subsystem {
             leftBack.setPower(leftBackPow);
             rightBack.setPower(rightBackPow);
         }
+    }
+
+    @Override
+    public void logPsiKitData() {
+        Logger.recordOutput("Subsystems/Other/Drive/ManualDrive", manualDrive);
+        Logger.recordOutput("Subsystems/Other/Drive/UseSlowMode", useSlowMode);
+        Logger.recordOutput("Subsystems/Other/Drive/UseFieldCentric", useFieldCentric);
+        Logger.recordOutput("Subsystems/Other/Drive/SpeedMultiplier", speed);
+        Logger.recordOutput("Subsystems/Other/Drive/HeadingOffsetRad", headingOffset);
+        Logger.recordOutput("Subsystems/Other/Drive/LeftFrontPower", leftFrontPow);
+        Logger.recordOutput("Subsystems/Other/Drive/RightFrontPower", rightFrontPow);
+        Logger.recordOutput("Subsystems/Other/Drive/LeftBackPower", leftBackPow);
+        Logger.recordOutput("Subsystems/Other/Drive/RightBackPower", rightBackPow);
+        Logger.recordOutput(
+                "Subsystems/Other/Drive/FollowerHeadingRad",
+                follower != null ? follower.getHeading() : Double.NaN
+        );
     }
 }
