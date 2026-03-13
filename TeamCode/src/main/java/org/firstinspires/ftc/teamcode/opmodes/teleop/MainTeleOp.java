@@ -141,7 +141,7 @@ public class MainTeleOp extends OpMode {
     }
 
     private void configureLowOverheadPsiKitLogging() {
-        FtcLogTuning.bulkOnlyLogging = false;
+        FtcLogTuning.bulkOnlyLogging = true;
         FtcLogTuning.nonBulkReadPeriodSec = 0.10;
         FtcLogTuning.processColorDistanceSensorsInBackground = false;
         FtcLogTuning.pinpointLoggerCallsUpdate = false;

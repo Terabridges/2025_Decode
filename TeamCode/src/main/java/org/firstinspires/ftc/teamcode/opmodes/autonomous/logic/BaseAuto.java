@@ -72,6 +72,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
     private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER = 0.75;
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
+    private static final double ROW1_PICKUP_TIMEOUT_SECONDS = 2.5;
     private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 1.5;
     private static final double FAR_PICKUP_ZONE_POWER = 0.75;
     private static final double FAR_BACKROW_REPOSITION_POWER = 0.5;
@@ -79,7 +80,9 @@ public abstract class BaseAuto extends OpMode {
     private static final double FAR_BACKROW_REPOSITION_FORWARD_DELTA_X = 4.0;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 0.75;
-    private static final double CLOSE_LOOP_COMPLETE_PICKUP_POWER = 0.75;
+    private static final double CLOSE_LOOP_COMPLETE_PICKUP_FIRST_HALF_POWER = 0.80;
+    private static final double CLOSE_LOOP_COMPLETE_PICKUP_SLOWDOWN_START_T = 0.50;
+    private static final double CLOSE_LOOP_COMPLETE_PICKUP_SECOND_HALF_POWER = 0.50;
     private static final double BACKROW_COMPLETE_PICKUP_POWER = 1.0;
     private static final double ROW4_COMPLETE_PICKUP_POWER = 0.60;
     private static final double ROW4_INTERMEDIATE_PICKUP_POWER = 0.85;
@@ -87,7 +90,8 @@ public abstract class BaseAuto extends OpMode {
     private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.0;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
-    private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 1.5;
+    private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 2.0;
+    private static final double CLOSE_LOOP_COMPLETE_PICKUP_IDLE_DELAY_SECONDS = 1.0;
     private static final double PICKUP_HEADING_TOLERANCE_DEG = 3.0;
     private static final int PICKUP_TARGET_BALL_COUNT = 3;
     private static final int TAG_BLUE = 20;
@@ -98,6 +102,9 @@ public abstract class BaseAuto extends OpMode {
     private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.85;
     private static final double SHOOT_START_PATH_PROGRESS = 0.85;
     private static final double LONG_RANGE_GO_TO_SHOOT_END_PROGRESS_T = 0.90;
+    private static final double LONG_RANGE_REVERSE_INTAKE_START_T = 0.60;
+    private static final double CLOSE_RANGE_REVERSE_INTAKE_START_T = 0.55;
+    private static final double CLOSE_RANGE_REVERSE_INTAKE_END_T = 0.80;
 
     private final Alliance alliance;
     private Range range;
@@ -146,6 +153,7 @@ public abstract class BaseAuto extends OpMode {
     private final ElapsedTime goToPickupIdleTimer = new ElapsedTime();
     private final ElapsedTime row4CompletePickupHoldTimer = new ElapsedTime();
     private final ElapsedTime closeLoopGoToPickupIdleTimer = new ElapsedTime();
+    private final ElapsedTime closeLoopCompletePickupIdleTimer = new ElapsedTime();
     private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
     private AutoStates acquireMotifReturnState = AutoStates.GO_TO_SHOOT;
     private boolean motifResolvedThisAcquire = false;
@@ -165,6 +173,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean backRowGoToShootReverseActive = false;
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
+    private boolean closeLoopCompletePickupIdleSeen = false;
 
     protected BaseAuto(Alliance alliance) {
         this.alliance = alliance;
@@ -691,11 +700,14 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.CLOSE_LOOP_COMPLETE_PICKUP);
 
         resetStateTimer();
+        backRowCompletePickupSlowdownApplied = false;
+        closeLoopCompletePickupIdleSeen = false;
+        closeLoopCompletePickupIdleTimer.reset();
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
         buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
-        followPath(backRowLoopCompletePickupPath, CLOSE_LOOP_COMPLETE_PICKUP_POWER);
+        followPath(backRowLoopCompletePickupPath, CLOSE_LOOP_COMPLETE_PICKUP_FIRST_HALF_POWER);
     }
 
     protected void onEnterBackRowLoopCompleteShoot() {
@@ -790,16 +802,24 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void maybeStartBackRowCompletePickupSlowdown() {
-        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP
-                || backRowCompletePickupSlowdownApplied) {
+        boolean backRowCompleteState = activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP;
+        boolean closeLoopCompleteState = activeState == AutoStates.CLOSE_LOOP_COMPLETE_PICKUP;
+        if (!(backRowCompleteState || closeLoopCompleteState) || backRowCompletePickupSlowdownApplied) {
             return;
         }
         if (follower == null || follower.getCurrentPath() == null) {
             return;
         }
 
+        double slowdownStartT = closeLoopCompleteState
+                ? CLOSE_LOOP_COMPLETE_PICKUP_SLOWDOWN_START_T
+                : BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T;
+        double slowdownPower = closeLoopCompleteState
+                ? CLOSE_LOOP_COMPLETE_PICKUP_SECOND_HALF_POWER
+                : BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER;
+
         double pathT = follower.getCurrentPath().getClosestPointTValue();
-        if (!Double.isFinite(pathT) || pathT < BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T) {
+        if (!Double.isFinite(pathT) || pathT < slowdownStartT) {
             return;
         }
 
@@ -808,7 +828,7 @@ public abstract class BaseAuto extends OpMode {
         if (finalApproachPath == null) {
             return;
         }
-        followPath(finalApproachPath, BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER);
+        followPath(finalApproachPath, slowdownPower);
         backRowCompletePickupSlowdownApplied = true;
     }
 
@@ -842,8 +862,23 @@ public abstract class BaseAuto extends OpMode {
                 && (activeState == AutoStates.GO_TO_SHOOT
                 || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
                 || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT);
+        boolean closeRangeShootPathState = range == Range.CLOSE_RANGE
+                && (activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT);
 
-        if (!longRangeShootPathState) {
+        if (!(longRangeShootPathState || closeRangeShootPathState)) {
+            if (backRowGoToShootReverseActive) {
+                robot.intake.autoIntake = true;
+                robot.intake.spinner.autoSpin = true;
+                robot.intake.spinner.setMegaSpinIn();
+                backRowGoToShootReverseActive = false;
+            }
+            return;
+        }
+
+        // Never reverse intake on preload shot travel.
+        if (!preloadComplete) {
             if (backRowGoToShootReverseActive) {
                 robot.intake.autoIntake = true;
                 robot.intake.spinner.autoSpin = true;
@@ -862,9 +897,39 @@ public abstract class BaseAuto extends OpMode {
             return;
         }
 
-        if (pathT >= 0.60) {
+        if (closeRangeShootPathState) {
+            if (pathT >= CLOSE_RANGE_REVERSE_INTAKE_END_T) {
+                if (backRowGoToShootReverseActive) {
+                    robot.intake.autoIntake = true;
+                    robot.intake.spinner.autoSpin = true;
+                    robot.intake.spinner.setMegaSpinIn();
+                    backRowGoToShootReverseActive = false;
+                }
+                return;
+            }
+            if (pathT >= CLOSE_RANGE_REVERSE_INTAKE_START_T) {
+                if (!backRowGoToShootReverseActive) {
+                    // Close-range windowed purge: reverse from 55% to 80%.
+                    robot.intake.autoIntake = false;
+                    robot.intake.spinner.autoSpin = true;
+                    robot.intake.spinner.overrideSpinZero();
+                    robot.intake.spinner.setMegaSpinOut();
+                    backRowGoToShootReverseActive = true;
+                }
+                return;
+            }
+            if (backRowGoToShootReverseActive) {
+                robot.intake.autoIntake = true;
+                robot.intake.spinner.autoSpin = true;
+                robot.intake.spinner.setMegaSpinIn();
+                backRowGoToShootReverseActive = false;
+            }
+            return;
+        }
+
+        if (pathT >= LONG_RANGE_REVERSE_INTAKE_START_T) {
             if (!backRowGoToShootReverseActive) {
-                // Reverse intake for the final 40% of back-row go-to-shoot.
+                // Reverse intake for the final 40% of long-range go-to-shoot paths.
                 robot.intake.autoIntake = false;
                 robot.intake.spinner.autoSpin = true;
                 robot.intake.spinner.overrideSpinZero();
@@ -993,6 +1058,10 @@ public abstract class BaseAuto extends OpMode {
         if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
             // Close-range cycle shots run at 180 deg for both alliances.
             double headingDeg = 180.0;
+            if (alliance == Alliance.RED && currentAbsoluteRow == 1) {
+                // Use the tuned row-1 red heading from the pose constants, not the 180-deg default.
+                headingDeg = Math.toDegrees(poses.getFinalShootClose(alliance).getHeading());
+            }
             if (currentAbsoluteRow == 2) {
                 Pose row2Pose = poses.getRow2ShootClose(alliance);
                 return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(headingDeg));
@@ -1100,6 +1169,11 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean pickupAdvanceReady() {
+        if (activeState == AutoStates.COMPLETE_PICKUP && currentAbsoluteRow == 1) {
+            if (stateTimer.seconds() >= ROW1_PICKUP_TIMEOUT_SECONDS) {
+                return true;
+            }
+        }
         if (activeState == AutoStates.COMPLETE_PICKUP && currentAbsoluteRow == 4) {
             if (row4PickupTimedOut()) {
                 return true;
@@ -1225,7 +1299,16 @@ public abstract class BaseAuto extends OpMode {
             return true;
         }
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
-            return followerIdle() || stateTimer.seconds() >= CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS;
+            if (followerIdle()) {
+                if (!closeLoopCompletePickupIdleSeen) {
+                    closeLoopCompletePickupIdleSeen = true;
+                    closeLoopCompletePickupIdleTimer.reset();
+                }
+                return closeLoopCompletePickupIdleTimer.seconds() >= CLOSE_LOOP_COMPLETE_PICKUP_IDLE_DELAY_SECONDS
+                        || stateTimer.seconds() >= CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS;
+            }
+            closeLoopCompletePickupIdleSeen = false;
+            return stateTimer.seconds() >= CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS;
         }
         return followerIdle() || backRowPickupTimedOut();
     }
