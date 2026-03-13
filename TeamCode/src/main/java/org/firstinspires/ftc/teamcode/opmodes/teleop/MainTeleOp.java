@@ -264,18 +264,28 @@ public class MainTeleOp extends OpMode {
             c.update();
         }
 
-        if (currentGamepad1.b && !previousGamepad1.b) {
+        boolean turretOffsetButtonHeld = currentGamepad1.b || currentGamepad2.b;
+        boolean turretOffsetButtonJustPressed =
+                (currentGamepad1.b && !previousGamepad1.b)
+                || (currentGamepad2.b && !previousGamepad2.b);
+        boolean turretOffsetButtonJustReleased =
+                !turretOffsetButtonHeld && (previousGamepad1.b || previousGamepad2.b);
+
+        if (turretOffsetButtonJustPressed) {
             gp1BHoldTimer.reset();
             gp1BLongPressHandled = false;
             if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
-                Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
+                int requiredTagId = robot.outtake.vision.getRequiredTagId();
+                if (robot.outtake.vision.hasRequiredTarget()) {
+                    Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTxForTag(requiredTagId);
+                }
             }
         }
-        if (currentGamepad1.b && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {
+        if (turretOffsetButtonHeld && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {
             Outtake.turretAimCommandOffsetDeg = 0.0;
             gp1BLongPressHandled = true;
         }
-        if (!currentGamepad1.b && previousGamepad1.b) {
+        if (turretOffsetButtonJustReleased) {
             gp1BLongPressHandled = false;
         }
         toggleSorting.update(gamepad1.start);
@@ -397,18 +407,19 @@ public class MainTeleOp extends OpMode {
         if (!gp2LeftPressed && !gp2RightPressed) {
             return;
         }
+        Outtake.turretAimCommandOffsetDeg = 0.0;
 
         Pose resetPose;
         if (gp2LeftPressed) {
             if (GlobalVariables.isBlueAlliance()) {
                 resetPose = new Pose(
-                        FIELD_SIZE_IN - (ROBOT_LENGTH_IN / 2.0),
+                        ROBOT_LENGTH_IN / 2.0,
                         ROBOT_WIDTH_IN / 2.0,
                         Math.toRadians(0.0)
                 );
             } else {
                 resetPose = new Pose(
-                        ROBOT_LENGTH_IN / 2.0,
+                        FIELD_SIZE_IN - (ROBOT_LENGTH_IN / 2.0),
                         ROBOT_WIDTH_IN / 2.0,
                         Math.toRadians(0.0)
                 );
