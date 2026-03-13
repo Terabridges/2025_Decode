@@ -12,11 +12,13 @@ public class AutoTurretAim {
 
     private final Robot robot;
     private final Alliance alliance;
+    private final Range range;
     private final Telemetry telemetry;
 
     public AutoTurretAim(Robot robot, AutoPoses poses, Alliance alliance, Range range, Telemetry telemetry) {
         this.robot = robot;
         this.alliance = alliance;
+        this.range = range;
         this.telemetry = telemetry;
     }
 
@@ -28,8 +30,8 @@ public class AutoTurretAim {
         int requiredGoalTagId = (alliance == Alliance.BLUE) ? BLUE_GOAL_TAG_ID : RED_GOAL_TAG_ID;
         robot.outtake.vision.setRequiredTagId(requiredGoalTagId);
         robot.outtake.turret.turretVelocity = 0;
-        // Auto behavior: do not allow turret wrap moves; clamp at limits instead.
-        robot.outtake.setPreventTurretWrap(true);
+        // Long-range autos allow wrap moves; close-range keeps no-wrap behavior.
+        robot.outtake.setPreventTurretWrap(range == Range.CLOSE_RANGE);
 
         // Match teleop behavior: always use continuous goal tracking in auto.
         if (!robot.outtake.isAimLockEnabled()) {
