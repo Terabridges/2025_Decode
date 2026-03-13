@@ -227,6 +227,7 @@ public class MainTeleOp extends OpMode {
         long tAfterTelemetryNs = System.nanoTime();
 
         stateMachinesUpdate();
+        logStateMachinePsiKitData();
         long tAfterStateMachinesNs = System.nanoTime();
 
         //drawCurrentAndHistory();
@@ -246,11 +247,9 @@ public class MainTeleOp extends OpMode {
             Logger.recordOutput("MainTeleOp/TimingMs/DrawField", nanosToMillis(tAfterDrawingNs - tAfterStateMachinesNs));
             Logger.recordOutput("MainTeleOp/TimingMs/LoopTrackerSample", nanosToMillis(tLoopEndNs - tAfterDrawingNs));
             Logger.recordOutput("MainTeleOp/TimingMs/TotalLoop", nanosToMillis(tLoopEndNs - tLoopStartNs));
-            Logger.recordOutput("COMMANDEDPOS", robot.intake.spindex.getCommandedDegree());
-            Logger.recordOutput("ABSOLUTEPOS", robot.intake.spindex.getAbsolutePos());
-            Logger.recordOutput("ShootAllState", robot.getShootAllMachine().getState());
-            Logger.recordOutput("ShootAllSortState", robot.getSortedShootAllMachine().getState());
-            Logger.recordOutput("StartBall", robot.sortedStartBall);
+            Logger.recordOutput("MainTeleOp/Spindex/CommandedDeg", robot.intake.spindex.getCommandedDegree());
+            Logger.recordOutput("MainTeleOp/Spindex/AbsoluteDeg", robot.intake.spindex.getAbsolutePos());
+            Logger.recordOutput("MainTeleOp/StateMachines/SortedStartBall", robot.sortedStartBall);
 
         }
     }
@@ -441,6 +440,133 @@ public class MainTeleOp extends OpMode {
         }
 
         FollowerManager.follower.setPose(resetPose);
+    }
+    private void logStateMachinePsiKitData() {
+        double spindexCommandedDeg = robot.intake.spindex.getCommandedDegree();
+        double spindexAbsoluteDeg = robot.intake.spindex.getAbsolutePos();
+        double shooterTargetRpm = robot.outtake.shooter.getTargetRPM();
+        double shooterCurrentRpm = robot.outtake.shooter.getCurrentRPM();
+        boolean spindexAtPos = robot.intake.spindex.isSpindexAtPos();
+        boolean shooterAtRpm = robot.outtake.shooter.isAtRPM();
+        boolean unJamRequested = robot.other.unJam;
+        boolean goToResetPending = robot.isGoToResetPending();
+
+        if (shootAllMachine != null) {
+            Object shootState = shootAllMachine.getState();
+            Logger.recordOutput("MainTeleOp/StateMachines/ShootAll/State", String.valueOf(shootState));
+            Logger.recordOutput(
+                    "MainTeleOp/StateMachines/ShootAll/InInit",
+                    Robot.ShootAllStates.INIT.equals(shootState)
+            );
+            logShootAllTransitionInputs((Robot.ShootAllStates) shootState, spindexAtPos, shooterAtRpm, unJamRequested, goToResetPending);
+        }
+
+        if (sortingShootAllMachine != null) {
+            Object sortedState = sortingShootAllMachine.getState();
+            Logger.recordOutput("MainTeleOp/StateMachines/SortedShootAll/State", String.valueOf(sortedState));
+            Logger.recordOutput(
+                    "MainTeleOp/StateMachines/SortedShootAll/InInit",
+                    Robot.SortedShootAllStates.INIT.equals(sortedState)
+            );
+            logSortedShootAllTransitionInputs((Robot.SortedShootAllStates) sortedState, spindexAtPos, shooterAtRpm, unJamRequested, goToResetPending);
+        }
+
+        Logger.recordOutput("MainTeleOp/StateMachines/ShootRequestPending", shootRequestPending);
+        Logger.recordOutput("MainTeleOp/StateMachines/PendingShootUsesSorting", pendingShootUsesSorting);
+        Logger.recordOutput("MainTeleOp/StateMachines/InitShootAllMachine", robot.initShootAllMachine);
+        Logger.recordOutput("MainTeleOp/StateMachines/InitSortedShootAllMachine", robot.initSortedShootAllMachine);
+        Logger.recordOutput("MainTeleOp/StateMachines/UseSorting", robot.useSorting);
+        Logger.recordOutput("MainTeleOp/StateMachines/SortedStartBall", robot.sortedStartBall);
+        Logger.recordOutput("MainTeleOp/StateMachines/LoadedBallCount", robot.getLoadedBallCount());
+        Logger.recordOutput("MainTeleOp/StateMachines/Spindex/CommandedDeg", spindexCommandedDeg);
+        Logger.recordOutput("MainTeleOp/StateMachines/Spindex/AbsoluteDeg", spindexAbsoluteDeg);
+        Logger.recordOutput("MainTeleOp/StateMachines/Spindex/AtPos", spindexAtPos);
+        Logger.recordOutput("MainTeleOp/StateMachines/Shooter/TargetRpm", shooterTargetRpm);
+        Logger.recordOutput("MainTeleOp/StateMachines/Shooter/CurrentRpm", shooterCurrentRpm);
+        Logger.recordOutput("MainTeleOp/StateMachines/Shooter/AtRpm", shooterAtRpm);
+        Logger.recordOutput("MainTeleOp/StateMachines/Shooter/RpmError", shooterTargetRpm - shooterCurrentRpm);
+        Logger.recordOutput("MainTeleOp/StateMachines/UnJamRequested", unJamRequested);
+        Logger.recordOutput("MainTeleOp/StateMachines/GoToResetPending", goToResetPending);
+        Logger.recordOutput("MainTeleOp/StateMachines/WaitTimeSec", robot.getShootAllWaitTime());
+    }
+
+    private void logShootAllTransitionInputs(
+            Robot.ShootAllStates state,
+            boolean spindexAtPos,
+            boolean shooterAtRpm,
+            boolean unJamRequested,
+            boolean goToResetPending
+    ) {
+        String prefix = "MainTeleOp/StateMachines/ShootAll/Next";
+        switch (state) {
+            case INIT:
+                Logger.recordOutput(prefix + "/InitRequested", robot.initShootAllMachine);
+                break;
+            case GO_TO_SHOOT_ONE:
+                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+                Logger.recordOutput(prefix + "/ShooterAtRpm", shooterAtRpm);
+                Logger.recordOutput(prefix + "/AdvanceReady", spindexAtPos && shooterAtRpm);
+                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+                break;
+            case WAIT0:
+            case GO_TO_SHOOT_TWO:
+            case GO_TO_SHOOT_THREE:
+            case RESET:
+                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+                break;
+            case WAIT1:
+            case WAIT2:
+            case WAIT3:
+                Logger.recordOutput(prefix + "/WaitTimeSec", robot.getShootAllWaitTime());
+                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+                break;
+            case UNJAM:
+                Logger.recordOutput(prefix + "/GoToResetPending", goToResetPending);
+                break;
+        }
+    }
+
+     private void logSortedShootAllTransitionInputs(
+            Robot.SortedShootAllStates state,
+            boolean spindexAtPos,
+            boolean shooterAtRpm,
+            boolean unJamRequested,
+            boolean goToResetPending
+    ) {
+        String prefix = "MainTeleOp/StateMachines/SortedShootAll/Next";
+        switch (state) {
+            case INIT:
+                Logger.recordOutput(prefix + "/InitRequested", robot.initSortedShootAllMachine);
+                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+                break;
+            case GO_TO_FIRST:
+                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+                Logger.recordOutput(prefix + "/ShooterAtRpm", shooterAtRpm);
+                Logger.recordOutput(prefix + "/AdvanceReady", spindexAtPos && shooterAtRpm);
+                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+                break;
+            case WAIT0:
+            case GO_TO_SECOND:
+            case GO_TO_THIRD:
+            case RESET:
+                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+                break;
+            case WAIT1:
+            case WAIT2:
+            case WAIT3:
+                Logger.recordOutput(prefix + "/WaitTimeSec", robot.getShootAllWaitTime());
+                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+                break;
+            case UNJAM:
+                Logger.recordOutput(prefix + "/GoToResetPending", goToResetPending);
+                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+                break;
+        }
     }
 
     private static double nanosToMillis(long nanos) {

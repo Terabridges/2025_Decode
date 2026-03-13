@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @PsiKitFieldAutoLog
@@ -159,6 +160,21 @@ public class Intake implements Subsystem {
                 lights.setBackLight("green");
             }
         }
+    }
+
+    @Override
+    public void logPsiKitData() {
+        Logger.recordOutput("Subsystems/Intake/AutoIntake", autoIntake);
+        Logger.recordOutput("Subsystems/Intake/SpinnerAutoSpin", spinner.autoSpin);
+        Logger.recordOutput("Subsystems/Intake/LoadedBallCount", spindex.loadedBallCount());
+        Logger.recordOutput("Subsystems/Intake/Balls", spindex.balls);
+        Logger.recordOutput("Subsystems/Intake/CurrentDirection", spindex.getCurrentDirection());
+        Logger.recordOutput("Subsystems/Intake/CurrentBall", spindex.getCurrentBall());
+
+        spindex.logPsiKitData();
+        spinner.logPsiKitData();
+        clutch.logPsiKitData();
+        lights.logPsiKitData();
     }
 
 }
