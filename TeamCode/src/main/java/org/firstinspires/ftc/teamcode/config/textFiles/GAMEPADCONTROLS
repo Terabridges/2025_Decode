@@ -22,10 +22,10 @@ Start: Toggle Sorting
 Touchpad:
 
 GAMEPAD2
-A: //switch between offsets
-X: reset follower
+A: switch between offsets
+X: flash color
 Y: change motif
-B: flash color
+B: //Same as gp1
 Down: setShortValues
 Left: // change to reset blue far
 Up: setLongValues
@@ -38,7 +38,7 @@ LStX:
 LStY: control kicker
 RStX:
 RStY:
-LStBut: clutch mega up
+LStBut: reset follower
 RStBut: Empty Balls
 Back: unjam
 Start: Reset Offset

@@ -280,7 +280,7 @@ public class MainTeleOp extends OpMode {
         }
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
-        flashLights.update(gamepad2.b);
+        flashLights.update(gamepad2.x);
         updateManualFollowerPoseReset();
     }
 
