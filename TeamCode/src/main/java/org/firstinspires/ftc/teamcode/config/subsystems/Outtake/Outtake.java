@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
-import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
@@ -479,29 +478,6 @@ public class Outtake implements Subsystem {
         shooter.update();
         turret.update();
         updateAimLock();
-    }
-
-    @Override
-    public void logPsiKitData() {
-        double[] targetPoint = getActiveAimTargetFieldPoint();
-
-        Logger.recordOutput("Subsystems/Outtake/AimLockEnabled", aimLockEnabled);
-        Logger.recordOutput("Subsystems/Outtake/PreventTurretWrap", preventTurretWrap);
-        Logger.recordOutput("Subsystems/Outtake/ActiveAimSource", String.valueOf(activeAimSource));
-        Logger.recordOutput("Subsystems/Outtake/AimTarget", String.valueOf(aimTarget));
-        Logger.recordOutput("Subsystems/Outtake/DistanceInches", distanceInches);
-        Logger.recordOutput("Subsystems/Outtake/TargetXInches", targetPoint[0]);
-        Logger.recordOutput("Subsystems/Outtake/TargetYInches", targetPoint[1]);
-        Logger.recordOutput("Subsystems/Outtake/InLaunchZone", isAnyPartInLaunchZone());
-        Logger.recordOutput("Subsystems/Outtake/TurretAimCommandOffsetDeg", turretAimCommandOffsetDeg);
-        Logger.recordOutput("Subsystems/Outtake/BaseHoodPos", lastBaseHoodPos);
-        Logger.recordOutput("Subsystems/Outtake/CompedHoodPos", lastCompedHoodPos);
-        Logger.recordOutput("Subsystems/Outtake/RecoilRpmError", lastRecoilRpmError);
-        Logger.recordOutput("Subsystems/Outtake/RecoilHoodDelta", lastRecoilHoodDelta);
-
-        shooter.logPsiKitData();
-        turret.logPsiKitData();
-        vision.logPsiKitData();
     }
 
     private double applyRpmRecoilComp(double baseHoodPos) {

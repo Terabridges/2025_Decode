@@ -13,7 +13,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.ShooterData;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
-import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
@@ -34,7 +33,6 @@ public class Shooter implements Subsystem {
     private double hoodDown = 0.43;
     private double hoodUp = 1.0;
     public double hoodPos = 0.5;
-    private double commandedHoodPos = hoodPos;
 
     public PIDFController flywheelPID;
     private double p = 0.0015, i = 0.0001, d = 0.0, f = 0.0002;
@@ -101,7 +99,6 @@ public class Shooter implements Subsystem {
     }
 
     public void setHood(double target){
-        commandedHoodPos = target;
         hood.setPosition(target);
     }
 
@@ -130,7 +127,7 @@ public class Shooter implements Subsystem {
     }
 
     public void setHoodTarget(){
-        setHood(util.clamp(hoodPos+hoodOffset, 0.46, 0.92));
+        hood.setPosition(util.clamp(hoodPos+hoodOffset, 0.46, 0.92));
     }
 
     public boolean isAtRPM(){
@@ -181,19 +178,6 @@ public class Shooter implements Subsystem {
         if (autoHood) {
             setHoodTarget();
         }
-    }
-
-    @Override
-    public void logPsiKitData() {
-        Logger.recordOutput("Subsystems/Outtake/Shooter/UseFlywheelPID", useFlywheelPID);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelOverride", flywheelOverride);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelTargetRPM", flywheelTargetRPM);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelCurrentRPM", currentRPM);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelPower", flywheelPower);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/AtRPM", isAtRPM());
-        Logger.recordOutput("Subsystems/Outtake/Shooter/AutoHood", autoHood);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/HoodTarget", hoodPos);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/HoodServoPosition", commandedHoodPos);
     }
 
 }

@@ -8,7 +8,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
-import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
@@ -188,23 +187,6 @@ public class Spinner implements Subsystem {
         }
         updateDistances();
         updateFloodgateCurrent();
-    }
-
-    @Override
-    public void logPsiKitData() {
-        Logger.recordOutput("Subsystems/Intake/Spinner/MegaSpinPower", megaSpinPow);
-        Logger.recordOutput("Subsystems/Intake/Spinner/AutoSpin", autoSpin);
-        Logger.recordOutput("Subsystems/Intake/Spinner/SpinOverride", spinOverride);
-        Logger.recordOutput("Subsystems/Intake/Spinner/OverridePower", overridePow);
-        Logger.recordOutput("Subsystems/Intake/Spinner/FrontOuterDistance", frontOuterDistance);
-        Logger.recordOutput("Subsystems/Intake/Spinner/FrontInnerDistance", frontInnerDistance);
-        Logger.recordOutput("Subsystems/Intake/Spinner/BackOuterDistance", backOuterDistance);
-        Logger.recordOutput("Subsystems/Intake/Spinner/BackInnerDistance", backInnerDistance);
-        Logger.recordOutput("Subsystems/Intake/Spinner/FrontOuterTripped", frontOuterTripped);
-        Logger.recordOutput("Subsystems/Intake/Spinner/FrontInnerTripped", frontInnerTripped);
-        Logger.recordOutput("Subsystems/Intake/Spinner/BackOuterTripped", backOuterTripped);
-        Logger.recordOutput("Subsystems/Intake/Spinner/BackInnerTripped", backInnerTripped);
-        Logger.recordOutput("Subsystems/Intake/Spinner/FloodgateCurrentAmps", floodgateCurrentAmps);
     }
 
 }

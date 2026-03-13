@@ -6,9 +6,6 @@ public interface Subsystem {
     void update();
     void toInit();
 
-    default void logPsiKitData() {
-    }
-
     default void updateWithTiming() {
         long startNs = System.nanoTime();
         update();

@@ -17,7 +17,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
-import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
@@ -713,37 +712,5 @@ public class Spindex implements Subsystem {
     public void update(){
         balls = ballList[0] + ballList[1] + ballList[2];
         updateColorDistances();
-    }
-
-    @Override
-    public void logPsiKitData() {
-        double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
-        double absoluteDeg = getAbsolutePos();
-        double commandedDeg = getCommandedDegree();
-        double errorDeg = wrapSignedDegInRange(commandedDeg - absoluteDeg, physicalRangeDeg);
-
-        Logger.recordOutput("Subsystems/Intake/Spindex/CurrentDirection", currentDirection);
-        Logger.recordOutput("Subsystems/Intake/Spindex/CurrentBall", currentBall);
-        Logger.recordOutput("Subsystems/Intake/Spindex/ShootMode", shootMode);
-        Logger.recordOutput("Subsystems/Intake/Spindex/Balls", balls);
-        Logger.recordOutput("Subsystems/Intake/Spindex/Slot1", ballList[0]);
-        Logger.recordOutput("Subsystems/Intake/Spindex/Slot2", ballList[1]);
-        Logger.recordOutput("Subsystems/Intake/Spindex/Slot3", ballList[2]);
-        Logger.recordOutput("Subsystems/Intake/Spindex/LoadedBallCount", loadedBallCount());
-        Logger.recordOutput("Subsystems/Intake/Spindex/CommandedDegree", commandedDeg);
-        Logger.recordOutput("Subsystems/Intake/Spindex/AbsoluteDegree", absoluteDeg);
-        Logger.recordOutput("Subsystems/Intake/Spindex/ErrorDegree", errorDeg);
-        Logger.recordOutput("Subsystems/Intake/Spindex/AtPosition", isSpindexAtPos());
-        Logger.recordOutput("Subsystems/Intake/Spindex/FrontColorDistance", frontColorDistance);
-        Logger.recordOutput("Subsystems/Intake/Spindex/BackColorDistance", backColorDistance);
-        Logger.recordOutput("Subsystems/Intake/Spindex/FrontRed", frontRed);
-        Logger.recordOutput("Subsystems/Intake/Spindex/FrontGreen", frontGreen);
-        Logger.recordOutput("Subsystems/Intake/Spindex/FrontBlue", frontBlue);
-        Logger.recordOutput("Subsystems/Intake/Spindex/MiddleRed", middleRed);
-        Logger.recordOutput("Subsystems/Intake/Spindex/MiddleGreen", middleGreen);
-        Logger.recordOutput("Subsystems/Intake/Spindex/MiddleBlue", middleBlue);
-        Logger.recordOutput("Subsystems/Intake/Spindex/BackRed", backRed);
-        Logger.recordOutput("Subsystems/Intake/Spindex/BackGreen", backGreen);
-        Logger.recordOutput("Subsystems/Intake/Spindex/BackBlue", backBlue);
     }
 }

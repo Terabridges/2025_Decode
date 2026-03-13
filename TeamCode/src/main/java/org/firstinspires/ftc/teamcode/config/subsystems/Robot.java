@@ -134,14 +134,6 @@ public class Robot {
         return intake.getFloodgateCurrentAmps();
     }
 
-    public double getShootAllWaitTime() {
-        return waitTime;
-    }
-
-    public boolean isGoToResetPending() {
-        return goToReset;
-    }
-
     public void toggleLightsTurret(){
         txLights = !txLights;
         if (!txLights){
@@ -515,7 +507,6 @@ public class Robot {
     public void update() {
         for (org.firstinspires.ftc.teamcode.config.subsystems.Subsystem s : subsystems) {
             s.updateWithTiming();
-            s.logPsiKitData();
         }
 
         boolean isFull = intake.spindex.loadedBallCount() == 3;
