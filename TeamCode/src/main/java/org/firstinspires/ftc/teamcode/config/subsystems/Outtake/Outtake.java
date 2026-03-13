@@ -54,12 +54,8 @@ public class Outtake implements Subsystem {
     public static double recoilCompGainPerRPM = 0.00000625;
     public static double recoilCompDeadbandRPM = 30.0;
     public static double recoilCompMaxHoodDelta = 0.08;
-    public static boolean enableAutoTxAimOffset = true;
-    public static double autoTxAimOffsetGain = 0.02;
-    public static double autoTxAimOffsetDeadbandDeg = 0.2;
-    public static double autoTxAimOffsetMaxStepPerLoopDeg = 0.25;
-    public static double autoTxAimOffsetMaxAbsDeg = 35.0;
-    public static boolean autoTxAimOffsetOnlyWhenStill = true;
+    public static double headingOffsetStepDeg = 1.0;
+    public static double headingOffsetMaxAbsDeg = 35.0;
 
     private boolean aimLockEnabled = false;
     private boolean preventTurretWrap = false;
@@ -120,6 +116,14 @@ public class Outtake implements Subsystem {
         return lastCompedHoodPos;
     }
 
+    public static double getTotalTurretAimCommandOffsetDeg() {
+        return turretAimCommandOffsetDeg;
+    }
+
+    public static void resetTurretAimOffsets() {
+        turretAimCommandOffsetDeg = 0.0;
+    }
+
     public AimSource getActiveLockSource() {
         return activeAimSource;
     }
@@ -148,7 +152,6 @@ public class Outtake implements Subsystem {
             aimAtGoalWithOdometry();
         }
 
-        applyAutoTxAimOffset();
     }
 
     public void aimAtObeliskWithOdometry() {
@@ -202,7 +205,7 @@ public class Outtake implements Subsystem {
         double targetX = GlobalVariables.isBlueAlliance() ? blueGoalX : redGoalX;
         double targetY = GlobalVariables.isBlueAlliance() ? blueGoalY : redGoalY;
         double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
-        return turret.normalizeDegrees(desiredDeg + turretAimCommandOffsetDeg);
+        return turret.normalizeDegrees(desiredDeg + getTotalTurretAimCommandOffsetDeg());
     }
 
     /**
@@ -217,7 +220,7 @@ public class Outtake implements Subsystem {
 
     private void aimAtFieldPoint(Pose robotPose, double targetX, double targetY) {
         double desiredDeg = computeFieldPointTurretDeg(robotPose, targetX, targetY);
-        commandTurretDegree(desiredDeg + turretAimCommandOffsetDeg);
+        commandTurretDegree(desiredDeg + getTotalTurretAimCommandOffsetDeg());
     }
 
     private void commandTurretDegree(double desiredDeg) {
@@ -304,34 +307,6 @@ public class Outtake implements Subsystem {
 
     private double wrapSignedDegrees(double deg) {
         return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
-    }
-
-    private void applyAutoTxAimOffset() {
-        if (!enableAutoTxAimOffset || aimTarget != AimTarget.GOAL || vision == null) {
-            return;
-        }
-        if (autoTxAimOffsetOnlyWhenStill && isRobotMovingForLead()) {
-            return;
-        }
-        if (!vision.hasRequiredTarget()) {
-            return;
-        }
-
-        // Match the proven manual GP1-B correction sign/path.
-        double txDeg = vision.getTx();
-        if (!Double.isFinite(txDeg)) {
-            return;
-        }
-
-        double errorDeg = -txDeg;
-        if (Math.abs(errorDeg) < autoTxAimOffsetDeadbandDeg) {
-            return;
-        }
-
-        double deltaDeg = autoTxAimOffsetGain * errorDeg;
-        deltaDeg = Math.max(-autoTxAimOffsetMaxStepPerLoopDeg, Math.min(autoTxAimOffsetMaxStepPerLoopDeg, deltaDeg));
-        turretAimCommandOffsetDeg += deltaDeg;
-        turretAimCommandOffsetDeg = Math.max(-autoTxAimOffsetMaxAbsDeg, Math.min(autoTxAimOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
     }
 
     private double[][] getBigLaunchTriangle() {
@@ -455,7 +430,7 @@ public class Outtake implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-        turretAimCommandOffsetDeg = 0.0;
+        resetTurretAimOffsets();
         shooter.toInit();
         turret.toInit();
         vision.toInit();
@@ -529,7 +504,8 @@ public class Outtake implements Subsystem {
 
     public void increaseOffset(){
         if (currentOffsetType.equals("heading")) {
-            autoTxAimOffsetDeadbandDeg += 1;
+            turretAimCommandOffsetDeg += headingOffsetStepDeg;
+            turretAimCommandOffsetDeg = Math.max(-headingOffsetMaxAbsDeg, Math.min(headingOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset += 25;
         } else if (currentOffsetType.equals("hood")){
@@ -539,7 +515,8 @@ public class Outtake implements Subsystem {
 
     public void decreaseOffset(){
         if (currentOffsetType.equals("heading")) {
-            autoTxAimOffsetDeadbandDeg -= 1;
+            turretAimCommandOffsetDeg -= headingOffsetStepDeg;
+            turretAimCommandOffsetDeg = Math.max(-headingOffsetMaxAbsDeg, Math.min(headingOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset -= 25;
         } else if (currentOffsetType.equals("hood")){
@@ -559,7 +536,7 @@ public class Outtake implements Subsystem {
 
     public void resetOffset(){
         if (currentOffsetType.equals("heading")) {
-            autoTxAimOffsetDeadbandDeg = 0;
+            turretAimCommandOffsetDeg = 0;
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset = 0;
         } else if (currentOffsetType.equals("hood")){
