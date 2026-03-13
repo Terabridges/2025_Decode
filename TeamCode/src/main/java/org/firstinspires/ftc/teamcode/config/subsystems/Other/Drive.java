@@ -31,7 +31,7 @@ public class Drive implements Subsystem {
     double rightBackPow = 0.0;
 
     public double FAST_MULT = 0.97;
-    public double SLOW_MULT = 0.5;
+    public double SLOW_MULT = 0.45;
     public double speed = FAST_MULT;
     public boolean useFieldCentric = true;
     public double headingOffset = 0;
