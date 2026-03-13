@@ -140,7 +140,7 @@ public class Spindex implements Subsystem {
     }
 
     //---------------- Methods ----------------
-    public void setSpindexPos(double pos){
+    private void setSpindexPos(double pos){
         commandedServoPos = clampBasePosToSharedRange(pos);
 
         double leftPos = clamp01(commandedServoPos);

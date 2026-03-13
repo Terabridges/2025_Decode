@@ -1,5 +1,5 @@
 GAMEPAD1
-A:
+A: Set Spindex Current Pos
 X: Shoot All Macro
 Y: Toggle Shooter
 B: Tap = Tx offset nudge, Hold 0.6s = Reset turret offset

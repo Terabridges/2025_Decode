@@ -102,6 +102,7 @@ public class MainTeleOp extends OpMode {
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
     EdgeDetector nextMotif = new EdgeDetector(()-> GlobalVariables.nextMotif());
     EdgeDetector flashLights = new EdgeDetector(()-> robot.toggleLightsTurret());
+    EdgeDetector setSpindexCurrentDeg = new EdgeDetector(()-> robot.intake.spindex.setSpindexDegree(robot.intake.spindex.getAbsolutePos()));
 
     @Override
     public void init() {
@@ -289,6 +290,7 @@ public class MainTeleOp extends OpMode {
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.x);
+        setSpindexCurrentDeg.update(gamepad1.a);
         updateManualFollowerPoseReset();
     }
 
