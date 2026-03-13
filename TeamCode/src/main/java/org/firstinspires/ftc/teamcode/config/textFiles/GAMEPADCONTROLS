@@ -9,7 +9,7 @@ Up: Switch Sides
 Right: One Ball Right
 LeftBump: Spin In
 RightBump: Spin Out
-LeftTrig: //hold for hold position
+LeftTrig:
 RightTrig: hold for slowmode
 LStX: Movement
 LStY: Movement
@@ -22,18 +22,18 @@ Start: Toggle Sorting
 Touchpad:
 
 GAMEPAD2
-A: switch between offsets
+A:
 X: flash color
 Y: change motif
-B: //Same as gp1
+B: Same as gp1
 Down: setShortValues
-Left: // change to reset blue far
+Left: reset far
 Up: setLongValues
-Right: // change to reset red far
-LeftBump: //decrease turret offset
-RightBump: //increase turret offset
-LeftTrig: //turret manual left
-RightTrig: //turret manual right
+Right: reset close
+LeftBump: decrease offset
+RightBump: increase offset
+LeftTrig: while holding do hood offset
+RightTrig: while holding do rpm offset
 LStX:
 LStY: control kicker
 RStX:

@@ -40,9 +40,16 @@ public class OuttakeControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
+        if (gp2.right_trigger > 0.1){
+            outtake.currentOffsetType = "rpm";
+        } else if (gp2.left_trigger > 0.1){
+            outtake.currentOffsetType = "hood";
+        } else {
+            outtake.currentOffsetType = "heading";
+        }
+
         increaseOffset.update(gp2.right_bumper);
         decreaseOffset.update(gp2.left_bumper);
-        changeOffset.update(gp2.a);
         resetOffset.update(gp2.start);
     }
 
@@ -57,7 +64,7 @@ public class OuttakeControl implements Control {
         telemetry.addData("Heading Trim Offset", outtake.turretAimTrimOffsetDeg);
         telemetry.addData("Vision B Offset", outtake.turretAimCommandOffsetDeg);
         telemetry.addData("Total Heading Offset", Outtake.getTotalTurretAimCommandOffsetDeg());
-        telemetry.addData("RPM Type", outtake.shooter.flywheelOffset);
-        telemetry.addData("Hood Type", outtake.shooter.hoodOffset);
+        telemetry.addData("RPM Offset", outtake.shooter.flywheelOffset);
+        telemetry.addData("Hood Offset", outtake.shooter.hoodOffset);
     }
 }
