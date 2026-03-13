@@ -44,14 +44,14 @@ public class Lift implements Subsystem {
     //pow greater than one moves spindex down, aka using lift
     public void moveKicker(double pow){
         if (pow > 0.2) {
-            speed = Math.pow(Math.abs(50 - kickerCurrentPos) / 120, 4);
-            kickerLeft.setPower(speed/4);
-            kickerRight.setPower(speed/4);
+            speed = Math.pow(Math.abs(40 - kickerCurrentPos) / 120, 3);
+            kickerLeft.setPower(speed/3);
+            kickerRight.setPower(speed/3);
 
         } else if (pow < -0.2) {
-            speed = Math.pow(Math.abs(350 - kickerCurrentPos) / 120, 4);
-            kickerLeft.setPower(-speed/4);
-            kickerRight.setPower(-speed/4);
+            speed = Math.pow(Math.abs(350 - kickerCurrentPos) / 120, 3);
+            kickerLeft.setPower(-speed/3);
+            kickerRight.setPower(-speed/3);
 
         } else {
             kickerLeft.setPower(0);

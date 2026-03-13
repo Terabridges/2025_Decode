@@ -222,6 +222,7 @@ public class Robot {
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                     goToReset = true;
+                    intake.autoIntake = true;
                 })
                 .transition(()-> goToReset, ShootAllStates.INIT)
                 .onExit(()->goToReset = false)
@@ -354,6 +355,7 @@ public class Robot {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
+                    intake.autoIntake = true;
                     goToReset = true;
                 })
                 .transition(()-> goToReset, SortedShootAllStates.INIT)
