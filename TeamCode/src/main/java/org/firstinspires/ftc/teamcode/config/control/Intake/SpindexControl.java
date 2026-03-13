@@ -19,9 +19,10 @@ public class SpindexControl implements Control {
     Robot robot;
     EdgeDetector ballClockwise = new EdgeDetector(()-> spindex.moveBallClockwise());
     EdgeDetector ballCounter = new EdgeDetector(()-> spindex.moveBallCounter());
-    EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
+    //EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
     //EdgeDetector toggleShootMode = new EdgeDetector(()-> spindex.toggleShootMode());
     EdgeDetector emptyBalls = new EdgeDetector(()-> spindex.emptyBalls());
+    EdgeDetector goToForwardOne = new EdgeDetector(()-> spindex.setSpindexForwardOne());
     public static int fullSpindexRumbleMs = 500;
     private boolean wasFullLastLoop = false;
 
@@ -46,8 +47,9 @@ public class SpindexControl implements Control {
     public void update(){
         ballClockwise.update(gp1.dpad_right);
         ballCounter.update(gp1.dpad_left);
-        switchDirection.update(gp1.dpad_up);
+        //switchDirection.update(gp1.dpad_up);
         //toggleShootMode.update(gp1.back);
+        goToForwardOne.update(gp1.dpad_up);
         emptyBalls.update(gp1.right_stick_button || gp2.right_stick_button);
 
         boolean isFull = spindex.loadedBallCount() == 3;
