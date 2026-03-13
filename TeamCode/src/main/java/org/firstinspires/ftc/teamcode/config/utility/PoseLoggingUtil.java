@@ -59,7 +59,9 @@ public final class PoseLoggingUtil {
         Logger.recordOutput("Turret/AimLockEnabled", robot.outtake.isAimLockEnabled() ? 1.0 : 0.0);
         Logger.recordOutput("Turret/AimTarget", robot.outtake.getAimTarget().ordinal());
         Logger.recordOutput("Turret/AimSource", robot.outtake.getActiveLockSource().ordinal());
-        Logger.recordOutput("Turret/AimOffsetDeg", Outtake.turretAimCommandOffsetDeg);
+        Logger.recordOutput("Turret/AimOffsetDeg", Outtake.getTotalTurretAimCommandOffsetDeg());
+        Logger.recordOutput("Turret/AimOffsetDeg/VisionB", Outtake.turretAimCommandOffsetDeg);
+        Logger.recordOutput("Turret/AimOffsetDeg/Trim", Outtake.turretAimTrimOffsetDeg);
 
         Pose followerPose = (FollowerManager.follower != null) ? FollowerManager.follower.getPose() : null;
         Pose2d pinpointFtcPose = null;

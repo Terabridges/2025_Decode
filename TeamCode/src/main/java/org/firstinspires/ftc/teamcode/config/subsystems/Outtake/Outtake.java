@@ -38,7 +38,11 @@ public class Outtake implements Subsystem {
     public static double redGoalY = 132.0; //144
     public static double obeliskX = 72.0;
     public static double obeliskY = 144.0;
+    // B-button vision correction offset component.
     public static double turretAimCommandOffsetDeg = 0.0;
+    // GP2 bumper trim offset component.
+    public static double defaultTurretAimTrimOffsetDeg = 6.0;
+    public static double turretAimTrimOffsetDeg = defaultTurretAimTrimOffsetDeg;
     public static double odoAimDirection = -1.0;
     public static boolean enableMovingShotLead = true;
     public static int leadIterations = 10;
@@ -116,11 +120,16 @@ public class Outtake implements Subsystem {
     }
 
     public static double getTotalTurretAimCommandOffsetDeg() {
-        return turretAimCommandOffsetDeg;
+        return turretAimCommandOffsetDeg + turretAimTrimOffsetDeg;
+    }
+
+    public static void resetTurretAimVisionOffset() {
+        turretAimCommandOffsetDeg = 0.0;
     }
 
     public static void resetTurretAimOffsets() {
         turretAimCommandOffsetDeg = 0.0;
+        turretAimTrimOffsetDeg = defaultTurretAimTrimOffsetDeg;
     }
 
     public AimSource getActiveLockSource() {
@@ -480,8 +489,8 @@ public class Outtake implements Subsystem {
 
     public void increaseOffset(){
         if (currentOffsetType.equals("heading")) {
-            turretAimCommandOffsetDeg += headingOffsetStepDeg;
-            turretAimCommandOffsetDeg = Math.max(-headingOffsetMaxAbsDeg, Math.min(headingOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
+            turretAimTrimOffsetDeg += headingOffsetStepDeg;
+            turretAimTrimOffsetDeg = Math.max(-headingOffsetMaxAbsDeg, Math.min(headingOffsetMaxAbsDeg, turretAimTrimOffsetDeg));
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset += 25;
         } else if (currentOffsetType.equals("hood")){
@@ -491,8 +500,8 @@ public class Outtake implements Subsystem {
 
     public void decreaseOffset(){
         if (currentOffsetType.equals("heading")) {
-            turretAimCommandOffsetDeg -= headingOffsetStepDeg;
-            turretAimCommandOffsetDeg = Math.max(-headingOffsetMaxAbsDeg, Math.min(headingOffsetMaxAbsDeg, turretAimCommandOffsetDeg));
+            turretAimTrimOffsetDeg -= headingOffsetStepDeg;
+            turretAimTrimOffsetDeg = Math.max(-headingOffsetMaxAbsDeg, Math.min(headingOffsetMaxAbsDeg, turretAimTrimOffsetDeg));
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset -= 25;
         } else if (currentOffsetType.equals("hood")){
@@ -512,7 +521,7 @@ public class Outtake implements Subsystem {
 
     public void resetOffset(){
         if (currentOffsetType.equals("heading")) {
-            turretAimCommandOffsetDeg = 0;
+            turretAimTrimOffsetDeg = defaultTurretAimTrimOffsetDeg;
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset = 0;
         } else if (currentOffsetType.equals("hood")){

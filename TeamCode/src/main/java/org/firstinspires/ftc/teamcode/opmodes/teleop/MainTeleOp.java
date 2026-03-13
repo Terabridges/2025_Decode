@@ -50,8 +50,7 @@ import java.util.List;
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
-    private static final double GP1_B_LONG_PRESS_RESET_SEC = 0.6;
-    private static final double PRE_SHOOT_OUTTAKE_SEC = 0.25;
+    private static final double B_LONG_PRESS_RESET_SEC = 0.6;
     private static final double FIELD_SIZE_IN = 144.0;
     private static final double ROBOT_WIDTH_IN = 17.5;
     private static final double ROBOT_LENGTH_IN = 18.0;
@@ -96,10 +95,8 @@ public class MainTeleOp extends OpMode {
 
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
-    private ElapsedTime gp1BHoldTimer;
-    private ElapsedTime preShootOuttakeTimer;
-    private boolean gp1BLongPressHandled = false;
-    private boolean preShootOuttakeActive = false;
+    private ElapsedTime bHoldTimer;
+    private boolean bLongPressHandled = false;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -142,8 +139,7 @@ public class MainTeleOp extends OpMode {
         );
         loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
-        gp1BHoldTimer = new ElapsedTime();
-        preShootOuttakeTimer = new ElapsedTime();
+        bHoldTimer = new ElapsedTime();
 
     }
 
@@ -196,11 +192,11 @@ public class MainTeleOp extends OpMode {
         robot.outtake.setAimLockEnabled(true);
         // Keep recoil-comp code available, but disable it during teleop runtime.
         Outtake.enableRpmRecoilComp = false;
+        bHoldTimer.reset();
+        bLongPressHandled = false;
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
-        preShootOuttakeActive = false;
-        preShootOuttakeTimer.reset();
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -270,29 +266,24 @@ public class MainTeleOp extends OpMode {
             c.update();
         }
 
-        boolean turretOffsetButtonHeld = currentGamepad1.b || currentGamepad2.b;
-        boolean turretOffsetButtonJustPressed =
+        boolean bButtonHeld = currentGamepad1.b || currentGamepad2.b;
+        boolean bButtonJustPressed =
                 (currentGamepad1.b && !previousGamepad1.b)
                 || (currentGamepad2.b && !previousGamepad2.b);
-        boolean turretOffsetButtonJustReleased =
-                !turretOffsetButtonHeld && (previousGamepad1.b || previousGamepad2.b);
+        boolean bButtonJustReleased =
+                !bButtonHeld && (previousGamepad1.b || previousGamepad2.b);
 
-        if (turretOffsetButtonJustPressed) {
-            gp1BHoldTimer.reset();
-            gp1BLongPressHandled = false;
-            if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
-                int requiredTagId = robot.outtake.vision.getRequiredTagId();
-                if (robot.outtake.vision.hasRequiredTarget()) {
-                    Outtake.turretAimCommandOffsetDeg += robot.outtake.vision.getTxForTag(requiredTagId);
-                }
-            }
+        if (bButtonJustPressed) {
+            applyBManualAdjustOnce();
+            bHoldTimer.reset();
+            bLongPressHandled = false;
         }
-        if (turretOffsetButtonHeld && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {
-            Outtake.resetTurretAimOffsets();
-            gp1BLongPressHandled = true;
+        if (bButtonHeld && !bLongPressHandled && bHoldTimer.seconds() >= B_LONG_PRESS_RESET_SEC) {
+            Outtake.resetTurretAimVisionOffset();
+            bLongPressHandled = true;
         }
-        if (turretOffsetButtonJustReleased) {
-            gp1BLongPressHandled = false;
+        if (bButtonJustReleased) {
+            bLongPressHandled = false;
         }
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
@@ -351,7 +342,11 @@ public class MainTeleOp extends OpMode {
         if (xPressed) {
             if (shootRequestPending) {
                 // Manual override: second press while pending starts shooting immediately.
-                if (tryStartPendingShootWithPreOuttake()) {
+                if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                    robot.initShootAllMachine = true;
+                    shootRequestPending = false;
+                } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
+                    robot.initSortedShootAllMachine = true;
                     shootRequestPending = false;
                 }
             } else {
@@ -365,50 +360,20 @@ public class MainTeleOp extends OpMode {
             }
         }
 
-        boolean inLaunchZone = robot != null
+        if (shootRequestPending
+                && robot != null
                 && robot.outtake != null
-                && robot.outtake.isAnyPartInLaunchZone();
-        if (shootRequestPending && inLaunchZone) {
-            if (tryStartPendingShootWithPreOuttake()) {
+                && robot.outtake.isAnyPartInLaunchZone()) {
+            if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                robot.initShootAllMachine = true;
+                shootRequestPending = false;
+            } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
+                robot.initSortedShootAllMachine = true;
                 shootRequestPending = false;
             }
-        } else if (preShootOuttakeActive) {
-            robot.intake.spinner.setMegaSpinZero();
-            preShootOuttakeActive = false;
         }
         shootAllMachine.update();
         sortingShootAllMachine.update();
-    }
-
-    private boolean tryStartPendingShootWithPreOuttake() {
-        if (robot == null || robot.intake == null || robot.intake.spinner == null) {
-            return false;
-        }
-
-        boolean canStartUnsorted = !pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT);
-        boolean canStartSorted = pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT);
-        if (!canStartUnsorted && !canStartSorted) {
-            return false;
-        }
-
-        if (!preShootOuttakeActive) {
-            robot.intake.spinner.setMegaSpinOut();
-            preShootOuttakeTimer.reset();
-            preShootOuttakeActive = true;
-            return false;
-        }
-
-        if (preShootOuttakeTimer.seconds() < PRE_SHOOT_OUTTAKE_SEC) {
-            return false;
-        }
-
-        if (canStartUnsorted) {
-            robot.initShootAllMachine = true;
-        } else if (canStartSorted) {
-            robot.initSortedShootAllMachine = true;
-        }
-        preShootOuttakeActive = false;
-        return true;
     }
 
     private void applyAllianceVisionLockConfig() {
@@ -426,6 +391,17 @@ public class MainTeleOp extends OpMode {
 
     private void logPsiKitData() {
         PoseLoggingUtil.logMainPoseDetails(robot);
+    }
+
+    private void applyBManualAdjustOnce() {
+        if (robot == null || robot.outtake == null || robot.outtake.vision == null) {
+            return;
+        }
+        int requiredTagId = robot.outtake.vision.getRequiredTagId();
+        if (!robot.outtake.vision.hasRequiredTarget()) {
+            return;
+        }
+        Outtake.turretAimCommandOffsetDeg += robot.outtake.vision.getTxForTag(requiredTagId);
     }
 
     private void updateManualFollowerPoseReset() {
