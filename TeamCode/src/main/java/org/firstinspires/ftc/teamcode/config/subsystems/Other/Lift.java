@@ -45,8 +45,8 @@ public class Lift implements Subsystem {
     public void moveKicker(double pow){
         if (pow > 0.2) {
             speed = Math.pow(Math.abs(40 - kickerCurrentPos) / 120, 3);
-            kickerLeft.setPower(speed/3);
-            kickerRight.setPower(speed/3);
+            kickerLeft.setPower(speed/1.5);
+            kickerRight.setPower(speed/1.5);
 
         } else if (pow < -0.2) {
             speed = Math.pow(Math.abs(350 - kickerCurrentPos) / 120, 3);

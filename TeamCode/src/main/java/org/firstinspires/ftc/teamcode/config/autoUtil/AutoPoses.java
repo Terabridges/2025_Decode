@@ -83,13 +83,13 @@ public class AutoPoses {
     public Pose farPickupZoneControlB = poseDeg(36.0, 7.0, 0.0);
     public Pose farPickupZoneControlR = poseDeg(FIELD_SIZE - farPickupZoneControlB.getX(), farPickupZoneControlB.getY(), 0.0);
     public Pose row4GoToPickupB = poseDeg(13.0, 16.0, 30.0);
-    public Pose row4GoToPickupR = poseDeg(FIELD_SIZE - row4GoToPickupB.getX(), row4GoToPickupB.getY(), 150.0);
+    public Pose row4GoToPickupR = poseDeg(FIELD_SIZE - row4GoToPickupB.getX(), row4GoToPickupB.getY(), 330.0);
     public Pose row4IntermediatePickupB = poseDeg(13.0, 13.5, 30.0);
-    public Pose row4IntermediatePickupR = poseDeg(FIELD_SIZE - row4IntermediatePickupB.getX(), row4IntermediatePickupB.getY(), 150.0);
+    public Pose row4IntermediatePickupR = poseDeg(FIELD_SIZE - row4IntermediatePickupB.getX(), row4IntermediatePickupB.getY(), 330.0);
     public Pose row4CompletePickupControlB = poseDeg(20.0, 11.5, 0.0);
-    public Pose row4CompletePickupControlR = poseDeg(FIELD_SIZE - row4CompletePickupControlB.getX(), row4CompletePickupControlB.getY(), 180.0);
+    public Pose row4CompletePickupControlR = poseDeg(FIELD_SIZE - row4CompletePickupControlB.getX(), row4CompletePickupControlB.getY(), 0.0);
     public Pose row4CompletePickupB = poseDeg(12.5, 12.0, 10.0);
-    public Pose row4CompletePickupR = poseDeg(FIELD_SIZE - row4CompletePickupB.getX(), row4CompletePickupB.getY(), 170.0);
+    public Pose row4CompletePickupR = poseDeg(FIELD_SIZE - row4CompletePickupB.getX(), row4CompletePickupB.getY(), 350.0);
     public Pose closeLoopPickupB = poseDeg(16.5, 62.0, 180.0);
     public Pose closeLoopPickupR = poseDeg(FIELD_SIZE - closeLoopPickupB.getX(), closeLoopPickupB.getY() + 2.0, 180.0);
     public Pose closeLoopPickupControlB = poseDeg(53.0, 60.0, 0.0);
