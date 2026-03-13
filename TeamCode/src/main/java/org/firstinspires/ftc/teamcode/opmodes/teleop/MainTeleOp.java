@@ -51,6 +51,10 @@ public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double GP1_B_LONG_PRESS_RESET_SEC = 0.6;
+    private static final double PRE_SHOOT_OUTTAKE_SEC = 0.25;
+    private static final double FIELD_SIZE_IN = 144.0;
+    private static final double ROBOT_WIDTH_IN = 17.5;
+    private static final double ROBOT_LENGTH_IN = 18.0;
     public static boolean enableSectionTimingLogs = true;
     public static double autoOffsetStationarySeconds = 1.0;
     // Match the auto shooting "robot settled" gate.
@@ -93,7 +97,9 @@ public class MainTeleOp extends OpMode {
     public ElapsedTime telemetryTimer;
     public double telemetryTime;
     private ElapsedTime gp1BHoldTimer;
+    private ElapsedTime preShootOuttakeTimer;
     private boolean gp1BLongPressHandled = false;
+    private boolean preShootOuttakeActive = false;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -137,6 +143,7 @@ public class MainTeleOp extends OpMode {
         loopTimeTracker = new LoopTimeTracker();
         telemetryTimer = new ElapsedTime();
         gp1BHoldTimer = new ElapsedTime();
+        preShootOuttakeTimer = new ElapsedTime();
 
     }
 
@@ -192,6 +199,8 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
+        preShootOuttakeActive = false;
+        preShootOuttakeTimer.reset();
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
@@ -261,23 +270,34 @@ public class MainTeleOp extends OpMode {
             c.update();
         }
 
-        if (currentGamepad1.b && !previousGamepad1.b) {
+        boolean turretOffsetButtonHeld = currentGamepad1.b || currentGamepad2.b;
+        boolean turretOffsetButtonJustPressed =
+                (currentGamepad1.b && !previousGamepad1.b)
+                || (currentGamepad2.b && !previousGamepad2.b);
+        boolean turretOffsetButtonJustReleased =
+                !turretOffsetButtonHeld && (previousGamepad1.b || previousGamepad2.b);
+
+        if (turretOffsetButtonJustPressed) {
             gp1BHoldTimer.reset();
             gp1BLongPressHandled = false;
             if (robot != null && robot.outtake != null && robot.outtake.vision != null) {
-                Outtake.turretAimCommandOffsetDeg += -robot.outtake.vision.getTx();
+                int requiredTagId = robot.outtake.vision.getRequiredTagId();
+                if (robot.outtake.vision.hasRequiredTarget()) {
+                    Outtake.turretAimCommandOffsetDeg += robot.outtake.vision.getTxForTag(requiredTagId);
+                }
             }
         }
-        if (currentGamepad1.b && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {
-            Outtake.turretAimCommandOffsetDeg = 0.0;
+        if (turretOffsetButtonHeld && !gp1BLongPressHandled && gp1BHoldTimer.seconds() >= GP1_B_LONG_PRESS_RESET_SEC) {
+            Outtake.resetTurretAimOffsets();
             gp1BLongPressHandled = true;
         }
-        if (!currentGamepad1.b && previousGamepad1.b) {
+        if (turretOffsetButtonJustReleased) {
             gp1BLongPressHandled = false;
         }
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.x);
+        updateManualFollowerPoseReset();
     }
 
     public void controlsTelemetryUpdate() {
@@ -305,7 +325,7 @@ public class MainTeleOp extends OpMode {
 //                joinedTelemetry.addData("In Launch Zone", robot.outtake.isAnyPartInLaunchZone());
 //            }
             //joinedTelemetry.addData("TXLights", robot.txLights);
-            //joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.turretAimCommandOffsetDeg);
+            joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.getTotalTurretAimCommandOffsetDeg());
             joinedTelemetry.update();
 
             telemetryTimer.reset();
@@ -331,11 +351,7 @@ public class MainTeleOp extends OpMode {
         if (xPressed) {
             if (shootRequestPending) {
                 // Manual override: second press while pending starts shooting immediately.
-                if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
-                    robot.initShootAllMachine = true;
-                    shootRequestPending = false;
-                } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
-                    robot.initSortedShootAllMachine = true;
+                if (tryStartPendingShootWithPreOuttake()) {
                     shootRequestPending = false;
                 }
             } else {
@@ -349,20 +365,50 @@ public class MainTeleOp extends OpMode {
             }
         }
 
-        if (shootRequestPending
-                && robot != null
+        boolean inLaunchZone = robot != null
                 && robot.outtake != null
-                && robot.outtake.isAnyPartInLaunchZone()) {
-            if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
-                robot.initShootAllMachine = true;
-                shootRequestPending = false;
-            } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
-                robot.initSortedShootAllMachine = true;
+                && robot.outtake.isAnyPartInLaunchZone();
+        if (shootRequestPending && inLaunchZone) {
+            if (tryStartPendingShootWithPreOuttake()) {
                 shootRequestPending = false;
             }
+        } else if (preShootOuttakeActive) {
+            robot.intake.spinner.setMegaSpinZero();
+            preShootOuttakeActive = false;
         }
         shootAllMachine.update();
         sortingShootAllMachine.update();
+    }
+
+    private boolean tryStartPendingShootWithPreOuttake() {
+        if (robot == null || robot.intake == null || robot.intake.spinner == null) {
+            return false;
+        }
+
+        boolean canStartUnsorted = !pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT);
+        boolean canStartSorted = pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT);
+        if (!canStartUnsorted && !canStartSorted) {
+            return false;
+        }
+
+        if (!preShootOuttakeActive) {
+            robot.intake.spinner.setMegaSpinOut();
+            preShootOuttakeTimer.reset();
+            preShootOuttakeActive = true;
+            return false;
+        }
+
+        if (preShootOuttakeTimer.seconds() < PRE_SHOOT_OUTTAKE_SEC) {
+            return false;
+        }
+
+        if (canStartUnsorted) {
+            robot.initShootAllMachine = true;
+        } else if (canStartSorted) {
+            robot.initSortedShootAllMachine = true;
+        }
+        preShootOuttakeActive = false;
+        return true;
     }
 
     private void applyAllianceVisionLockConfig() {
@@ -380,6 +426,53 @@ public class MainTeleOp extends OpMode {
 
     private void logPsiKitData() {
         PoseLoggingUtil.logMainPoseDetails(robot);
+    }
+
+    private void updateManualFollowerPoseReset() {
+        if (FollowerManager.follower == null) {
+            return;
+        }
+
+        boolean gp2LeftPressed = currentGamepad2.dpad_left && !previousGamepad2.dpad_left;
+        boolean gp2RightPressed = currentGamepad2.dpad_right && !previousGamepad2.dpad_right;
+
+        if (!gp2LeftPressed && !gp2RightPressed) {
+            return;
+        }
+        Outtake.resetTurretAimOffsets();
+
+        Pose resetPose;
+        if (gp2LeftPressed) {
+            if (GlobalVariables.isBlueAlliance()) {
+                resetPose = new Pose(
+                        FIELD_SIZE_IN - (ROBOT_LENGTH_IN / 2.0),
+                        ROBOT_WIDTH_IN / 2.0,
+                        Math.toRadians(0.0)
+                );
+            } else {
+                resetPose = new Pose(
+                        ROBOT_LENGTH_IN / 2.0,
+                        ROBOT_WIDTH_IN / 2.0,
+                        Math.toRadians(0.0)
+                );
+            }
+        } else {
+            if (GlobalVariables.isBlueAlliance()) {
+                resetPose = new Pose(
+                        48.0 + (ROBOT_LENGTH_IN / 2.0),
+                        FIELD_SIZE_IN - (ROBOT_WIDTH_IN / 2.0),
+                        Math.toRadians(180.0)
+                );
+            } else {
+                resetPose = new Pose(
+                        FIELD_SIZE_IN - 48.0 - (ROBOT_LENGTH_IN / 2.0),
+                        FIELD_SIZE_IN - (ROBOT_WIDTH_IN / 2.0),
+                        Math.toRadians(180.0)
+                );
+            }
+        }
+
+        FollowerManager.follower.setPose(resetPose);
     }
 
     private static double nanosToMillis(long nanos) {
