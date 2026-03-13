@@ -19,10 +19,10 @@ public class SpindexControl implements Control {
     Robot robot;
     EdgeDetector ballClockwise = new EdgeDetector(()-> spindex.moveBallClockwise());
     EdgeDetector ballCounter = new EdgeDetector(()-> spindex.moveBallCounter());
-    //EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
+    EdgeDetector switchDirection = new EdgeDetector(()-> spindex.switchSides());
     //EdgeDetector toggleShootMode = new EdgeDetector(()-> spindex.toggleShootMode());
     EdgeDetector emptyBalls = new EdgeDetector(()-> spindex.emptyBalls());
-    EdgeDetector goToForwardOne = new EdgeDetector(()-> spindex.setSpindexForwardOne());
+    //EdgeDetector goToForwardOne = new EdgeDetector(()-> spindex.setSpindexForwardOne());
     public static int fullSpindexRumbleMs = 500;
     private boolean wasFullLastLoop = false;
 
@@ -47,9 +47,9 @@ public class SpindexControl implements Control {
     public void update(){
         ballClockwise.update(gp1.dpad_right);
         ballCounter.update(gp1.dpad_left);
-        //switchDirection.update(gp1.dpad_up);
+        switchDirection.update(gp1.dpad_up);
         //toggleShootMode.update(gp1.back);
-        goToForwardOne.update(gp1.dpad_up);
+        //goToForwardOne.update(gp1.dpad_up);
         emptyBalls.update(gp1.right_stick_button || gp2.right_stick_button);
 
         boolean isFull = spindex.loadedBallCount() == 3;
@@ -63,7 +63,7 @@ public class SpindexControl implements Control {
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Ball Order", spindex.balls);
-        //telemetry.addData("Current Direction", spindex.getCurrentDirection());
+        telemetry.addData("Current Direction", spindex.getCurrentDirection());
 //        telemetry.addData("Current Ball", spindex.getCurrentBall());
         //telemetry.addData("Current/Commanded Pos", String.format("%.1f",spindex.getAbsolutePos()) + "/" + String.format("%.1f",spindex.getCommandedPos()));
         telemetry.addData("Commanded Pos", spindex.getCommandedDegree());
