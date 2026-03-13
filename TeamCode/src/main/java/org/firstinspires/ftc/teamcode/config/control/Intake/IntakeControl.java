@@ -16,6 +16,7 @@ public class IntakeControl implements Control {
     Gamepad gp2;
     Robot robot;
     public EdgeDetector toggleAutoIntake = new EdgeDetector(()-> intake.toggleAutoIntake());
+    public EdgeDetector switchSpindexServo = new EdgeDetector(()-> intake.spindex.switchCurrentSpindexServo());
 
 
     //---------------- Constructor ----------------
@@ -36,10 +37,12 @@ public class IntakeControl implements Control {
     @Override
     public void update(){
         toggleAutoIntake.update(gp1.dpad_down);
+        switchSpindexServo.update(gp2.a);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Auto Intake", intake.autoIntake);
+        telemetry.addData("Current Spindex Servo", intake.spindex.currentSpindexServo);
     }
 }
