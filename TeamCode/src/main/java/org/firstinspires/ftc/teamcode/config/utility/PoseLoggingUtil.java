@@ -7,10 +7,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
 import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Outtake;
+import org.firstinspires.ftc.teamcode.config.subsystems.Outtake.Turret;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Pose3d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
+import org.psilynx.psikit.core.wpi.math.Rotation3d;
 
 public final class PoseLoggingUtil {
 
@@ -35,6 +38,13 @@ public final class PoseLoggingUtil {
     public static double hybridTranslationGain = 0.45;
     public static double hybridVisionHeadingGainSingleTag = 0.08;
     public static double hybridVisionHeadingGainMultiTag = 0.22;
+    public static double vizChassisHeightMeters = 0.0;
+    public static double vizTurretHeightMeters = 0.22;
+    public static double vizTurretPivotOffsetXMeters = 0.0;
+    public static double vizTurretPivotOffsetYMeters = 0.0;
+    public static double vizTargetHeightMeters = 0.18;
+    public static double vizDefaultTargetRangeMeters = 3.0;
+    public static boolean vizLogDualTargetSigns = true;
 
     private PoseLoggingUtil() {
     }
@@ -106,6 +116,8 @@ public final class PoseLoggingUtil {
             Logger.recordOutput("Localization/Primary/Pose2d", pinpointFtcPose);
             Logger.recordOutput("Localization/Primary/Source", "PinpointFTC");
         }
+
+        logVizPose3d(robot, pinpointFtcPose, turretMappedDeg);
 
         Logger.recordOutput("Localization/Limelight/MT2/Valid", mt2Pose != null ? 1.0 : 0.0);
         if (mt2PoseRaw != null) {
@@ -294,6 +306,112 @@ public final class PoseLoggingUtil {
                 corrected[1],
                 Rotation2d.fromRadians(Math.toRadians(corrected[2]))
         );
+    }
+
+    private static void logVizPose3d(Robot robot, Pose2d chassisPose2d, double turretMappedDeg) {
+        Logger.recordOutput("Viz/Robot/ChassisPose3d/Valid", chassisPose2d != null ? 1.0 : 0.0);
+        if (chassisPose2d == null) {
+            Logger.recordOutput("Viz/Robot/TurretPose3d/Valid", 0.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3d/Valid", 0.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dPlusTx/Valid", 0.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dMinusTx/Valid", 0.0);
+            return;
+        }
+
+        double chassisYawRad = chassisPose2d.getRotation().getRadians();
+        Pose3d chassisPose3d = new Pose3d(
+                chassisPose2d.getX(),
+                chassisPose2d.getY(),
+                vizChassisHeightMeters,
+                new Rotation3d(0.0, 0.0, chassisYawRad)
+        );
+        Logger.recordOutput("Viz/Robot/ChassisPose3d", chassisPose3d);
+
+        double turretRelYawRad = Math.toRadians(wrapSignedDegrees(turretMappedDeg - Turret.turretForwardDeg));
+        double turretWorldYawRad = wrapRad(chassisYawRad + turretRelYawRad);
+
+        double cosChassis = Math.cos(chassisYawRad);
+        double sinChassis = Math.sin(chassisYawRad);
+        double turretX = chassisPose2d.getX()
+                + (cosChassis * vizTurretPivotOffsetXMeters)
+                - (sinChassis * vizTurretPivotOffsetYMeters);
+        double turretY = chassisPose2d.getY()
+                + (sinChassis * vizTurretPivotOffsetXMeters)
+                + (cosChassis * vizTurretPivotOffsetYMeters);
+
+        Pose3d turretPose3d = new Pose3d(
+                turretX,
+                turretY,
+                vizTurretHeightMeters,
+                new Rotation3d(0.0, 0.0, turretWorldYawRad)
+        );
+        Logger.recordOutput("Viz/Robot/TurretPose3d/Valid", 1.0);
+        Logger.recordOutput("Viz/Robot/TurretPose3d", turretPose3d);
+        Logger.recordOutput("Viz/Robot/TurretRelativeYawDeg", Math.toDegrees(turretRelYawRad));
+        Logger.recordOutput("Viz/Robot/TurretWorldYawDeg", Math.toDegrees(turretWorldYawRad));
+
+        if (robot == null || robot.outtake == null || robot.outtake.vision == null || !robot.outtake.vision.hasTarget()) {
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3d/Valid", 0.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dPlusTx/Valid", 0.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dMinusTx/Valid", 0.0);
+            return;
+        }
+
+        int requiredTagId = robot.outtake.vision.getRequiredTagId();
+        double txDeg = robot.outtake.vision.getTxForTag(requiredTagId);
+        double distanceMeters = robot.outtake.vision.getDistanceInchesForTag(requiredTagId) * INCHES_TO_METERS;
+        if (!Double.isFinite(distanceMeters) || distanceMeters <= 0.0) {
+            distanceMeters = vizDefaultTargetRangeMeters;
+        }
+
+        double targetYawPlusTxRad = wrapRad(turretWorldYawRad + Math.toRadians(txDeg));
+        double targetXPlus = turretX + (Math.cos(targetYawPlusTxRad) * distanceMeters);
+        double targetYPlus = turretY + (Math.sin(targetYawPlusTxRad) * distanceMeters);
+        Pose3d targetEstimatePose3d = new Pose3d(
+            targetXPlus,
+            targetYPlus,
+            vizTargetHeightMeters,
+            new Rotation3d(0.0, 0.0, targetYawPlusTxRad)
+        );
+        Logger.recordOutput("Viz/Limelight/TargetEstimatePose3d/Valid", 1.0);
+        Logger.recordOutput("Viz/Limelight/TargetEstimatePose3d", targetEstimatePose3d);
+        Logger.recordOutput("Viz/Limelight/TargetEstimateTxDeg", txDeg);
+        Logger.recordOutput("Viz/Limelight/TargetEstimateRangeMeters", distanceMeters);
+        Logger.recordOutput("Viz/Limelight/TargetEstimateYawDeg", Math.toDegrees(targetYawPlusTxRad));
+
+        if (vizLogDualTargetSigns) {
+            double targetYawMinusTxRad = wrapRad(turretWorldYawRad - Math.toRadians(txDeg));
+            double targetXMinus = turretX + (Math.cos(targetYawMinusTxRad) * distanceMeters);
+            double targetYMinus = turretY + (Math.sin(targetYawMinusTxRad) * distanceMeters);
+
+            Pose3d targetEstimatePlusTxPose3d = new Pose3d(
+                targetXPlus,
+                targetYPlus,
+                vizTargetHeightMeters,
+                new Rotation3d(0.0, 0.0, targetYawPlusTxRad)
+            );
+            Pose3d targetEstimateMinusTxPose3d = new Pose3d(
+                targetXMinus,
+                targetYMinus,
+                vizTargetHeightMeters,
+                new Rotation3d(0.0, 0.0, targetYawMinusTxRad)
+            );
+
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dPlusTx/Valid", 1.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dPlusTx", targetEstimatePlusTxPose3d);
+            Logger.recordOutput("Viz/Limelight/TargetEstimateYawPlusTxDeg", Math.toDegrees(targetYawPlusTxRad));
+
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dMinusTx/Valid", 1.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dMinusTx", targetEstimateMinusTxPose3d);
+            Logger.recordOutput("Viz/Limelight/TargetEstimateYawMinusTxDeg", Math.toDegrees(targetYawMinusTxRad));
+        } else {
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dPlusTx/Valid", 0.0);
+            Logger.recordOutput("Viz/Limelight/TargetEstimatePose3dMinusTx/Valid", 0.0);
+        }
+    }
+
+    private static double wrapSignedDegrees(double deg) {
+        return ((deg + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
     }
 
     private static double wrapRad(double radians) {
