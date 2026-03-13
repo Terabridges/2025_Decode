@@ -54,7 +54,7 @@ public class OuttakeControl implements Control {
         //telemetry.addData("Hood Base/Comp", "%.4f / %.4f", outtake.getLastBaseHoodPos(), outtake.getLastCompedHoodPos());
 
         telemetry.addData("Offset Type", outtake.currentOffsetType);
-        telemetry.addData("Heading Offset", outtake.autoTxAimOffsetDeadbandDeg);
+        telemetry.addData("Heading Offset", outtake.turretAimCommandOffsetDeg);
         telemetry.addData("RPM Type", outtake.shooter.flywheelOffset);
         telemetry.addData("Hood Type", outtake.shooter.hoodOffset);
     }
