@@ -92,6 +92,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.5;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
+    private static final double FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS = 1.0;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 2.0;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_IDLE_DELAY_SECONDS = 1.0;
     private static final double PICKUP_HEADING_TOLERANCE_DEG = 3.0;
@@ -161,6 +162,7 @@ public abstract class BaseAuto extends OpMode {
     private final ElapsedTime row4CompletePickupHoldTimer = new ElapsedTime();
     private final ElapsedTime closeLoopGoToPickupIdleTimer = new ElapsedTime();
     private final ElapsedTime closeLoopCompletePickupIdleTimer = new ElapsedTime();
+    private final ElapsedTime farBackrowGoToPickupHoldTimer = new ElapsedTime();
     private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
     private AutoStates acquireMotifReturnState = AutoStates.GO_TO_SHOOT;
     private boolean motifResolvedThisAcquire = false;
@@ -181,6 +183,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
     private boolean closeLoopCompletePickupIdleSeen = false;
+    private boolean farBackrowGoToPickupHoldSeen = false;
     private int backRowLoopEntryBallCount = 0;
     private boolean backRowLoopRetryUsed = false;
     private boolean forceOneMoreBackRowLoop = false;
@@ -680,6 +683,14 @@ public abstract class BaseAuto extends OpMode {
 
         // Park based on the range last used to score; fall back to the initially selected range.
         lastScoreRangeUsed = getLeaveRangeForLastShot();
+        if (lastScoreRangeUsed == Range.LONG_RANGE
+                && robot != null
+                && robot.intake != null
+                && robot.intake.spinner != null) {
+            robot.intake.autoIntake = false;
+            robot.intake.spinner.autoSpin = false;
+            robot.intake.spinner.setMegaSpinZero();
+        }
         buildPath(PathRequest.LEAVE);
         followPath(leavePath);
     }
@@ -694,6 +705,8 @@ public abstract class BaseAuto extends OpMode {
         backRowGoToPickupSlowdownApplied = false;
         farBackrowRetreatStarted = false;
         farBackrowForwardStarted = false;
+        farBackrowGoToPickupHoldSeen = false;
+        farBackrowGoToPickupHoldTimer.reset();
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
@@ -1068,9 +1081,6 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected PathChain buildReleaseCompletePath(Pose currentPose) {
-        if (range == Range.CLOSE_RANGE) {
-            return pathLibrary.buildLinear(currentPose, poses.getReleaseComplete(alliance, range));
-        }
         return pathLibrary.releaseComplete(currentPose, alliance, range);
     }
 
@@ -1100,14 +1110,10 @@ public abstract class BaseAuto extends OpMode {
     protected Pose getScorePoseForCurrentShot() {
         Range scoreRange = getScoreRangeForCurrentShot();
         Pose base = poses.getScore(alliance, scoreRange);
-        int finalRowInSequence = rowSequence[Math.max(0, rowsToRun - 1)];
-        boolean isFinalPlannedRowShot = currentAbsoluteRow == finalRowInSequence;
-        if (scoreRange == Range.CLOSE_RANGE
-                && preloadComplete
-                && isFinalPlannedRowShot
-                && !shouldStartNextCycle()
-                && !shouldGoToCloseLoopAfterShot()) {
-            return poses.getFinalShootClose(alliance);
+        if (scoreRange == Range.CLOSE_RANGE && preloadComplete && currentAbsoluteRow == 2) {
+            // Keep row-2 close shots on the dedicated row-2 pose; do not override with final-shot pose.
+            Pose row2Pose = poses.getRow2ShootClose(alliance);
+            return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(180.0));
         }
         if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
             // Close-range cycle shots run at 180 deg for both alliances.
@@ -1115,10 +1121,6 @@ public abstract class BaseAuto extends OpMode {
             if (alliance == Alliance.RED && currentAbsoluteRow == 1) {
                 // Use the tuned row-1 red heading from the pose constants, not the 180-deg default.
                 headingDeg = Math.toDegrees(poses.getFinalShootClose(alliance).getHeading());
-            }
-            if (currentAbsoluteRow == 2) {
-                Pose row2Pose = poses.getRow2ShootClose(alliance);
-                return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(headingDeg));
             }
             return new Pose(base.getX(), base.getY(), Math.toRadians(headingDeg));
         }
@@ -1311,10 +1313,11 @@ public abstract class BaseAuto extends OpMode {
             closeLoopGoToPickupIdleSeen = false;
             return stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
         }
-        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS) {
+        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS) {
             return true;
         }
         if (!followerIdle()) {
+            farBackrowGoToPickupHoldSeen = false;
             return false;
         }
         if (!farBackrowRetreatStarted) {
@@ -1332,7 +1335,16 @@ public abstract class BaseAuto extends OpMode {
             farBackrowForwardStarted = true;
             return false;
         }
-        return followerIdle() || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS;
+        if (!followerIdle()) {
+            farBackrowGoToPickupHoldSeen = false;
+            return false;
+        }
+        if (!farBackrowGoToPickupHoldSeen) {
+            farBackrowGoToPickupHoldSeen = true;
+            farBackrowGoToPickupHoldTimer.reset();
+        }
+        return farBackrowGoToPickupHoldTimer.seconds() >= FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS
+                || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS;
     }
 
     protected Pose offsetFarBackrowPickupPose(double blueDeltaX) {

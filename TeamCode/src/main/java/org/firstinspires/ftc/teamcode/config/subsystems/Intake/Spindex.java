@@ -611,10 +611,10 @@ public class Spindex implements Subsystem {
                         ballList[0] = "B";
                         ballOneChanged = true;
                     }
-                    if (ballList[1].equals("E")) {
-                        setSpindexBackwardTwo();
-                    } else if (ballList[2].equals("E")) {
+                    if (ballList[2].equals("E")) {
                         setSpindexBackwardThree();
+                    } else if (ballList[1].equals("E")) {
+                        setSpindexBackwardTwo();
                     }
                 } else if (currentBall.equals("two")) {
                     if(isBackGreenBall(backRed, backGreen, backBlue)){
@@ -627,10 +627,10 @@ public class Spindex implements Subsystem {
                         ballList[1] = "B";
                         ballTwoChanged = true;
                     }
-                    if (ballList[0].equals("E")) {
-                        setSpindexBackwardOne();
-                    } else if (ballList[2].equals("E")) {
+                    if (ballList[2].equals("E")) {
                         setSpindexBackwardThree();
+                    } else if (ballList[0].equals("E")) {
+                        setSpindexBackwardOne();
                     }
                 } else if (currentBall.equals("three")) {
                     if(isBackGreenBall(backRed, backGreen, backBlue)){
@@ -643,10 +643,10 @@ public class Spindex implements Subsystem {
                         ballList[2] = "B";
                         ballThreeChanged = true;
                     }
-                    if (ballList[0].equals("E")) {
-                        setSpindexBackwardOne();
-                    } else if (ballList[1].equals("E")) {
+                    if (ballList[1].equals("E")) {
                         setSpindexBackwardTwo();
+                    } else if (ballList[0].equals("E")) {
+                        setSpindexBackwardOne();
                     }
                 }
             }
