@@ -40,6 +40,6 @@ RStX:
 RStY:
 LStBut: reset follower
 RStBut: Empty Balls
-Back: unjam
+Back: reset imu
 Start: Reset Offset
 Touchpad:

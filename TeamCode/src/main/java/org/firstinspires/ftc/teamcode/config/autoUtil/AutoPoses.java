@@ -78,10 +78,10 @@ public class AutoPoses {
     public Pose pick4Step1LB = poseDeg(17.5, 12.5, 20.0);
     public Pose pick4Step1LR = poseDeg(FIELD_SIZE - pick4Step1LB.getX(), pick4Step1LB.getY(), 340.0);
 
-    public Pose farPickupZoneB = poseDeg(15.5, 10.0, 0.0);
-    public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 0.0);
-    public Pose farPickupZoneControlB = poseDeg(36.0, 7.0, 0.0);
-    public Pose farPickupZoneControlR = poseDeg(FIELD_SIZE - farPickupZoneControlB.getX(), farPickupZoneControlB.getY(), 0.0);
+    public Pose farPickupZoneB = poseDeg(15.5, 13.0, 330.0);
+    public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 30.0);
+    public Pose farPickupZoneControlB = poseDeg(36.0, 10.0, 330.0);
+    public Pose farPickupZoneControlR = poseDeg(FIELD_SIZE - farPickupZoneControlB.getX(), farPickupZoneControlB.getY(), 30.0);
     public Pose row4GoToPickupB = poseDeg(13.5, 16.0, 30.0);
     public Pose row4GoToPickupR = poseDeg(FIELD_SIZE - row4GoToPickupB.getX(), row4GoToPickupB.getY(), 330.0);
     public Pose row4IntermediatePickupB = poseDeg(13.5, 13.5, 30.0);
