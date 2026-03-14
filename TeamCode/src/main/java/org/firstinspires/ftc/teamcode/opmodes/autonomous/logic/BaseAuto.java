@@ -8,6 +8,7 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
@@ -139,6 +140,7 @@ public abstract class BaseAuto extends OpMode {
     private StateMachine shootAllMachine;
     private StateMachine sortingShootAllMachine;
     private AutoTurretAim turretAim;
+    private GoBildaPinpointDriver pinpoint;
 
     // ===== Robot and Subsystems =====
     private Robot robot;
@@ -197,6 +199,9 @@ public abstract class BaseAuto extends OpMode {
     // ===== FTC OpMode Lifecycle =====
     @Override
     public void init() {
+        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint.recalibrateIMU();
+
         robot = new Robot(hardwareMap, telemetry);
         AutoSpec spec = getSpec();
         range = spec.range;
