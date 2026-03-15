@@ -109,9 +109,10 @@ public abstract class BaseAuto extends OpMode {
     private static final double LONG_RANGE_REVERSE_INTAKE_START_T = 0.60;
     private static final double CLOSE_RANGE_REVERSE_INTAKE_START_T = 0.55;
     private static final double CLOSE_RANGE_REVERSE_INTAKE_END_T = 0.80;
-    private static final double AUTO_LONG_TRIM_OFFSET_DEG = 6.0;
+    private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_LONG_PRELOAD_TRIM_OFFSET_DEG = 2.0;
-    private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 6.0;
+    private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 3.0;
+    private static final double AUTO_CLOSE_ROW1_SHOOT_TRIM_OFFSET_DEG = 9.0;
     private static final double AUTO_TOTAL_SECONDS = 30.0;
     private static final double FORCE_LEAVE_TIME_REMAINING_SECONDS = 2.0;
 
@@ -1655,6 +1656,18 @@ public abstract class BaseAuto extends OpMode {
     }
 
     private double getAutoTurretTrimOffsetForState() {
+        boolean shootState = activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.COMPLETE_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_COMPLETE_SHOOT;
+        if (shootState
+                && range == Range.CLOSE_RANGE
+                && preloadComplete
+                && currentAbsoluteRow == 1) {
+            return AUTO_CLOSE_ROW1_SHOOT_TRIM_OFFSET_DEG;
+        }
         if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
                 || activeState == AutoStates.BACKROW_LOOP_COMPLETE_SHOOT) {
             return AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG;
