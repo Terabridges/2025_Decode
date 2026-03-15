@@ -194,7 +194,7 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
-        Outtake.defaultTurretAimTrimOffsetDeg = 6.0;
+        Outtake.defaultTurretAimTrimOffsetDeg = 3.0;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
         // Keep recoil-comp code available, but disable it during teleop runtime.
         Outtake.enableRpmRecoilComp = false;
