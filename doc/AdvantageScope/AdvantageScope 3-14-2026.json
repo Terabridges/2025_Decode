@@ -1,0 +1,578 @@
+{
+  "hubs": [
+    {
+      "x": -8,
+      "y": -8,
+      "width": 1552,
+      "height": 928,
+      "state": {
+        "sidebar": {
+          "width": 387,
+          "expanded": [
+            "/HardwareMap",
+            "/Odometry",
+            "/Odometry/pinpoint",
+            "/Odometry/RobotPose",
+            "/Odometry/RobotPose3d",
+            "/Odometry/RobotPose/rotation",
+            "/Odometry/RobotPose/translation",
+            "/Odometry/RobotPose3d/translation",
+            "/RealOutputs",
+            "/Odometry/pinpoint/Pose2d",
+            "/Odometry/pinpoint/Pose2d/translation",
+            "/RealOutputs/LoggedRobot",
+            "/RealOutputs/Logger",
+            "/RealOutputs/PsiKit",
+            "/HardwareMap/spindexL",
+            "/HardwareMap/limelight",
+            "/HardwareMap/limelight/result",
+            "/RealOutputs/Calibrator",
+            "/RealOutputs/Calibrator/Velocity",
+            "/RealOutputs/SpindexAligner",
+            "/RealOutputs/SpindexTest",
+            "/RealOutputs/Localization",
+            "/RealOutputs/Localization/Pinpoint",
+            "/RealOutputs/Vision",
+            "/RealOutputs/Turret",
+            "/HardwareMap/spindexAnalog",
+            "/RealOutputs/Subsystems",
+            "/RealOutputs/Subsystems/Intake",
+            "/RealOutputs/Subsystems/Intake/Spindex",
+            "/RealOutputs/Subsystems/Intake/Spinner",
+            "/RealOutputs/Subsystems/Outtake"
+          ]
+        },
+        "tabs": {
+          "selected": 6,
+          "tabs": [
+            {
+              "type": 0,
+              "title": "",
+              "controller": null,
+              "controllerUUID": "8a43w50ecdzj6dcuph6nice89noy54qk",
+              "renderer": "",
+              "controlsHeight": 0
+            },
+            {
+              "type": 1,
+              "title": "Flywheel",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Outtake/Shooter/FlywheelTargetRPM",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Outtake/Shooter/FlywheelCurrentRPM",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Outtake/Shooter/FlywheelPower",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Outtake/Shooter/AtRPM",
+                    "logType": "Boolean",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "ou9eion6qtufobpzlmq9ckpq00lw2o2o",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 1,
+              "title": "Line Graph",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Calibrator/Velocity/PositionDeg",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Calibrator/Velocity/CommandedPower",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Calibrator/Velocity/Phase",
+                    "logType": "String",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2"
+                    }
+                  },
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Calibrator/Velocity/DirectionCW",
+                    "logType": "Boolean",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "4v4g4r8di4ep4lasn20vvh5ygg0qjv74",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 1,
+              "title": "Line Graph",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/SpindexTest/AbsoluteDeg",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/SpindexTest/CommandDeg",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/SpindexAligner/FloodgateAmps",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/FloodgateAmps",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "1n9z35jlw5kn3qbe5zgshpwsu422q4y0",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 3,
+              "title": "3D Field",
+              "controller": {
+                "sources": [
+                  {
+                    "type": "robot",
+                    "logKey": "RealOutputs/Localization/Pinpoint/Pose2d",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Drive Base"
+                    }
+                  }
+                ],
+                "game": "FTC:2025-2026 Field"
+              },
+              "controllerUUID": "whfjtwlrv1shu9lo53e5miia9o8xmjzs",
+              "renderer": {
+                "cameraIndex": -1,
+                "orbitFov": 50,
+                "cameraPosition": [
+                  1.7970946579676426,
+                  3.0606818559720024,
+                  -2.9206546530378397
+                ],
+                "cameraTarget": [
+                  0.6597621527223992,
+                  -0.2426575311202837,
+                  -0.2684058588638589
+                ]
+              },
+              "controlsHeight": 200
+            },
+            {
+              "type": 1,
+              "title": "Floodgate",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "HardwareMap/floodgate/voltage",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/FloodgateCurrentAmps",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "90e6bnraplj2f3s5kj42bja2xm9wdj3f",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 1,
+              "title": "Spindexer",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/AbsoluteDegree",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/CommandedDegree",
+                    "logType": "Number",
+                    "visible": false,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/CommandedDegree",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/CommandedLeftServoPos",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/CommandedRightServoPos",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e48b32",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/CommandedServoSharedPos",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#c0b487",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spindex/CurrentDirection",
+                    "logType": "String",
+                    "visible": true,
+                    "options": {
+                      "color": "#858584"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "a4yvfsqerlnn2yv83dcy61s2n3zpdhj5",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 4,
+              "title": "Table",
+              "controller": [
+                "RealOutputs/Subsystems/Intake/Spindex/CommandedDegree"
+              ],
+              "controllerUUID": "s7jm6wonifstbl6v140tn531ocbagqxv",
+              "renderer": null,
+              "controlsHeight": 0
+            },
+            {
+              "type": 1,
+              "title": "Intake",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/MegaSpinPower",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#5f4528",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/OverridePower",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/FrontOuterDistance",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#3b875a",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/FrontInnerDistance",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#858584",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/BackInnerDistance",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e48b32",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/BackOuterDistance",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#c0b487",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/FrontOuterTripped",
+                    "logType": "Boolean",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2"
+                    }
+                  },
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/FrontInnerTripped",
+                    "logType": "Boolean",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b"
+                    }
+                  },
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/BackInnerTripped",
+                    "logType": "Boolean",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437"
+                    }
+                  },
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/BackOuterDistance",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e"
+                    }
+                  },
+                  {
+                    "type": "stripes",
+                    "logKey": "RealOutputs/Subsystems/Intake/Spinner/SpinOverride",
+                    "logType": "Boolean",
+                    "visible": true,
+                    "options": {
+                      "color": "#d993aa"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "i5yswlu2l4t9xz431f2m6p8a8qpz6b7v",
+              "renderer": null,
+              "controlsHeight": 200
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "satellites": [],
+  "version": "26.0.0"
+}

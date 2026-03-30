@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -97,6 +98,7 @@ public class MainTeleOp extends OpMode {
     public double telemetryTime;
     private ElapsedTime bHoldTimer;
     private boolean bLongPressHandled = false;
+    private GoBildaPinpointDriver pinpoint;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -107,6 +109,7 @@ public class MainTeleOp extends OpMode {
     @Override
     public void init() {
         configureLowOverheadPsiKitLogging();
+        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -191,7 +194,7 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
-        Outtake.defaultTurretAimTrimOffsetDeg = 6.0;
+        Outtake.defaultTurretAimTrimOffsetDeg = 3.0;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
         // Keep recoil-comp code available, but disable it during teleop runtime.
         Outtake.enableRpmRecoilComp = false;
@@ -217,7 +220,7 @@ public class MainTeleOp extends OpMode {
         }
         long tAfterFollowerNs = System.nanoTime();
 
-        updateAllianceToggle();
+        updateGp2BackImuRecalibration();
         applyAllianceVisionLockConfig();
         long tAfterAllianceNs = System.nanoTime();
 
@@ -334,9 +337,11 @@ public class MainTeleOp extends OpMode {
         currentGamepad2.copy(gamepad2);
     }
 
-    private void updateAllianceToggle() {
+    private void updateGp2BackImuRecalibration() {
         if (currentGamepad2.back && !previousGamepad2.back) {
-            GlobalVariables.toggleAlliance();
+            if (pinpoint != null) {
+                pinpoint.recalibrateIMU();
+            }
         }
     }
 

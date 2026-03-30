@@ -115,6 +115,10 @@ public class Spindex implements Subsystem {
     @PsiKitFieldAutoLog
     private double commandedServoPos = 0.0;
     @PsiKitFieldAutoLog
+    private double commandedLeftServoPos = 0.0;
+    @PsiKitFieldAutoLog
+    private double commandedRightServoPos = 0.0;
+    @PsiKitFieldAutoLog
     private double commandedDegree = 0.0;
 
 
@@ -146,6 +150,8 @@ public class Spindex implements Subsystem {
         double leftPos = clamp01(commandedServoPos);
         double rightBasePos = invertRight ? (1.0 - commandedServoPos) : commandedServoPos;
         double rightPos = clamp01(rightBasePos + rightServoOffset);
+        commandedLeftServoPos = leftPos;
+        commandedRightServoPos = rightPos;
 
         if (currentSpindexServo.equals("both")) {
             spindexLeft.setPosition(leftPos);
@@ -611,10 +617,10 @@ public class Spindex implements Subsystem {
                         ballList[0] = "B";
                         ballOneChanged = true;
                     }
-                    if (ballList[1].equals("E")) {
-                        setSpindexBackwardTwo();
-                    } else if (ballList[2].equals("E")) {
+                    if (ballList[2].equals("E")) {
                         setSpindexBackwardThree();
+                    } else if (ballList[1].equals("E")) {
+                        setSpindexBackwardTwo();
                     }
                 } else if (currentBall.equals("two")) {
                     if(isBackGreenBall(backRed, backGreen, backBlue)){
@@ -627,10 +633,10 @@ public class Spindex implements Subsystem {
                         ballList[1] = "B";
                         ballTwoChanged = true;
                     }
-                    if (ballList[0].equals("E")) {
-                        setSpindexBackwardOne();
-                    } else if (ballList[2].equals("E")) {
+                    if (ballList[2].equals("E")) {
                         setSpindexBackwardThree();
+                    } else if (ballList[0].equals("E")) {
+                        setSpindexBackwardOne();
                     }
                 } else if (currentBall.equals("three")) {
                     if(isBackGreenBall(backRed, backGreen, backBlue)){
@@ -643,10 +649,10 @@ public class Spindex implements Subsystem {
                         ballList[2] = "B";
                         ballThreeChanged = true;
                     }
-                    if (ballList[0].equals("E")) {
-                        setSpindexBackwardOne();
-                    } else if (ballList[1].equals("E")) {
+                    if (ballList[1].equals("E")) {
                         setSpindexBackwardTwo();
+                    } else if (ballList[0].equals("E")) {
+                        setSpindexBackwardOne();
                     }
                 }
             }
@@ -753,6 +759,10 @@ public class Spindex implements Subsystem {
         Logger.recordOutput("Subsystems/Intake/Spindex/Slot2", ballList[1]);
         Logger.recordOutput("Subsystems/Intake/Spindex/Slot3", ballList[2]);
         Logger.recordOutput("Subsystems/Intake/Spindex/LoadedBallCount", loadedBallCount());
+        Logger.recordOutput("Subsystems/Intake/Spindex/CommandedServoSharedPos", commandedServoPos);
+        Logger.recordOutput("Subsystems/Intake/Spindex/CommandedLeftServoPos", commandedLeftServoPos);
+        Logger.recordOutput("Subsystems/Intake/Spindex/CommandedRightServoPos", commandedRightServoPos);
+        Logger.recordOutput("Subsystems/Intake/Spindex/ServoSelection", currentSpindexServo);
         Logger.recordOutput("Subsystems/Intake/Spindex/CommandedDegree", commandedDeg);
         Logger.recordOutput("Subsystems/Intake/Spindex/AbsoluteDegree", absoluteDeg);
         Logger.recordOutput("Subsystems/Intake/Spindex/ErrorDegree", errorDeg);

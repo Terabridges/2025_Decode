@@ -48,14 +48,14 @@ public class AutoPoses {
     public Pose loadR = poseDeg(FIELD_SIZE - ROBOT_WIDTH / 2.0, ROBOT_LENGTH / 2.0, 0);
 
     // ===== Release Poses =====
-    public Pose releaseGoToCloseB = poseDeg(25.0, 66.0, 180.0);
+    public Pose releaseGoToCloseB = poseDeg(35.0, 66.0, 180.0);
     public Pose releaseCompleteCloseB = poseDeg(17.5, 66.0, 180.0);
     public Pose releaseGoToCloseR = poseDeg(FIELD_SIZE - releaseGoToCloseB.getX(), releaseGoToCloseB.getY() + 5.0, 180.0);
     public Pose releaseCompleteCloseR = poseDeg(FIELD_SIZE - releaseCompleteCloseB.getX(), releaseCompleteCloseB.getY() + 5.0, 180.0);
 
     // ===== Leave Poses =====
     public Pose leaveCB = poseDeg(44.0, 115.0, 140.0);
-    public Pose leaveLB = poseDeg(15.0, 15.0, 0.0);
+    public Pose leaveLB = poseDeg(25.0, 15.0, 0.0);
     public Pose leaveCR = mirrorBluePose(leaveCB);
     public Pose leaveLR = poseDeg(FIELD_SIZE - leaveLB.getX(), leaveLB.getY(), 0.0);
 
@@ -78,10 +78,10 @@ public class AutoPoses {
     public Pose pick4Step1LB = poseDeg(17.5, 12.5, 20.0);
     public Pose pick4Step1LR = poseDeg(FIELD_SIZE - pick4Step1LB.getX(), pick4Step1LB.getY(), 340.0);
 
-    public Pose farPickupZoneB = poseDeg(15.5, 10.0, 0.0);
-    public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 0.0);
-    public Pose farPickupZoneControlB = poseDeg(36.0, 7.0, 0.0);
-    public Pose farPickupZoneControlR = poseDeg(FIELD_SIZE - farPickupZoneControlB.getX(), farPickupZoneControlB.getY(), 0.0);
+    public Pose farPickupZoneB = poseDeg(15.5, 13.0, 350.0);
+    public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 10.0);
+    public Pose farPickupZoneControlB = poseDeg(36.0, 10.0, 350.0);
+    public Pose farPickupZoneControlR = poseDeg(FIELD_SIZE - farPickupZoneControlB.getX(), farPickupZoneControlB.getY(), 10.0);
     public Pose row4GoToPickupB = poseDeg(13.5, 16.0, 30.0);
     public Pose row4GoToPickupR = poseDeg(FIELD_SIZE - row4GoToPickupB.getX(), row4GoToPickupB.getY(), 330.0);
     public Pose row4IntermediatePickupB = poseDeg(13.5, 13.5, 30.0);

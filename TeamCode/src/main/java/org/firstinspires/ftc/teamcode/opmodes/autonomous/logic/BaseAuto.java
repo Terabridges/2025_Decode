@@ -8,11 +8,13 @@ import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.sfdev.assembly.state.StateMachine;
 import com.sfdev.assembly.state.StateMachineBuilder;
 
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoIntakeSpeed;
@@ -91,6 +93,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double ROW4_COMPLETE_PICKUP_HOLD_SECONDS = 0.5;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 1.05;
+    private static final double FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS = 1.0;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_TIMEOUT_SECONDS = 2.0;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_IDLE_DELAY_SECONDS = 1.0;
     private static final double PICKUP_HEADING_TOLERANCE_DEG = 3.0;
@@ -106,8 +109,10 @@ public abstract class BaseAuto extends OpMode {
     private static final double LONG_RANGE_REVERSE_INTAKE_START_T = 0.60;
     private static final double CLOSE_RANGE_REVERSE_INTAKE_START_T = 0.55;
     private static final double CLOSE_RANGE_REVERSE_INTAKE_END_T = 0.80;
-    private static final double AUTO_LONG_TRIM_OFFSET_DEG = 2.0;
-    private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 6.0;
+    private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
+    private static final double AUTO_LONG_PRELOAD_TRIM_OFFSET_DEG = 2.0;
+    private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 3.0;
+    private static final double AUTO_CLOSE_ROW1_SHOOT_TRIM_OFFSET_DEG = 9.0;
     private static final double AUTO_TOTAL_SECONDS = 30.0;
     private static final double FORCE_LEAVE_TIME_REMAINING_SECONDS = 2.0;
 
@@ -139,6 +144,7 @@ public abstract class BaseAuto extends OpMode {
     private StateMachine shootAllMachine;
     private StateMachine sortingShootAllMachine;
     private AutoTurretAim turretAim;
+    private GoBildaPinpointDriver pinpoint;
 
     // ===== Robot and Subsystems =====
     private Robot robot;
@@ -151,6 +157,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean preloadComplete = false;
     private AutoMotifTracker motifTracker;
     private int acquiredMotifId = -1;
+    private final ElapsedTime autoTimer = new ElapsedTime();
     private final ElapsedTime stateTimer = new ElapsedTime();
     private final ElapsedTime shootTimer = new ElapsedTime();
     private final ElapsedTime completeShootReadyTimer = new ElapsedTime();
@@ -159,6 +166,7 @@ public abstract class BaseAuto extends OpMode {
     private final ElapsedTime row4CompletePickupHoldTimer = new ElapsedTime();
     private final ElapsedTime closeLoopGoToPickupIdleTimer = new ElapsedTime();
     private final ElapsedTime closeLoopCompletePickupIdleTimer = new ElapsedTime();
+    private final ElapsedTime farBackrowGoToPickupHoldTimer = new ElapsedTime();
     private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
     private AutoStates acquireMotifReturnState = AutoStates.GO_TO_SHOOT;
     private boolean motifResolvedThisAcquire = false;
@@ -179,6 +187,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean closeLoopGoToPickupIdleSeen = false;
     private boolean closeLoopGoToPickupPart2Started = false;
     private boolean closeLoopCompletePickupIdleSeen = false;
+    private boolean farBackrowGoToPickupHoldSeen = false;
     private int backRowLoopEntryBallCount = 0;
     private boolean backRowLoopRetryUsed = false;
     private boolean forceOneMoreBackRowLoop = false;
@@ -197,6 +206,9 @@ public abstract class BaseAuto extends OpMode {
     // ===== FTC OpMode Lifecycle =====
     @Override
     public void init() {
+        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint.recalibrateIMU();
+
         robot = new Robot(hardwareMap, telemetry);
         AutoSpec spec = getSpec();
         range = spec.range;
@@ -273,6 +285,7 @@ public abstract class BaseAuto extends OpMode {
 
     @Override
     public void start() {
+        autoTimer.reset();
         autoMachine.start();
         robot.toInit();
         Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
@@ -311,6 +324,7 @@ public abstract class BaseAuto extends OpMode {
         if (sortingShootAllMachine != null) {
             sortingShootAllMachine.update();
         }
+        logAutoStateMachinePsiKitData();
 
         telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
         telemetryM.debug("Motif Pattern: " + GlobalVariables.getMotif());
@@ -357,7 +371,7 @@ public abstract class BaseAuto extends OpMode {
         if (activeState == AutoStates.LEAVE) {
             return false;
         }
-        double timeRemaining = AUTO_TOTAL_SECONDS - getRuntime();
+        double timeRemaining = AUTO_TOTAL_SECONDS - autoTimer.seconds();
         if (timeRemaining > FORCE_LEAVE_TIME_REMAINING_SECONDS) {
             return false;
         }
@@ -675,6 +689,13 @@ public abstract class BaseAuto extends OpMode {
 
         // Park based on the range last used to score; fall back to the initially selected range.
         lastScoreRangeUsed = getLeaveRangeForLastShot();
+        if (robot != null
+                && robot.intake != null
+                && robot.intake.spinner != null) {
+            robot.intake.autoIntake = false;
+            robot.intake.spinner.autoSpin = false;
+            robot.intake.spinner.setMegaSpinZero();
+        }
         buildPath(PathRequest.LEAVE);
         followPath(leavePath);
     }
@@ -689,6 +710,8 @@ public abstract class BaseAuto extends OpMode {
         backRowGoToPickupSlowdownApplied = false;
         farBackrowRetreatStarted = false;
         farBackrowForwardStarted = false;
+        farBackrowGoToPickupHoldSeen = false;
+        farBackrowGoToPickupHoldTimer.reset();
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
 
@@ -1063,9 +1086,6 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected PathChain buildReleaseCompletePath(Pose currentPose) {
-        if (range == Range.CLOSE_RANGE) {
-            return pathLibrary.buildLinear(currentPose, poses.getReleaseComplete(alliance, range));
-        }
         return pathLibrary.releaseComplete(currentPose, alliance, range);
     }
 
@@ -1095,13 +1115,18 @@ public abstract class BaseAuto extends OpMode {
     protected Pose getScorePoseForCurrentShot() {
         Range scoreRange = getScoreRangeForCurrentShot();
         Pose base = poses.getScore(alliance, scoreRange);
-        int finalRowInSequence = rowSequence[Math.max(0, rowsToRun - 1)];
-        boolean isFinalPlannedRowShot = currentAbsoluteRow == finalRowInSequence;
+        if (scoreRange == Range.CLOSE_RANGE && preloadComplete && currentAbsoluteRow == 2) {
+            // Keep row-2 close shots on the dedicated row-2 pose; do not override with final-shot pose.
+            Pose row2Pose = poses.getRow2ShootClose(alliance);
+            return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(180.0));
+        }
         if (scoreRange == Range.CLOSE_RANGE
                 && preloadComplete
-                && isFinalPlannedRowShot
+                && rowsCompleted > 0
+                && currentAbsoluteRow == 1
                 && !shouldStartNextCycle()
                 && !shouldGoToCloseLoopAfterShot()) {
+            // Final close shot should happen from the deeper field pose (same location as close leave).
             return poses.getFinalShootClose(alliance);
         }
         if (scoreRange == Range.CLOSE_RANGE && preloadComplete) {
@@ -1110,10 +1135,6 @@ public abstract class BaseAuto extends OpMode {
             if (alliance == Alliance.RED && currentAbsoluteRow == 1) {
                 // Use the tuned row-1 red heading from the pose constants, not the 180-deg default.
                 headingDeg = Math.toDegrees(poses.getFinalShootClose(alliance).getHeading());
-            }
-            if (currentAbsoluteRow == 2) {
-                Pose row2Pose = poses.getRow2ShootClose(alliance);
-                return new Pose(row2Pose.getX(), row2Pose.getY(), Math.toRadians(headingDeg));
             }
             return new Pose(base.getX(), base.getY(), Math.toRadians(headingDeg));
         }
@@ -1306,10 +1327,11 @@ public abstract class BaseAuto extends OpMode {
             closeLoopGoToPickupIdleSeen = false;
             return stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
         }
-        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS) {
+        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS) {
             return true;
         }
         if (!followerIdle()) {
+            farBackrowGoToPickupHoldSeen = false;
             return false;
         }
         if (!farBackrowRetreatStarted) {
@@ -1327,7 +1349,16 @@ public abstract class BaseAuto extends OpMode {
             farBackrowForwardStarted = true;
             return false;
         }
-        return followerIdle() || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS;
+        if (!followerIdle()) {
+            farBackrowGoToPickupHoldSeen = false;
+            return false;
+        }
+        if (!farBackrowGoToPickupHoldSeen) {
+            farBackrowGoToPickupHoldSeen = true;
+            farBackrowGoToPickupHoldTimer.reset();
+        }
+        return farBackrowGoToPickupHoldTimer.seconds() >= FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS
+                || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS;
     }
 
     protected Pose offsetFarBackrowPickupPose(double blueDeltaX) {
@@ -1625,11 +1656,26 @@ public abstract class BaseAuto extends OpMode {
     }
 
     private double getAutoTurretTrimOffsetForState() {
+        boolean shootState = activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.COMPLETE_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_COMPLETE_SHOOT;
+        if (shootState
+                && range == Range.CLOSE_RANGE
+                && preloadComplete
+                && currentAbsoluteRow == 1) {
+            return AUTO_CLOSE_ROW1_SHOOT_TRIM_OFFSET_DEG;
+        }
         if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
                 || activeState == AutoStates.BACKROW_LOOP_COMPLETE_SHOOT) {
             return AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG;
         }
         if (range == Range.LONG_RANGE) {
+            if (!preloadComplete) {
+                return AUTO_LONG_PRELOAD_TRIM_OFFSET_DEG;
+            }
             return AUTO_LONG_TRIM_OFFSET_DEG;
         }
         return 0.0;
@@ -1652,6 +1698,11 @@ public abstract class BaseAuto extends OpMode {
         if (!backRowLoopShootComplete()) {
             return false;
         }
+        if (shouldForceRetryAfterFirstLongBackRowNoShot()) {
+            forceOneMoreBackRowLoop = true;
+            backRowLoopRetryUsed = true;
+            return false;
+        }
         if (forceOneMoreBackRowLoop) {
             return false;
         }
@@ -1665,6 +1716,11 @@ public abstract class BaseAuto extends OpMode {
         if (!backRowLoopShootComplete()) {
             return false;
         }
+        if (shouldForceRetryAfterFirstLongBackRowNoShot()) {
+            forceOneMoreBackRowLoop = false;
+            backRowLoopRetryUsed = true;
+            return true;
+        }
         if (forceOneMoreBackRowLoop) {
             forceOneMoreBackRowLoop = false;
             return true;
@@ -1677,6 +1733,103 @@ public abstract class BaseAuto extends OpMode {
 
     protected Pose getBackRowLoopScorePoseForCurrentShot() {
         return getScorePoseForCurrentShot();
+    }
+
+    private boolean shouldForceRetryAfterFirstLongBackRowNoShot() {
+        if (range != Range.LONG_RANGE) {
+            return false;
+        }
+        if (backRowLoopRetryUsed || backRowLoopCyclesCompleted != 0) {
+            return false;
+        }
+        int ballsAfter = getLoadedBallCount();
+        int ballsShotThisCycle = Math.max(0, backRowLoopEntryBallCount - ballsAfter);
+        return ballsShotThisCycle == 0;
+    }
+
+    private void logAutoStateMachinePsiKitData() {
+        Logger.recordOutput("Auto/StateMachine/ActiveState", activeState != null ? activeState.name() : "null");
+        Logger.recordOutput(
+                "Auto/StateMachine/AutoMachineState",
+                (autoMachine != null && autoMachine.getState() != null) ? autoMachine.getState().toString() : "null"
+        );
+        Logger.recordOutput(
+                "Auto/StateMachine/SortedShootMachineState",
+                (sortingShootAllMachine != null && sortingShootAllMachine.getState() != null)
+                        ? sortingShootAllMachine.getState().toString()
+                        : "null"
+        );
+        Logger.recordOutput("Auto/StateMachine/PreloadComplete", preloadComplete);
+        Logger.recordOutput("Auto/StateMachine/RowsCompleted", rowsCompleted);
+        Logger.recordOutput("Auto/StateMachine/CurrentAbsoluteRow", currentAbsoluteRow);
+        Logger.recordOutput("Auto/StateMachine/FollowerIdle", followerIdle());
+        Logger.recordOutput("Auto/StateMachine/StateTimedOut", stateTimedOut());
+        Logger.recordOutput("Auto/StateMachine/ShootTimedOut", shootTimedOut());
+        Logger.recordOutput("Auto/StateMachine/ShootSequenceStarted", shootSequenceStarted);
+        Logger.recordOutput("Auto/StateMachine/SkipCurrentShot", skipCurrentShot);
+
+        switch (activeState) {
+            case GO_TO_SHOOT:
+            case BACKROW_LOOP_GO_TO_SHOOT:
+            case CLOSE_LOOP_GO_TO_SHOOT:
+                Logger.recordOutput("Auto/Transitions/GoToShoot/ShouldSkipShootPhase", shouldSkipShootPhase());
+                break;
+
+            case COMPLETE_SHOOT:
+            case BACKROW_LOOP_COMPLETE_SHOOT:
+            case CLOSE_LOOP_COMPLETE_SHOOT:
+                Logger.recordOutput("Auto/Transitions/CompleteShoot/ShouldAcquireMotifAfterPreloadShot", shouldAcquireMotifAfterPreloadShot());
+                Logger.recordOutput("Auto/Transitions/CompleteShoot/ShouldGoToCloseLoopAfterShot", shouldGoToCloseLoopAfterShot());
+                Logger.recordOutput("Auto/Transitions/CompleteShoot/ShouldStartNextCycle", shouldStartNextCycle());
+                Logger.recordOutput("Auto/Transitions/CompleteShoot/ShouldEnterFarBackRowLoop", shouldEnterFarBackRowLoop());
+                Logger.recordOutput("Auto/Transitions/BackRow/HasPendingPickupRow", hasPendingPickupRow());
+                Logger.recordOutput("Auto/Transitions/BackRow/ForceOneMoreLoop", forceOneMoreBackRowLoop);
+                Logger.recordOutput("Auto/Transitions/BackRow/CyclesCompleted", backRowLoopCyclesCompleted);
+                Logger.recordOutput("Auto/Transitions/BackRow/CyclesTarget", backRowLoopCyclesTarget);
+                break;
+
+            case GO_TO_PICKUP:
+                Logger.recordOutput("Auto/Transitions/GoToPickup/IdleSeen", goToPickupIdleSeen);
+                Logger.recordOutput("Auto/Transitions/GoToPickup/IdleTimerSec", goToPickupIdleTimer.seconds());
+                Logger.recordOutput("Auto/Transitions/GoToPickup/Row4IntermediateStarted", row4IntermediatePickupStarted);
+                Logger.recordOutput("Auto/Transitions/GoToPickup/IsHeadingSettled", isHeadingSettledForGoToPickup());
+                break;
+
+            case COMPLETE_PICKUP:
+                Logger.recordOutput("Auto/Transitions/CompletePickup/ShouldReleaseAfterPickup", shouldReleaseAfterPickup());
+                Logger.recordOutput("Auto/Transitions/CompletePickup/HasReachedPickupBallTarget", hasReachedPickupBallTarget());
+                Logger.recordOutput("Auto/Transitions/CompletePickup/Row4PickupTimedOut", row4PickupTimedOut());
+                Logger.recordOutput("Auto/Transitions/CompletePickup/Row1TimeoutReached",
+                        stateTimer.seconds() >= ROW1_PICKUP_TIMEOUT_SECONDS);
+                break;
+
+            case COMPLETE_RELEASE:
+                Logger.recordOutput("Auto/Transitions/CompleteRelease/FollowerIdle", followerIdle());
+                Logger.recordOutput("Auto/Transitions/CompleteRelease/ReleaseTimeoutReached",
+                        stateTimer.seconds() >= RELEASE_TIMEOUT_SECONDS);
+                break;
+
+            case BACKROW_LOOP_GO_TO_PICKUP:
+            case CLOSE_LOOP_GO_TO_PICKUP:
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/CloseLoopPart2Started", closeLoopGoToPickupPart2Started);
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/CloseLoopIdleSeen", closeLoopGoToPickupIdleSeen);
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/CloseLoopIdleTimerSec", closeLoopGoToPickupIdleTimer.seconds());
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarRetreatStarted", farBackrowRetreatStarted);
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarForwardStarted", farBackrowForwardStarted);
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarHoldSeen", farBackrowGoToPickupHoldSeen);
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarHoldTimerSec", farBackrowGoToPickupHoldTimer.seconds());
+                break;
+
+            case BACKROW_LOOP_COMPLETE_PICKUP:
+            case CLOSE_LOOP_COMPLETE_PICKUP:
+                Logger.recordOutput("Auto/Transitions/BackRowCompletePickup/TimedOut", backRowPickupTimedOut());
+                Logger.recordOutput("Auto/Transitions/BackRowCompletePickup/CloseLoopIdleSeen", closeLoopCompletePickupIdleSeen);
+                Logger.recordOutput("Auto/Transitions/BackRowCompletePickup/CloseLoopIdleTimerSec", closeLoopCompletePickupIdleTimer.seconds());
+                break;
+
+            default:
+                break;
+        }
     }
     
     // ===== Telemetry Helpers =====
