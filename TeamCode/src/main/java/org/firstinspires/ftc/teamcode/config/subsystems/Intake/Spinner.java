@@ -22,7 +22,6 @@ public class Spinner implements Subsystem {
     private AnalogInput backInnerDistanceSensor;
     private AnalogInput floodgateSensor;
     public DcMotor intakeLeft;
-    public DcMotor intakeRight;
 
     //---------------- Software ----------------
     private double megaSpinPow = 0;
@@ -60,8 +59,6 @@ public class Spinner implements Subsystem {
         }
         intakeLeft = map.get(DcMotor.class, "intakeLeft");
         intakeLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        intakeRight = map.get(DcMotor.class, "intakeRight");
-        intakeRight.setDirection(DcMotorSimple.Direction.FORWARD);
 
 //        frontInnerTimer = new ElapsedTime();
 //        backInnerTimer = new ElapsedTime();
@@ -70,7 +67,7 @@ public class Spinner implements Subsystem {
     //---------------- Methods ----------------
     private void moveMegaSpinPow(double pow){
         intakeLeft.setPower(pow);
-        intakeRight.setPower(pow);
+        //intakeRight.setPower(pow);
     }
 
     public void setMegaSpinPow(double pow){

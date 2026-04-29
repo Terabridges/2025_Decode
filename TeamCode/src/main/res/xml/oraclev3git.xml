@@ -5,7 +5,7 @@
             <goBILDA5201SeriesMotor name="left_front" port="0" />
             <goBILDA5201SeriesMotor name="right_front" port="1" />
             <goBILDA5201SeriesMotor name="intakeLeft" port="2" />
-            <goBILDA5201SeriesMotor name="intakeRight" port="3" />
+            <goBILDA5201SeriesMotor name="clutchSpin" port="3" />
             <Servo name="light1" port="0" />
             <Servo name="light2" port="1" />
             <Servo name="light3" port="2" />

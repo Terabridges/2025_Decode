@@ -151,90 +151,90 @@ public class Robot {
         }
     }
 
-    public StateMachine getShootAllMachine(){
-        return new StateMachineBuilder()
-                .state(ShootAllStates.INIT)
-                .transition(() -> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
-                .onExit(()-> {
-                    initShootAllMachine = false;
-                    intake.spinner.setMegaSpinIn();
-                    outtake.shooter.useFlywheelPID = true;
-                    intake.spindex.setSpindexShootOnePre();
-                    intake.clutch.setClutchUp();
-                    outtake.shooter.setHoodTarget();
-                    intake.autoIntake = false;
-                })
-
-                .state(ShootAllStates.GO_TO_SHOOT_ONE)
-                .transition(()-> intake.spindex.isSpindexAtPos() && outtake.shooter.isAtRPM(), ShootAllStates.WAIT0)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.clutch.setClutchDown();
-                    intake.spindex.setSpindexShootOne();
-                })
-
-                .state(ShootAllStates.WAIT0)
-                .transition(() -> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-
-                .state(ShootAllStates.WAIT1)
-                .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_TWO)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-
-                .state(ShootAllStates.GO_TO_SHOOT_TWO)
-                .onEnter(() -> {
-                    intake.spindex.setSpindexShootTwo();
-                })
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT2)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-
-                .state(ShootAllStates.WAIT2)
-                .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_THREE)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-
-                .state(ShootAllStates.GO_TO_SHOOT_THREE)
-                .onEnter(() -> {
-                    intake.spindex.setSpindexShootThree();
-                })
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT3)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-
-                .state(ShootAllStates.WAIT3)
-                .transitionTimed(waitTime, ShootAllStates.RESET)
-                .transition(()-> other.unJam, ShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.spindex.setSpindexShootOnePreWrap();
-                })
-
-                .state(ShootAllStates.RESET)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
-                .onExit(()-> {
-                    txLights = false;
-                    shootAllBallTargetCount = 0;
-                    intake.spindex.setSpindexForwardOne();
-                    intake.spinner.setMegaSpinZero();
-                    intake.clutch.setClutchUp();
-                    intake.spindex.emptyBalls();
-                    intake.autoIntake = true;
-                })
-
-                .state(ShootAllStates.UNJAM)
-                .onEnter(()->{
-                    txLights = false;
-                    other.unJam = false;
-                    shootAllBallTargetCount = 0;
-                    intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
-                    intake.spinner.setMegaSpinZero();
-                    intake.clutch.setClutchUp();
-                    intake.spindex.emptyBalls();
-                    goToReset = true;
-                    intake.autoIntake = true;
-                })
-                .transition(()-> goToReset, ShootAllStates.INIT)
-                .onExit(()->goToReset = false)
-
-                .build();
-    }
+//    public StateMachine getShootAllMachine(){
+//        return new StateMachineBuilder()
+//                .state(ShootAllStates.INIT)
+//                .transition(() -> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+//                .onExit(()-> {
+//                    initShootAllMachine = false;
+//                    intake.spinner.setMegaSpinIn();
+//                    outtake.shooter.useFlywheelPID = true;
+//                    intake.spindex.setSpindexShootOnePre();
+//                    intake.clutch.setClutchUp();
+//                    outtake.shooter.setHoodTarget();
+//                    intake.autoIntake = false;
+//                })
+//
+//                .state(ShootAllStates.GO_TO_SHOOT_ONE)
+//                .transition(()-> intake.spindex.isSpindexAtPos() && outtake.shooter.isAtRPM(), ShootAllStates.WAIT0)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//                .onExit(()-> {
+//                    intake.clutch.setClutchDown();
+//                    intake.spindex.setSpindexShootOne();
+//                })
+//
+//                .state(ShootAllStates.WAIT0)
+//                .transition(() -> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT1)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//
+//                .state(ShootAllStates.WAIT1)
+//                .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_TWO)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//
+//                .state(ShootAllStates.GO_TO_SHOOT_TWO)
+//                .onEnter(() -> {
+//                    intake.spindex.setSpindexShootTwo();
+//                })
+//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT2)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//
+//                .state(ShootAllStates.WAIT2)
+//                .transitionTimed(waitTime, ShootAllStates.GO_TO_SHOOT_THREE)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//
+//                .state(ShootAllStates.GO_TO_SHOOT_THREE)
+//                .onEnter(() -> {
+//                    intake.spindex.setSpindexShootThree();
+//                })
+//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT3)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//
+//                .state(ShootAllStates.WAIT3)
+//                .transitionTimed(waitTime, ShootAllStates.RESET)
+//                .transition(()-> other.unJam, ShootAllStates.UNJAM)
+//                .onExit(()-> {
+//                    intake.spindex.setSpindexShootOnePreWrap();
+//                })
+//
+//                .state(ShootAllStates.RESET)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+//                .onExit(()-> {
+//                    txLights = false;
+//                    shootAllBallTargetCount = 0;
+//                    intake.spindex.setSpindexForwardOne();
+//                    intake.spinner.setMegaSpinZero();
+//                    intake.clutch.setClutchUp();
+//                    intake.spindex.emptyBalls();
+//                    intake.autoIntake = true;
+//                })
+//
+//                .state(ShootAllStates.UNJAM)
+//                .onEnter(()->{
+//                    txLights = false;
+//                    other.unJam = false;
+//                    shootAllBallTargetCount = 0;
+//                    intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
+//                    intake.spinner.setMegaSpinZero();
+//                    intake.clutch.setClutchUp();
+//                    intake.spindex.emptyBalls();
+//                    goToReset = true;
+//                    intake.autoIntake = true;
+//                })
+//                .transition(()-> goToReset, ShootAllStates.INIT)
+//                .onExit(()->goToReset = false)
+//
+//                .build();
+//    }
 
     public int getLoadedBallCount() {
         if (intake == null || intake.spindex == null || intake.spindex.ballList == null) {
@@ -259,6 +259,7 @@ public class Robot {
                     intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
                     intake.clutch.setClutchUp();
+                    intake.clutch.spinClutchIn();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
                     sortedStartBall = getBallSortedShootOrder();
@@ -348,6 +349,7 @@ public class Robot {
                     intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
+                    intake.clutch.spinClutchStop();
                     intake.autoIntake = true;
                 })
 
@@ -357,6 +359,7 @@ public class Robot {
                     other.unJam = false;
                     intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
                     intake.spinner.setMegaSpinZero();
+                    intake.clutch.spinClutchStop();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                     intake.autoIntake = true;
@@ -368,36 +371,49 @@ public class Robot {
                 .build();
     }
 
-//    public StateMachine getShootAllMachine(){
-//        return new StateMachineBuilder()
-//                .state(ShootAllStates.INIT)
-//                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
-//                .onExit(()-> {
-//                    initShootAllMachine = false;
-//                    intake.spinner.setMegaSpinIn();
-//                    outtake.shooter.useFlywheelPID = true;
-//                    intake.spindex.setSpindexForwardOne();
-//                    intake.clutch.setClutchUp();
-//                })
-//
-//                .state(ShootAllStates.GO_TO_SHOOT_ONE)
-//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.RESET)
-//                .onExit(()-> {
-//                    intake.clutch.setClutchDown();
-//                    intake.spindex.setSpindexShootThree();
-//                })
-//
-//                .state(ShootAllStates.RESET)
-//                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
-//                .onExit(()-> {
-//                    intake.spinner.setMegaSpinZero();
-//                    intake.clutch.setClutchUp();
-//                    outtake.shooter.useFlywheelPID = false;
-//                })
-//
-//                .build();
-//
-//    }
+    public StateMachine getShootAllMachine(){
+        return new StateMachineBuilder()
+                .state(ShootAllStates.INIT)
+                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+                .onExit(()-> {
+                    initShootAllMachine = false;
+                    intake.spinner.setMegaSpinIn();
+                    outtake.shooter.useFlywheelPID = true;
+                    intake.spindex.setSpindexShootOnePre();
+                    intake.clutch.setClutchUp();
+                    outtake.shooter.setHoodTarget();
+                    intake.autoIntake = false;
+                })
+
+                .state(ShootAllStates.GO_TO_SHOOT_ONE)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT0)
+                .onExit(()-> {
+                    intake.clutch.setClutchDown();
+                    intake.clutch.spinClutchIn();
+                })
+
+                .state(ShootAllStates.WAIT0)
+                .transitionTimed(0.2, ShootAllStates.RESET)
+                .onExit(()-> {
+                    intake.spindex.setSpindexShootOnePreWrap();
+                })
+
+                .state(ShootAllStates.RESET)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+                .onExit(()-> {
+                    txLights = false;
+                    shootAllBallTargetCount = 0;
+                    intake.spindex.setSpindexForwardOne();
+                    intake.spinner.setMegaSpinZero();
+                    intake.clutch.setClutchUp();
+                    intake.clutch.spinClutchStop();
+                    intake.spindex.emptyBalls();
+                    intake.autoIntake = true;
+                })
+
+                .build();
+
+    }
 
     public int getBallSortedShootOrder(){
         if(GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PPG)) {

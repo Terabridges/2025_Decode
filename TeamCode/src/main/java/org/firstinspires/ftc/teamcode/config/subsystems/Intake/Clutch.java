@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.config.subsystems.Intake;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -16,6 +17,7 @@ public class Clutch implements Subsystem {
 
     //---------------- Hardware ----------------
     private Servo clutch;
+    public DcMotor clutchSpin;
 
     //---------------- Software ----------------
     public static double clutchUp = 0.5;
@@ -24,10 +26,14 @@ public class Clutch implements Subsystem {
     private double commandedPosition = clutchUp;
     private boolean isClutchDown = false;
     private boolean isClutchDownFar = false;
+    double clutchSpinPow = 0;
+    boolean useClutch = true;
 
     //---------------- Constructor ----------------
     public Clutch(HardwareMap map) {
         clutch = map.get(Servo.class, "clutch");
+        clutchSpin = map.get(DcMotor.class, "clutchSpin");
+        clutchSpin.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
     //---------------- Methods ----------------
@@ -72,6 +78,22 @@ public class Clutch implements Subsystem {
         }
     }
 
+    public void spinClutch(double pow){
+        clutchSpin.setPower(pow);
+    }
+
+    public void spinClutchIn(){
+        clutchSpinPow = 0.98;
+    }
+
+    public void spinClutchOut(){
+        clutchSpinPow = -0.98;
+    }
+
+    public void spinClutchStop(){
+        clutchSpinPow = 0;
+    }
+
 
     //---------------- Interface Methods ----------------
     @Override
@@ -81,7 +103,9 @@ public class Clutch implements Subsystem {
 
     @Override
     public void update(){
-
+        if (useClutch){
+            spinClutch(clutchSpinPow);
+        }
     }
 
     @Override

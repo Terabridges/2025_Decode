@@ -2,3 +2,5 @@ Gobilda injector port three turretL (looking from back is right) (no analog)
 Gobilda port 4 other turret turretR has analog
 
 LeftSpindex got messed up while changing mode, will not respond to axon programmer anymore
+
+port three is now clutchSpin (was right motor)
