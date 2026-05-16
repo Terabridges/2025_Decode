@@ -21,7 +21,7 @@ public class Intake implements Subsystem {
 
     //---------------- Software ----------------
     public boolean autoIntake = true;
-
+    public boolean useSortingIntake = true;
     //---------------- Constructor ----------------
     public Intake(HardwareMap map) {
         spindex = new Spindex(map);
@@ -56,13 +56,13 @@ public class Intake implements Subsystem {
         spinner.update();
         lights.update();
 
-        if (!spindex.isSpindexAtPos() && autoIntake){
-            spinner.overrideSpinIn();
-        }
-
-        if (spindex.isSpindexAtPos() && autoIntake){
-            spinner.overrideSpinZero();
-        }
+//        if (!spindex.isSpindexAtPos() && autoIntake){
+//            spinner.overrideSpinIn();
+//        }
+//
+//        if (spindex.isSpindexAtPos() && autoIntake){
+//            spinner.overrideSpinZero();
+//        }
 
         if(spinner.frontInnerTripped){
             if (spindex.isSpindexAtPos() && autoIntake) {
@@ -126,7 +126,7 @@ public class Intake implements Subsystem {
             spinner.backOuterTripped = false;
         }
 
-        if(spindex.ballOneChanged || spindex.ballTwoChanged || spindex.ballThreeChanged){
+        if(!useSortingIntake && (spindex.ballOneChanged || spindex.ballTwoChanged || spindex.ballThreeChanged)){
             spindex.ballOneChanged = false;
             if(spindex.ballList[0].equals("E")){
                 lights.setFrontLight("clear");

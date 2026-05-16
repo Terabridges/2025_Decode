@@ -84,13 +84,13 @@ public class Robot {
 
     public boolean initSortedShootAllMachine = false;
 
-    private double waitTime = 0.01;
+    private double waitTime = 0.2;
 
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;
     public int sortedStartBall = 1;
 
-    public boolean useSorting = true;
+    public boolean useSorting = true; //change to true
     private boolean wasFullLastLoop = false;
     public boolean txLights = false;
 
@@ -256,7 +256,6 @@ public class Robot {
                 .transition(()-> initSortedShootAllMachine, SortedShootAllStates.GO_TO_FIRST)
                 .onExit(()-> {
                     initSortedShootAllMachine = false;
-                    intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
                     intake.clutch.setClutchUp();
                     intake.clutch.spinClutchIn();
@@ -346,7 +345,6 @@ public class Robot {
                 .onExit(()-> {
                     txLights = false;
                     intake.spindex.setSpindexForwardOne();
-                    intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                     intake.clutch.spinClutchStop();
@@ -377,25 +375,24 @@ public class Robot {
                 .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
                 .onExit(()-> {
                     initShootAllMachine = false;
-                    intake.spinner.setMegaSpinIn();
                     outtake.shooter.useFlywheelPID = true;
                     intake.spindex.setSpindexShootOnePre();
                     intake.clutch.setClutchUp();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
+                    intake.clutch.spinClutchIn();
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT0)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
-                    intake.clutch.spinClutchIn();
                 })
 
                 .state(ShootAllStates.WAIT0)
-                .transitionTimed(0.2, ShootAllStates.RESET)
+                .transitionTimed(0.1, ShootAllStates.RESET)
                 .onExit(()-> {
-                    intake.spindex.setSpindexShootOnePreWrap();
+                    intake.spindex.setSpindexShootThree();
                 })
 
                 .state(ShootAllStates.RESET)
@@ -404,7 +401,6 @@ public class Robot {
                     txLights = false;
                     shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexForwardOne();
-                    intake.spinner.setMegaSpinZero();
                     intake.clutch.setClutchUp();
                     intake.clutch.spinClutchStop();
                     intake.spindex.emptyBalls();
@@ -469,6 +465,10 @@ public class Robot {
 
     public void toggleSorting(){
         useSorting = !useSorting;
+        intake.useSortingIntake = useSorting;
+        if (intake.useSortingIntake == false){
+            intake.lights.setSortingLights();
+        }
     }
 
     /**

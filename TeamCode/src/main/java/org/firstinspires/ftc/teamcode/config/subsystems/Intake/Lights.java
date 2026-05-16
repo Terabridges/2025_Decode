@@ -106,6 +106,22 @@ public class Lights implements Subsystem {
         }
     }
 
+    public void setSortingLights(){
+        if (GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PPG)){
+            setBackLight("purple");
+            setMiddleLight("purple");
+            setFrontLight("green");
+        } else if (GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.PGP)){
+            setBackLight("purple");
+            setMiddleLight("green");
+            setFrontLight("purple");
+        } else if (GlobalVariables.getMotif().equals(GlobalVariables.MotifPattern.GPP)){
+            setBackLight("green");
+            setMiddleLight("purple");
+            setFrontLight("purple");
+        }
+    }
+
 
     //---------------- Interface Methods ----------------
     @Override

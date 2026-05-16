@@ -45,8 +45,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@PsiKitAutoLog(rlogPort = 5802)
-@PsiKitFieldAutoLog
+//@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitFieldAutoLog
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
     private static final int BLUE_GOAL_TAG_ID = 20;
@@ -203,6 +203,7 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
+        robot.intake.spindex.emptyBalls();
 
         loopTimeTracker.reset();
         telemetryTimer.reset();
