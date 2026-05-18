@@ -41,6 +41,15 @@ public class Outtake implements Subsystem {
     public static double obeliskY = 144.0;
     // B-button vision correction offset component.
     public static double turretAimCommandOffsetDeg = 0.0;
+    // Slowly learned automatic vision correction offset component.
+    public static double turretAimAutoVisionBiasDeg = 0.0;
+    public static boolean enableAutoTurretVisionBias = true;
+    public static double autoTurretVisionBiasMaxAbsDeg = 20.0;
+    public static double autoTurretVisionBiasGain = 0.03;
+    public static double autoTurretVisionBiasMaxStepDeg = 0.08;
+    public static double autoTurretVisionBiasMaxRobotSpeedInS = 3.0;
+    public static double autoTurretVisionBiasMaxTxDeg = 8.0;
+    public static int autoTurretVisionBiasRequiredStableLoops = 5;
     // GP2 bumper trim offset component.
     public static double defaultTurretAimTrimOffsetDeg = 6.0;
     public static double turretAimTrimOffsetDeg = defaultTurretAimTrimOffsetDeg;
@@ -69,6 +78,11 @@ public class Outtake implements Subsystem {
     private double lastRecoilHoodDelta = 0.0;
     private double lastBaseHoodPos = 0.0;
     private double lastCompedHoodPos = 0.0;
+    private int autoVisionBiasStableLoops = 0;
+    private boolean lastAutoVisionBiasUpdateAllowed = false;
+    private double lastAutoVisionBiasTxDeg = 0.0;
+    private double lastAutoVisionBiasStepDeg = 0.0;
+    private String lastAutoVisionBiasRejectReason = "NotRun";
 
     public String currentOffsetType = "heading";
 
@@ -121,16 +135,26 @@ public class Outtake implements Subsystem {
     }
 
     public static double getTotalTurretAimCommandOffsetDeg() {
-        return turretAimCommandOffsetDeg + turretAimTrimOffsetDeg;
+        return turretAimCommandOffsetDeg + turretAimAutoVisionBiasDeg + turretAimTrimOffsetDeg;
     }
 
     public static void resetTurretAimVisionOffset() {
         turretAimCommandOffsetDeg = 0.0;
+        turretAimAutoVisionBiasDeg = 0.0;
     }
 
     public static void resetTurretAimOffsets() {
         turretAimCommandOffsetDeg = 0.0;
+        turretAimAutoVisionBiasDeg = 0.0;
         turretAimTrimOffsetDeg = defaultTurretAimTrimOffsetDeg;
+    }
+
+    public static void commitAutoVisionBiasAndTxToManualOffset(double txDeg) {
+        if (!Double.isFinite(txDeg)) {
+            return;
+        }
+        turretAimCommandOffsetDeg += turretAimAutoVisionBiasDeg + txDeg;
+        turretAimAutoVisionBiasDeg = 0.0;
     }
 
     public AimSource getActiveLockSource() {
@@ -448,6 +472,7 @@ public class Outtake implements Subsystem {
     @Override
     public void update(){
         vision.update();
+        updateAutoVisionBias();
 
         Pose pose = (follower != null) ? follower.getPose() : null;
         if (pose != null) {
@@ -478,6 +503,14 @@ public class Outtake implements Subsystem {
         Logger.recordOutput("Subsystems/Outtake/TargetYInches", targetPoint[1]);
         Logger.recordOutput("Subsystems/Outtake/InLaunchZone", isAnyPartInLaunchZone());
         Logger.recordOutput("Subsystems/Outtake/TurretAimCommandOffsetDeg", turretAimCommandOffsetDeg);
+        Logger.recordOutput("Subsystems/Outtake/TurretAimAutoVisionBiasDeg", turretAimAutoVisionBiasDeg);
+        Logger.recordOutput("Subsystems/Outtake/TurretAimTrimOffsetDeg", turretAimTrimOffsetDeg);
+        Logger.recordOutput("Subsystems/Outtake/TurretAimTotalOffsetDeg", getTotalTurretAimCommandOffsetDeg());
+        Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/UpdateAllowed", lastAutoVisionBiasUpdateAllowed ? 1.0 : 0.0);
+        Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/StableLoops", autoVisionBiasStableLoops);
+        Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/TxDeg", lastAutoVisionBiasTxDeg);
+        Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/StepDeg", lastAutoVisionBiasStepDeg);
+        Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/RejectReason", lastAutoVisionBiasRejectReason);
         Logger.recordOutput("Subsystems/Outtake/BaseHoodPos", lastBaseHoodPos);
         Logger.recordOutput("Subsystems/Outtake/CompedHoodPos", lastCompedHoodPos);
         Logger.recordOutput("Subsystems/Outtake/RecoilRpmError", lastRecoilRpmError);
@@ -509,6 +542,78 @@ public class Outtake implements Subsystem {
 
     private double clamp01(double value) {
         return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    private void updateAutoVisionBias() {
+        lastAutoVisionBiasUpdateAllowed = false;
+        lastAutoVisionBiasTxDeg = 0.0;
+        lastAutoVisionBiasStepDeg = 0.0;
+        lastAutoVisionBiasRejectReason = "None";
+
+        if (!enableAutoTurretVisionBias) {
+            resetAutoVisionBiasStableLoops("Disabled");
+            return;
+        }
+        if (!aimLockEnabled || aimTarget != AimTarget.GOAL) {
+            resetAutoVisionBiasStableLoops("AimNotGoalLocked");
+            return;
+        }
+        if (vision == null || !vision.hasRequiredTarget()) {
+            resetAutoVisionBiasStableLoops("NoRequiredTarget");
+            return;
+        }
+        if (isRobotTooFastForAutoVisionBias()) {
+            resetAutoVisionBiasStableLoops("RobotMoving");
+            return;
+        }
+        if (turret.atMinLimit(1.0) || turret.atMaxLimit(1.0)) {
+            resetAutoVisionBiasStableLoops("TurretLimit");
+            return;
+        }
+
+        double txDeg = vision.getTxForTag(vision.getRequiredTagId());
+        lastAutoVisionBiasTxDeg = txDeg;
+        if (!Double.isFinite(txDeg)) {
+            resetAutoVisionBiasStableLoops("InvalidTx");
+            return;
+        }
+        if (Math.abs(txDeg) > Math.abs(autoTurretVisionBiasMaxTxDeg)) {
+            resetAutoVisionBiasStableLoops("TxTooLarge");
+            return;
+        }
+
+        autoVisionBiasStableLoops++;
+        if (autoVisionBiasStableLoops < Math.max(1, autoTurretVisionBiasRequiredStableLoops)) {
+            lastAutoVisionBiasRejectReason = "WaitingStable";
+            return;
+        }
+
+        double maxStepDeg = Math.abs(autoTurretVisionBiasMaxStepDeg);
+        double stepDeg = clamp(txDeg * autoTurretVisionBiasGain, -maxStepDeg, maxStepDeg);
+        turretAimAutoVisionBiasDeg = clamp(
+                turretAimAutoVisionBiasDeg + stepDeg,
+                -Math.abs(autoTurretVisionBiasMaxAbsDeg),
+                Math.abs(autoTurretVisionBiasMaxAbsDeg)
+        );
+        lastAutoVisionBiasStepDeg = stepDeg;
+        lastAutoVisionBiasUpdateAllowed = true;
+        lastAutoVisionBiasRejectReason = "Updated";
+    }
+
+    private boolean isRobotTooFastForAutoVisionBias() {
+        if (follower == null || follower.getVelocity() == null) {
+            return true;
+        }
+        return follower.getVelocity().getMagnitude() > Math.abs(autoTurretVisionBiasMaxRobotSpeedInS);
+    }
+
+    private void resetAutoVisionBiasStableLoops(String reason) {
+        autoVisionBiasStableLoops = 0;
+        lastAutoVisionBiasRejectReason = reason;
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     public void increaseOffset(){

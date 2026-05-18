@@ -71,6 +71,7 @@ public final class PoseLoggingUtil {
         Logger.recordOutput("Turret/AimSource", robot.outtake.getActiveLockSource().ordinal());
         Logger.recordOutput("Turret/AimOffsetDeg", Outtake.getTotalTurretAimCommandOffsetDeg());
         Logger.recordOutput("Turret/AimOffsetDeg/VisionB", Outtake.turretAimCommandOffsetDeg);
+        Logger.recordOutput("Turret/AimOffsetDeg/AutoVisionBias", Outtake.turretAimAutoVisionBiasDeg);
         Logger.recordOutput("Turret/AimOffsetDeg/Trim", Outtake.turretAimTrimOffsetDeg);
 
         Pose followerPose = (FollowerManager.follower != null) ? FollowerManager.follower.getPose() : null;
