@@ -196,8 +196,8 @@ public class MainTeleOp extends OpMode {
         robot.outtake.setAimLockEnabled(true);
         Outtake.defaultTurretAimTrimOffsetDeg = 3.0;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
-        // Keep recoil-comp code available, but disable it during teleop runtime.
-        Outtake.enableRpmRecoilComp = false;
+        // Raise the hood while flywheel RPM is recovering between fast shots.
+        Outtake.enableRpmRecoilComp = true;
         bHoldTimer.reset();
         bLongPressHandled = false;
 
