@@ -63,6 +63,7 @@ public class OuttakeControl implements Control {
         telemetry.addData("Offset Type", outtake.currentOffsetType);
         telemetry.addData("Heading Trim Offset", outtake.turretAimTrimOffsetDeg);
         telemetry.addData("Vision B Offset", outtake.turretAimCommandOffsetDeg);
+        telemetry.addData("Auto Vision Bias", outtake.turretAimAutoVisionBiasDeg);
         telemetry.addData("Total Heading Offset", Outtake.getTotalTurretAimCommandOffsetDeg());
         telemetry.addData("RPM Offset", outtake.shooter.flywheelOffset);
         telemetry.addData("Hood Offset", outtake.shooter.hoodOffset);

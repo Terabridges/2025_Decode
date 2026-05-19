@@ -229,8 +229,8 @@ public abstract class BaseAuto extends OpMode {
         robot.outtake.shooter.useFlywheelPID = true;
         // Ensure shoot-while-moving lead compensation is active in auto.
         Outtake.enableMovingShotLead = true;
-        // Keep recoil-comp code available, but disable it during auto runtime.
-        Outtake.enableRpmRecoilComp = false;
+        // Raise the hood while flywheel RPM is recovering between fast shots.
+        Outtake.enableRpmRecoilComp = true;
         // Auto should not inherit teleop baseline trim by default.
         Outtake.defaultTurretAimTrimOffsetDeg = 0.0;
         Outtake.turretAimTrimOffsetDeg = 0.0;

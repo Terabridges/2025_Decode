@@ -196,8 +196,8 @@ public class MainTeleOp extends OpMode {
         robot.outtake.setAimLockEnabled(true);
         Outtake.defaultTurretAimTrimOffsetDeg = 3.0;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
-        // Keep recoil-comp code available, but disable it during teleop runtime.
-        Outtake.enableRpmRecoilComp = false;
+        // Raise the hood while flywheel RPM is recovering between fast shots.
+        Outtake.enableRpmRecoilComp = true;
         bHoldTimer.reset();
         bLongPressHandled = false;
 
@@ -324,6 +324,7 @@ public class MainTeleOp extends OpMode {
 //            }
             //joinedTelemetry.addData("TXLights", robot.txLights);
             joinedTelemetry.addData("Turret Aim Offset (deg)", "%.2f", Outtake.getTotalTurretAimCommandOffsetDeg());
+            joinedTelemetry.addData("Auto Vision Bias (deg)", "%.2f", Outtake.turretAimAutoVisionBiasDeg);
             joinedTelemetry.update();
 
             telemetryTimer.reset();
@@ -410,7 +411,7 @@ public class MainTeleOp extends OpMode {
         if (!robot.outtake.vision.hasRequiredTarget()) {
             return;
         }
-        Outtake.turretAimCommandOffsetDeg += robot.outtake.vision.getTxForTag(requiredTagId);
+        Outtake.commitAutoVisionBiasAndTxToManualOffset(robot.outtake.vision.getTxForTag(requiredTagId));
     }
 
     private void updateManualFollowerPoseReset() {
