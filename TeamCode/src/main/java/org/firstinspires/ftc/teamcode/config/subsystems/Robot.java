@@ -84,7 +84,7 @@ public class Robot {
 
     public boolean initSortedShootAllMachine = false;
 
-    private double waitTime = 0.2;
+    private double waitTime = 0.01; //0.2
 
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;

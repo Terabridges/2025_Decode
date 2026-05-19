@@ -126,7 +126,7 @@ public class Intake implements Subsystem {
             spinner.backOuterTripped = false;
         }
 
-        if(!useSortingIntake && (spindex.ballOneChanged || spindex.ballTwoChanged || spindex.ballThreeChanged)){
+        if((spindex.ballOneChanged || spindex.ballTwoChanged || spindex.ballThreeChanged)){
             spindex.ballOneChanged = false;
             if(spindex.ballList[0].equals("E")){
                 lights.setFrontLight("clear");
