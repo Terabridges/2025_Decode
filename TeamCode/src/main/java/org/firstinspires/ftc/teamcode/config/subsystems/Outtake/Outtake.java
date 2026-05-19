@@ -64,13 +64,18 @@ public class Outtake implements Subsystem {
     public static double smallLaunchRightBaseX = 96.0;
     public static double smallLaunchApexY = 24.0;
     public static boolean enableRpmRecoilComp = true;
-    public static double recoilCompGainPerRPM = 0.00005;
+    public static double closeRangeFastRecoilCompGainPerRPM = 0.0001;
+    public static double longRangeFastRecoilCompGainPerRPM = 0.000140625;
     public static double recoilCompDeadbandRPM = 30.0;
     public static double recoilCompMaxHoodDelta = 0.08;
+    public static double longRangeFastShotMinDistanceInches = 90.0;
+    public static double closeRangeFastShotRpmBoost = 0.0;
+    public static double longRangeFastShotRpmBoost = 100.0;
     public static double headingOffsetStepDeg = 1.0;
     public static double headingOffsetMaxAbsDeg = 35.0;
 
     private boolean aimLockEnabled = false;
+    private boolean fastShootAllActive = false;
     private boolean preventTurretWrap = false;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
@@ -110,6 +115,22 @@ public class Outtake implements Subsystem {
         return aimLockEnabled;
     }
 
+    public void setFastShootAllActive(boolean active) {
+        fastShootAllActive = active;
+    }
+
+    public boolean isFastShootAllActive() {
+        return fastShootAllActive;
+    }
+
+    public boolean isLongRangeFastShootActive() {
+        return fastShootAllActive && distanceInches >= longRangeFastShotMinDistanceInches;
+    }
+
+    public boolean isCloseRangeFastShootActive() {
+        return fastShootAllActive && distanceInches < longRangeFastShotMinDistanceInches;
+    }
+
     public void setPreventTurretWrap(boolean prevent) {
         preventTurretWrap = prevent;
     }
@@ -138,6 +159,10 @@ public class Outtake implements Subsystem {
         return turretAimCommandOffsetDeg + turretAimAutoVisionBiasDeg + turretAimTrimOffsetDeg;
     }
 
+    public static double getDesiredBankTxDeg() {
+        return -turretAimTrimOffsetDeg;
+    }
+
     public static void resetTurretAimVisionOffset() {
         turretAimCommandOffsetDeg = 0.0;
         turretAimAutoVisionBiasDeg = 0.0;
@@ -153,7 +178,7 @@ public class Outtake implements Subsystem {
         if (!Double.isFinite(txDeg)) {
             return;
         }
-        turretAimCommandOffsetDeg += turretAimAutoVisionBiasDeg + txDeg;
+        turretAimCommandOffsetDeg += turretAimAutoVisionBiasDeg + (txDeg - getDesiredBankTxDeg());
         turretAimAutoVisionBiasDeg = 0.0;
     }
 
@@ -463,6 +488,7 @@ public class Outtake implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
+        fastShootAllActive = false;
         resetTurretAimOffsets();
         shooter.toInit();
         turret.toInit();
@@ -480,7 +506,7 @@ public class Outtake implements Subsystem {
             distanceInches = computeLeadAdjustedDistance(pose, targetPoint[0], targetPoint[1]);
         }
 
-        shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches);
+        shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches) + getFastShotRpmBoost();
         double baseHoodPos = shooterData.getAngleVal(distanceInches);
         lastBaseHoodPos = baseHoodPos;
         shooter.hoodPos = applyRpmRecoilComp(baseHoodPos);
@@ -506,6 +532,7 @@ public class Outtake implements Subsystem {
         Logger.recordOutput("Subsystems/Outtake/TurretAimAutoVisionBiasDeg", turretAimAutoVisionBiasDeg);
         Logger.recordOutput("Subsystems/Outtake/TurretAimTrimOffsetDeg", turretAimTrimOffsetDeg);
         Logger.recordOutput("Subsystems/Outtake/TurretAimTotalOffsetDeg", getTotalTurretAimCommandOffsetDeg());
+        Logger.recordOutput("Subsystems/Outtake/TurretAimDesiredBankTxDeg", getDesiredBankTxDeg());
         Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/UpdateAllowed", lastAutoVisionBiasUpdateAllowed ? 1.0 : 0.0);
         Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/StableLoops", autoVisionBiasStableLoops);
         Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/TxDeg", lastAutoVisionBiasTxDeg);
@@ -515,17 +542,31 @@ public class Outtake implements Subsystem {
         Logger.recordOutput("Subsystems/Outtake/CompedHoodPos", lastCompedHoodPos);
         Logger.recordOutput("Subsystems/Outtake/RecoilRpmError", lastRecoilRpmError);
         Logger.recordOutput("Subsystems/Outtake/RecoilHoodDelta", lastRecoilHoodDelta);
+        Logger.recordOutput("Subsystems/Outtake/FastShootAllActive", fastShootAllActive);
+        Logger.recordOutput("Subsystems/Outtake/CloseRangeFastShootActive", isCloseRangeFastShootActive());
+        Logger.recordOutput("Subsystems/Outtake/LongRangeFastShootActive", isLongRangeFastShootActive());
+        Logger.recordOutput("Subsystems/Outtake/FastShotRpmBoost", getFastShotRpmBoost());
 
         shooter.logPsiKitData();
         turret.logPsiKitData();
         vision.logPsiKitData();
     }
 
+    private double getFastShotRpmBoost() {
+        if (isLongRangeFastShootActive()) {
+            return longRangeFastShotRpmBoost;
+        }
+        if (isCloseRangeFastShootActive()) {
+            return closeRangeFastShotRpmBoost;
+        }
+        return 0.0;
+    }
+
     private double applyRpmRecoilComp(double baseHoodPos) {
         lastRecoilRpmError = shooter.getTargetRPM() - shooter.getCurrentRPM();
         lastRecoilHoodDelta = 0.0;
 
-        if (!enableRpmRecoilComp || !shooter.useFlywheelPID || !shooter.autoHood) {
+        if (!fastShootAllActive || !enableRpmRecoilComp || !shooter.useFlywheelPID || !shooter.autoHood) {
             return clamp01(baseHoodPos);
         }
 
@@ -534,10 +575,17 @@ public class Outtake implements Subsystem {
         }
 
         // Positive RPM error means flywheel is under target, so raise hood angle.
-        double hoodDelta = recoilCompGainPerRPM * lastRecoilRpmError;
+        double hoodDelta = getFastShotRecoilGainPerRPM() * lastRecoilRpmError;
         hoodDelta = Math.max(-recoilCompMaxHoodDelta, Math.min(recoilCompMaxHoodDelta, hoodDelta));
         lastRecoilHoodDelta = hoodDelta;
         return clamp01(baseHoodPos + hoodDelta);
+    }
+
+    private double getFastShotRecoilGainPerRPM() {
+        if (isLongRangeFastShootActive()) {
+            return longRangeFastRecoilCompGainPerRPM;
+        }
+        return closeRangeFastRecoilCompGainPerRPM;
     }
 
     private double clamp01(double value) {
@@ -577,7 +625,8 @@ public class Outtake implements Subsystem {
             resetAutoVisionBiasStableLoops("InvalidTx");
             return;
         }
-        if (Math.abs(txDeg) > Math.abs(autoTurretVisionBiasMaxTxDeg)) {
+        double txErrorDeg = txDeg - getDesiredBankTxDeg();
+        if (Math.abs(txErrorDeg) > Math.abs(autoTurretVisionBiasMaxTxDeg)) {
             resetAutoVisionBiasStableLoops("TxTooLarge");
             return;
         }
@@ -589,7 +638,7 @@ public class Outtake implements Subsystem {
         }
 
         double maxStepDeg = Math.abs(autoTurretVisionBiasMaxStepDeg);
-        double stepDeg = clamp(txDeg * autoTurretVisionBiasGain, -maxStepDeg, maxStepDeg);
+        double stepDeg = clamp(txErrorDeg * autoTurretVisionBiasGain, -maxStepDeg, maxStepDeg);
         turretAimAutoVisionBiasDeg = clamp(
                 turretAimAutoVisionBiasDeg + stepDeg,
                 -Math.abs(autoTurretVisionBiasMaxAbsDeg),
