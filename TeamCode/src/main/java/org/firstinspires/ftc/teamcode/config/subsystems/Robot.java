@@ -256,6 +256,7 @@ public class Robot {
                 .transition(()-> initSortedShootAllMachine, SortedShootAllStates.GO_TO_FIRST)
                 .onExit(()-> {
                     initSortedShootAllMachine = false;
+                    outtake.setFastShootAllActive(false);
                     outtake.shooter.useFlywheelPID = true;
                     intake.clutch.setClutchUp();
                     intake.clutch.spinClutchIn();
@@ -354,6 +355,7 @@ public class Robot {
                 .state(SortedShootAllStates.UNJAM)
                 .onEnter(()->{
                     txLights = false;
+                    outtake.setFastShootAllActive(false);
                     other.unJam = false;
                     intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
                     intake.spinner.setMegaSpinZero();
@@ -375,6 +377,7 @@ public class Robot {
                 .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
                 .onExit(()-> {
                     initShootAllMachine = false;
+                    outtake.setFastShootAllActive(true);
                     outtake.shooter.useFlywheelPID = true;
                     intake.spindex.setSpindexShootOnePre();
                     intake.clutch.setClutchUp();
@@ -400,6 +403,7 @@ public class Robot {
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
+                    outtake.setFastShootAllActive(false);
                     shootAllBallTargetCount = 0;
                     intake.spindex.setSpindexForwardOne();
                     intake.clutch.setClutchUp();

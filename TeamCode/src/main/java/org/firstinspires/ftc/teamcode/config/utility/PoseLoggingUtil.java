@@ -72,7 +72,7 @@ public final class PoseLoggingUtil {
         Logger.recordOutput("Turret/AimOffsetDeg", Outtake.getTotalTurretAimCommandOffsetDeg());
         Logger.recordOutput("Turret/AimOffsetDeg/VisionB", Outtake.turretAimCommandOffsetDeg);
         Logger.recordOutput("Turret/AimOffsetDeg/AutoVisionBias", Outtake.turretAimAutoVisionBiasDeg);
-        Logger.recordOutput("Turret/AimOffsetDeg/Trim", Outtake.turretAimTrimOffsetDeg);
+        Logger.recordOutput("Turret/AimOffsetDeg/Bank", Outtake.turretAimTrimOffsetDeg);
 
         Pose followerPose = (FollowerManager.follower != null) ? FollowerManager.follower.getPose() : null;
         Pose2d pinpointFtcPose = null;
