@@ -64,10 +64,10 @@ public class Outtake implements Subsystem {
     public static double smallLaunchRightBaseX = 96.0;
     public static double smallLaunchApexY = 24.0;
     public static boolean enableRpmRecoilComp = true;
-    public static double closeRangeFastRecoilCompGainPerRPM = 0.0001;
-    public static double longRangeFastRecoilCompGainPerRPM = 0.000140625;
+    public static double closeRangeFastRecoilCompGainPerRPM = 0.000133333;
+    public static double longRangeFastRecoilCompGainPerRPM = 0.0001875;
     public static double recoilCompDeadbandRPM = 30.0;
-    public static double recoilCompMaxHoodDelta = 0.08;
+    public static double recoilCompMaxHoodDelta = 0.12;
     public static double longRangeFastShotMinDistanceInches = 90.0;
     public static double closeRangeFastShotRpmBoost = 0.0;
     public static double longRangeFastShotRpmBoost = 100.0;
@@ -530,7 +530,7 @@ public class Outtake implements Subsystem {
         Logger.recordOutput("Subsystems/Outtake/InLaunchZone", isAnyPartInLaunchZone());
         Logger.recordOutput("Subsystems/Outtake/TurretAimCommandOffsetDeg", turretAimCommandOffsetDeg);
         Logger.recordOutput("Subsystems/Outtake/TurretAimAutoVisionBiasDeg", turretAimAutoVisionBiasDeg);
-        Logger.recordOutput("Subsystems/Outtake/TurretAimTrimOffsetDeg", turretAimTrimOffsetDeg);
+        Logger.recordOutput("Subsystems/Outtake/TurretAimBankOffsetDeg", turretAimTrimOffsetDeg);
         Logger.recordOutput("Subsystems/Outtake/TurretAimTotalOffsetDeg", getTotalTurretAimCommandOffsetDeg());
         Logger.recordOutput("Subsystems/Outtake/TurretAimDesiredBankTxDeg", getDesiredBankTxDeg());
         Logger.recordOutput("Subsystems/Outtake/AutoVisionBias/UpdateAllowed", lastAutoVisionBiasUpdateAllowed ? 1.0 : 0.0);

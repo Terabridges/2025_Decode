@@ -62,8 +62,9 @@ public class MainTeleOp extends OpMode {
     public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
     public static boolean enableFieldAutoLog = true;
     public static double fieldAutoLogPeriodSec = 0.10;
-    public static double teleopBlueBankTrimOffsetDeg = 2.0;
-    public static double teleopRedBankTrimOffsetDeg = 2.0;
+    public static double teleopBlueBankOffsetDeg = 2.0;
+    public static double teleopRedBankOffsetDeg = 2.0;
+    private double lastAppliedBankOffsetDeg = 0.0;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -196,7 +197,8 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
-        Outtake.defaultTurretAimTrimOffsetDeg = getAllianceBankTrimOffsetDeg();
+        lastAppliedBankOffsetDeg = getActiveBankOffsetDeg();
+        Outtake.defaultTurretAimTrimOffsetDeg = lastAppliedBankOffsetDeg;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
         // Raise the hood while flywheel RPM is recovering between fast shots.
         Outtake.enableRpmRecoilComp = true;
@@ -395,15 +397,34 @@ public class MainTeleOp extends OpMode {
         } else if (GlobalVariables.isRedAlliance()) {
             robot.outtake.vision.setRequiredTagId(RED_GOAL_TAG_ID);
         }
-        Outtake.defaultTurretAimTrimOffsetDeg = getAllianceBankTrimOffsetDeg();
+        updateActiveBankOffset();
         // Teleop should always be goal-targeted; this prevents stray obelisk targeting.
         if (robot.outtake.getAimTarget() != Outtake.AimTarget.GOAL) {
             robot.outtake.setAimTargetGoal();
         }
     }
 
-    private double getAllianceBankTrimOffsetDeg() {
-        return GlobalVariables.isRedAlliance() ? teleopRedBankTrimOffsetDeg : teleopBlueBankTrimOffsetDeg;
+    private void updateActiveBankOffset() {
+        double activeBankOffsetDeg = getActiveBankOffsetDeg();
+        if (Math.abs(activeBankOffsetDeg - lastAppliedBankOffsetDeg) > 1e-6) {
+            double manualDeltaDeg = Outtake.turretAimTrimOffsetDeg - lastAppliedBankOffsetDeg;
+            Outtake.turretAimTrimOffsetDeg = activeBankOffsetDeg + manualDeltaDeg;
+            lastAppliedBankOffsetDeg = activeBankOffsetDeg;
+        }
+        Outtake.defaultTurretAimTrimOffsetDeg = activeBankOffsetDeg;
+    }
+
+    private double getActiveBankOffsetDeg() {
+        if (robot != null
+                && robot.outtake != null
+                && robot.outtake.distanceInches < Outtake.longRangeFastShotMinDistanceInches) {
+            return 0.0;
+        }
+        return getAllianceBankOffsetDeg();
+    }
+
+    private double getAllianceBankOffsetDeg() {
+        return GlobalVariables.isRedAlliance() ? teleopRedBankOffsetDeg : teleopBlueBankOffsetDeg;
     }
 
     private void logPsiKitData() {
