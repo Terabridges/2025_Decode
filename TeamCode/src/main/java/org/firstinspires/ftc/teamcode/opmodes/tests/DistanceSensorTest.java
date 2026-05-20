@@ -47,20 +47,20 @@ public class DistanceSensorTest extends OpMode {
     private double backOuterDistance = 0;
     private double backInnerDistance = 0;
 
-    public static double frontOuterDistanceLowThresh = 0.5;
-    public static double frontInnerDistanceLowThresh = 0.275;
-    public static double backOuterDistanceLowThresh = 0.5;
-    public static double backInnerDistanceLowThresh = 0.275;
+    public static double frontOuterDistanceLowThresh = 0.48;
+    public static double frontInnerDistanceLowThresh = 0.38;
+    public static double backOuterDistanceLowThresh = 0.48;
+    public static double backInnerDistanceLowThresh = 0.38;
 
     public boolean frontOuterTripped = false;
     public boolean frontInnerTripped = false;
     public boolean backOuterTripped = false;
     public boolean backInnerTripped = false;
 
-    public static double frontGreenThresh = 0.0011; //If green is highest, ball is green
+    public static double frontGreenThresh = 0.001; //If green is highest, ball is green
     public static double frontBlueThresh = 0.001; //If blue is highest, ball is purple
-    public static double backGreenThresh = 0.0007;
-    public static double backBlueThresh = 0.0007;
+    public static double backGreenThresh = 0.001;
+    public static double backBlueThresh = 0.001;
     NormalizedRGBA frontColors;
     public float frontRed = 0;
     public float frontGreen = 0;

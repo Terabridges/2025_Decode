@@ -89,10 +89,10 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"G", "P", "P"};
     public String balls = "";
 
-    private double frontGreenThresh = 0.0011; //If green is highest, ball is green was 0.0013 0.0009
-    private double frontBlueThresh = 0.001; //If blue is highest, ball is purple was 0.0013 0.0009
-    private double backGreenThresh = 0.0007;
-    private double backBlueThresh = 0.0007;
+    private double frontGreenThresh = 0.001; //If green is highest, ball is green
+    private double frontBlueThresh = 0.001; //If blue is highest, ball is purple
+    private double backGreenThresh = 0.001;
+    private double backBlueThresh = 0.001;
     NormalizedRGBA frontColors;
     public float frontRed = 0;
     public float frontGreen = 0;
