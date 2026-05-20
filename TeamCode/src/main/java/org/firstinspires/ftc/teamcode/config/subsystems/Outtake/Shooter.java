@@ -130,7 +130,7 @@ public class Shooter implements Subsystem {
     }
 
     public void setHoodTarget(){
-        setHood(util.clamp(hoodPos+hoodOffset, 0.46, 0.92));
+        setHood(util.clamp(hoodPos+hoodOffset, 0.46, hoodUp));
     }
 
     public boolean isAtRPM(){
