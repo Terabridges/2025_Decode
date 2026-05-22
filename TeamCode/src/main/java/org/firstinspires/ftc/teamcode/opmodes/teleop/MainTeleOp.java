@@ -200,7 +200,7 @@ public class MainTeleOp extends OpMode {
         lastAppliedBankOffsetDeg = getActiveBankOffsetDeg();
         Outtake.defaultTurretAimTrimOffsetDeg = lastAppliedBankOffsetDeg;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
-        // Raise the hood while flywheel RPM is recovering between fast shots.
+        // Lower the hood while flywheel RPM is recovering between fast shots.
         Outtake.enableRpmRecoilComp = true;
         bHoldTimer.reset();
         bLongPressHandled = false;

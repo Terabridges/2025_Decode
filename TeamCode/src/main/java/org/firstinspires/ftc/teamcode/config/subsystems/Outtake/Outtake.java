@@ -65,9 +65,10 @@ public class Outtake implements Subsystem {
     public static double smallLaunchApexY = 24.0;
     public static boolean enableRpmRecoilComp = true;
     public static double closeRangeFastRecoilCompGainPerRPM = 0.000133333;
-    public static double longRangeFastRecoilCompGainPerRPM = 0.00028125;
+    public static double longRangeFastRecoilCompGainPerRPM = 0.000140625;
     public static double recoilCompDeadbandRPM = 30.0;
     public static double recoilCompMaxHoodDelta = 0.12;
+    public static double fastShootRecoilDelayAfterWrapStartSec = 0.08;
     public static double longRangeFastShotMinDistanceInches = 90.0;
     public static double closeRangeFastShotRpmBoost = 0.0;
     public static double longRangeFastShotRpmBoost = 0.0;
@@ -76,6 +77,8 @@ public class Outtake implements Subsystem {
 
     private boolean aimLockEnabled = false;
     private boolean fastShootAllActive = false;
+    private boolean fastShootRecoilWindowStarted = false;
+    private long fastShootRecoilWindowStartNs = 0L;
     private boolean preventTurretWrap = false;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
@@ -117,10 +120,22 @@ public class Outtake implements Subsystem {
 
     public void setFastShootAllActive(boolean active) {
         fastShootAllActive = active;
+        if (!active) {
+            fastShootRecoilWindowStarted = false;
+            fastShootRecoilWindowStartNs = 0L;
+        }
     }
 
     public boolean isFastShootAllActive() {
         return fastShootAllActive;
+    }
+
+    public void startFastShootRecoilWindow() {
+        if (!fastShootAllActive) {
+            return;
+        }
+        fastShootRecoilWindowStarted = true;
+        fastShootRecoilWindowStartNs = System.nanoTime();
     }
 
     public boolean isLongRangeFastShootActive() {
@@ -566,7 +581,15 @@ public class Outtake implements Subsystem {
         lastRecoilRpmError = shooter.getTargetRPM() - shooter.getCurrentRPM();
         lastRecoilHoodDelta = 0.0;
 
-        if (!fastShootAllActive || !enableRpmRecoilComp || !shooter.useFlywheelPID || !shooter.autoHood) {
+        if (!fastShootAllActive
+                || !enableRpmRecoilComp
+                || isCloseRangeFastShootActive()
+                || !shooter.useFlywheelPID
+                || !shooter.autoHood) {
+            return clamp01(baseHoodPos);
+        }
+
+        if (!isFastShootRecoilWindowReady()) {
             return clamp01(baseHoodPos);
         }
 
@@ -574,11 +597,20 @@ public class Outtake implements Subsystem {
             return clamp01(baseHoodPos);
         }
 
-        // Positive RPM error means flywheel is under target, so raise hood angle.
-        double hoodDelta = getFastShotRecoilGainPerRPM() * lastRecoilRpmError;
+        // Positive RPM error means flywheel is under target, so lower hood angle.
+        double hoodDelta = -getFastShotRecoilGainPerRPM() * lastRecoilRpmError;
         hoodDelta = Math.max(-recoilCompMaxHoodDelta, Math.min(recoilCompMaxHoodDelta, hoodDelta));
         lastRecoilHoodDelta = hoodDelta;
         return clamp01(baseHoodPos + hoodDelta);
+    }
+
+    private boolean isFastShootRecoilWindowReady() {
+        if (!fastShootRecoilWindowStarted) {
+            return false;
+        }
+
+        double elapsedSec = (System.nanoTime() - fastShootRecoilWindowStartNs) / 1_000_000_000.0;
+        return elapsedSec >= fastShootRecoilDelayAfterWrapStartSec;
     }
 
     private double getFastShotRecoilGainPerRPM() {
@@ -672,7 +704,7 @@ public class Outtake implements Subsystem {
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset += 25;
         } else if (currentOffsetType.equals("hood")){
-            shooter.hoodOffset += 0.05;
+            shooter.hoodOffset += 0.016666667;
         }
     }
 
@@ -683,7 +715,7 @@ public class Outtake implements Subsystem {
         } else if (currentOffsetType.equals("rpm")) {
             shooter.flywheelOffset -= 25;
         } else if (currentOffsetType.equals("hood")){
-            shooter.hoodOffset -= 0.05;
+            shooter.hoodOffset -= 0.016666667;
         }
     }
 

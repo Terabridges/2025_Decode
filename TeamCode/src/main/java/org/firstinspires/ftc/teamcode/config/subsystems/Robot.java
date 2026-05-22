@@ -389,8 +389,9 @@ public class Robot {
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.RESET)
                 .onExit(()-> {
+                    outtake.startFastShootRecoilWindow();
                     intake.clutch.setClutchDown();
-                    intake.spindex.setSpindexShootThree();
+                    intake.spindex.setSpindexShootOnePreWrap();
                 })
 
 //                .state(ShootAllStates.WAIT0)

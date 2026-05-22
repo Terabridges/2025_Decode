@@ -44,6 +44,9 @@ public class ShooterControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
+        telemetry.addData("Target RPM", "%.0f", shooter.getTargetRPM());
+        telemetry.addData("Current RPM", "%.0f", shooter.getCurrentRPM());
+        telemetry.addData("RPM Error", "%.0f", shooter.getTargetRPM() - shooter.getCurrentRPM());
         telemetry.addData("RPM Override", shooter.flywheelOverride);
     }
 }
