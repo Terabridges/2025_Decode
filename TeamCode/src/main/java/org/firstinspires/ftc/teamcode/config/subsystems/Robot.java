@@ -387,17 +387,14 @@ public class Robot {
                 })
 
                 .state(ShootAllStates.GO_TO_SHOOT_ONE)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.RESET)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT0)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
-                    intake.spindex.setSpindexShootOnePreWrap();
+                    intake.spindex.setSpindexShootThree();
                 })
 
-//                .state(ShootAllStates.WAIT0)
-//                .transitionTimed(0.1, ShootAllStates.RESET)
-//                .onExit(()-> {
-//                    intake.spindex.setSpindexShootThree();
-//                })
+                .state(ShootAllStates.WAIT0)
+                .transitionTimed(0.1, ShootAllStates.RESET)
 
                 .state(ShootAllStates.RESET)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
