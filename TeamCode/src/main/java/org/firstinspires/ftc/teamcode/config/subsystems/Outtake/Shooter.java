@@ -54,8 +54,8 @@ public class Shooter implements Subsystem {
 
     public boolean autoHood = true;
 
-    public double flywheelOffset = 200;
-    public double hoodOffset = 0.07;
+    public double flywheelOffset = 0;
+    public double hoodOffset = 0;
 
     public double newRPM = flywheelTargetRPM + flywheelOffset;
 
@@ -117,6 +117,10 @@ public class Shooter implements Subsystem {
 
     public double getCurrentPower(){
         return flywheelPower;
+    }
+
+    public double getCurrentHoodPosition(){
+        return commandedHoodPos;
     }
 
     public void setLeftFlywheelPow(double pow){

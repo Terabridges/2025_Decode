@@ -49,6 +49,12 @@ import java.util.List;
 @PsiKitFieldAutoLog
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
+    private enum ShootMachineChoice {
+        FAST,
+        SLOW,
+        SORTED
+    }
+
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double B_LONG_PRESS_RESET_SEC = 0.6;
@@ -93,7 +99,7 @@ public class MainTeleOp extends OpMode {
     StateMachine slowShootAllMachine;
 
     private boolean shootRequestPending = false;
-    private boolean pendingShootUsesSorting = false;
+    private ShootMachineChoice pendingShootMachine = ShootMachineChoice.FAST;
 
     private JoinedTelemetry joinedTelemetry;
     @PsiKitNoFieldAutoLog
@@ -200,6 +206,8 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
+        robot.useSorting = false;
+        robot.intake.useSortingIntake = false;
         lastAppliedBankOffsetDeg = getActiveBankOffsetDeg();
         Outtake.defaultTurretAimTrimOffsetDeg = lastAppliedBankOffsetDeg;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
@@ -309,6 +317,11 @@ public class MainTeleOp extends OpMode {
 
     public void controlsTelemetryUpdate() {
         if (telemetryTimer.milliseconds()>200) {
+            joinedTelemetry.addData("Odo Distance", "%.1f", robot.outtake.distanceInches);
+            joinedTelemetry.addData("Limelight Distance", "%.1f", robot.outtake.vision.getDistanceInches());
+            joinedTelemetry.addData("Target RPM", "%.0f", robot.outtake.shooter.getTargetRPM());
+            joinedTelemetry.addData("Hood Position", "%.4f", robot.outtake.shooter.getCurrentHoodPosition());
+
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
             }
@@ -327,6 +340,7 @@ public class MainTeleOp extends OpMode {
                     loopTimeTracker.getTrailingAverageMs()
                 );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
+            joinedTelemetry.addData("Shoot Machine", chooseShootMachine());
             //joinedTelemetry.addData("Shoot Pending", shootRequestPending);
 //            if (robot != null && robot.outtake != null) {
 //                joinedTelemetry.addData("In Launch Zone", robot.outtake.isAnyPartInLaunchZone());
@@ -361,20 +375,17 @@ public class MainTeleOp extends OpMode {
         if (xPressed) {
             if (shootRequestPending) {
                 // Manual override: second press while pending starts shooting immediately.
-                if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
-                    robot.initShootAllMachine = true;
-                    shootRequestPending = false;
-                } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
-                    robot.initSortedShootAllMachine = true;
+                ShootMachineChoice shootMachine = chooseShootMachine();
+                if (isShootMachineIdle(shootMachine)) {
+                    pendingShootMachine = shootMachine;
+                    startShootMachine(shootMachine);
                     shootRequestPending = false;
                 }
             } else {
-                if (!robot.useSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
+                ShootMachineChoice shootMachine = chooseShootMachine();
+                if (isShootMachineIdle(shootMachine)) {
                     shootRequestPending = true;
-                    pendingShootUsesSorting = false;
-                } else if (robot.useSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
-                    shootRequestPending = true;
-                    pendingShootUsesSorting = true;
+                    pendingShootMachine = shootMachine;
                 }
             }
         }
@@ -383,17 +394,52 @@ public class MainTeleOp extends OpMode {
                 && robot != null
                 && robot.outtake != null
                 && robot.outtake.isAnyPartInLaunchZone()) {
-            if (!pendingShootUsesSorting && shootAllMachine.getState().equals(Robot.ShootAllStates.INIT)) {
-                robot.initShootAllMachine = true;
-                shootRequestPending = false;
-            } else if (pendingShootUsesSorting && sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT)) {
-                robot.initSortedShootAllMachine = true;
+            ShootMachineChoice shootMachine = chooseShootMachine();
+            if (isShootMachineIdle(shootMachine)) {
+                pendingShootMachine = shootMachine;
+                startShootMachine(shootMachine);
                 shootRequestPending = false;
             }
         }
         shootAllMachine.update();
         sortingShootAllMachine.update();
         slowShootAllMachine.update();
+    }
+
+    private ShootMachineChoice chooseShootMachine() {
+        if (robot != null && robot.useSorting) {
+            return ShootMachineChoice.SORTED;
+        }
+        if (robot != null
+                && robot.outtake != null
+                && robot.outtake.distanceInches < Outtake.longRangeFastShotMinDistanceInches) {
+            return ShootMachineChoice.FAST;
+        }
+        return ShootMachineChoice.SLOW;
+    }
+
+    private boolean isShootMachineIdle(ShootMachineChoice shootMachine) {
+        if (shootMachine == ShootMachineChoice.SORTED) {
+            return sortingShootAllMachine.getState().equals(Robot.SortedShootAllStates.INIT);
+        }
+        if (shootMachine == ShootMachineChoice.SLOW) {
+            return slowShootAllMachine.getState().equals(Robot.SlowShootAllStates.INIT);
+        }
+        return shootAllMachine.getState().equals(Robot.ShootAllStates.INIT);
+    }
+
+    private void startShootMachine(ShootMachineChoice shootMachine) {
+        robot.initShootAllMachine = false;
+        robot.initSlowShootAllMachine = false;
+        robot.initSortedShootAllMachine = false;
+
+        if (shootMachine == ShootMachineChoice.SORTED) {
+            robot.initSortedShootAllMachine = true;
+        } else if (shootMachine == ShootMachineChoice.SLOW) {
+            robot.initSlowShootAllMachine = true;
+        } else {
+            robot.initShootAllMachine = true;
+        }
     }
 
     private void applyAllianceVisionLockConfig() {
@@ -524,9 +570,20 @@ public class MainTeleOp extends OpMode {
             logSortedShootAllTransitionInputs((Robot.SortedShootAllStates) sortedState, spindexAtPos, shooterAtRpm, unJamRequested, goToResetPending);
         }
 
+        if (slowShootAllMachine != null) {
+            Object slowState = slowShootAllMachine.getState();
+            Logger.recordOutput("MainTeleOp/StateMachines/SlowShootAll/State", String.valueOf(slowState));
+            Logger.recordOutput(
+                    "MainTeleOp/StateMachines/SlowShootAll/InInit",
+                    Robot.SlowShootAllStates.INIT.equals(slowState)
+            );
+        }
+
         Logger.recordOutput("MainTeleOp/StateMachines/ShootRequestPending", shootRequestPending);
-        Logger.recordOutput("MainTeleOp/StateMachines/PendingShootUsesSorting", pendingShootUsesSorting);
+        Logger.recordOutput("MainTeleOp/StateMachines/PendingShootMachine", String.valueOf(pendingShootMachine));
+        Logger.recordOutput("MainTeleOp/StateMachines/SelectedShootMachine", String.valueOf(chooseShootMachine()));
         Logger.recordOutput("MainTeleOp/StateMachines/InitShootAllMachine", robot.initShootAllMachine);
+        Logger.recordOutput("MainTeleOp/StateMachines/InitSlowShootAllMachine", robot.initSlowShootAllMachine);
         Logger.recordOutput("MainTeleOp/StateMachines/InitSortedShootAllMachine", robot.initSortedShootAllMachine);
         Logger.recordOutput("MainTeleOp/StateMachines/UseSorting", robot.useSorting);
         Logger.recordOutput("MainTeleOp/StateMachines/SortedStartBall", robot.sortedStartBall);
