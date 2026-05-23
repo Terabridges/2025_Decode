@@ -119,6 +119,10 @@ public class Shooter implements Subsystem {
         return flywheelPower;
     }
 
+    public double getCurrentHoodPosition(){
+        return commandedHoodPos;
+    }
+
     public void setLeftFlywheelPow(double pow){
         leftFlywheel.setPower(pow);
     }

@@ -317,6 +317,11 @@ public class MainTeleOp extends OpMode {
 
     public void controlsTelemetryUpdate() {
         if (telemetryTimer.milliseconds()>200) {
+            joinedTelemetry.addData("Odo Distance", "%.1f", robot.outtake.distanceInches);
+            joinedTelemetry.addData("Limelight Distance", "%.1f", robot.outtake.vision.getDistanceInches());
+            joinedTelemetry.addData("Target RPM", "%.0f", robot.outtake.shooter.getTargetRPM());
+            joinedTelemetry.addData("Hood Position", "%.4f", robot.outtake.shooter.getCurrentHoodPosition());
+
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
             }
