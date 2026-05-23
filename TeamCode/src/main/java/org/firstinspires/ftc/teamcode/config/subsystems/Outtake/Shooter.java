@@ -43,7 +43,7 @@ public class Shooter implements Subsystem {
     private double flywheelPower = 0.0;
     public double flywheelTargetRPM = 2600;
     private double flywheelMaxPower = 1.0;
-    public boolean useFlywheelPID = false;
+    public boolean useFlywheelPID = true;
     private double currentRPM = 0;
     public boolean flywheelOverride = false;
     public double flywheelOverrideRPM = 0;
@@ -56,6 +56,8 @@ public class Shooter implements Subsystem {
 
     public double flywheelOffset = 0;
     public double hoodOffset = 0;
+
+    public double newRPM = flywheelTargetRPM + flywheelOffset;
 
     //---------------- Constructor ----------------
     public Shooter(HardwareMap map) {
@@ -110,7 +112,7 @@ public class Shooter implements Subsystem {
     }
 
     public double getTargetRPM(){
-        return flywheelTargetRPM;
+        return flywheelTargetRPM + flywheelOffset;
     }
 
     public double getCurrentPower(){
@@ -134,7 +136,7 @@ public class Shooter implements Subsystem {
     }
 
     public boolean isAtRPM(){
-        return (Math.abs(flywheelTargetRPM - currentRPM) < 200);
+        return (Math.abs(getTargetRPM() - currentRPM) < 200);
     }
 
     public void toggleCloseOverride(){
@@ -169,9 +171,10 @@ public class Shooter implements Subsystem {
 
     @Override
     public void update(){
+        newRPM = flywheelTargetRPM + flywheelOffset;
         if (useFlywheelPID){
             if(!flywheelOverride) {
-                setFlywheel(flywheelTargetRPM+flywheelOffset);
+                setFlywheel(newRPM);
             } else {
                 setFlywheel(flywheelOverrideRPM+flywheelOffset);
             }
@@ -187,7 +190,7 @@ public class Shooter implements Subsystem {
     public void logPsiKitData() {
         Logger.recordOutput("Subsystems/Outtake/Shooter/UseFlywheelPID", useFlywheelPID);
         Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelOverride", flywheelOverride);
-        Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelTargetRPM", flywheelTargetRPM);
+        Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelTargetRPM", newRPM);
         Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelCurrentRPM", currentRPM);
         Logger.recordOutput("Subsystems/Outtake/Shooter/FlywheelPower", flywheelPower);
         Logger.recordOutput("Subsystems/Outtake/Shooter/AtRPM", isAtRPM());
