@@ -54,8 +54,8 @@ public class Shooter implements Subsystem {
 
     public boolean autoHood = true;
 
-    public double flywheelOffset = 0;
-    public double hoodOffset = 0;
+    public double flywheelOffset = 200;
+    public double hoodOffset = 0.07;
 
     public double newRPM = flywheelTargetRPM + flywheelOffset;
 
