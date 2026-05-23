@@ -61,6 +61,7 @@ public class MainTeleOp extends OpMode {
     private static final double FIELD_SIZE_IN = 144.0;
     private static final double ROBOT_WIDTH_IN = 17.5;
     private static final double ROBOT_LENGTH_IN = 18.0;
+    private static final double PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC = 0.5;
     public static boolean enableSectionTimingLogs = true;
     public static double autoOffsetStationarySeconds = 1.0;
     // Match the auto shooting "robot settled" gate.
@@ -110,6 +111,9 @@ public class MainTeleOp extends OpMode {
     private ElapsedTime bHoldTimer;
     private boolean bLongPressHandled = false;
     private GoBildaPinpointDriver pinpoint;
+    private final ElapsedTime poseResetDelayTimer = new ElapsedTime();
+    private boolean poseResetPending = false;
+    private Pose pendingPoseReset = null;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -238,7 +242,7 @@ public class MainTeleOp extends OpMode {
         }
         long tAfterFollowerNs = System.nanoTime();
 
-        updateGp2BackImuRecalibration();
+        updatePendingPoseReset();
         applyAllianceVisionLockConfig();
         long tAfterAllianceNs = System.nanoTime();
 
@@ -321,6 +325,7 @@ public class MainTeleOp extends OpMode {
             joinedTelemetry.addData("Limelight Distance", "%.1f", robot.outtake.vision.getDistanceInches());
             joinedTelemetry.addData("Target RPM", "%.0f", robot.outtake.shooter.getTargetRPM());
             joinedTelemetry.addData("Hood Position", "%.4f", robot.outtake.shooter.getCurrentHoodPosition());
+            joinedTelemetry.addData("Pose Reset Pending", poseResetPending);
 
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
@@ -360,14 +365,6 @@ public class MainTeleOp extends OpMode {
 
         previousGamepad2.copy(currentGamepad2);
         currentGamepad2.copy(gamepad2);
-    }
-
-    private void updateGp2BackImuRecalibration() {
-        if (currentGamepad2.back && !previousGamepad2.back) {
-            if (pinpoint != null) {
-                pinpoint.recalibrateIMU();
-            }
-        }
     }
 
     public void stateMachinesUpdate(){
@@ -538,7 +535,25 @@ public class MainTeleOp extends OpMode {
             }
         }
 
-        FollowerManager.follower.setPose(resetPose);
+        if (pinpoint != null) {
+            pinpoint.recalibrateIMU();
+        }
+        pendingPoseReset = resetPose;
+        poseResetPending = true;
+        poseResetDelayTimer.reset();
+    }
+
+    private void updatePendingPoseReset() {
+        if (!poseResetPending || pendingPoseReset == null || FollowerManager.follower == null) {
+            return;
+        }
+        if (poseResetDelayTimer.seconds() < PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC) {
+            return;
+        }
+
+        FollowerManager.follower.setPose(pendingPoseReset);
+        poseResetPending = false;
+        pendingPoseReset = null;
     }
     private void logStateMachinePsiKitData() {
         double spindexCommandedDeg = robot.intake.spindex.getCommandedDegree();
@@ -595,6 +610,8 @@ public class MainTeleOp extends OpMode {
         Logger.recordOutput("MainTeleOp/StateMachines/Shooter/CurrentRpm", shooterCurrentRpm);
         Logger.recordOutput("MainTeleOp/StateMachines/Shooter/AtRpm", shooterAtRpm);
         Logger.recordOutput("MainTeleOp/StateMachines/Shooter/RpmError", shooterTargetRpm - shooterCurrentRpm);
+        Logger.recordOutput("MainTeleOp/PoseReset/Pending", poseResetPending);
+        Logger.recordOutput("MainTeleOp/PoseReset/DelaySeconds", PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC);
         Logger.recordOutput("MainTeleOp/StateMachines/UnJamRequested", unJamRequested);
         Logger.recordOutput("MainTeleOp/StateMachines/GoToResetPending", goToResetPending);
         Logger.recordOutput("MainTeleOp/StateMachines/WaitTimeSec", robot.getShootAllWaitTime());
