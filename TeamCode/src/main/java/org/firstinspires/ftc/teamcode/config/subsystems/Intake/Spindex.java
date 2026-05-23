@@ -512,7 +512,7 @@ public class Spindex implements Subsystem {
 
     public boolean isSpindexAtPos(){
         double physicalRangeDeg = 360.0 * Math.max(1e-6, Math.abs(absoluteEncoderGearRatio));
-        return Math.abs(wrapSignedDegInRange(getCommandedDegree() - getAbsolutePos(), physicalRangeDeg)) <= 7;
+        return Math.abs(wrapSignedDegInRange(getCommandedDegree() - getAbsolutePos(), physicalRangeDeg)) <= 8;
     }
 
     public double getCommandedPos(){

@@ -59,28 +59,37 @@ public class Robot {
         GO_TO_SECOND,
         WAIT2,
         GO_TO_THIRD,
-        WAIT3,
         RESET,
         UNJAM
-
     }
 
     public enum ShootAllStates {
         INIT,
-        GO_TO_SHOOT_ONE,
         SHOOT,
         WAIT,
         RESET,
         UNJAM
     }
 
+//    public enum SlowShootAllStates {
+//        INIT,
+//        GO_TO_FIRST,
+//        SHOOT_TWOBALL,
+//        WAIT1,
+//        SHOOT_ONEBALL,
+//        WAIT2,
+//        RESET,
+//        UNJAM
+//    }
+
     public enum SlowShootAllStates {
         INIT,
         GO_TO_FIRST,
-        SHOOT_TWOBALL,
+        WAIT0,
         WAIT1,
-        SHOOT_ONEBALL,
+        GO_TO_SECOND,
         WAIT2,
+        GO_TO_THIRD,
         RESET,
         UNJAM
     }
@@ -248,24 +257,11 @@ public class Robot {
                 })
 
                 .state(SortedShootAllStates.GO_TO_THIRD)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SortedShootAllStates.WAIT3)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SortedShootAllStates.RESET)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
-
-                .state(SortedShootAllStates.WAIT3)
-                .transitionTimed(waitTime, SortedShootAllStates.RESET)
-                .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
-                .onExit(()-> {
-                    if(sortedStartBall == 1){
-                        intake.spindex.setSpindexShootOnePreWrap();
-                    } else if(sortedStartBall == 2){
-                        intake.spindex.setSpindexShootTwoPreWrap();
-                    } else if(sortedStartBall == 3){
-                        intake.spindex.setSpindexShootThreePreWrap();
-                    }
-                })
 
                 .state(SortedShootAllStates.RESET)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SortedShootAllStates.INIT)
+                .transitionTimed(0.1, SortedShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     intake.spindex.setSpindexForwardOne();
@@ -297,7 +293,7 @@ public class Robot {
     public StateMachine getShootAllMachine(){
         return new StateMachineBuilder()
                 .state(ShootAllStates.INIT)
-                .transition(()-> initShootAllMachine, ShootAllStates.GO_TO_SHOOT_ONE)
+                .transition(()-> initShootAllMachine, ShootAllStates.SHOOT)
                 .onExit(()-> {
                     initShootAllMachine = false;
                     outtake.setFastShootAllActive(true);
@@ -317,10 +313,10 @@ public class Robot {
                 })
 
                 .state(ShootAllStates.WAIT)
-                .transitionTimed(0.1, ShootAllStates.RESET)
+                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.RESET)
 
                 .state(ShootAllStates.RESET)
-                .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.INIT)
+                .transitionTimed(0.1, ShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     outtake.setFastShootAllActive(false);
@@ -336,46 +332,130 @@ public class Robot {
 
     }
 
+//    public StateMachine getSlowShootAllMachine(){
+//        return new StateMachineBuilder()
+//                .state(SlowShootAllStates.INIT)
+//                .transition(()-> initSlowShootAllMachine, SlowShootAllStates.GO_TO_FIRST)
+//                .onExit(()-> {
+//                    initSlowShootAllMachine = false;
+//                    //outtake.setFastShootAllActive(false);
+//                    outtake.shooter.useFlywheelPID = true;
+//                    intake.clutch.setClutchUp();
+//                    intake.clutch.spinClutchIn();
+//                    outtake.shooter.setHoodTarget();
+//                    intake.autoIntake = false;
+//                    intake.spindex.setSpindexShootOnePre();
+//                })
+//
+//                .state(SlowShootAllStates.SHOOT_TWOBALL)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT1)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//                .onExit(()-> {
+//                    intake.clutch.setClutchDown();
+//                    intake.spindex.setSpindexShootTwo();
+//                })
+//
+//                .state(SlowShootAllStates.WAIT1)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.SHOOT_ONEBALL)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//                .onExit(()-> {
+//                    intake.spindex.setSpindexShootThree();
+//                })
+//
+//                .state(SlowShootAllStates.SHOOT_ONEBALL)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT2)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//
+//                .state(SlowShootAllStates.WAIT2)
+//                .transitionTimed(0.1, SlowShootAllStates.RESET)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//
+//                .state(SlowShootAllStates.RESET)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.INIT)
+//                .onExit(()-> {
+//                    txLights = false;
+//                    intake.spindex.setSpindexForwardOne();
+//                    intake.clutch.setClutchUp();
+//                    intake.spindex.emptyBalls();
+//                    intake.clutch.spinClutchStop();
+//                    intake.autoIntake = true;
+//                })
+//
+//                .state(SlowShootAllStates.UNJAM)
+//                .onEnter(()->{
+//                    txLights = false;
+//                    outtake.setFastShootAllActive(false);
+//                    other.unJam = false;
+//                    intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
+//                    intake.spinner.setMegaSpinZero();
+//                    intake.clutch.spinClutchStop();
+//                    intake.clutch.setClutchUp();
+//                    intake.spindex.emptyBalls();
+//                    intake.autoIntake = true;
+//                    goToReset = true;
+//                })
+//                .transition(()-> goToReset, SlowShootAllStates.INIT)
+//                .onExit(()->goToReset = false)
+//
+//                .build();
+//    }
+
     public StateMachine getSlowShootAllMachine(){
         return new StateMachineBuilder()
                 .state(SlowShootAllStates.INIT)
                 .transition(()-> initSlowShootAllMachine, SlowShootAllStates.GO_TO_FIRST)
                 .onExit(()-> {
                     initSlowShootAllMachine = false;
-                    //outtake.setFastShootAllActive(false);
+                    outtake.setFastShootAllActive(false);
                     outtake.shooter.useFlywheelPID = true;
                     intake.clutch.setClutchUp();
                     intake.clutch.spinClutchIn();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
+
                     intake.spindex.setSpindexShootOnePre();
                 })
 
-                .state(SlowShootAllStates.SHOOT_TWOBALL)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT1)
+                .state(SlowShootAllStates.GO_TO_FIRST)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT0)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
+
+                    intake.spindex.setSpindexShootOne();
+                })
+
+                .state(SlowShootAllStates.WAIT0)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT1)
+                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+
+                .state(SlowShootAllStates.WAIT1)
+                .transitionTimed(waitTime, SlowShootAllStates.GO_TO_SECOND)
+                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+                .onExit(()-> {
+
                     intake.spindex.setSpindexShootTwo();
                 })
 
-                .state(SlowShootAllStates.WAIT1)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.SHOOT_ONEBALL)
-                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
-                .onExit(()-> {
-                    intake.spindex.setSpindexShootThree();
-                })
-
-                .state(SlowShootAllStates.SHOOT_ONEBALL)
+                .state(SlowShootAllStates.GO_TO_SECOND)
                 .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT2)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
 
                 .state(SlowShootAllStates.WAIT2)
-                .transitionTimed(0.1, SlowShootAllStates.RESET)
+                .transitionTimed(waitTime, SlowShootAllStates.GO_TO_THIRD)
+                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+                .onExit(()-> {
+
+                    intake.spindex.setSpindexShootThree();
+                })
+
+                .state(SlowShootAllStates.GO_TO_THIRD)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.RESET)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
 
+
                 .state(SlowShootAllStates.RESET)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.INIT)
+                .transitionTimed(0.1, SlowShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     intake.spindex.setSpindexForwardOne();

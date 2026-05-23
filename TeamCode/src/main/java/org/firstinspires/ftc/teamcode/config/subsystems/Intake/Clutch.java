@@ -83,11 +83,11 @@ public class Clutch implements Subsystem {
     }
 
     public void spinClutchIn(){
-        clutchSpinPow = 1.0;
+        clutchSpinPow = 0.98;
     }
 
     public void spinClutchOut(){
-        clutchSpinPow = -0.98;
+        clutchSpinPow = -0.5;
     }
 
     public void spinClutchStop(){
