@@ -65,20 +65,26 @@ public class Outtake implements Subsystem {
     public static double smallLaunchApexY = 24.0;
     public static boolean enableRpmRecoilComp = true;
     public static double closeRangeFastRecoilCompGainPerRPM = 0.000133333;
-    public static double longRangeFastRecoilCompGainPerRPM = 0.000140625;
+    public static double longRangeFastRecoilCompGainPerRPM = 0.0002109375;
     public static double recoilCompDeadbandRPM = 30.0;
     public static double recoilCompMaxHoodDelta = 0.12;
-    public static double fastShootRecoilDelayAfterWrapStartSec = 0.08;
+    public static double fastShootFirstBallRecoilTimeSec = 0.0;
+    public static double fastShootSecondBallRecoilTimeSec = 0.2;
+    public static double fastShootThirdBallRecoilTimeSec = 0.4;
+    public static double fastShootFirstBallHoodDelta = 0.0;
+    public static double fastShootSecondBallHoodDelta = -0.05;
+    public static double fastShootThirdBallHoodDelta = -0.1;
     public static double longRangeFastShotMinDistanceInches = 90.0;
     public static double closeRangeFastShotRpmBoost = 0.0;
     public static double longRangeFastShotRpmBoost = 0.0;
+    public static double closeRangeFastShotHoodOffset = 0.0;
+    public static double longRangeFastShotHoodOffset = 0.0;
     public static double headingOffsetStepDeg = 1.0;
     public static double headingOffsetMaxAbsDeg = 35.0;
 
     private boolean aimLockEnabled = false;
     private boolean fastShootAllActive = false;
-    private boolean fastShootRecoilWindowStarted = false;
-    private long fastShootRecoilWindowStartNs = 0L;
+    private long fastShootStartNs = 0L;
     private boolean preventTurretWrap = false;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
@@ -119,23 +125,16 @@ public class Outtake implements Subsystem {
     }
 
     public void setFastShootAllActive(boolean active) {
-        fastShootAllActive = active;
-        if (!active) {
-            fastShootRecoilWindowStarted = false;
-            fastShootRecoilWindowStartNs = 0L;
+        if (active && !fastShootAllActive) {
+            fastShootStartNs = System.nanoTime();
+        } else if (!active) {
+            fastShootStartNs = 0L;
         }
+        fastShootAllActive = active;
     }
 
     public boolean isFastShootAllActive() {
         return fastShootAllActive;
-    }
-
-    public void startFastShootRecoilWindow() {
-        if (!fastShootAllActive) {
-            return;
-        }
-        fastShootRecoilWindowStarted = true;
-        fastShootRecoilWindowStartNs = System.nanoTime();
     }
 
     public boolean isLongRangeFastShootActive() {
@@ -522,7 +521,7 @@ public class Outtake implements Subsystem {
         }
 
         shooter.flywheelTargetRPM = shooterData.getRPMVal(distanceInches) + getFastShotRpmBoost();
-        double baseHoodPos = shooterData.getAngleVal(distanceInches);
+        double baseHoodPos = shooterData.getAngleVal(distanceInches) + getFastShotHoodOffset();
         lastBaseHoodPos = baseHoodPos;
         shooter.hoodPos = applyRpmRecoilComp(baseHoodPos);
         lastCompedHoodPos = shooter.hoodPos;
@@ -561,6 +560,7 @@ public class Outtake implements Subsystem {
         Logger.recordOutput("Subsystems/Outtake/CloseRangeFastShootActive", isCloseRangeFastShootActive());
         Logger.recordOutput("Subsystems/Outtake/LongRangeFastShootActive", isLongRangeFastShootActive());
         Logger.recordOutput("Subsystems/Outtake/FastShotRpmBoost", getFastShotRpmBoost());
+        Logger.recordOutput("Subsystems/Outtake/FastShotHoodOffset", getFastShotHoodOffset());
 
         shooter.logPsiKitData();
         turret.logPsiKitData();
@@ -577,6 +577,16 @@ public class Outtake implements Subsystem {
         return 0.0;
     }
 
+    private double getFastShotHoodOffset() {
+        if (isLongRangeFastShootActive()) {
+            return longRangeFastShotHoodOffset;
+        }
+        if (isCloseRangeFastShootActive()) {
+            return closeRangeFastShotHoodOffset;
+        }
+        return 0.0;
+    }
+
     private double applyRpmRecoilComp(double baseHoodPos) {
         lastRecoilRpmError = shooter.getTargetRPM() - shooter.getCurrentRPM();
         lastRecoilHoodDelta = 0.0;
@@ -589,28 +599,28 @@ public class Outtake implements Subsystem {
             return clamp01(baseHoodPos);
         }
 
-        if (!isFastShootRecoilWindowReady()) {
-            return clamp01(baseHoodPos);
-        }
-
-        if (Math.abs(lastRecoilRpmError) <= recoilCompDeadbandRPM) {
-            return clamp01(baseHoodPos);
-        }
-
-        // Positive RPM error means flywheel is under target, so lower hood angle.
-        double hoodDelta = -getFastShotRecoilGainPerRPM() * lastRecoilRpmError;
+        double hoodDelta = getPredictiveFastShotHoodDelta();
         hoodDelta = Math.max(-recoilCompMaxHoodDelta, Math.min(recoilCompMaxHoodDelta, hoodDelta));
         lastRecoilHoodDelta = hoodDelta;
         return clamp01(baseHoodPos + hoodDelta);
     }
 
-    private boolean isFastShootRecoilWindowReady() {
-        if (!fastShootRecoilWindowStarted) {
-            return false;
+    private double getPredictiveFastShotHoodDelta() {
+        if (fastShootStartNs == 0L) {
+            return 0.0;
         }
 
-        double elapsedSec = (System.nanoTime() - fastShootRecoilWindowStartNs) / 1_000_000_000.0;
-        return elapsedSec >= fastShootRecoilDelayAfterWrapStartSec;
+        double elapsedSec = (System.nanoTime() - fastShootStartNs) / 1_000_000_000.0;
+        if (elapsedSec >= fastShootThirdBallRecoilTimeSec) {
+            return fastShootThirdBallHoodDelta;
+        }
+        if (elapsedSec >= fastShootSecondBallRecoilTimeSec) {
+            return fastShootSecondBallHoodDelta;
+        }
+        if (elapsedSec >= fastShootFirstBallRecoilTimeSec) {
+            return fastShootFirstBallHoodDelta;
+        }
+        return 0.0;
     }
 
     private double getFastShotRecoilGainPerRPM() {
