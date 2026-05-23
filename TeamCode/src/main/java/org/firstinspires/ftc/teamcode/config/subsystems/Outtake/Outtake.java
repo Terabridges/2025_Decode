@@ -74,7 +74,7 @@ public class Outtake implements Subsystem {
     public static double fastShootFirstBallHoodDelta = 0.0;
     public static double fastShootSecondBallHoodDelta = -0.05;
     public static double fastShootThirdBallHoodDelta = -0.1;
-    public static double longRangeFastShotMinDistanceInches = 90.0;
+    public static double longRangeFastShotMinDistanceInches = 100.0;
     public static double closeRangeFastShotRpmBoost = 0.0;
     public static double longRangeFastShotRpmBoost = 0.0;
     public static double closeRangeFastShotHoodOffset = 0.0;

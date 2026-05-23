@@ -32,9 +32,18 @@ public class ShooterData {
         RPMLUT.add( 66.1  ,2360);
         RPMLUT.add( 77.1  ,2400);
         RPMLUT.add( 90  ,2550);
-        RPMLUT.add( 128.6  ,3000);
-        RPMLUT.add( 135.5  ,3100);
-        RPMLUT.add(maxDistance, 3100);
+        //Cutoff 100 for close/far
+        RPMLUT.add( 115  ,2925);
+        RPMLUT.add( 120  ,3000);
+        RPMLUT.add( 126  ,3100);
+        RPMLUT.add( 130  ,3150);
+        RPMLUT.add( 134  ,3175);
+        RPMLUT.add( 137  ,3200);
+        RPMLUT.add( 140  ,3225);
+        RPMLUT.add( 143  ,3260);
+        RPMLUT.add( 147  ,3300);
+        RPMLUT.add( 150  ,3350);
+        RPMLUT.add(maxDistance, 3350);
     }
 
     private void addAngleData(){
@@ -47,9 +56,12 @@ public class ShooterData {
         AngleLUT.add( 66.1  ,0.78);
         AngleLUT.add( 77.1  ,0.8);
         AngleLUT.add( 90  ,0.81);
-        AngleLUT.add( 128.6  ,0.91);
-        AngleLUT.add( 135.5  ,0.92);
-        AngleLUT.add(maxDistance, 0.92);
+        //Cutoff 100 for close/far
+        AngleLUT.add( 115  ,0.93);
+        AngleLUT.add( 120  ,0.94);
+        AngleLUT.add( 126  ,0.95);
+        AngleLUT.add( 137  ,0.97);
+        AngleLUT.add(maxDistance, 0.97);
     }
 
     private void addShotTimeData() {

@@ -309,7 +309,7 @@ public class Robot {
                     intake.clutch.spinClutchIn();
                 })
 
-                .state(ShootAllStates.SHOOT)
+                .state(ShootAllStates.GO_TO_SHOOT_ONE)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
@@ -342,13 +342,21 @@ public class Robot {
                 .transition(()-> initSlowShootAllMachine, SlowShootAllStates.GO_TO_FIRST)
                 .onExit(()-> {
                     initSlowShootAllMachine = false;
-                    //outtake.setFastShootAllActive(false);
+                    outtake.setFastShootAllActive(false);
                     outtake.shooter.useFlywheelPID = true;
                     intake.clutch.setClutchUp();
                     intake.clutch.spinClutchIn();
                     outtake.shooter.setHoodTarget();
                     intake.autoIntake = false;
                     intake.spindex.setSpindexShootOnePre();
+                })
+
+                .state(SlowShootAllStates.GO_TO_FIRST)
+                .transition(()-> intake.spindex.isSpindexAtPos() && outtake.shooter.isAtRPM(), SlowShootAllStates.SHOOT_TWOBALL)
+                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+                .onExit(()-> {
+                    intake.clutch.setClutchDown();
+                    intake.spindex.setSpindexShootOne();
                 })
 
                 .state(SlowShootAllStates.SHOOT_TWOBALL)

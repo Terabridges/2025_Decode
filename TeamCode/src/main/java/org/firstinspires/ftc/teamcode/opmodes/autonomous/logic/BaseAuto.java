@@ -143,6 +143,7 @@ public abstract class BaseAuto extends OpMode {
     private AutoStates activeState = AutoStates.ACQUIRE_MOTIF;
     private StateMachine shootAllMachine;
     private StateMachine sortingShootAllMachine;
+    private StateMachine slowShootAllMachine;
     private AutoTurretAim turretAim;
     private GoBildaPinpointDriver pinpoint;
 
@@ -243,6 +244,7 @@ public abstract class BaseAuto extends OpMode {
 
         shootAllMachine = robot.getShootAllMachine();
         sortingShootAllMachine = robot.getSortedShootAllMachine();
+        slowShootAllMachine = robot.getSlowShootAllMachine();
         turretAim = new AutoTurretAim(robot, poses, alliance, range, telemetry);
         motifTracker = new AutoMotifTracker(robot, alliance, range, MOTIF_ACQUIRE_TIMEOUT);
 
@@ -295,6 +297,9 @@ public abstract class BaseAuto extends OpMode {
         if (sortingShootAllMachine != null) {
             sortingShootAllMachine.start();
         }
+        if (slowShootAllMachine != null) {
+            slowShootAllMachine.start();
+        }
     }
 
     @Override
@@ -323,6 +328,9 @@ public abstract class BaseAuto extends OpMode {
         }
         if (sortingShootAllMachine != null) {
             sortingShootAllMachine.update();
+        }
+        if (slowShootAllMachine != null) {
+            slowShootAllMachine.update();
         }
         logAutoStateMachinePsiKitData();
 
@@ -1553,17 +1561,24 @@ public abstract class BaseAuto extends OpMode {
         if (activeShootMachine == null) {
             return true;
         }
-        return activeShootMachine.getState() == Robot.SortedShootAllStates.INIT
-                && !robot.initSortedShootAllMachine;
+        return isAutoShootMachineIdle();
 
         //TODO get a boolean from shooter subsystem
     }
 
     private void armAutoShootSequence() {
-        // Auto always uses sorted shooting order.
-        robot.useSorting = true;
         robot.initShootAllMachine = false;
-        robot.initSortedShootAllMachine = true;
+        robot.initSlowShootAllMachine = false;
+        robot.initSortedShootAllMachine = false;
+
+        StateMachine activeShootMachine = getAutoShootMachine();
+        if (activeShootMachine == sortingShootAllMachine) {
+            robot.initSortedShootAllMachine = true;
+        } else if (activeShootMachine == slowShootAllMachine) {
+            robot.initSlowShootAllMachine = true;
+        } else {
+            robot.initShootAllMachine = true;
+        }
     }
 
     protected void maybeStartShootAtPathProgress() {
@@ -1601,7 +1616,36 @@ public abstract class BaseAuto extends OpMode {
     }
 
     private StateMachine getAutoShootMachine() {
-        return sortingShootAllMachine;
+        if (robot != null && robot.useSorting) {
+            return sortingShootAllMachine;
+        }
+        if (shouldUseFastShootByDistance()) {
+            return shootAllMachine;
+        }
+        return slowShootAllMachine;
+    }
+
+    private boolean shouldUseFastShootByDistance() {
+        return robot != null
+                && robot.outtake != null
+                && robot.outtake.distanceInches < Outtake.longRangeFastShotMinDistanceInches;
+    }
+
+    private boolean isAutoShootMachineIdle() {
+        StateMachine activeShootMachine = getAutoShootMachine();
+        if (activeShootMachine == sortingShootAllMachine) {
+            return sortingShootAllMachine != null
+                    && sortingShootAllMachine.getState() == Robot.SortedShootAllStates.INIT
+                    && !robot.initSortedShootAllMachine;
+        }
+        if (activeShootMachine == slowShootAllMachine) {
+            return slowShootAllMachine != null
+                    && slowShootAllMachine.getState() == Robot.SlowShootAllStates.INIT
+                    && !robot.initSlowShootAllMachine;
+        }
+        return shootAllMachine != null
+                && shootAllMachine.getState() == Robot.ShootAllStates.INIT
+                && !robot.initShootAllMachine;
     }
 
     protected boolean shouldStartShootSequence() {
@@ -1758,6 +1802,24 @@ public abstract class BaseAuto extends OpMode {
                 (sortingShootAllMachine != null && sortingShootAllMachine.getState() != null)
                         ? sortingShootAllMachine.getState().toString()
                         : "null"
+        );
+        Logger.recordOutput(
+                "Auto/StateMachine/FastShootMachineState",
+                (shootAllMachine != null && shootAllMachine.getState() != null)
+                        ? shootAllMachine.getState().toString()
+                        : "null"
+        );
+        Logger.recordOutput(
+                "Auto/StateMachine/SlowShootMachineState",
+                (slowShootAllMachine != null && slowShootAllMachine.getState() != null)
+                        ? slowShootAllMachine.getState().toString()
+                        : "null"
+        );
+        Logger.recordOutput(
+                "Auto/StateMachine/SelectedShootMachine",
+                getAutoShootMachine() == sortingShootAllMachine
+                        ? "SORTED"
+                        : (getAutoShootMachine() == slowShootAllMachine ? "SLOW" : "FAST")
         );
         Logger.recordOutput("Auto/StateMachine/PreloadComplete", preloadComplete);
         Logger.recordOutput("Auto/StateMachine/RowsCompleted", rowsCompleted);
