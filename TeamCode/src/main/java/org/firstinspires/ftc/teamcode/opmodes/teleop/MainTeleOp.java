@@ -90,6 +90,8 @@ public class MainTeleOp extends OpMode {
 
     StateMachine shootAllMachine;
     StateMachine sortingShootAllMachine;
+    StateMachine slowShootAllMachine;
+
     private boolean shootRequestPending = false;
     private boolean pendingShootUsesSorting = false;
 
@@ -139,6 +141,7 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine = robot.getShootAllMachine();
         sortingShootAllMachine = robot.getSortedShootAllMachine();
+        slowShootAllMachine = robot.getSlowShootAllMachine();
 
         joinedTelemetry = new JoinedTelemetry(
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
@@ -207,6 +210,8 @@ public class MainTeleOp extends OpMode {
 
         shootAllMachine.start();
         sortingShootAllMachine.start();
+        slowShootAllMachine.start();
+
         robot.intake.spindex.emptyBalls();
 
         loopTimeTracker.reset();
@@ -388,6 +393,7 @@ public class MainTeleOp extends OpMode {
         }
         shootAllMachine.update();
         sortingShootAllMachine.update();
+        slowShootAllMachine.update();
     }
 
     private void applyAllianceVisionLockConfig() {
@@ -544,34 +550,34 @@ public class MainTeleOp extends OpMode {
             boolean unJamRequested,
             boolean goToResetPending
     ) {
-        String prefix = "MainTeleOp/StateMachines/ShootAll/Next";
-        switch (state) {
-            case INIT:
-                Logger.recordOutput(prefix + "/InitRequested", robot.initShootAllMachine);
-                break;
-            case GO_TO_SHOOT_ONE:
-                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
-                Logger.recordOutput(prefix + "/ShooterAtRpm", shooterAtRpm);
-                Logger.recordOutput(prefix + "/AdvanceReady", spindexAtPos && shooterAtRpm);
-                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
-                break;
-            case WAIT0:
-            case GO_TO_SHOOT_TWO:
-            case GO_TO_SHOOT_THREE:
-            case RESET:
-                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
-                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
-                break;
-            case WAIT1:
-            case WAIT2:
-            case WAIT3:
-                Logger.recordOutput(prefix + "/WaitTimeSec", robot.getShootAllWaitTime());
-                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
-                break;
-            case UNJAM:
-                Logger.recordOutput(prefix + "/GoToResetPending", goToResetPending);
-                break;
-        }
+//        String prefix = "MainTeleOp/StateMachines/ShootAll/Next";
+//        switch (state) {
+//            case INIT:
+//                Logger.recordOutput(prefix + "/InitRequested", robot.initShootAllMachine);
+//                break;
+//            case GO_TO_SHOOT_ONE:
+//                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+//                Logger.recordOutput(prefix + "/ShooterAtRpm", shooterAtRpm);
+//                Logger.recordOutput(prefix + "/AdvanceReady", spindexAtPos && shooterAtRpm);
+//                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+//                break;
+//            case WAIT0:
+//            case GO_TO_SHOOT_TWO:
+//            case GO_TO_SHOOT_THREE:
+//            case RESET:
+//                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+//                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+//                break;
+//            case WAIT1:
+//            case WAIT2:
+//            case WAIT3:
+//                Logger.recordOutput(prefix + "/WaitTimeSec", robot.getShootAllWaitTime());
+//                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+//                break;
+//            case UNJAM:
+//                Logger.recordOutput(prefix + "/GoToResetPending", goToResetPending);
+//                break;
+//        }
     }
 
      private void logSortedShootAllTransitionInputs(
@@ -581,39 +587,39 @@ public class MainTeleOp extends OpMode {
             boolean unJamRequested,
             boolean goToResetPending
     ) {
-        String prefix = "MainTeleOp/StateMachines/SortedShootAll/Next";
-        switch (state) {
-            case INIT:
-                Logger.recordOutput(prefix + "/InitRequested", robot.initSortedShootAllMachine);
-                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
-                break;
-            case GO_TO_FIRST:
-                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
-                Logger.recordOutput(prefix + "/ShooterAtRpm", shooterAtRpm);
-                Logger.recordOutput(prefix + "/AdvanceReady", spindexAtPos && shooterAtRpm);
-                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
-                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
-                break;
-            case WAIT0:
-            case GO_TO_SECOND:
-            case GO_TO_THIRD:
-            case RESET:
-                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
-                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
-                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
-                break;
-            case WAIT1:
-            case WAIT2:
-            case WAIT3:
-                Logger.recordOutput(prefix + "/WaitTimeSec", robot.getShootAllWaitTime());
-                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
-                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
-                break;
-            case UNJAM:
-                Logger.recordOutput(prefix + "/GoToResetPending", goToResetPending);
-                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
-                break;
-        }
+//        String prefix = "MainTeleOp/StateMachines/SortedShootAll/Next";
+//        switch (state) {
+//            case INIT:
+//                Logger.recordOutput(prefix + "/InitRequested", robot.initSortedShootAllMachine);
+//                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+//                break;
+//            case GO_TO_FIRST:
+//                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+//                Logger.recordOutput(prefix + "/ShooterAtRpm", shooterAtRpm);
+//                Logger.recordOutput(prefix + "/AdvanceReady", spindexAtPos && shooterAtRpm);
+//                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+//                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+//                break;
+//            case WAIT0:
+//            case GO_TO_SECOND:
+//            case GO_TO_THIRD:
+//            case RESET:
+//                Logger.recordOutput(prefix + "/SpindexAtPos", spindexAtPos);
+//                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+//                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+//                break;
+//            case WAIT1:
+//            case WAIT2:
+//            case WAIT3:
+//                Logger.recordOutput(prefix + "/WaitTimeSec", robot.getShootAllWaitTime());
+//                Logger.recordOutput(prefix + "/UnJamRequested", unJamRequested);
+//                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+//                break;
+//            case UNJAM:
+//                Logger.recordOutput(prefix + "/GoToResetPending", goToResetPending);
+//                Logger.recordOutput(prefix + "/SelectedStartBall", robot.sortedStartBall);
+//                break;
+//        }
     }
 
     private static double nanosToMillis(long nanos) {
