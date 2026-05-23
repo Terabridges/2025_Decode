@@ -115,6 +115,9 @@ public abstract class BaseAuto extends OpMode {
     private static final double AUTO_CLOSE_ROW1_SHOOT_TRIM_OFFSET_DEG = 9.0;
     private static final double AUTO_TOTAL_SECONDS = 30.0;
     private static final double FORCE_LEAVE_TIME_REMAINING_SECONDS = 2.0;
+    private static final double AUTO_DRIVE_START_DELAY_SEC = 0.10;
+    private static final double AUTO_INTAKE_STARTUP_DELAY_SEC = 0.20;
+    private static final double AUTO_CLUTCH_STARTUP_DELAY_SEC = 0.30;
 
     private final Alliance alliance;
     private Range range;
@@ -193,6 +196,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean backRowLoopRetryUsed = false;
     private boolean forceOneMoreBackRowLoop = false;
     private boolean forceLeaveActivated = false;
+    private boolean autoMachineStarted = false;
 
     protected BaseAuto(Alliance alliance) {
         this.alliance = alliance;
@@ -230,8 +234,6 @@ public abstract class BaseAuto extends OpMode {
         robot.outtake.shooter.useFlywheelPID = true;
         // Ensure shoot-while-moving lead compensation is active in auto.
         Outtake.enableMovingShotLead = true;
-        // Lower the hood while flywheel RPM is recovering between fast shots.
-        Outtake.enableRpmRecoilComp = true;
         // Auto should not inherit teleop baseline trim by default.
         Outtake.defaultTurretAimTrimOffsetDeg = 0.0;
         Outtake.turretAimTrimOffsetDeg = 0.0;
@@ -288,8 +290,13 @@ public abstract class BaseAuto extends OpMode {
     @Override
     public void start() {
         autoTimer.reset();
-        autoMachine.start();
+        autoMachineStarted = false;
         robot.toInit();
+        robot.outtake.shooter.useFlywheelPID = true;
+        robot.intake.autoIntake = false;
+        robot.intake.spinner.autoSpin = false;
+        robot.intake.spinner.setMegaSpinZero();
+        robot.intake.clutch.spinClutchStop();
         Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
         if (shootAllMachine != null) {
             shootAllMachine.start();
@@ -306,20 +313,25 @@ public abstract class BaseAuto extends OpMode {
     public void loop() {
         follower.update();
 
-        if (shouldForceLeaveForMatchEnd()) {
-            forceLeaveActivated = true;
-            onEnterLeave();
-        } else if (!forceLeaveActivated) {
-            autoMachine.update();
+        maybeStartAutoMachineAfterStartupDelay();
+
+        if (autoMachineStarted) {
+            if (shouldForceLeaveForMatchEnd()) {
+                forceLeaveActivated = true;
+                onEnterLeave();
+            } else if (!forceLeaveActivated) {
+                autoMachine.update();
+            }
+            maybeStartGoToPickupSlowdown();
+            maybeStartBackRowGoToPickupSlowdown();
+            maybeStartBackRowCompletePickupSlowdown();
+            maybeStartGoToShootSlowdown();
+            maybeReverseIntakeLateLongRangeGoToShoot();
+            maybeStartShootAtPathProgress();
         }
-        maybeStartGoToPickupSlowdown();
-        maybeStartBackRowGoToPickupSlowdown();
-        maybeStartBackRowCompletePickupSlowdown();
-        maybeStartGoToShootSlowdown();
-        maybeReverseIntakeLateLongRangeGoToShoot();
-        maybeStartShootAtPathProgress();
         Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
+        applyAutoStartupPowerGates();
         robot.update();
         maybeResolveMotifDuringFirstPickupAfterPreload();
         PoseLoggingUtil.logMainPoseDetails(robot);
@@ -367,6 +379,26 @@ public abstract class BaseAuto extends OpMode {
         telemetry.update();
 
         drawCurrentAndHistory();
+    }
+
+    private void maybeStartAutoMachineAfterStartupDelay() {
+        if (!autoMachineStarted && autoTimer.seconds() >= AUTO_DRIVE_START_DELAY_SEC) {
+            autoMachine.start();
+            stateTimer.reset();
+            autoMachineStarted = true;
+        }
+    }
+
+    private void applyAutoStartupPowerGates() {
+        double startupSeconds = autoTimer.seconds();
+        if (startupSeconds < AUTO_INTAKE_STARTUP_DELAY_SEC) {
+            robot.intake.autoIntake = false;
+            robot.intake.spinner.autoSpin = false;
+            robot.intake.spinner.setMegaSpinZero();
+        }
+        if (startupSeconds < AUTO_CLUTCH_STARTUP_DELAY_SEC) {
+            robot.intake.clutch.spinClutchStop();
+        }
     }
 
     private boolean shouldForceLeaveForMatchEnd() {
@@ -1893,7 +1925,7 @@ public abstract class BaseAuto extends OpMode {
                 break;
         }
     }
-    
+
     // ===== Telemetry Helpers =====
     protected String getCurrentShotLabel() {
         if (!preloadComplete) {
