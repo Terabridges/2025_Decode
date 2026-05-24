@@ -29,9 +29,9 @@ public class AutoPoses {
 
     // ===== Start Poses =====
     public Pose blueCloseStartPose = poseDeg(23.567, 124.916, 232.0);
-    public Pose blueFarStartPose = poseDeg(48.0 + ROBOT_LENGTH / 2.0, ROBOT_WIDTH / 2.0, 0.0);
+    public Pose blueFarStartPose = poseDeg(48.0 + ROBOT_LENGTH / 2.0 - 2.0, ROBOT_WIDTH / 2.0, 0.0);
     public Pose redCloseStartPose = poseDeg(120.433, 124.916, 128);
-    public Pose redFarStartPose = poseDeg(FIELD_SIZE - (48.0 + ROBOT_LENGTH / 2.0), ROBOT_WIDTH / 2.0, 0.0);
+    public Pose redFarStartPose = poseDeg(FIELD_SIZE - (48.0 + ROBOT_LENGTH / 2.0 - 2.0), ROBOT_WIDTH / 2.0, 0.0);
 
     // ===== Score Poses =====
     public Pose scoreCB = poseDeg(48.0, 96.0, 232.0);
