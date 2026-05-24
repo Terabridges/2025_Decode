@@ -74,6 +74,7 @@ public class Outtake implements Subsystem {
     private boolean aimLockEnabled = false;
     private boolean fastShootAllActive = false;
     private boolean preventTurretWrap = false;
+    private boolean turretMotionEnabled = true;
     private AimSource activeAimSource = AimSource.NONE;
     private AimTarget aimTarget = AimTarget.GOAL;
     private double lastBaseHoodPos = 0.0;
@@ -132,6 +133,14 @@ public class Outtake implements Subsystem {
 
     public boolean isPreventTurretWrap() {
         return preventTurretWrap;
+    }
+
+    public void setTurretMotionEnabled(boolean enabled) {
+        turretMotionEnabled = enabled;
+    }
+
+    public boolean isTurretMotionEnabled() {
+        return turretMotionEnabled;
     }
 
     public double getLastBaseHoodPos() {
@@ -269,6 +278,9 @@ public class Outtake implements Subsystem {
     }
 
     private void commandTurretDegree(double desiredDeg) {
+        if (!turretMotionEnabled) {
+            return;
+        }
         if (preventTurretWrap) {
             turret.setTurretDegreeNoWrap(desiredDeg);
         } else {
@@ -509,6 +521,7 @@ public class Outtake implements Subsystem {
 
         Logger.recordOutput("Subsystems/Outtake/AimLockEnabled", aimLockEnabled);
         Logger.recordOutput("Subsystems/Outtake/PreventTurretWrap", preventTurretWrap);
+        Logger.recordOutput("Subsystems/Outtake/TurretMotionEnabled", turretMotionEnabled);
         Logger.recordOutput("Subsystems/Outtake/ActiveAimSource", String.valueOf(activeAimSource));
         Logger.recordOutput("Subsystems/Outtake/AimTarget", String.valueOf(aimTarget));
         Logger.recordOutput("Subsystems/Outtake/DistanceInches", distanceInches);

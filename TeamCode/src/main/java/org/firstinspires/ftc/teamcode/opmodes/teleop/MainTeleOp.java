@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import static org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager.drawCurrentAndHistory;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
@@ -47,12 +48,20 @@ import java.util.List;
 
 @PsiKitAutoLog(rlogPort = 5802)
 @PsiKitFieldAutoLog
+@Configurable
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
     private enum ShootMachineChoice {
         FAST,
         SLOW,
         SORTED
+    }
+
+    private enum PoseResetStage {
+        IDLE,
+        WAIT_BEFORE_RESET,
+        WAIT_FOR_POSE_RESET,
+        WAIT_AFTER_RESET
     }
 
     private static final int BLUE_GOAL_TAG_ID = 20;
@@ -62,6 +71,8 @@ public class MainTeleOp extends OpMode {
     private static final double ROBOT_WIDTH_IN = 17.5;
     private static final double ROBOT_LENGTH_IN = 18.0;
     private static final double PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC = 0.5;
+    private static final double POSE_RESET_PRE_TURRET_DISABLE_SEC = 0.2;
+    private static final double POSE_RESET_POST_TURRET_ENABLE_SEC = 0.2;
     public static boolean enableSectionTimingLogs = true;
     public static double autoOffsetStationarySeconds = 1.0;
     // Match the auto shooting "robot settled" gate.
@@ -69,8 +80,10 @@ public class MainTeleOp extends OpMode {
     public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
     public static boolean enableFieldAutoLog = true;
     public static double fieldAutoLogPeriodSec = 0.10;
-    public static double teleopBlueBankOffsetDeg = 2.0;
-    public static double teleopRedBankOffsetDeg = 4.0;
+    public static double teleopCloseBlueBankOffsetDeg = 0.0;
+    public static double teleopCloseRedBankOffsetDeg = 0.0;
+    public static double teleopLongBlueBankOffsetDeg = 2.0;
+    public static double teleopLongRedBankOffsetDeg = 4.0;
     private double lastAppliedBankOffsetDeg = 0.0;
 
     IntakeControl intakeControl;
@@ -114,6 +127,7 @@ public class MainTeleOp extends OpMode {
     private final ElapsedTime poseResetDelayTimer = new ElapsedTime();
     private boolean poseResetPending = false;
     private Pose pendingPoseReset = null;
+    private PoseResetStage poseResetStage = PoseResetStage.IDLE;
 
     EdgeDetector getReadyShoot = new EdgeDetector(() -> robot.getReadyShoot());
     EdgeDetector toggleSorting = new EdgeDetector(()-> robot.toggleSorting());
@@ -125,6 +139,7 @@ public class MainTeleOp extends OpMode {
     public void init() {
         configureLowOverheadPsiKitLogging();
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint.recalibrateIMU();
 
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -210,6 +225,7 @@ public class MainTeleOp extends OpMode {
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
+        robot.outtake.setTurretMotionEnabled(true);
         robot.useSorting = false;
         robot.intake.useSortingIntake = false;
         lastAppliedBankOffsetDeg = getActiveBankOffsetDeg();
@@ -465,13 +481,17 @@ public class MainTeleOp extends OpMode {
         if (robot != null
                 && robot.outtake != null
                 && robot.outtake.distanceInches < Outtake.longRangeFastShotMinDistanceInches) {
-            return 0.0;
+            return getCloseRangeBankOffsetDeg();
         }
-        return getAllianceBankOffsetDeg();
+        return getLongRangeBankOffsetDeg();
     }
 
-    private double getAllianceBankOffsetDeg() {
-        return GlobalVariables.isRedAlliance() ? teleopRedBankOffsetDeg : teleopBlueBankOffsetDeg;
+    private double getCloseRangeBankOffsetDeg() {
+        return GlobalVariables.isRedAlliance() ? teleopCloseRedBankOffsetDeg : teleopCloseBlueBankOffsetDeg;
+    }
+
+    private double getLongRangeBankOffsetDeg() {
+        return GlobalVariables.isRedAlliance() ? teleopLongRedBankOffsetDeg : teleopLongBlueBankOffsetDeg;
     }
 
     private void logPsiKitData() {
@@ -500,8 +520,6 @@ public class MainTeleOp extends OpMode {
         if (!gp2LeftPressed && !gp2RightPressed) {
             return;
         }
-        Outtake.resetTurretAimOffsets();
-
         Pose resetPose;
         if (gp2LeftPressed) {
             if (GlobalVariables.isBlueAlliance()) {
@@ -520,38 +538,64 @@ public class MainTeleOp extends OpMode {
         } else {
             if (GlobalVariables.isBlueAlliance()) {
                 resetPose = new Pose(
-                        48.0 + (ROBOT_LENGTH_IN / 2.0),
-                        FIELD_SIZE_IN - (ROBOT_WIDTH_IN / 2.0),
-                        Math.toRadians(180.0)
+                        19.165,
+                        83.063,
+                        Math.toRadians(267.2)
                 );
             } else {
                 resetPose = new Pose(
-                        FIELD_SIZE_IN - 48.0 - (ROBOT_LENGTH_IN / 2.0),
-                        FIELD_SIZE_IN - (ROBOT_WIDTH_IN / 2.0),
-                        Math.toRadians(180.0)
+                        129.402,
+                        81.409,
+                        Math.toRadians(92.2)
                 );
             }
         }
 
-        if (pinpoint != null) {
-            pinpoint.recalibrateIMU();
-        }
+        robot.outtake.setTurretMotionEnabled(false);
         pendingPoseReset = resetPose;
         poseResetPending = true;
+        poseResetStage = PoseResetStage.WAIT_BEFORE_RESET;
         poseResetDelayTimer.reset();
     }
 
     private void updatePendingPoseReset() {
-        if (!poseResetPending || pendingPoseReset == null || FollowerManager.follower == null) {
-            return;
-        }
-        if (poseResetDelayTimer.seconds() < PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC) {
+        if (!poseResetPending || pendingPoseReset == null) {
             return;
         }
 
-        FollowerManager.follower.setPose(pendingPoseReset);
-        poseResetPending = false;
-        pendingPoseReset = null;
+        if (poseResetStage == PoseResetStage.WAIT_BEFORE_RESET) {
+            if (poseResetDelayTimer.seconds() < POSE_RESET_PRE_TURRET_DISABLE_SEC) {
+                return;
+            }
+            Outtake.resetTurretAimOffsets();
+            if (pinpoint != null) {
+                pinpoint.recalibrateIMU();
+            }
+            poseResetStage = PoseResetStage.WAIT_FOR_POSE_RESET;
+            poseResetDelayTimer.reset();
+            return;
+        }
+
+        if (poseResetStage == PoseResetStage.WAIT_FOR_POSE_RESET) {
+            if (FollowerManager.follower == null
+                    || poseResetDelayTimer.seconds() < PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC) {
+                return;
+            }
+            FollowerManager.follower.setPose(pendingPoseReset);
+            poseResetStage = PoseResetStage.WAIT_AFTER_RESET;
+            poseResetDelayTimer.reset();
+            return;
+        }
+
+        if (poseResetStage == PoseResetStage.WAIT_AFTER_RESET) {
+            if (poseResetDelayTimer.seconds() < POSE_RESET_POST_TURRET_ENABLE_SEC) {
+                return;
+            }
+            robot.outtake.setTurretMotionEnabled(true);
+            poseResetPending = false;
+            pendingPoseReset = null;
+            poseResetStage = PoseResetStage.IDLE;
+        }
     }
     private void logStateMachinePsiKitData() {
         double spindexCommandedDeg = robot.intake.spindex.getCommandedDegree();
