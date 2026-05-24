@@ -721,11 +721,13 @@ public class Spindex implements Subsystem {
     }
 
     public boolean isFrontColorDistanceTripped(){
-        return frontColorDistance > 1.5 && frontColorDistance < 3.2;
+        //return frontColorDistance > 1.5 && frontColorDistance < 3.2;
+        return frontColorDistance < 3.2;
     }
 
     public boolean isBackColorDistanceTripped(){
-        return backColorDistance > 1.5 && backColorDistance < 3.2;
+        //return backColorDistance > 1.5 && backColorDistance < 3.2;
+        return backColorDistance < 3.2;
     }
 
     public int loadedBallCount() {

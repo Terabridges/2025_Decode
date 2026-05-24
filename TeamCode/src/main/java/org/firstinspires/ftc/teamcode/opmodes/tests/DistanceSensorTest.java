@@ -130,6 +130,7 @@ public class DistanceSensorTest extends OpMode {
         joinedTelemetry.addData("BackInnerTripped", backInnerTripped);
         joinedTelemetry.addData("BackOuterTripped", backOuterTripped);
         joinedTelemetry.addData("FrontColorDistance", frontColorDistance);
+        joinedTelemetry.addData("BackColorDistance", backColorDistance);
         joinedTelemetry.update();
     }
 
