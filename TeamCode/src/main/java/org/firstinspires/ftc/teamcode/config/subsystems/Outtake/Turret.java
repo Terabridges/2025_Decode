@@ -38,13 +38,16 @@ public class Turret implements Subsystem {
     public static double turretDegPerServoCommand = -341.4;
     public static double turretServoPwmMinUs = 500.0;
     public static double turretServoPwmMaxUs = 2500.0;
+    public static double turretServoEndpointMargin = 0.02;
 
     public static double encoderRefTurretDeg = turretForwardDeg;
     public static double encoderRefDeg = 200.0;
     public static double encoderToTurretScale = 1.0;
     public static boolean encoderDirectionInverted = false;
+    public static double turretWrapCooldownSec = 0.5;
 
     private double commandedTurretDeg = 180.0;
+    private long lastTurretWrapNs = Long.MIN_VALUE;
 
     //---------------- Constructor ----------------
     public Turret(HardwareMap map) {
@@ -65,9 +68,9 @@ public class Turret implements Subsystem {
         double basePos = clampBasePosToSharedRange(pos);
         commandedTurretDeg = baseServoPosToTurretDeg(basePos);
 
-        double leftPos = util.clamp(basePos, 0.0, 1.0);
+        double leftPos = clampServoEndpoint(basePos);
         double rightBasePos = invertRightServo ? (1.0 - basePos) : basePos;
-        double rightPos = util.clamp(rightBasePos + rightServoOffset, 0.0, 1.0);
+        double rightPos = clampServoEndpoint(rightBasePos + rightServoOffset);
 
         leftTurret.setPosition(leftPos);
         rightTurret.setPosition(rightPos);
@@ -76,6 +79,14 @@ public class Turret implements Subsystem {
     public void setTurretDegree(double degree) {
         double normalized = normalizeDegrees(degree);
         double clamped = clampToSafeRange(normalized);
+        double current = normalizeDegrees(getCurrentDegrees());
+        if (Math.abs(clamped - current) > 180.0) {
+            if (!isTurretWrapCooldownReady()) {
+                holdNearestTurretLimit(current);
+                return;
+            }
+            lastTurretWrapNs = System.nanoTime();
+        }
         setTurretPos(turretDegToBaseServoPos(clamped));
     }
 
@@ -89,14 +100,26 @@ public class Turret implements Subsystem {
         double current = normalizeDegrees(getCurrentDegrees());
 
         if (Math.abs(clampedTarget - current) > 180.0) {
-            double minDeg = Math.min(turretMinDeg, turretMaxDeg);
-            double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
-            double holdLimit = (Math.abs(current - maxDeg) <= Math.abs(current - minDeg)) ? maxDeg : minDeg;
-            setTurretPos(turretDegToBaseServoPos(holdLimit));
+            holdNearestTurretLimit(current);
             return;
         }
 
         setTurretPos(turretDegToBaseServoPos(clampedTarget));
+    }
+
+    private boolean isTurretWrapCooldownReady() {
+        if (lastTurretWrapNs == Long.MIN_VALUE) {
+            return true;
+        }
+        double elapsedSec = (System.nanoTime() - lastTurretWrapNs) / 1_000_000_000.0;
+        return elapsedSec >= Math.max(0.0, turretWrapCooldownSec);
+    }
+
+    private void holdNearestTurretLimit(double current) {
+        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+        double holdLimit = (Math.abs(current - maxDeg) <= Math.abs(current - minDeg)) ? maxDeg : minDeg;
+        setTurretPos(turretDegToBaseServoPos(holdLimit));
     }
 
     public double getCurrentDegrees() {
@@ -133,15 +156,27 @@ public class Turret implements Subsystem {
     }
 
     private double getSharedBaseMin() {
-        return Math.max(0.0, invertRightServo ? rightServoOffset : -rightServoOffset);
+        double margin = getServoEndpointMargin();
+        return Math.max(margin, invertRightServo ? margin + rightServoOffset : margin - rightServoOffset);
     }
 
     private double getSharedBaseMax() {
-        return Math.min(1.0, invertRightServo ? 1.0 + rightServoOffset : 1.0 - rightServoOffset);
+        double margin = getServoEndpointMargin();
+        double maxServoPos = 1.0 - margin;
+        return Math.min(maxServoPos, invertRightServo ? 1.0 + rightServoOffset - margin : maxServoPos - rightServoOffset);
     }
 
     private double clampBasePosToSharedRange(double requestedBasePos) {
         return util.clamp(requestedBasePos, getSharedBaseMin(), getSharedBaseMax());
+    }
+
+    private double clampServoEndpoint(double servoPos) {
+        double margin = getServoEndpointMargin();
+        return util.clamp(servoPos, margin, 1.0 - margin);
+    }
+
+    private double getServoEndpointMargin() {
+        return util.clamp(turretServoEndpointMargin, 0.0, 0.49);
     }
 
     private double wrapSignedDegrees(double deg) {
@@ -212,11 +247,11 @@ public class Turret implements Subsystem {
     @Override
     public void logPsiKitData() {
         double baseServoPosition = turretDegToBaseServoPos(commandedTurretDeg);
-        double rightServoPosition = util.clamp((invertRightServo ? (1.0 - baseServoPosition) : baseServoPosition) + rightServoOffset, 0.0, 1.0);
+        double rightServoPosition = clampServoEndpoint((invertRightServo ? (1.0 - baseServoPosition) : baseServoPosition) + rightServoOffset);
 
         Logger.recordOutput("Subsystems/Outtake/Turret/CommandedDegree", commandedTurretDeg);
         Logger.recordOutput("Subsystems/Outtake/Turret/ServoBasePosition", baseServoPosition);
-        Logger.recordOutput("Subsystems/Outtake/Turret/LeftServoPosition", baseServoPosition);
+        Logger.recordOutput("Subsystems/Outtake/Turret/LeftServoPosition", clampServoEndpoint(baseServoPosition));
         Logger.recordOutput("Subsystems/Outtake/Turret/RightServoPosition", rightServoPosition);
         Logger.recordOutput("Subsystems/Outtake/Turret/EncoderDegree", getEncoderDegrees());
         Logger.recordOutput("Subsystems/Outtake/Turret/MappedEncoderDegree", getMappedEncoderTurretDegrees());
