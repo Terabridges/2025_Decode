@@ -34,7 +34,7 @@ public class Spindex implements Subsystem {
 
     public static double turretServoPwmMinUs = 500.0;
     public static double turretServoPwmMaxUs = 2500.0;
-
+    public boolean useSortingSpindex = true;
 
     //---------------- Hardware ----------------
     private Servo spindexLeft;
@@ -554,12 +554,14 @@ public class Spindex implements Subsystem {
     public void updateIntookBall(){
         if(isSpindexAtPos()) {
             if (currentDirection.equals("forward")) {
-                updateFrontColors();
+                if (useSortingSpindex) {
+                    updateFrontColors();
+                }
                 if (currentBall.equals("one")) {
-                    if(isFrontGreenBall(frontRed, frontGreen, frontBlue)){
+                    if(useSortingSpindex && isFrontGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[0] = "G";
                         ballOneChanged = true;
-                    } else if(isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
+                    } else if(useSortingSpindex && isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[0] = "P";
                         ballOneChanged = true;
                     } else {
@@ -572,10 +574,10 @@ public class Spindex implements Subsystem {
                         setSpindexForwardThree();
                     }
                 } else if (currentBall.equals("two")) {
-                    if(isFrontGreenBall(frontRed, frontGreen, frontBlue)){
+                    if(useSortingSpindex && isFrontGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[1] = "G";
                         ballTwoChanged = true;
-                    } else if(isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
+                    } else if(useSortingSpindex && isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[1] = "P";
                         ballTwoChanged = true;
                     } else {
@@ -588,10 +590,10 @@ public class Spindex implements Subsystem {
                         setSpindexForwardThree();
                     }
                 } else if (currentBall.equals("three")) {
-                    if(isFrontGreenBall(frontRed, frontGreen, frontBlue)){
+                    if(useSortingSpindex && isFrontGreenBall(frontRed, frontGreen, frontBlue)){
                         ballList[2] = "G";
                         ballThreeChanged = true;
-                    } else if(isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
+                    } else if(useSortingSpindex && isFrontPurpleBall(frontRed, frontGreen, frontBlue)){
                         ballList[2] = "P";
                         ballThreeChanged = true;
                     } else {
@@ -605,12 +607,14 @@ public class Spindex implements Subsystem {
                     }
                 }
             } else if (currentDirection.equals("backward")) {
-                updateBackColors();
+                if (useSortingSpindex) {
+                    updateBackColors();
+                }
                 if (currentBall.equals("one")) {
-                    if(isBackGreenBall(backRed, backGreen, backBlue)){
+                    if(useSortingSpindex && isBackGreenBall(backRed, backGreen, backBlue)){
                         ballList[0] = "G";
                         ballOneChanged = true;
-                    } else if(isBackPurpleBall(backRed, backGreen, backBlue)){
+                    } else if(useSortingSpindex && isBackPurpleBall(backRed, backGreen, backBlue)){
                         ballList[0] = "P";
                         ballOneChanged = true;
                     } else {
@@ -623,10 +627,10 @@ public class Spindex implements Subsystem {
                         setSpindexBackwardTwo();
                     }
                 } else if (currentBall.equals("two")) {
-                    if(isBackGreenBall(backRed, backGreen, backBlue)){
+                    if(useSortingSpindex && isBackGreenBall(backRed, backGreen, backBlue)){
                         ballList[1] = "G";
                         ballTwoChanged = true;
-                    } else if(isBackPurpleBall(backRed, backGreen, backBlue)){
+                    } else if(useSortingSpindex && isBackPurpleBall(backRed, backGreen, backBlue)){
                         ballList[1] = "P";
                         ballTwoChanged = true;
                     } else {
@@ -639,10 +643,10 @@ public class Spindex implements Subsystem {
                         setSpindexBackwardOne();
                     }
                 } else if (currentBall.equals("three")) {
-                    if(isBackGreenBall(backRed, backGreen, backBlue)){
+                    if(useSortingSpindex && isBackGreenBall(backRed, backGreen, backBlue)){
                         ballList[2] = "G";
                         ballThreeChanged = true;
-                    } else if(isBackPurpleBall(backRed, backGreen, backBlue)){
+                    } else if(useSortingSpindex && isBackPurpleBall(backRed, backGreen, backBlue)){
                         ballList[2] = "P";
                         ballThreeChanged = true;
                     } else {
@@ -741,7 +745,9 @@ public class Spindex implements Subsystem {
     @Override
     public void update(){
         balls = ballList[0] + ballList[1] + ballList[2];
-        updateColorDistances();
+        if (useSortingSpindex) {
+            updateColorDistances();
+        }
     }
 
     @Override

@@ -101,16 +101,16 @@ public class Robot {
     public boolean forceShootAllThreeOnNextStart = false;
     public boolean useAvailableBallCountForShootAll = false;
 
-    private double waitTime = 0.01; //0.2
-
     private boolean goToReset = false;
     private int shootAllBallTargetCount = 0;
     public int sortedStartBall = 1;
 
-    public boolean useSorting = true; //change to true
+    public boolean useSorting = false;
     private boolean wasFullLastLoop = false;
     public boolean txLights = false;
 
+    public double sortedTime = 0.2;
+    public double fastTime = 0.01;
 
     //---------------- Subsystems ----------------
 
@@ -149,10 +149,6 @@ public class Robot {
             return Double.NaN;
         }
         return intake.getFloodgateCurrentAmps();
-    }
-
-    public double getShootAllWaitTime() {
-        return waitTime;
     }
 
     public boolean isGoToResetPending() {
@@ -225,7 +221,7 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
 
                 .state(SortedShootAllStates.WAIT1)
-                .transitionTimed(waitTime, SortedShootAllStates.GO_TO_SECOND)
+                .transitionTimed(sortedTime, SortedShootAllStates.GO_TO_SECOND)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
 
@@ -243,7 +239,7 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
 
                 .state(SortedShootAllStates.WAIT2)
-                .transitionTimed(waitTime, SortedShootAllStates.GO_TO_THIRD)
+                .transitionTimed(sortedTime, SortedShootAllStates.GO_TO_THIRD)
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
                 .onExit(()-> {
 
@@ -430,7 +426,7 @@ public class Robot {
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
 
                 .state(SlowShootAllStates.WAIT1)
-                .transitionTimed(waitTime, SlowShootAllStates.GO_TO_SECOND)
+                .transitionTimed(fastTime, SlowShootAllStates.GO_TO_SECOND)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
                 .onExit(()-> {
 
@@ -442,7 +438,7 @@ public class Robot {
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
 
                 .state(SlowShootAllStates.WAIT2)
-                .transitionTimed(waitTime, SlowShootAllStates.GO_TO_THIRD)
+                .transitionTimed(fastTime, SlowShootAllStates.GO_TO_THIRD)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
                 .onExit(()-> {
 
@@ -539,9 +535,7 @@ public class Robot {
     public void toggleSorting(){
         useSorting = !useSorting;
         intake.useSortingIntake = useSorting;
-        if (intake.useSortingIntake == false){
-            intake.lights.setSortingLights();
-        }
+        intake.spindex.useSortingSpindex = useSorting;
     }
 
     /**
@@ -628,5 +622,7 @@ public class Robot {
         for (Subsystem s : subsystems) {
             s.toInit();
         }
+        intake.useSortingIntake = useSorting;
+        intake.spindex.useSortingSpindex = useSorting;
     }
 }
