@@ -76,11 +76,11 @@ public abstract class BaseAuto extends OpMode {
     private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER = 0.75;
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 3.5;
     private static final double ROW1_PICKUP_TIMEOUT_SECONDS = 2.5;
-    private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 1.5;
+    private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 2.0;
     private static final double FAR_PICKUP_ZONE_POWER = 0.75;
     private static final double FAR_BACKROW_REPOSITION_POWER = 0.5;
-    private static final double FAR_BACKROW_REPOSITION_BACK_DELTA_X = 8.0;
-    private static final double FAR_BACKROW_REPOSITION_FORWARD_DELTA_X = 4.0;
+    private static final double FAR_BACKROW_REPOSITION_BACK_DELTA_X = 4.5;
+    private static final double FAR_BACKROW_POST_RETREAT_HOLD_SECONDS = 0.5;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 0.75;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_FIRST_HALF_POWER = 0.80;
@@ -184,7 +184,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean backRowCompletePickupSlowdownApplied = false;
     private boolean backRowGoToPickupSlowdownApplied = false;
     private boolean farBackrowRetreatStarted = false;
-    private boolean farBackrowForwardStarted = false;
+    private boolean farBackrowRetreatHoldSeen = false;
     private boolean row4CompletePickupIdleSeen = false;
     private boolean row4IntermediatePickupStarted = false;
     private boolean backRowGoToShootReverseActive = false;
@@ -749,7 +749,7 @@ public abstract class BaseAuto extends OpMode {
         closeLoopGoToPickupPart2Started = false;
         backRowGoToPickupSlowdownApplied = false;
         farBackrowRetreatStarted = false;
-        farBackrowForwardStarted = false;
+        farBackrowRetreatHoldSeen = false;
         farBackrowGoToPickupHoldSeen = false;
         farBackrowGoToPickupHoldTimer.reset();
         robot.intake.spinner.setMegaSpinIn();
@@ -1367,38 +1367,44 @@ public abstract class BaseAuto extends OpMode {
             closeLoopGoToPickupIdleSeen = false;
             return stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
         }
-        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS) {
-            return true;
-        }
-        if (!followerIdle()) {
-            farBackrowGoToPickupHoldSeen = false;
-            return false;
-        }
         if (!farBackrowRetreatStarted) {
+            boolean pickupTimedOut = stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS;
+            if (!followerIdle() && !pickupTimedOut) {
+                farBackrowGoToPickupHoldSeen = false;
+                return false;
+            }
+            if (followerIdle()) {
+                if (!farBackrowGoToPickupHoldSeen) {
+                    farBackrowGoToPickupHoldSeen = true;
+                    farBackrowGoToPickupHoldTimer.reset();
+                }
+                if (!pickupTimedOut
+                        && farBackrowGoToPickupHoldTimer.seconds() < FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS) {
+                    return false;
+                }
+            }
             Pose retreatTarget = offsetFarBackrowPickupPose(FAR_BACKROW_REPOSITION_BACK_DELTA_X);
             followPath(pathLibrary.buildLinear(follower.getPose(), retreatTarget), FAR_BACKROW_REPOSITION_POWER);
             farBackrowRetreatStarted = true;
-            farBackrowForwardStarted = false;
+            farBackrowRetreatHoldSeen = false;
+            farBackrowGoToPickupHoldTimer.reset();
             // Disable smooth-end rebuild after starting reposition legs.
             backRowGoToPickupSlowdownApplied = true;
             return false;
         }
-        if (!farBackrowForwardStarted) {
-            Pose forwardTarget = offsetFarBackrowPickupPose(-FAR_BACKROW_REPOSITION_FORWARD_DELTA_X);
-            followPath(pathLibrary.buildLinear(follower.getPose(), forwardTarget), FAR_BACKROW_REPOSITION_POWER);
-            farBackrowForwardStarted = true;
-            return false;
+        if (stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_POST_RETREAT_HOLD_SECONDS) {
+            return true;
         }
         if (!followerIdle()) {
-            farBackrowGoToPickupHoldSeen = false;
+            farBackrowRetreatHoldSeen = false;
             return false;
         }
-        if (!farBackrowGoToPickupHoldSeen) {
-            farBackrowGoToPickupHoldSeen = true;
+        if (!farBackrowRetreatHoldSeen) {
+            farBackrowRetreatHoldSeen = true;
             farBackrowGoToPickupHoldTimer.reset();
         }
-        return farBackrowGoToPickupHoldTimer.seconds() >= FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS
-                || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_GO_TO_PICKUP_IDLE_HOLD_SECONDS;
+        return farBackrowGoToPickupHoldTimer.seconds() >= FAR_BACKROW_POST_RETREAT_HOLD_SECONDS
+                || stateTimer.seconds() >= BACKROW_PICKUP_TIMEOUT_SECONDS + FAR_BACKROW_POST_RETREAT_HOLD_SECONDS;
     }
 
     protected Pose offsetFarBackrowPickupPose(double blueDeltaX) {
@@ -1909,7 +1915,7 @@ public abstract class BaseAuto extends OpMode {
                 Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/CloseLoopIdleSeen", closeLoopGoToPickupIdleSeen);
                 Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/CloseLoopIdleTimerSec", closeLoopGoToPickupIdleTimer.seconds());
                 Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarRetreatStarted", farBackrowRetreatStarted);
-                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarForwardStarted", farBackrowForwardStarted);
+                Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarRetreatHoldSeen", farBackrowRetreatHoldSeen);
                 Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarHoldSeen", farBackrowGoToPickupHoldSeen);
                 Logger.recordOutput("Auto/Transitions/BackRowGoToPickup/FarHoldTimerSec", farBackrowGoToPickupHoldTimer.seconds());
                 break;
