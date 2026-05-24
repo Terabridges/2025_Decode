@@ -43,8 +43,10 @@ public class Turret implements Subsystem {
     public static double encoderRefDeg = 200.0;
     public static double encoderToTurretScale = 1.0;
     public static boolean encoderDirectionInverted = false;
+    public static double turretWrapCooldownSec = 0.5;
 
     private double commandedTurretDeg = 180.0;
+    private long lastTurretWrapNs = Long.MIN_VALUE;
 
     //---------------- Constructor ----------------
     public Turret(HardwareMap map) {
@@ -76,6 +78,14 @@ public class Turret implements Subsystem {
     public void setTurretDegree(double degree) {
         double normalized = normalizeDegrees(degree);
         double clamped = clampToSafeRange(normalized);
+        double current = normalizeDegrees(getCurrentDegrees());
+        if (Math.abs(clamped - current) > 180.0) {
+            if (!isTurretWrapCooldownReady()) {
+                holdNearestTurretLimit(current);
+                return;
+            }
+            lastTurretWrapNs = System.nanoTime();
+        }
         setTurretPos(turretDegToBaseServoPos(clamped));
     }
 
@@ -89,14 +99,26 @@ public class Turret implements Subsystem {
         double current = normalizeDegrees(getCurrentDegrees());
 
         if (Math.abs(clampedTarget - current) > 180.0) {
-            double minDeg = Math.min(turretMinDeg, turretMaxDeg);
-            double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
-            double holdLimit = (Math.abs(current - maxDeg) <= Math.abs(current - minDeg)) ? maxDeg : minDeg;
-            setTurretPos(turretDegToBaseServoPos(holdLimit));
+            holdNearestTurretLimit(current);
             return;
         }
 
         setTurretPos(turretDegToBaseServoPos(clampedTarget));
+    }
+
+    private boolean isTurretWrapCooldownReady() {
+        if (lastTurretWrapNs == Long.MIN_VALUE) {
+            return true;
+        }
+        double elapsedSec = (System.nanoTime() - lastTurretWrapNs) / 1_000_000_000.0;
+        return elapsedSec >= Math.max(0.0, turretWrapCooldownSec);
+    }
+
+    private void holdNearestTurretLimit(double current) {
+        double minDeg = Math.min(turretMinDeg, turretMaxDeg);
+        double maxDeg = Math.max(turretMinDeg, turretMaxDeg);
+        double holdLimit = (Math.abs(current - maxDeg) <= Math.abs(current - minDeg)) ? maxDeg : minDeg;
+        setTurretPos(turretDegToBaseServoPos(holdLimit));
     }
 
     public double getCurrentDegrees() {
