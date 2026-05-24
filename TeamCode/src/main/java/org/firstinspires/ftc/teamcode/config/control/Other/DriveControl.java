@@ -42,7 +42,7 @@ public class DriveControl implements Control {
         } else {
             drive.useSlowMode = false;
         }
-        resetFollower.update(gp2.left_stick_button);
+        //resetFollower.update(gp2.left_stick_button);
 
         if (drive.useFieldCentric){
             if (GlobalVariables.isRedAlliance()) {

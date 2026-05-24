@@ -303,6 +303,7 @@ public class Robot {
 
                 .state(ShootAllStates.SHOOT)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.WAIT)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
                 .onExit(()-> {
                     intake.clutch.setClutchDown();
                     intake.spindex.setSpindexShootThree();
@@ -310,6 +311,7 @@ public class Robot {
 
                 .state(ShootAllStates.WAIT)
                 .transition(()-> intake.spindex.isSpindexAtPos(), ShootAllStates.RESET)
+                .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.RESET)
                 .transitionTimed(0.1, ShootAllStates.INIT)
@@ -324,8 +326,23 @@ public class Robot {
                     intake.autoIntake = true;
                 })
 
-                .build();
+                .state(ShootAllStates.UNJAM)
+                .onEnter(()->{
+                    txLights = false;
+                    outtake.setFastShootAllActive(false);
+                    other.unJam = false;
+                    intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
+                    intake.spinner.setMegaSpinZero();
+                    intake.clutch.spinClutchStop();
+                    intake.clutch.setClutchUp();
+                    intake.spindex.emptyBalls();
+                    intake.autoIntake = true;
+                    goToReset = true;
+                })
+                .transition(()-> goToReset, ShootAllStates.INIT)
+                .onExit(()->goToReset = false)
 
+                .build();
     }
 
 //    public StateMachine getSlowShootAllMachine(){

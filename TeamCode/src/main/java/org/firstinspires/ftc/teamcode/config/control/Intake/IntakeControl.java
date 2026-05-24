@@ -17,6 +17,7 @@ public class IntakeControl implements Control {
     Robot robot;
     public EdgeDetector toggleAutoIntake = new EdgeDetector(()-> intake.toggleAutoIntake());
     public EdgeDetector switchSpindexServo = new EdgeDetector(()-> intake.spindex.switchCurrentSpindexServo());
+    public EdgeDetector toggleUseOuterSensors = new EdgeDetector(()-> intake.toggleUseOuterSensors());
 
 
     //---------------- Constructor ----------------
@@ -36,13 +37,15 @@ public class IntakeControl implements Control {
     //---------------- Interface Methods ----------------
     @Override
     public void update(){
-        toggleAutoIntake.update(gp1.dpad_down);
+        //toggleAutoIntake.update(gp1.dpad_down);
         switchSpindexServo.update(gp2.a);
+        toggleUseOuterSensors.update(gp2.left_stick_button);
     }
 
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Auto Intake", intake.autoIntake);
         telemetry.addData("Current Spindex Servo", intake.spindex.currentSpindexServo);
+        telemetry.addData("Use Outer Sensors", intake.useOuterSensors);
     }
 }
