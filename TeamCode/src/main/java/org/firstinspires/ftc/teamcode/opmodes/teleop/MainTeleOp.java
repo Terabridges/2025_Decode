@@ -69,8 +69,10 @@ public class MainTeleOp extends OpMode {
     public static double autoOffsetMaxRobotAngularSpeedDegS = 12.0;
     public static boolean enableFieldAutoLog = true;
     public static double fieldAutoLogPeriodSec = 0.10;
-    public static double teleopBlueBankOffsetDeg = 2.0;
-    public static double teleopRedBankOffsetDeg = 4.0;
+    public static double teleopCloseBlueBankOffsetDeg = 2.0;
+    public static double teleopCloseRedBankOffsetDeg = 4.0;
+    public static double teleopLongBlueBankOffsetDeg = 2.0;
+    public static double teleopLongRedBankOffsetDeg = 4.0;
     private double lastAppliedBankOffsetDeg = 0.0;
 
     IntakeControl intakeControl;
@@ -125,6 +127,7 @@ public class MainTeleOp extends OpMode {
     public void init() {
         configureLowOverheadPsiKitLogging();
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint.recalibrateIMU();
 
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -465,13 +468,17 @@ public class MainTeleOp extends OpMode {
         if (robot != null
                 && robot.outtake != null
                 && robot.outtake.distanceInches < Outtake.longRangeFastShotMinDistanceInches) {
-            return 0.0;
+            return getCloseRangeBankOffsetDeg();
         }
-        return getAllianceBankOffsetDeg();
+        return getLongRangeBankOffsetDeg();
     }
 
-    private double getAllianceBankOffsetDeg() {
-        return GlobalVariables.isRedAlliance() ? teleopRedBankOffsetDeg : teleopBlueBankOffsetDeg;
+    private double getCloseRangeBankOffsetDeg() {
+        return GlobalVariables.isRedAlliance() ? teleopCloseRedBankOffsetDeg : teleopCloseBlueBankOffsetDeg;
+    }
+
+    private double getLongRangeBankOffsetDeg() {
+        return GlobalVariables.isRedAlliance() ? teleopLongRedBankOffsetDeg : teleopLongBlueBankOffsetDeg;
     }
 
     private void logPsiKitData() {
