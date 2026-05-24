@@ -745,9 +745,6 @@ public class Spindex implements Subsystem {
     @Override
     public void update(){
         balls = ballList[0] + ballList[1] + ballList[2];
-        if (useSortingSpindex) {
-            updateColorDistances();
-        }
     }
 
     @Override

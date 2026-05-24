@@ -1,9 +1,9 @@
 GAMEPAD1
-A: Set Spindex Current Pos
+A:
 X: Shoot All Macro
 Y: Toggle Shooter
 B: Tap = Tx offset nudge, Hold 0.6s = Reset turret offset
-Down: Toggle Auto intake
+Down:
 Left: One Ball Left
 Up: Switch Sides
 Right: One Ball Right
@@ -26,9 +26,9 @@ A: switch current spindex servo
 X: flash color
 Y: change motif
 B: Same as gp1
-Down: setShortValues
+Down:
 Left: reset far
-Up: setLongValues
+Up:
 Right: reset close
 LeftBump: decrease offset
 RightBump: increase offset
@@ -38,8 +38,8 @@ LStX:
 LStY: control kicker
 RStX:
 RStY:
-LStBut: reset follower
+LStBut: toggle use outer sensors
 RStBut: Empty Balls
-Back: reset imu
+Back:
 Start: Reset Offset
 Touchpad:

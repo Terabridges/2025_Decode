@@ -313,7 +313,7 @@ public class MainTeleOp extends OpMode {
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.x);
-        setSpindexCurrentDeg.update(gamepad1.a);
+        //setSpindexCurrentDeg.update(gamepad1.a);
         updateManualFollowerPoseReset();
     }
 
@@ -612,7 +612,7 @@ public class MainTeleOp extends OpMode {
         Logger.recordOutput("MainTeleOp/PoseReset/DelaySeconds", PINPOINT_RECALIBRATE_POSE_RESET_DELAY_SEC);
         Logger.recordOutput("MainTeleOp/StateMachines/UnJamRequested", unJamRequested);
         Logger.recordOutput("MainTeleOp/StateMachines/GoToResetPending", goToResetPending);
-        Logger.recordOutput("MainTeleOp/StateMachines/WaitTimeSec", robot.getShootAllWaitTime());
+        //Logger.recordOutput("MainTeleOp/StateMachines/WaitTimeSec", robot.getShootAllWaitTime());
     }
 
     private void logShootAllTransitionInputs(

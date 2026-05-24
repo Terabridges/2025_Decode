@@ -22,6 +22,8 @@ public class Intake implements Subsystem {
     //---------------- Software ----------------
     public boolean autoIntake = true;
     public boolean useSortingIntake = true;
+    public boolean useOuterSensors = true;
+
     //---------------- Constructor ----------------
     public Intake(HardwareMap map) {
         spindex = new Spindex(map);
@@ -34,6 +36,10 @@ public class Intake implements Subsystem {
     public void toggleAutoIntake(){
         spinner.autoSpin = !spinner.autoSpin;
         autoIntake = spinner.autoSpin;
+    }
+
+    public void toggleUseOuterSensors(){
+        useOuterSensors = !useOuterSensors;
     }
 
     public double getFloodgateCurrentAmps() {
@@ -64,20 +70,27 @@ public class Intake implements Subsystem {
 //            spinner.overrideSpinZero();
 //        }
 
+        if (spinner.frontInnerTripped || spinner.backInnerTripped){
+            spindex.updateColorDistances();
+        }
+
         if(spinner.frontInnerTripped && autoIntake){
-            if(spindex.isFrontColorDistanceTripped()) {
+            if (spindex.isFrontColorDistanceTripped()) {
                 if (spindex.getCurrentDirection().equals("forward")) {
                     if (spindex.getCurrentBall().equals("one")) {
                         if (spindex.ballList[0].equals("E")) {
                             spindex.updateIntookBall();
+                            spinner.frontInnerTripped = false;
                         }
                     } else if (spindex.getCurrentBall().equals("two")) {
                         if (spindex.ballList[1].equals("E")) {
                             spindex.updateIntookBall();
+                            spinner.frontInnerTripped = false;
                         }
                     } else if (spindex.getCurrentBall().equals("three")) {
                         if (spindex.ballList[2].equals("E")) {
                             spindex.updateIntookBall();
+                            spinner.frontInnerTripped = false;
                         }
                     }
                 }
@@ -85,19 +98,22 @@ public class Intake implements Subsystem {
         }
 
         if(spinner.backInnerTripped && autoIntake){
-            if(spindex.isBackColorDistanceTripped()) {
+            if (spindex.isBackColorDistanceTripped()) {
                 if (spindex.getCurrentDirection().equals("backward")) {
                     if (spindex.getCurrentBall().equals("one")) {
                         if (spindex.ballList[0].equals("E")) {
                             spindex.updateIntookBall();
+                            spinner.backInnerTripped = false;
                         }
                     } else if (spindex.getCurrentBall().equals("two")) {
                         if (spindex.ballList[1].equals("E")) {
                             spindex.updateIntookBall();
+                            spinner.backInnerTripped = false;
                         }
                     } else if (spindex.getCurrentBall().equals("three")) {
                         if (spindex.ballList[2].equals("E")) {
                             spindex.updateIntookBall();
+                            spinner.backInnerTripped = false;
                         }
                     }
                 }
@@ -105,14 +121,14 @@ public class Intake implements Subsystem {
         }
 
         if(spinner.frontOuterTripped){
-            if(spindex.getCurrentDirection().equals("backward") && autoIntake){
+            if(useOuterSensors && spindex.getCurrentDirection().equals("backward") && autoIntake){
                 spindex.switchSides();
             }
             spinner.frontOuterTripped = false;
         }
 
         if(spinner.backOuterTripped){
-            if(spindex.getCurrentDirection().equals("forward") && autoIntake){
+            if(useOuterSensors && spindex.getCurrentDirection().equals("forward") && autoIntake){
                 spindex.switchSides();
             }
             spinner.backOuterTripped = false;
