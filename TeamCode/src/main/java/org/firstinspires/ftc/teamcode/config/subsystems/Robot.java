@@ -109,7 +109,7 @@ public class Robot {
     private boolean wasFullLastLoop = false;
     public boolean txLights = false;
 
-    public double sortedTime = 0.2;
+    public double sortedTime = 0.1;
     public double fastTime = 0.01;
 
     //---------------- Subsystems ----------------
