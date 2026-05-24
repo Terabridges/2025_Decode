@@ -257,14 +257,18 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
 
                 .state(SortedShootAllStates.RESET)
-                .transitionTimed(0.1, SortedShootAllStates.INIT)
+                .transitionTimed(0.05, SortedShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
-                    intake.spindex.setSpindexForwardOne();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                     intake.clutch.spinClutchStop();
                     intake.autoIntake = true;
+                    if (intake.spindex.favorFront) {
+                        intake.spindex.setSpindexForwardOne();
+                    } else {
+                        intake.spindex.setSpindexBackwardOne();
+                    }
                 })
 
                 .state(SortedShootAllStates.UNJAM)
@@ -314,16 +318,20 @@ public class Robot {
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.RESET)
-                .transitionTimed(0.1, ShootAllStates.INIT)
+                .transitionTimed(0.05, ShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     outtake.setFastShootAllActive(false);
                     shootAllBallTargetCount = 0;
-                    intake.spindex.setSpindexForwardOne();
                     intake.clutch.setClutchUp();
                     intake.clutch.spinClutchStop();
                     intake.spindex.emptyBalls();
                     intake.autoIntake = true;
+                    if (intake.spindex.favorFront) {
+                        intake.spindex.setSpindexForwardOne();
+                    } else {
+                        intake.spindex.setSpindexBackwardOne();
+                    }
                 })
 
                 .state(ShootAllStates.UNJAM)
@@ -468,14 +476,18 @@ public class Robot {
 
 
                 .state(SlowShootAllStates.RESET)
-                .transitionTimed(0.1, SlowShootAllStates.INIT)
+                .transitionTimed(0.05, SlowShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
-                    intake.spindex.setSpindexForwardOne();
                     intake.clutch.setClutchUp();
                     intake.spindex.emptyBalls();
                     intake.clutch.spinClutchStop();
                     intake.autoIntake = true;
+                    if (intake.spindex.favorFront) {
+                        intake.spindex.setSpindexForwardOne();
+                    } else {
+                        intake.spindex.setSpindexBackwardOne();
+                    }
                 })
 
                 .state(SlowShootAllStates.UNJAM)

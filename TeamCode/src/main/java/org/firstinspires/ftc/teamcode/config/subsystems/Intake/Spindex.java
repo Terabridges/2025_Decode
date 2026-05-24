@@ -16,6 +16,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
+import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.firstinspires.ftc.teamcode.config.utility.Util;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
@@ -35,6 +36,8 @@ public class Spindex implements Subsystem {
     public static double turretServoPwmMinUs = 500.0;
     public static double turretServoPwmMaxUs = 2500.0;
     public boolean useSortingSpindex = true;
+
+    public boolean favorFront = true;
 
     //---------------- Hardware ----------------
     private Servo spindexLeft;
@@ -56,7 +59,7 @@ public class Spindex implements Subsystem {
     private double forwardTwo = forwardOne + 120;
     private double forwardThree = forwardTwo + 120;
 
-    private double backwardOne = 3;
+    private double backwardOne = 5; //3
     private double backwardTwo = backwardOne + 120;
     private double backwardThree = backwardTwo + 120;
 
@@ -741,7 +744,13 @@ public class Spindex implements Subsystem {
     //---------------- Interface Methods ----------------
     @Override
     public void toInit(){
-        setSpindexForwardOne();
+        if (GlobalVariables.isRedAlliance()) {
+            favorFront = true;
+            setSpindexForwardOne();
+        } else {
+            favorFront = false;
+            setSpindexBackwardOne();
+        }
     }
 
     @Override
