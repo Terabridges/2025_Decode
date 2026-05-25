@@ -46,8 +46,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@PsiKitAutoLog(rlogPort = 5802)
-@PsiKitFieldAutoLog
+//@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitFieldAutoLog
 @Configurable
 @TeleOp(name="MainTeleOp", group="TeleOp")
 public class MainTeleOp extends OpMode {
