@@ -12,8 +12,9 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 
 public class AutoPathLibrary {
     private final AutoPoses poses;
-    private static final double SCORE_SMOOTH_END_DISTANCE_IN = 6.0;
-    private static final double CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN = 5.0;
+    private static final double CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN = 11.0;
+    private static final double GO_TO_SCORE_FINAL_APPROACH_IN = 8.0;
+    private static final double GO_TO_SCORE_SEGMENT_END_T = 0.90;
 
     public AutoPathLibrary(AutoPoses poses) {
         this.poses = poses;
@@ -99,22 +100,36 @@ public class AutoPathLibrary {
     }
 
     public PathChain goToScore(Pose currentPose, Pose scorePose) {
-        return buildLinearSmoothEnd(currentPose, scorePose, SCORE_SMOOTH_END_DISTANCE_IN);
+        return buildLinear(currentPose, scorePose);
     }
 
-    /**
-     * Drives toward the score pose but ends early at a fraction of the segment length.
-     * Useful when final correction near the exact endpoint wastes cycle time.
-     */
-    public PathChain goToScoreAtProgress(Pose currentPose, Pose scorePose, double progressT) {
+    public PathChain goToScoreTwoPart(Pose currentPose, Pose scorePose) {
         if (currentPose == null || scorePose == null) {
             return null;
         }
-        double t = Math.max(0.0, Math.min(1.0, progressT));
-        double x = currentPose.getX() + ((scorePose.getX() - currentPose.getX()) * t);
-        double y = currentPose.getY() + ((scorePose.getY() - currentPose.getY()) * t);
-        Pose earlyEndPose = new Pose(x, y, scorePose.getHeading());
-        return buildLinearSmoothEnd(currentPose, earlyEndPose, SCORE_SMOOTH_END_DISTANCE_IN);
+
+        double dx = scorePose.getX() - currentPose.getX();
+        double dy = scorePose.getY() - currentPose.getY();
+        double distance = Math.hypot(dx, dy);
+        if (!Double.isFinite(distance) || distance <= GO_TO_SCORE_FINAL_APPROACH_IN + 0.5) {
+            return buildLinear(currentPose, scorePose);
+        }
+
+        double preScoreT = (distance - GO_TO_SCORE_FINAL_APPROACH_IN) / distance;
+        Pose preScorePose = new Pose(
+                currentPose.getX() + dx * preScoreT,
+                currentPose.getY() + dy * preScoreT,
+                scorePose.getHeading()
+        );
+
+        return follower.pathBuilder()
+                .addPath(new BezierLine(currentPose, preScorePose))
+                .setLinearHeadingInterpolation(currentPose.getHeading(), scorePose.getHeading())
+                .setTValueConstraint(GO_TO_SCORE_SEGMENT_END_T)
+                .addPath(new BezierLine(preScorePose, scorePose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), scorePose.getHeading())
+                .setTValueConstraint(GO_TO_SCORE_SEGMENT_END_T)
+                .build();
     }
 
     public PathChain closeLoopGoToShoot(Pose currentPose, Alliance alliance, Pose shootPose, boolean useFinalShootControl) {
@@ -202,7 +217,7 @@ public class AutoPathLibrary {
                 .build();
     }
 
-    private PathChain buildCurve(Pose start, Pose control, Pose end) {
+    public PathChain buildCurve(Pose start, Pose control, Pose end) {
         if (follower == null || start == null || control == null || end == null) {
             return null;
         }
@@ -241,32 +256,4 @@ public class AutoPathLibrary {
                 .build();
     }
 
-    private PathChain buildLinearSmoothEnd(Pose start, Pose end, double smoothDistanceIn) {
-        if (follower == null || start == null || end == null) {
-            return null;
-        }
-
-        double dx = end.getX() - start.getX();
-        double dy = end.getY() - start.getY();
-        double dist = Math.hypot(dx, dy);
-
-        if (!Double.isFinite(dist) || dist <= smoothDistanceIn + 0.5) {
-            return buildLinear(start, end);
-        }
-
-        double ux = dx / dist;
-        double uy = dy / dist;
-        Pose preEnd = new Pose(
-                end.getX() - ux * smoothDistanceIn,
-                end.getY() - uy * smoothDistanceIn,
-                end.getHeading()
-        );
-
-        return follower.pathBuilder()
-                .addPath(new BezierLine(start, preEnd))
-                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .addPath(new BezierLine(preEnd, end))
-                .setLinearHeadingInterpolation(end.getHeading(), end.getHeading())
-                .build();
-    }
 }

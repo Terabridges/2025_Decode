@@ -81,7 +81,7 @@ public class MainTeleOp extends OpMode {
     public static boolean enableFieldAutoLog = true;
     public static double fieldAutoLogPeriodSec = 0.10;
     public static double teleopCloseBlueBankOffsetDeg = 0.0;
-    public static double teleopCloseRedBankOffsetDeg = 0.0;
+    public static double teleopCloseRedBankOffsetDeg = 3.5;
     public static double teleopLongBlueBankOffsetDeg = 2.0;
     public static double teleopLongRedBankOffsetDeg = 4.0;
     private double lastAppliedBankOffsetDeg = 0.0;
