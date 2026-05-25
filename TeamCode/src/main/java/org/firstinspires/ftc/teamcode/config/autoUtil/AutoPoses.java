@@ -90,7 +90,7 @@ public class AutoPoses {
     public Pose row4CompletePickupControlR = poseDeg(FIELD_SIZE - row4CompletePickupControlB.getX(), row4CompletePickupControlB.getY(), 0.0);
     public Pose row4CompletePickupB = poseDeg(11.5, 11.0, 0.0);
     public Pose row4CompletePickupR = poseDeg(FIELD_SIZE - row4CompletePickupB.getX(), row4CompletePickupB.getY(), 0.0);
-    public Pose closeLoopPickupB = poseDeg(13.0, 52.5, 325.0);
+    public Pose closeLoopPickupB = poseDeg(13.0, 56.5, 332.0);
     public Pose closeLoopPickupR = mirrorBluePose(closeLoopPickupB);
     public Pose closeLoopPickupControlB = poseDeg(53.0, 60.0, 0.0);
     public Pose closeLoopPickupControlR = mirrorBluePose(closeLoopPickupControlB);
@@ -98,7 +98,7 @@ public class AutoPoses {
     public Pose closeLoopGoToScoreControlR = mirrorBluePose(closeLoopGoToScoreControlB);
     public Pose row2GoToScoreControlB = poseDeg(53.0, 60.0, 0.0);
     public Pose row2GoToScoreControlR = mirrorBluePose(row2GoToScoreControlB);
-    public Pose closeLoopCompletePickupB = poseDeg(13.0, 60.0, 330.0);
+    public Pose closeLoopCompletePickupB = poseDeg(13.0, 56.5, 332.0);
     public Pose closeLoopCompletePickupR = mirrorBluePose(closeLoopCompletePickupB);
     public Pose closeLoopCompletePickupControlB = poseDeg(13.0, 60.0, 0.0);
     public Pose closeLoopCompletePickupControlR = mirrorBluePose(closeLoopCompletePickupControlB);

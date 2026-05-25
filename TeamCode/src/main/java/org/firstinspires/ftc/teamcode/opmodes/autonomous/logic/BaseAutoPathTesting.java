@@ -41,6 +41,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private PathChain releaseCompletePath;
 
     private static final double STATE_TIMEOUT_SECONDS = 5.0;
+    private static final double RELEASE_IDLE_SECONDS = 1.0;
     private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_IDLE_DELAY_SECONDS = 2.0;
@@ -215,7 +216,11 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
                 .state(AutoStates.COMPLETE_RELEASE)
                 .onEnter(this::onEnterCompleteRelease)
-                .transition(() -> advanceApproved(followerIdle() || releasePathTimedOut()), AutoStates.GO_TO_SHOOT)
+                .transition(() -> advanceApproved(followerIdle() || releasePathTimedOut()), AutoStates.RELEASE_WAIT)
+
+                .state(AutoStates.RELEASE_WAIT)
+                .onEnter(this::onEnterReleaseWait)
+                .transition(() -> advanceApproved(stateTimer.seconds() >= RELEASE_IDLE_SECONDS), AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.CLOSE_LOOP_GO_TO_PICKUP)
                 .onEnter(this::onEnterCloseLoopGoToPickup)
@@ -297,6 +302,11 @@ public abstract class BaseAutoPathTesting extends OpMode {
         resetStateTimer();
         buildPath(PathRequest.COMPLETE_RELEASE);
         followPath(releaseCompletePath, RELEASE_COMPLETE_POWER);
+    }
+
+    protected void onEnterReleaseWait() {
+        setActiveState(AutoStates.RELEASE_WAIT);
+        resetStateTimer();
     }
 
     protected void onEnterLeave() {
@@ -523,7 +533,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
-            return pathLibrary.closeLoopCompletePickup(currentPose, alliance);
+            return pathLibrary.closeLoopPickupPart2(currentPose, alliance);
         }
         return null;
     }

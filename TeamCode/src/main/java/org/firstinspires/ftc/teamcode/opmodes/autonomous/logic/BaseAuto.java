@@ -23,7 +23,6 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPathLibrary;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoPoses;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoRoutePlanner;
 import org.firstinspires.ftc.teamcode.config.autoUtil.AutoTurretAim;
-import org.firstinspires.ftc.teamcode.config.autoUtil.ReleaseWaiter;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
@@ -170,13 +169,13 @@ public abstract class BaseAuto extends OpMode {
     private final ElapsedTime closeLoopGoToPickupIdleTimer = new ElapsedTime();
     private final ElapsedTime closeLoopCompletePickupIdleTimer = new ElapsedTime();
     private final ElapsedTime farBackrowGoToPickupHoldTimer = new ElapsedTime();
-    private ReleaseWaiter releaseWaiter = new ReleaseWaiter(RELEASE_IDLE_SECONDS);
     private AutoStates acquireMotifReturnState = AutoStates.GO_TO_SHOOT;
     private boolean motifResolvedThisAcquire = false;
     private boolean shootSequenceStarted = false;
     private boolean skipCurrentShot = false;
     private boolean shootStartedInGoToShoot = false;
     private boolean readyShootCommandedOnPath = false;
+    private boolean intakeStoppedOnShootPath = false;
     private boolean delayIntakeUntilPostPreload = false;
     private boolean goToPickupIdleSeen = false;
     private boolean goToPickupSlowdownApplied = false;
@@ -240,7 +239,7 @@ public abstract class BaseAuto extends OpMode {
         // Auto should not inherit teleop baseline trim by default.
         Outtake.defaultTurretAimTrimOffsetDeg = 0.0;
         Outtake.turretAimTrimOffsetDeg = 0.0;
-        robot.outtake.shooter.hoodOffset = range == Range.CLOSE ? AUTO_CLOSE_HOOD_OFFSET : 0.0;
+        robot.outtake.shooter.hoodOffset = range == Range.CLOSE_RANGE ? AUTO_CLOSE_HOOD_OFFSET : 0.0;
         if (delayIntakeUntilPostPreload) {
             // Keep intake idle until preload shooting is completed.
             robot.intake.autoIntake = false;
@@ -331,7 +330,9 @@ public abstract class BaseAuto extends OpMode {
             maybeStartBackRowCompletePickupSlowdown();
             maybeBrakeGoToShootFinalApproach();
             maybeStartReadyShootAtPathProgress();
+            maybeStopIntakeAtShootPathProgress();
             maybeStartShootAtPathProgress();
+            maintainSpindexForGoToPickup();
         }
         Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
@@ -347,6 +348,9 @@ public abstract class BaseAuto extends OpMode {
         }
         if (slowShootAllMachine != null) {
             slowShootAllMachine.update();
+        }
+        if (autoMachineStarted) {
+            maintainSpindexForGoToPickup();
         }
         logAutoStateMachinePsiKitData();
 
@@ -480,6 +484,10 @@ public abstract class BaseAuto extends OpMode {
                 .state(AutoStates.COMPLETE_RELEASE)
                 .onEnter(this::onEnterCompleteRelease)
                 .onExit(this::onExitCompleteRelease)
+                .transition(this::releasePathDone, AutoStates.RELEASE_WAIT)
+
+                .state(AutoStates.RELEASE_WAIT)
+                .onEnter(this::onEnterReleaseWait)
                 .transition(this::releaseWaitDone, AutoStates.GO_TO_SHOOT)
 
                 .state(AutoStates.CLOSE_LOOP_GO_TO_PICKUP)
@@ -598,12 +606,14 @@ public abstract class BaseAuto extends OpMode {
         startPickupIntake();
         robot.outtake.shooter.useFlywheelPID = true;
         readyShootCommandedOnPath = false;
+        intakeStoppedOnShootPath = false;
         shootStartedInGoToShoot = false;
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
 
     protected void onEnterCompleteShoot() {
+        brakeCloseGoToShootAtShootPoint();
         setActiveState(AutoStates.COMPLETE_SHOOT);
         resetStateTimer();
         shootTimer.reset();
@@ -640,9 +650,10 @@ public abstract class BaseAuto extends OpMode {
         goToPickupSlowdownApplied = false;
         goToPickupIdleTimer.reset();
         row4IntermediatePickupStarted = false;
+        refreshCurrentAbsoluteRow();
+        prepareSpindexForUpcomingPickup();
         startPickupIntake();
 
-        refreshCurrentAbsoluteRow();
         buildPath(PathRequest.GO_TO_PICKUP);
         followPath(goToPickupPath);
     }
@@ -698,7 +709,6 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.COMPLETE_RELEASE);
 
         resetStateTimer();
-        releaseWaiter.reset();
         stopIntakeForTravel();
 
         buildPath(PathRequest.COMPLETE_RELEASE);
@@ -706,6 +716,12 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void onExitCompleteRelease() {
+    }
+
+    protected void onEnterReleaseWait() {
+        setActiveState(AutoStates.RELEASE_WAIT);
+        resetStateTimer();
+        stopIntakeForTravel();
     }
 
     protected void onEnterLeave() {
@@ -731,6 +747,7 @@ public abstract class BaseAuto extends OpMode {
         backRowGoToPickupSlowdownApplied = false;
         farBackrowGoToPickupHoldSeen = false;
         farBackrowGoToPickupHoldTimer.reset();
+        prepareSpindexForUpcomingPickup();
         startPickupIntake();
 
         buildPath(PathRequest.GO_TO_FAR_PICKUP_ZONE);
@@ -756,6 +773,7 @@ public abstract class BaseAuto extends OpMode {
         startPickupIntake();
         robot.outtake.shooter.useFlywheelPID = true;
         readyShootCommandedOnPath = false;
+        intakeStoppedOnShootPath = false;
         shootStartedInGoToShoot = false;
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
@@ -896,24 +914,15 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void maybeStartBackRowCompletePickupSlowdown() {
-        boolean backRowCompleteState = activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP;
-        boolean closeLoopCompleteState = activeState == AutoStates.CLOSE_LOOP_COMPLETE_PICKUP;
-        if (!(backRowCompleteState || closeLoopCompleteState) || backRowCompletePickupSlowdownApplied) {
+        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP || backRowCompletePickupSlowdownApplied) {
             return;
         }
         if (follower == null || follower.getCurrentPath() == null) {
             return;
         }
 
-        double slowdownStartT = closeLoopCompleteState
-                ? CLOSE_LOOP_COMPLETE_PICKUP_SLOWDOWN_START_T
-                : BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T;
-        double slowdownPower = closeLoopCompleteState
-                ? CLOSE_LOOP_COMPLETE_PICKUP_SECOND_HALF_POWER
-                : BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER;
-
         double pathT = follower.getCurrentPath().getClosestPointTValue();
-        if (!Double.isFinite(pathT) || pathT < slowdownStartT) {
+        if (!Double.isFinite(pathT) || pathT < BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T) {
             return;
         }
 
@@ -922,7 +931,7 @@ public abstract class BaseAuto extends OpMode {
         if (finalApproachPath == null) {
             return;
         }
-        followPath(finalApproachPath, slowdownPower);
+        followPath(finalApproachPath, BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER);
         backRowCompletePickupSlowdownApplied = true;
     }
 
@@ -986,7 +995,7 @@ public abstract class BaseAuto extends OpMode {
 
     protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
-            return pathLibrary.closeLoopCompletePickup(currentPose, alliance);
+            return pathLibrary.closeLoopPickupPart2(currentPose, alliance);
         }
         // Far back-row loop does movement in GO_TO_PICKUP + hold; no extra complete-pickup path.
         return null;
@@ -1127,6 +1136,27 @@ public abstract class BaseAuto extends OpMode {
         readyShootCommandedOnPath = true;
     }
 
+    protected void maybeStopIntakeAtShootPathProgress() {
+        if (intakeStoppedOnShootPath) {
+            return;
+        }
+        boolean shootPathState = activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT;
+        if (!shootPathState) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < READY_SHOOT_PATH_PROGRESS) {
+            return;
+        }
+        stopIntakeForTravel();
+        robot.intake.clutch.spinClutchOut();
+        intakeStoppedOnShootPath = true;
+    }
+
     protected void startPickupIntake() {
         if (robot == null || robot.intake == null || robot.intake.spinner == null || robot.intake.clutch == null) {
             return;
@@ -1135,6 +1165,37 @@ public abstract class BaseAuto extends OpMode {
         robot.intake.spinner.autoSpin = true;
         robot.intake.spinner.setMegaSpinIn();
         robot.intake.clutch.setClutchUp();
+    }
+
+    protected void prepareSpindexForUpcomingPickup() {
+        if (robot == null || robot.intake == null || robot.intake.spindex == null) {
+            return;
+        }
+        boolean useForwardOne = alliance == Alliance.BLUE
+                ? currentAbsoluteRow == 2
+                : currentAbsoluteRow != 2;
+        if (useForwardOne) {
+            robot.intake.spindex.setSpindexForwardOne();
+            return;
+        }
+        robot.intake.spindex.setSpindexBackwardOne();
+    }
+
+    protected void maintainSpindexForGoToPickup() {
+        if (!isGoToPickupSetupState()) {
+            return;
+        }
+        prepareSpindexForUpcomingPickup();
+    }
+
+    protected boolean isStandardGoToPickupState() {
+        return activeState == AutoStates.GO_TO_PICKUP;
+    }
+
+    protected boolean isGoToPickupSetupState() {
+        return activeState == AutoStates.GO_TO_PICKUP
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_PICKUP
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_PICKUP;
     }
 
     protected void stopIntakeForTravel() {
@@ -1188,6 +1249,19 @@ public abstract class BaseAuto extends OpMode {
             return;
         }
 
+        follower.breakFollowing();
+        goToShootFinalApproachBraked = true;
+    }
+
+    protected void brakeCloseGoToShootAtShootPoint() {
+        if (goToShootFinalApproachBraked
+                || range != Range.CLOSE_RANGE
+                || activeState != AutoStates.GO_TO_SHOOT
+                || follower == null
+                || follower.getCurrentPath() == null
+                || !pathReadyForProgress(SHOOT_START_PATH_PROGRESS)) {
+            return;
+        }
         follower.breakFollowing();
         goToShootFinalApproachBraked = true;
     }
@@ -1569,9 +1643,9 @@ public abstract class BaseAuto extends OpMode {
             return;
         }
         double pathT = follower.getCurrentPath().getClosestPointTValue();
-        double requiredProgress = preloadComplete
-                ? SHOOT_START_PATH_PROGRESS
-                : PRELOAD_SHOOT_START_PATH_PROGRESS;
+        double requiredProgress = !preloadComplete
+                ? PRELOAD_SHOOT_START_PATH_PROGRESS
+                : SHOOT_START_PATH_PROGRESS;
         if (!Double.isFinite(pathT) || pathT < requiredProgress) {
             return;
         }
@@ -1727,7 +1801,11 @@ public abstract class BaseAuto extends OpMode {
 
     /** Waits 1s after the release path finishes before advancing. */
     protected boolean releaseWaitDone() {
-        return releaseWaiter.isDone(pathReadyForNextAction(), RELEASE_TIMEOUT_SECONDS);
+        return stateTimer.seconds() >= RELEASE_IDLE_SECONDS;
+    }
+
+    protected boolean releasePathDone() {
+        return pathReadyForNextAction() || stateTimer.seconds() >= RELEASE_TIMEOUT_SECONDS;
     }
 
     protected boolean backRowLoopShootComplete() {
