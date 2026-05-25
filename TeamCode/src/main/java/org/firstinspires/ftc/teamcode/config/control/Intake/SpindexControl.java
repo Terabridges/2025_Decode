@@ -23,6 +23,7 @@ public class SpindexControl implements Control {
     //EdgeDetector toggleShootMode = new EdgeDetector(()-> spindex.toggleShootMode());
     EdgeDetector emptyBalls = new EdgeDetector(()-> spindex.emptyBalls());
     //EdgeDetector goToForwardOne = new EdgeDetector(()-> spindex.setSpindexForwardOne());
+    EdgeDetector toggleForwardFront = new EdgeDetector(()-> spindex.toggleFavorFront());
     public static int fullSpindexRumbleMs = 500;
     private boolean wasFullLastLoop = false;
 
@@ -51,6 +52,7 @@ public class SpindexControl implements Control {
         //toggleShootMode.update(gp1.back);
         //goToForwardOne.update(gp1.dpad_up);
         emptyBalls.update(gp1.right_stick_button || gp2.right_stick_button);
+        toggleForwardFront.update(gp2.back);
 
         boolean isFull = spindex.loadedBallCount() == 3;
         if (isFull && !wasFullLastLoop) {
@@ -63,11 +65,12 @@ public class SpindexControl implements Control {
     @Override
     public void addTelemetry(Telemetry telemetry){
         telemetry.addData("Ball Order", spindex.balls);
-        telemetry.addData("Current Direction", spindex.getCurrentDirection());
+        telemetry.addData("FavorFront", spindex.favorFront);
+        //telemetry.addData("Current Direction", spindex.getCurrentDirection());
 //        telemetry.addData("Current Ball", spindex.getCurrentBall());
         //telemetry.addData("Current/Commanded Pos", String.format("%.1f",spindex.getAbsolutePos()) + "/" + String.format("%.1f",spindex.getCommandedPos()));
-        telemetry.addData("Commanded Pos", spindex.getCommandedDegree());
-        telemetry.addData("Absolute Pos", spindex.getAbsolutePos());
+        //telemetry.addData("Commanded Pos", spindex.getCommandedDegree());
+        //telemetry.addData("Absolute Pos", spindex.getAbsolutePos());
 
         //telemetry.addData("CommandedPos", spindex.getCommandedPos());
 

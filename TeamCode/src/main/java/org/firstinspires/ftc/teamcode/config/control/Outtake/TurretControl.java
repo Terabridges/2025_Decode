@@ -40,7 +40,7 @@ public class TurretControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Aim Lock", outtake.isAimLockEnabled());
+        //telemetry.addData("Aim Lock", outtake.isAimLockEnabled());
 //        telemetry.addData("Aim Source", outtake.getActiveLockSource());
 //        telemetry.addData("Aim Target", outtake.getAimTarget());
 //        double commandedDeg = outtake.turret.getCurrentDegrees();

@@ -147,6 +147,10 @@ public class Spindex implements Subsystem {
     }
 
     //---------------- Methods ----------------
+    public void toggleFavorFront(){
+        favorFront = !favorFront;
+    }
+
     private void setSpindexPos(double pos){
         commandedServoPos = clampBasePosToSharedRange(pos);
 

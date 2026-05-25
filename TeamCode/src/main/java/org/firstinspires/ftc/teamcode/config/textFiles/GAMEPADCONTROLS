@@ -36,10 +36,10 @@ LeftTrig: while holding do hood offset
 RightTrig: while holding do rpm offset
 LStX:
 LStY: control kicker
-RStX:
+RStX: control turret for lock??
 RStY:
 LStBut: toggle use outer sensors
 RStBut: Empty Balls
-Back:
+Back: toggle Favor Front
 Start: Reset Offset
 Touchpad:

@@ -335,11 +335,11 @@ public class MainTeleOp extends OpMode {
 
     public void controlsTelemetryUpdate() {
         if (telemetryTimer.milliseconds()>200) {
-            joinedTelemetry.addData("Odo Distance", "%.1f", robot.outtake.distanceInches);
-            joinedTelemetry.addData("Limelight Distance", "%.1f", robot.outtake.vision.getDistanceInches());
-            joinedTelemetry.addData("Target RPM", "%.0f", robot.outtake.shooter.getTargetRPM());
-            joinedTelemetry.addData("Hood Position", "%.4f", robot.outtake.shooter.getCurrentHoodPosition());
-            joinedTelemetry.addData("Pose Reset Pending", poseResetPending);
+            //joinedTelemetry.addData("Odo Distance", "%.1f", robot.outtake.distanceInches);
+            //joinedTelemetry.addData("Limelight Distance", "%.1f", robot.outtake.vision.getDistanceInches());
+            //joinedTelemetry.addData("Target RPM", "%.0f", robot.outtake.shooter.getTargetRPM());
+            //joinedTelemetry.addData("Hood Position", "%.4f", robot.outtake.shooter.getCurrentHoodPosition());
+            //joinedTelemetry.addData("Pose Reset Pending", poseResetPending);
 
             for (Control c : controls) {
                 c.addTelemetry(joinedTelemetry);
@@ -352,14 +352,14 @@ public class MainTeleOp extends OpMode {
             }
             joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Motif", GlobalVariables.getMotif());
-                joinedTelemetry.addData(
-                    "Loop (ms)",
-                    "now %.2f | avg %.2f",
-                    loopTimeTracker.getCurrentLoopTimeMs(),
-                    loopTimeTracker.getTrailingAverageMs()
-                );
+//                joinedTelemetry.addData(
+//                    "Loop (ms)",
+//                    "now %.2f | avg %.2f",
+//                    loopTimeTracker.getCurrentLoopTimeMs(),
+//                    loopTimeTracker.getTrailingAverageMs()
+//                );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
-            joinedTelemetry.addData("Shoot Machine", chooseShootMachine());
+            //joinedTelemetry.addData("Shoot Machine", chooseShootMachine());
             //joinedTelemetry.addData("Shoot Pending", shootRequestPending);
 //            if (robot != null && robot.outtake != null) {
 //                joinedTelemetry.addData("In Launch Zone", robot.outtake.isAnyPartInLaunchZone());
