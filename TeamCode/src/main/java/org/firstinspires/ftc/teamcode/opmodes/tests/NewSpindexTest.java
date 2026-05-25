@@ -14,7 +14,7 @@ import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
 @PsiKitAutoLog(rlogPort = 5802)
-@TeleOp(name="SpindexTest", group="Test")
+@TeleOp(name="NewSpindexTest", group="Test")
 public class NewSpindexTest extends OpMode {
 
     private final Gamepad currentGamepad1 = new Gamepad();
@@ -22,6 +22,9 @@ public class NewSpindexTest extends OpMode {
 
     private JoinedTelemetry joinedTelemetry;
     private Spindex spindex;
+    private AnalogInput floodgateAnalog;
+    private double lastAppliedDegree = Double.NaN;
+    private double floodgateCurrent = Double.NaN;
 
     public static double degree = 90;
 
@@ -29,6 +32,8 @@ public class NewSpindexTest extends OpMode {
     @Override
     public void init() {
         spindex = new Spindex(hardwareMap);
+        floodgateAnalog = hardwareMap.get(AnalogInput.class, "floodgate");
+        floodgateCurrent = floodgateAnalog.getVoltage() / 3.3 * 80.0;
 
         joinedTelemetry = new JoinedTelemetry(
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
@@ -51,6 +56,7 @@ public class NewSpindexTest extends OpMode {
         joinedTelemetry.addData("Current/Commanded Pos", String.format("%.1f",spindex.getAbsolutePos()) + "/" + String.format("%.1f",spindex.getCommandedPos()));
         joinedTelemetry.addData("Commanded Pos", spindex.getCommandedDegree());
         joinedTelemetry.addData("Absolute Pos", spindex.getAbsolutePos());
+        joinedTelemetry.addData("Floodgate Current (A)", "%.2f", floodgateCurrent);
         joinedTelemetry.update();
     }
 
