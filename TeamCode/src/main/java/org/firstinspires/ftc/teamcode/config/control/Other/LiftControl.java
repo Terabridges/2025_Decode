@@ -40,7 +40,7 @@ public class LiftControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Kicker Pos", lift.kickerCurrentPos);
+        //telemetry.addData("Kicker Pos", lift.kickerCurrentPos);
         //telemetry.addData("Kicker Pow", lift.speed);
     }
 }

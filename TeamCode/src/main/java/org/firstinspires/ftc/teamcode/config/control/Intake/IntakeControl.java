@@ -44,8 +44,8 @@ public class IntakeControl implements Control {
 
     @Override
     public void addTelemetry(Telemetry telemetry){
-        telemetry.addData("Auto Intake", intake.autoIntake);
-        telemetry.addData("Current Spindex Servo", intake.spindex.currentSpindexServo);
+        //telemetry.addData("Auto Intake", intake.autoIntake);
+        //telemetry.addData("Current Spindex Servo", intake.spindex.currentSpindexServo);
         telemetry.addData("Use Outer Sensors", intake.useOuterSensors);
     }
 }

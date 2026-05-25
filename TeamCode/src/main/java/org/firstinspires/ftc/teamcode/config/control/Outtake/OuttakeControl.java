@@ -58,11 +58,11 @@ public class OuttakeControl implements Control {
         //telemetry.addData("Hood Base/Comp", "%.4f / %.4f", outtake.getLastBaseHoodPos(), outtake.getLastCompedHoodPos());
 
         telemetry.addData("Offset Type", outtake.currentOffsetType);
-        telemetry.addData("Bank Offset", outtake.turretAimTrimOffsetDeg);
-        telemetry.addData("Vision B Offset", outtake.turretAimCommandOffsetDeg);
+        //telemetry.addData("Bank Offset", outtake.turretAimTrimOffsetDeg);
+        //telemetry.addData("Vision B Offset", outtake.turretAimCommandOffsetDeg);
         telemetry.addData("Auto Vision Bias", outtake.turretAimAutoVisionBiasDeg);
         telemetry.addData("Total Heading Offset", Outtake.getTotalTurretAimCommandOffsetDeg());
-        telemetry.addData("RPM Offset", outtake.shooter.flywheelOffset);
-        telemetry.addData("Hood Offset", outtake.shooter.hoodOffset);
+//        telemetry.addData("RPM Offset", outtake.shooter.flywheelOffset);
+//        telemetry.addData("Hood Offset", outtake.shooter.hoodOffset);
     }
 }
