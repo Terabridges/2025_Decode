@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.config.pedroPathing.FollowerManager;
+import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 /**
@@ -41,6 +42,8 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private PathChain releaseCompletePath;
 
     private static final double STATE_TIMEOUT_SECONDS = 5.0;
+    private static final double PATH_ADVANCE_PROGRESS = 0.90;
+    private static final double CLOSE_GO_TO_SHOOT_ADVANCE_PROGRESS = 0.875;
     private static final double RELEASE_IDLE_SECONDS = 1.0;
     private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
     private static final double CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS = 1.05;
@@ -168,6 +171,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
         telemetryM.debug("PathTest branches: pickup=" + shouldGoToPickupAfterShot()
                 + " backrow=" + shouldGoToBackRowLoopAfterShot()
                 + " leave=" + shouldLeaveAfterShot());
+        logPathTestingPsiKitData();
         telemetryM.update(telemetry);
         telemetry.update();
 
@@ -192,7 +196,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
                 .state(AutoStates.GO_TO_SHOOT)
                 .onEnter(this::onEnterGoToShoot)
                 .transition(() -> advanceApproved(shouldSkipShootPhase()), AutoStates.LEAVE)
-                .transition(() -> advanceApproved(followerIdle()), AutoStates.COMPLETE_SHOOT)
+                .transition(() -> advanceApproved(pathReadyForNextAction()), AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
                 .onEnter(() -> setActiveState(AutoStates.COMPLETE_SHOOT))
@@ -499,6 +503,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
         if (range == Range.LONG_RANGE) {
             return pathLibrary.goToScoreTwoPart(currentPose, scorePose);
         }
+        if (closeLoopCycleActive && range == Range.CLOSE_RANGE) {
+            return pathLibrary.closeLoopGoToShoot(currentPose, alliance, scorePose, false);
+        }
         boolean isRow2GoToShoot = currentAbsoluteRow == 2;
         boolean closeNonFinalShot = range == Range.CLOSE_RANGE
                 && preloadComplete
@@ -556,6 +563,33 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
     protected boolean followerIdle() {
         return follower != null && !follower.isBusy();
+    }
+
+    protected boolean pathReadyForNextAction() {
+        return pathReadyForProgress(getPathAdvanceProgressForCurrentState());
+    }
+
+    protected double getPathAdvanceProgressForCurrentState() {
+        if (range == Range.CLOSE_RANGE && activeState == AutoStates.GO_TO_SHOOT) {
+            return CLOSE_GO_TO_SHOOT_ADVANCE_PROGRESS;
+        }
+        return PATH_ADVANCE_PROGRESS;
+    }
+
+    protected boolean pathReadyForProgress(double requiredProgress) {
+        if (followerIdle()) {
+            return true;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return false;
+        }
+        if (follower.getFollowingPathChain()
+                && follower.getCurrentPathChain() != null
+                && follower.getChainIndex() < follower.getCurrentPathChain().size() - 1) {
+            return false;
+        }
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        return Double.isFinite(pathT) && pathT >= requiredProgress;
     }
 
     protected void maybeStartGoToPickupSlowdown() {
@@ -657,6 +691,39 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected boolean releasePathTimedOut() {
         return activeState == AutoStates.COMPLETE_RELEASE
                 && stateTimer.seconds() >= RELEASE_TIMEOUT_SECONDS;
+    }
+
+    private void logPathTestingPsiKitData() {
+        Logger.recordOutput("PathTest/StateMachine/ActiveState", activeState != null ? activeState.name() : "null");
+        Logger.recordOutput("PathTest/StateMachine/StateTimeSec", stateTimer.seconds());
+        Logger.recordOutput("PathTest/StateMachine/PreloadComplete", preloadComplete);
+        Logger.recordOutput("PathTest/StateMachine/RowsCompleted", rowsCompleted);
+        Logger.recordOutput("PathTest/StateMachine/CurrentAbsoluteRow", currentAbsoluteRow);
+        Logger.recordOutput("PathTest/StateMachine/BackRowLoopCyclesCompleted", backRowLoopCyclesCompleted);
+        Logger.recordOutput("PathTest/StateMachine/BackRowLoopCyclesTarget", backRowLoopCyclesTarget);
+        Logger.recordOutput("PathTest/StateMachine/FollowerIdle", followerIdle());
+        Logger.recordOutput("PathTest/Transitions/GoToPickup/SlowdownApplied", goToPickupSlowdownApplied);
+        Logger.recordOutput("PathTest/Transitions/CloseLoop/IdleSeen", closeLoopGoToPickupIdleSeen);
+        Logger.recordOutput("PathTest/Transitions/CloseLoop/IdleTimerSec", closeLoopGoToPickupIdleTimer.seconds());
+        Logger.recordOutput("PathTest/Transitions/CloseLoop/CompleteIdleSeen", closeLoopCompletePickupIdleSeen);
+        Logger.recordOutput("PathTest/Transitions/CloseLoop/CompleteIdleTimerSec", closeLoopCompletePickupIdleTimer.seconds());
+        Logger.recordOutput("PathTest/Transitions/CloseLoop/CycleActive", closeLoopCycleActive);
+        Logger.recordOutput("PathTest/Transitions/ShouldGoToPickupAfterShot", shouldGoToPickupAfterShot());
+        Logger.recordOutput("PathTest/Transitions/ShouldGoToBackRowLoopAfterShot", shouldGoToBackRowLoopAfterShot());
+        Logger.recordOutput("PathTest/Transitions/ShouldLeaveAfterShot", shouldLeaveAfterShot());
+
+        Pose pose = (follower != null) ? follower.getPose() : null;
+        if (pose != null) {
+            Logger.recordOutput("PathTest/Follower/PoseX", pose.getX());
+            Logger.recordOutput("PathTest/Follower/PoseY", pose.getY());
+            Logger.recordOutput("PathTest/Follower/PoseHeadingDeg", Math.toDegrees(pose.getHeading()));
+        }
+        if (follower != null && follower.getCurrentPath() != null) {
+            double pathT = follower.getCurrentPath().getClosestPointTValue();
+            if (Double.isFinite(pathT)) {
+                Logger.recordOutput("PathTest/Follower/CurrentPathT", pathT);
+            }
+        }
     }
 
     protected void setActiveState(AutoStates state) {

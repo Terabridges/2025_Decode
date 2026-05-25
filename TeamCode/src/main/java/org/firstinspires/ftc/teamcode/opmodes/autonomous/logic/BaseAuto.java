@@ -102,6 +102,8 @@ public abstract class BaseAuto extends OpMode {
     private static final boolean SHOOT_WHILE_MOVING_ENABLED = false;
     private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.90;
     private static final double SHOOT_START_PATH_PROGRESS = 0.90;
+    private static final double CLOSE_BRAKE_PATH_PROGRESS = 0.875;
+    private static final double RED_FINAL_CLOSE_BRAKE_PATH_PROGRESS = 0.80;
     private static final double READY_SHOOT_PATH_PROGRESS = 0.50;
     private static final double GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.80;
     private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
@@ -109,7 +111,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double AUTO_RED_LONG_PRELOAD_TRIM_OFFSET_DEG = 5.0;
     private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_CLOSE_FINAL_SHOOT_TRIM_DELTA_BLUE_DEG = 4.0;
-    private static final double AUTO_CLOSE_FINAL_SHOOT_TRIM_DELTA_RED_DEG = -10.0;
+    private static final double AUTO_CLOSE_FINAL_SHOOT_TRIM_DELTA_RED_DEG = -6.0;
     private static final double AUTO_CLOSE_HOOD_OFFSET = -0.1;
     private static final double AUTO_TOTAL_SECONDS = 30.0;
     private static final double FORCE_LEAVE_TIME_REMAINING_SECONDS = 1.0;
@@ -741,6 +743,7 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_PICKUP);
 
         resetStateTimer();
+        refreshCurrentAbsoluteRow();
         closeLoopGoToPickupIdleSeen = false;
         closeLoopGoToPickupIdleTimer.reset();
         closeLoopGoToPickupPart2Started = false;
@@ -960,6 +963,9 @@ public abstract class BaseAuto extends OpMode {
         Pose scorePose = getScorePoseForCurrentShot();
         if (range == Range.LONG_RANGE) {
             return pathLibrary.goToScoreTwoPart(currentPose, scorePose);
+        }
+        if (closeLoopCycleActive && range == Range.CLOSE_RANGE) {
+            return pathLibrary.closeLoopGoToShoot(currentPose, alliance, scorePose, false);
         }
         boolean isRow2GoToShoot = currentAbsoluteRow == 2;
         boolean closeNonFinalShot = range == Range.CLOSE_RANGE
@@ -1212,7 +1218,21 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean pathReadyForNextAction() {
-        return pathReadyForProgress(PATH_ADVANCE_PROGRESS);
+        return pathReadyForProgress(getPathAdvanceProgressForCurrentState());
+    }
+
+    protected double getPathAdvanceProgressForCurrentState() {
+        if (range == Range.CLOSE_RANGE && activeState == AutoStates.GO_TO_SHOOT) {
+            return getCloseGoToShootAdvanceProgress();
+        }
+        return PATH_ADVANCE_PROGRESS;
+    }
+
+    protected double getCloseGoToShootAdvanceProgress() {
+        if (alliance == Alliance.RED && isFinalCloseShoot()) {
+            return RED_FINAL_CLOSE_BRAKE_PATH_PROGRESS;
+        }
+        return CLOSE_BRAKE_PATH_PROGRESS;
     }
 
     protected boolean pathReadyForProgress(double requiredProgress) {
@@ -1259,7 +1279,7 @@ public abstract class BaseAuto extends OpMode {
                 || activeState != AutoStates.GO_TO_SHOOT
                 || follower == null
                 || follower.getCurrentPath() == null
-                || !pathReadyForProgress(SHOOT_START_PATH_PROGRESS)) {
+                || !pathReadyForProgress(getCloseGoToShootAdvanceProgress())) {
             return;
         }
         follower.breakFollowing();
@@ -1409,6 +1429,9 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowGoToPickupAdvanceReady() {
+        if (hasReachedPickupBallTarget()) {
+            return true;
+        }
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             return followerIdle()
                     || stateTimer.seconds() >= CLOSE_LOOP_GO_TO_PICKUP_TIMEOUT_SECONDS;
@@ -1429,6 +1452,9 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowCompletePickupAdvanceReady() {
+        if (hasReachedPickupBallTarget()) {
+            return true;
+        }
         if (stateTimedOut()) {
             return true;
         }
