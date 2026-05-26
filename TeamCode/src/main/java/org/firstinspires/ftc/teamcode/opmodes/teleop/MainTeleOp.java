@@ -64,6 +64,11 @@ public class MainTeleOp extends OpMode {
         WAIT_AFTER_RESET
     }
 
+    private enum TeleopShotRange {
+        CLOSE,
+        LONG
+    }
+
     private static final int BLUE_GOAL_TAG_ID = 20;
     private static final int RED_GOAL_TAG_ID = 24;
     private static final double B_LONG_PRESS_RESET_SEC = 0.6;
@@ -85,6 +90,7 @@ public class MainTeleOp extends OpMode {
     public static double teleopLongBlueBankOffsetDeg = 2.0;
     public static double teleopLongRedBankOffsetDeg = 4.0;
     private double lastAppliedBankOffsetDeg = 0.0;
+    private TeleopShotRange lastAppliedShotRange = TeleopShotRange.LONG;
 
     IntakeControl intakeControl;
     OuttakeControl outtakeControl;
@@ -228,7 +234,8 @@ public class MainTeleOp extends OpMode {
         robot.outtake.setTurretMotionEnabled(true);
         robot.useSorting = false;
         robot.intake.useSortingIntake = false;
-        lastAppliedBankOffsetDeg = getActiveBankOffsetDeg();
+        lastAppliedShotRange = getActiveShotRange();
+        lastAppliedBankOffsetDeg = getActiveBankOffsetDeg(lastAppliedShotRange);
         Outtake.defaultTurretAimTrimOffsetDeg = lastAppliedBankOffsetDeg;
         Outtake.turretAimTrimOffsetDeg = Outtake.defaultTurretAimTrimOffsetDeg;
         bHoldTimer.reset();
@@ -468,8 +475,14 @@ public class MainTeleOp extends OpMode {
     }
 
     private void updateActiveBankOffset() {
-        double activeBankOffsetDeg = getActiveBankOffsetDeg();
-        if (Math.abs(activeBankOffsetDeg - lastAppliedBankOffsetDeg) > 1e-6) {
+        TeleopShotRange activeShotRange = getActiveShotRange();
+        double activeBankOffsetDeg = getActiveBankOffsetDeg(activeShotRange);
+        if (activeShotRange != lastAppliedShotRange) {
+            Outtake.resetTurretAimVisionOffset();
+            Outtake.turretAimTrimOffsetDeg = activeBankOffsetDeg;
+            lastAppliedShotRange = activeShotRange;
+            lastAppliedBankOffsetDeg = activeBankOffsetDeg;
+        } else if (Math.abs(activeBankOffsetDeg - lastAppliedBankOffsetDeg) > 1e-6) {
             double manualDeltaDeg = Outtake.turretAimTrimOffsetDeg - lastAppliedBankOffsetDeg;
             Outtake.turretAimTrimOffsetDeg = activeBankOffsetDeg + manualDeltaDeg;
             lastAppliedBankOffsetDeg = activeBankOffsetDeg;
@@ -478,12 +491,22 @@ public class MainTeleOp extends OpMode {
     }
 
     private double getActiveBankOffsetDeg() {
+        return getActiveBankOffsetDeg(getActiveShotRange());
+    }
+
+    private double getActiveBankOffsetDeg(TeleopShotRange shotRange) {
+        return shotRange == TeleopShotRange.CLOSE
+                ? getCloseRangeBankOffsetDeg()
+                : getLongRangeBankOffsetDeg();
+    }
+
+    private TeleopShotRange getActiveShotRange() {
         if (robot != null
                 && robot.outtake != null
                 && robot.outtake.distanceInches < Outtake.longRangeFastShotMinDistanceInches) {
-            return getCloseRangeBankOffsetDeg();
+            return TeleopShotRange.CLOSE;
         }
-        return getLongRangeBankOffsetDeg();
+        return TeleopShotRange.LONG;
     }
 
     private double getCloseRangeBankOffsetDeg() {
