@@ -763,7 +763,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected boolean shouldExitActiveCloseLoopToLeave() {
-        return closeLoopCycleActive && shouldExitBackRowLoop() && !hasPendingPickupRow();
+        return closeLoopCycleActive && shouldExitBackRowLoop() && !hasPendingPickupRow() && shouldLeaveAfterShot();
     }
 
     protected boolean hasPendingPickupRow() {
@@ -771,6 +771,12 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected boolean shouldLeaveAfterShot() {
+        if (range == Range.CLOSE_RANGE
+                && !shouldGoToPickupAfterShot()
+                && !shouldGoToCloseLoopAfterShot()
+                && !shouldGoToBackRowLoopAfterShot()) {
+            return false;
+        }
         return !shouldGoToPickupAfterShot()
                 && !shouldGoToCloseLoopAfterShot()
                 && !shouldGoToBackRowLoopAfterShot();

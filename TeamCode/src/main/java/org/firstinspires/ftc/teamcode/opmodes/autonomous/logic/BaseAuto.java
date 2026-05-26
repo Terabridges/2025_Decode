@@ -96,6 +96,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double RELEASE_TIMEOUT_SECONDS = 1.5;
     private static final double RELEASE_COMPLETE_POWER = 0.75;
     private static final boolean SHOOT_WHILE_MOVING_ENABLED = false;
+    private static final double RED_CLOSE_PRELOAD_GO_TO_SHOOT_POWER = 0.75;
     private static final double PRELOAD_PATH_ADVANCE_PROGRESS = 0.90;
     private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.90;
     private static final double SHOOT_START_PATH_PROGRESS = 0.90;
@@ -426,11 +427,13 @@ public abstract class BaseAuto extends OpMode {
         if (activeState == AutoStates.LEAVE) {
             return false;
         }
+        if (range == Range.CLOSE_RANGE) {
+            return false;
+        }
         double timeRemaining = AUTO_TOTAL_SECONDS - autoTimer.seconds();
         if (timeRemaining > FORCE_LEAVE_TIME_REMAINING_SECONDS) {
             return false;
         }
-        // "Not outside shoot zone" means robot is still in the shoot zone.
         return robot.outtake.isAnyPartInLaunchZone();
     }
 
@@ -473,7 +476,7 @@ public abstract class BaseAuto extends OpMode {
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldGoToCloseLoopAfterShot(), AutoStates.CLOSE_LOOP_GO_TO_PICKUP)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && !shouldStartNextCycle() && shouldEnterFarBackRowLoop(), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
-                .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && !shouldStartNextCycle() && !shouldEnterFarBackRowLoop(), AutoStates.LEAVE)
+                .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldLeaveAfterShot(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
                 .onEnter(this::onEnterGoToPickup)
@@ -548,7 +551,7 @@ public abstract class BaseAuto extends OpMode {
                 .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldAcquireMotifAfterPreloadShot(), AutoStates.ACQUIRE_MOTIF)
-                .transition(() -> shootAdvanceReady() && pathReadyForNextAction(), AutoStates.LEAVE)
+                .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldLeaveAfterShot(), AutoStates.LEAVE)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -613,11 +616,18 @@ public abstract class BaseAuto extends OpMode {
         intakeStoppedOnShootPath = false;
         shootStartedInGoToShoot = false;
         buildPath(PathRequest.GO_TO_SCORE);
+        if (!preloadComplete && alliance == Alliance.RED && range == Range.CLOSE_RANGE) {
+            followPath(goToScorePath, RED_CLOSE_PRELOAD_GO_TO_SHOOT_POWER);
+            return;
+        }
         followPath(goToScorePath);
     }
 
     protected void onEnterCompleteShoot() {
         brakeCloseGoToShootAtShootPoint();
+        if (range == Range.CLOSE_RANGE && isFinalCloseShoot() && follower != null) {
+            follower.breakFollowing();
+        }
         setActiveState(AutoStates.COMPLETE_SHOOT);
         resetStateTimer();
         shootTimer.reset();
@@ -1370,7 +1380,14 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean shouldExitActiveCloseLoopToLeave() {
-        return closeLoopCycleActive && shouldExitBackRowLoop() && !hasPendingPickupRow();
+        return closeLoopCycleActive && shouldExitBackRowLoop() && !hasPendingPickupRow() && shouldLeaveAfterShot();
+    }
+
+    protected boolean shouldLeaveAfterShot() {
+        if (range == Range.CLOSE_RANGE && !shouldStartNextCycle() && !shouldEnterFarBackRowLoop()) {
+            return false;
+        }
+        return !shouldStartNextCycle() && !shouldEnterFarBackRowLoop();
     }
 
     protected boolean hasPendingPickupRow() {

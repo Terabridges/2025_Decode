@@ -95,7 +95,7 @@ public class AutoPoses {
     public Pose closeLoopPickupControlB = poseDeg(53.0, 60.0, 0.0);
     public Pose closeLoopPickupControlR = mirrorBluePose(closeLoopPickupControlB);
     public Pose closeLoopGoToScoreControlB = poseDeg(50.0, 55.0, 0.0);
-    public Pose closeLoopGoToScoreControlR = mirrorBluePose(closeLoopGoToScoreControlB);
+    public Pose closeLoopGoToScoreControlR = poseDeg((FIELD_SIZE - closeLoopGoToScoreControlB.getX()) - 4.0, closeLoopGoToScoreControlB.getY(), 180.0);
     public Pose row2GoToScoreControlB = poseDeg(53.0, 60.0, 0.0);
     public Pose row2GoToScoreControlR = mirrorBluePose(row2GoToScoreControlB);
     public Pose closeLoopCompletePickupB = poseDeg(13.0, 56.5, 332.0);
