@@ -257,7 +257,7 @@ public class Robot {
                 .transition(()-> other.unJam, SortedShootAllStates.UNJAM)
 
                 .state(SortedShootAllStates.RESET)
-                .transitionTimed(0.05, SortedShootAllStates.INIT)
+                .transitionTimed(0.03, SortedShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     intake.clutch.setClutchUp();
@@ -318,7 +318,7 @@ public class Robot {
                 .transition(()-> other.unJam, ShootAllStates.UNJAM)
 
                 .state(ShootAllStates.RESET)
-                .transitionTimed(0.05, ShootAllStates.INIT)
+                .transitionTimed(0.03, ShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     outtake.setFastShootAllActive(false);
@@ -476,7 +476,7 @@ public class Robot {
 
 
                 .state(SlowShootAllStates.RESET)
-                .transitionTimed(0.05, SlowShootAllStates.INIT)
+                .transitionTimed(0.03, SlowShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     intake.clutch.setClutchUp();
