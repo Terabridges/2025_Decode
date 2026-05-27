@@ -117,6 +117,7 @@ public class MainTeleOp extends OpMode {
     StateMachine shootAllMachine;
     StateMachine sortingShootAllMachine;
     StateMachine slowShootAllMachine;
+    StateMachine sortMachine;
 
     private boolean shootRequestPending = false;
     private ShootMachineChoice pendingShootMachine = ShootMachineChoice.FAST;
@@ -140,6 +141,7 @@ public class MainTeleOp extends OpMode {
     EdgeDetector nextMotif = new EdgeDetector(()-> GlobalVariables.nextMotif());
     EdgeDetector flashLights = new EdgeDetector(()-> robot.toggleLightsTurret());
     EdgeDetector setSpindexCurrentDeg = new EdgeDetector(()-> robot.intake.spindex.setSpindexDegree(robot.intake.spindex.getAbsolutePos()));
+    EdgeDetector startSortMachine = new EdgeDetector(()-> robot.startSortMachine());
 
     @Override
     public void init() {
@@ -173,6 +175,7 @@ public class MainTeleOp extends OpMode {
         shootAllMachine = robot.getShootAllMachine();
         sortingShootAllMachine = robot.getSortedShootAllMachine();
         slowShootAllMachine = robot.getSlowShootAllMachine();
+        sortMachine = robot.getSortMachine();
 
         joinedTelemetry = new JoinedTelemetry(
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
@@ -244,6 +247,7 @@ public class MainTeleOp extends OpMode {
         shootAllMachine.start();
         sortingShootAllMachine.start();
         slowShootAllMachine.start();
+        sortMachine.start();
 
         robot.intake.spindex.emptyBalls();
 
@@ -336,6 +340,7 @@ public class MainTeleOp extends OpMode {
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.x);
+        startSortMachine.update(gamepad1.right_stick_button);
         //setSpindexCurrentDeg.update(gamepad1.a);
         updateManualFollowerPoseReset();
     }
@@ -422,6 +427,7 @@ public class MainTeleOp extends OpMode {
         shootAllMachine.update();
         sortingShootAllMachine.update();
         slowShootAllMachine.update();
+        sortMachine.update();
     }
 
     private ShootMachineChoice chooseShootMachine() {

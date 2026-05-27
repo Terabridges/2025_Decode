@@ -94,9 +94,21 @@ public class Robot {
         UNJAM
     }
 
+    public enum SortStates {
+        INIT,
+        BALLONE,
+        WAITONE,
+        BALLTWO,
+        WAITTWO,
+        BALLTHREE,
+        WAITTHREE,
+        UNJAM
+    }
+
     public boolean initSortedShootAllMachine = false;
     public boolean initShootAllMachine = false;
     public boolean initSlowShootAllMachine = false;
+    public boolean initSortMachine = false;
 
     public boolean forceShootAllThreeOnNextStart = false;
     public boolean useAvailableBallCountForShootAll = false;
@@ -176,6 +188,10 @@ public class Robot {
             }
         }
         return count;
+    }
+
+    public void startSortMachine(){
+        initSortMachine = true;
     }
 
     public StateMachine getSortedShootAllMachine(){
@@ -504,6 +520,111 @@ public class Robot {
                     goToReset = true;
                 })
                 .transition(()-> goToReset, SlowShootAllStates.INIT)
+                .onExit(()->goToReset = false)
+
+                .build();
+    }
+
+    public StateMachine getSortMachine(){
+        return new StateMachineBuilder()
+                .state(SortStates.INIT)
+                .transition(()-> initSortMachine, SortStates.BALLONE)
+                .onExit(()-> {
+                    initSortMachine = false;
+                    intake.autoIntake = false;
+                    intake.spindex.setSpindexForwardOne();
+                })
+
+                .state(SortStates.BALLONE)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SortStates.WAITONE)
+                .transition(()-> other.unJam, SortStates.UNJAM)
+
+                .state(SortStates.WAITONE)
+                .transitionTimed(0.02, SortStates.BALLTWO)
+                .onExit(()-> {
+                    intake.spindex.updateColorDistances();
+                    if (intake.spindex.getFrontColorDistance() < 0.09){
+                        intake.spindex.updateFrontColors();
+                        if (intake.spindex.isFrontGreenBall(intake.spindex.frontRed, intake.spindex.frontGreen, intake.spindex.frontBlue)){
+                            intake.spindex.ballList[0] = "G";
+                            intake.spindex.ballOneChanged = true;
+                        } else if (intake.spindex.isFrontPurpleBall(intake.spindex.frontRed, intake.spindex.frontGreen, intake.spindex.frontBlue)){
+                            intake.spindex.ballList[0] = "P";
+                            intake.spindex.ballOneChanged = true;
+                        } else {
+                            intake.spindex.ballList[0] = "E";
+                            intake.spindex.ballOneChanged = true;
+                        }
+                    } else {
+                        intake.spindex.ballList[0] = "E";
+                        intake.spindex.ballOneChanged = true;
+                    }
+                    intake.spindex.setSpindexForwardTwo();
+                })
+
+                .state(SortStates.BALLTWO)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SortStates.WAITTWO)
+
+                .state(SortStates.WAITTWO)
+                .transitionTimed(0.02, SortStates.BALLTHREE)
+                .onExit(()-> {
+                    intake.spindex.updateColorDistances();
+                    if (intake.spindex.getFrontColorDistance() < 0.09){
+                        intake.spindex.updateFrontColors();
+                        if (intake.spindex.isFrontGreenBall(intake.spindex.frontRed, intake.spindex.frontGreen, intake.spindex.frontBlue)){
+                            intake.spindex.ballList[1] = "G";
+                            intake.spindex.ballTwoChanged = true;
+                        } else if (intake.spindex.isFrontPurpleBall(intake.spindex.frontRed, intake.spindex.frontGreen, intake.spindex.frontBlue)){
+                            intake.spindex.ballList[1] = "P";
+                            intake.spindex.ballTwoChanged = true;
+                        } else {
+                            intake.spindex.ballList[1] = "E";
+                            intake.spindex.ballTwoChanged = true;
+                        }
+                    } else {
+                        intake.spindex.ballList[1] = "E";
+                        intake.spindex.ballTwoChanged = true;
+                    }
+                    intake.spindex.setSpindexForwardThree();
+                })
+
+                .state(SortStates.BALLTHREE)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SortStates.WAITTHREE)
+
+                .state(SortStates.WAITTHREE)
+                .transitionTimed(0.02, SortStates.INIT)
+                .onExit(()-> {
+                    intake.spindex.updateColorDistances();
+                    if (intake.spindex.getFrontColorDistance() < 0.09){
+                        intake.spindex.updateFrontColors();
+                        if (intake.spindex.isFrontGreenBall(intake.spindex.frontRed, intake.spindex.frontGreen, intake.spindex.frontBlue)){
+                            intake.spindex.ballList[2] = "G";
+                            intake.spindex.ballThreeChanged = true;
+                        } else if (intake.spindex.isFrontPurpleBall(intake.spindex.frontRed, intake.spindex.frontGreen, intake.spindex.frontBlue)){
+                            intake.spindex.ballList[2] = "P";
+                            intake.spindex.ballThreeChanged = true;
+                        } else {
+                            intake.spindex.ballList[2] = "E";
+                            intake.spindex.ballThreeChanged = true;
+                        }
+                    } else {
+                        intake.spindex.ballList[2] = "E";
+                        intake.spindex.ballThreeChanged = true;
+                    }
+                    intake.autoIntake = true;
+                    if (intake.spindex.loadedBallCount() == 3){
+                        getReadyShoot();
+                    }
+                })
+
+                .state(SortStates.UNJAM)
+                .onEnter(()->{
+                    other.unJam = false;
+                    intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
+                    intake.autoIntake = true;
+                    goToReset = true;
+                })
+                .transition(()-> goToReset, SortStates.INIT)
                 .onExit(()->goToReset = false)
 
                 .build();

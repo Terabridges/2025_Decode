@@ -38,6 +38,10 @@ public class Intake implements Subsystem {
         autoIntake = spinner.autoSpin;
     }
 
+    public void toggleAutoIntake2(){
+        autoIntake = !autoIntake;
+    }
+
     public void toggleUseOuterSensors(){
         useOuterSensors = !useOuterSensors;
     }

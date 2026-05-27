@@ -92,10 +92,10 @@ public class Spindex implements Subsystem {
     public String[] ballList = {"G", "P", "P"};
     public String balls = "";
 
-    private double frontGreenThresh = 0.001; //If green is highest, ball is green
-    private double frontBlueThresh = 0.001; //If blue is highest, ball is purple
-    private double backGreenThresh = 0.001;
-    private double backBlueThresh = 0.001;
+    private double frontGreenThresh = 0.0013; //If green is highest, ball is green
+    private double frontBlueThresh = 0.0013; //If blue is highest, ball is purple
+    private double backGreenThresh = 0.0013;
+    private double backBlueThresh = 0.0013;
     NormalizedRGBA frontColors;
     public float frontRed = 0;
     public float frontGreen = 0;
@@ -715,8 +715,8 @@ public class Spindex implements Subsystem {
     }
 
     public void updateColorDistances(){
-        frontColorDistance = frontColor.getDistance(DistanceUnit.INCH);
-        backColorDistance = backColor.getDistance(DistanceUnit.INCH);
+        frontColorDistance = frontColor.getDistance(DistanceUnit.METER);
+        backColorDistance = backColor.getDistance(DistanceUnit.METER);
     }
 
     public double getFrontColorDistance(){
@@ -729,12 +729,12 @@ public class Spindex implements Subsystem {
 
     public boolean isFrontColorDistanceTripped(){
         //return frontColorDistance > 1.5 && frontColorDistance < 3.2;
-        return frontColorDistance < 3.2;
+        return frontColorDistance < 0.09;
     }
 
     public boolean isBackColorDistanceTripped(){
         //return backColorDistance > 1.5 && backColorDistance < 3.2;
-        return backColorDistance < 3.2;
+        return backColorDistance < 0.09;
     }
 
     public int loadedBallCount() {

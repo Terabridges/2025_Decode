@@ -16,7 +16,7 @@ LStY: Movement
 RStX: Movement
 RStY: Movement
 LStBut:
-RStBut: Empty Balls
+RStBut: Sort Macro
 Back: unjam
 Start: Toggle Sorting
 Touchpad:
@@ -26,7 +26,7 @@ A: switch current spindex servo
 X: flash color
 Y: change motif
 B: Same as gp1
-Down:
+Down: toggle auto intake
 Left: reset far
 Up:
 Right: reset close

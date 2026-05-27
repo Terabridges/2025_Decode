@@ -51,7 +51,7 @@ public class SpindexControl implements Control {
         switchDirection.update(gp1.dpad_up);
         //toggleShootMode.update(gp1.back);
         //goToForwardOne.update(gp1.dpad_up);
-        emptyBalls.update(gp1.right_stick_button || gp2.right_stick_button);
+        emptyBalls.update(gp2.right_stick_button);
         toggleForwardFront.update(gp2.back);
 
         boolean isFull = spindex.loadedBallCount() == 3;
@@ -68,9 +68,9 @@ public class SpindexControl implements Control {
         telemetry.addData("FavorFront", spindex.favorFront);
         //telemetry.addData("Current Direction", spindex.getCurrentDirection());
 //        telemetry.addData("Current Ball", spindex.getCurrentBall());
-        telemetry.addData("Current/Commanded Pos", String.format("%.1f",spindex.getAbsolutePos()) + "/" + String.format("%.1f",spindex.getCommandedPos()));
-        telemetry.addData("Commanded Pos", spindex.getCommandedDegree());
-        telemetry.addData("Absolute Pos", spindex.getAbsolutePos());
+//        telemetry.addData("Current/Commanded Pos", String.format("%.1f",spindex.getAbsolutePos()) + "/" + String.format("%.1f",spindex.getCommandedPos()));
+//        telemetry.addData("Commanded Pos", spindex.getCommandedDegree());
+//        telemetry.addData("Absolute Pos", spindex.getAbsolutePos());
 
         //telemetry.addData("CommandedPos", spindex.getCommandedPos());
 
