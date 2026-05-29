@@ -15,7 +15,7 @@ import org.psilynx.psikit.core.Logger;
 import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name = "TurretServoAssemblyAligner", group = "Test")
 public class TurretServoAssemblyAligner extends OpMode {
 

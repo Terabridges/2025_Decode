@@ -147,7 +147,6 @@ public class MainTeleOp extends OpMode {
     public void init() {
         configureLowOverheadPsiKitLogging();
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpoint.recalibrateIMU();
 
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
         intakeControl = new IntakeControl(robot, gamepad1, gamepad2);
@@ -231,6 +230,9 @@ public class MainTeleOp extends OpMode {
             Pose teleopStartPose = new AutoPoses().findStartPose(alliance, Range.LONG_RANGE);
             FollowerManager.initFollower(hardwareMap, teleopStartPose);
         }
+        if (FollowerManager.follower != null) {
+            FollowerManager.follower.breakFollowing();
+        }
         // Consume the auto->teleop handoff flag for this start.
         GlobalVariables.setAutoFollowerValid(false);
         robot.outtake.setAimLockEnabled(true);
@@ -263,7 +265,7 @@ public class MainTeleOp extends OpMode {
         long tAfterGamepadNs = System.nanoTime();
 
         if (FollowerManager.follower != null) {
-            FollowerManager.follower.update();
+            FollowerManager.follower.updatePose();
         }
         long tAfterFollowerNs = System.nanoTime();
 
@@ -364,12 +366,12 @@ public class MainTeleOp extends OpMode {
             }
             joinedTelemetry.addData("Alliance", GlobalVariables.getAllianceColorName());
             joinedTelemetry.addData("Motif", GlobalVariables.getMotif());
-//                joinedTelemetry.addData(
-//                    "Loop (ms)",
-//                    "now %.2f | avg %.2f",
-//                    loopTimeTracker.getCurrentLoopTimeMs(),
-//                    loopTimeTracker.getTrailingAverageMs()
-//                );
+                joinedTelemetry.addData(
+                    "Loop (ms)",
+                    "now %.2f | avg %.2f",
+                    loopTimeTracker.getCurrentLoopTimeMs(),
+                    loopTimeTracker.getTrailingAverageMs()
+                );
             joinedTelemetry.addData("Use Sorting", robot.useSorting);
             //joinedTelemetry.addData("Shoot Machine", chooseShootMachine());
             //joinedTelemetry.addData("Shoot Pending", shootRequestPending);

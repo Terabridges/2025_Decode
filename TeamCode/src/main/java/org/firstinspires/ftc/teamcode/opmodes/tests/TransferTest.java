@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="TransferTest", group="Test")
 public class TransferTest extends OpMode {
 

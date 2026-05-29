@@ -17,7 +17,7 @@ import org.firstinspires.ftc.teamcode.config.utility.Util;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="IntakeTest", group="Test")
 public class IntakeTest extends OpMode {
 

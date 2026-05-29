@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name = "FollowerHeadingTurretLockTest", group = "Test")
 public class FollowerHeadingTurretLockTest extends OpMode {
 

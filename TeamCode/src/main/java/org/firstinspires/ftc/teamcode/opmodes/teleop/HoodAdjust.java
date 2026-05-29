@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="HoodAdjust", group="Test")
 public class HoodAdjust extends OpMode {
 

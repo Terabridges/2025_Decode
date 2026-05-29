@@ -19,7 +19,7 @@ import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 import org.psilynx.psikit.ftc.FtcLogTuning;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="DistanceSensorTest", group="Test")
 public class DistanceSensorTest extends OpMode {
 

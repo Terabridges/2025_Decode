@@ -20,7 +20,7 @@ import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Disabled
 //@Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="BetterTurretTuner", group="Test")
 public class BetterTurretTuner extends OpMode {
 

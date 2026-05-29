@@ -12,7 +12,7 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
-@PsiKitFieldAutoLog
+//@PsiKitFieldAutoLog
 public class Clutch implements Subsystem {
 
     //---------------- Hardware ----------------

@@ -21,7 +21,7 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name = "LocalizationPoseLoggerTest", group = "Test")
 public class LocalizationPoseLoggerTest extends OpMode {
 

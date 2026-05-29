@@ -16,7 +16,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Subsystem;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
-@PsiKitFieldAutoLog
+//@PsiKitFieldAutoLog
 public class Vision implements Subsystem {
     public static final int BLUE_GOAL_TAG_ID = 20;
     public static final int RED_GOAL_TAG_ID = 24;

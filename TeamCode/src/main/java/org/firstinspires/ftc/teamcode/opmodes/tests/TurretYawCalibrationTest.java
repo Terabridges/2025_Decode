@@ -16,7 +16,7 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name = "TurretYawCalibrationTest", group = "Test")
 public class TurretYawCalibrationTest extends OpMode {
 

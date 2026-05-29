@@ -104,6 +104,8 @@ public abstract class BaseAuto extends OpMode {
     private static final double RED_CLOSE_BRAKE_PATH_PROGRESS = 0.85;
     private static final double RED_FINAL_CLOSE_BRAKE_PATH_PROGRESS = 0.85;
     private static final double READY_SHOOT_PATH_PROGRESS = 0.50;
+    private static final double OUTTAKE_REVERSE_START_PATH_PROGRESS = 0.40;
+    private static final double OUTTAKE_REVERSE_END_PATH_PROGRESS = 0.60;
     private static final double GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.80;
     private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_BLUE_LONG_PRELOAD_TRIM_OFFSET_DEG = 2.0;
@@ -178,7 +180,8 @@ public abstract class BaseAuto extends OpMode {
     private boolean skipCurrentShot = false;
     private boolean shootStartedInGoToShoot = false;
     private boolean readyShootCommandedOnPath = false;
-    private boolean intakeStoppedOnShootPath = false;
+    private boolean intakeReversedOnShootPath = false;
+    private boolean intakeResumedOnShootPath = false;
     private boolean delayIntakeUntilPostPreload = false;
     private boolean goToPickupIdleSeen = false;
     private boolean goToPickupSlowdownApplied = false;
@@ -334,9 +337,8 @@ public abstract class BaseAuto extends OpMode {
             maybeStartBackRowCompletePickupSlowdown();
             maybeBrakeGoToShootFinalApproach();
             maybeStartReadyShootAtPathProgress();
-            maybeStopIntakeAtShootPathProgress();
+            updateIntakeDirectionAtShootPathProgress();
             maybeStartShootAtPathProgress();
-            maintainSpindexForGoToPickup();
         }
         Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
         turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
@@ -352,9 +354,6 @@ public abstract class BaseAuto extends OpMode {
         }
         if (slowShootAllMachine != null) {
             slowShootAllMachine.update();
-        }
-        if (autoMachineStarted) {
-            maintainSpindexForGoToPickup();
         }
         if (telemetryTimer.seconds() >= AUTO_TELEMETRY_PERIOD_SEC) {
             telemetryM.debug("Auto: " + this.getClass().getSimpleName() + " | State: " + activeState);
@@ -613,7 +612,8 @@ public abstract class BaseAuto extends OpMode {
         startPickupIntake();
         robot.outtake.shooter.useFlywheelPID = true;
         readyShootCommandedOnPath = false;
-        intakeStoppedOnShootPath = false;
+        intakeReversedOnShootPath = false;
+        intakeResumedOnShootPath = false;
         shootStartedInGoToShoot = false;
         buildPath(PathRequest.GO_TO_SCORE);
         if (!preloadComplete && alliance == Alliance.RED && range == Range.CLOSE_RANGE) {
@@ -624,7 +624,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void onEnterCompleteShoot() {
-        brakeCloseGoToShootAtShootPoint();
+        brakeGoToShootAtShootPoint();
         if (range == Range.CLOSE_RANGE && isFinalCloseShoot() && follower != null) {
             follower.breakFollowing();
         }
@@ -788,7 +788,8 @@ public abstract class BaseAuto extends OpMode {
         startPickupIntake();
         robot.outtake.shooter.useFlywheelPID = true;
         readyShootCommandedOnPath = false;
-        intakeStoppedOnShootPath = false;
+        intakeReversedOnShootPath = false;
+        intakeResumedOnShootPath = false;
         shootStartedInGoToShoot = false;
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
@@ -831,6 +832,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void onEnterBackRowLoopCompleteShoot() {
+        brakeGoToShootAtShootPoint();
         setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT);
         resetStateTimer();
         shootTimer.reset();
@@ -1154,25 +1156,43 @@ public abstract class BaseAuto extends OpMode {
         readyShootCommandedOnPath = true;
     }
 
-    protected void maybeStopIntakeAtShootPathProgress() {
-        if (intakeStoppedOnShootPath) {
-            return;
-        }
+    protected void updateIntakeDirectionAtShootPathProgress() {
         boolean shootPathState = activeState == AutoStates.GO_TO_SHOOT
                 || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT;
         if (!shootPathState) {
+            return;
+        }
+        if (!preloadComplete) {
             return;
         }
         if (follower == null || follower.getCurrentPath() == null) {
             return;
         }
         double pathT = follower.getCurrentPath().getClosestPointTValue();
-        if (!Double.isFinite(pathT) || pathT < READY_SHOOT_PATH_PROGRESS) {
+        if (!Double.isFinite(pathT) || pathT < OUTTAKE_REVERSE_START_PATH_PROGRESS) {
             return;
         }
-        stopIntakeForTravel();
+        if (pathT < OUTTAKE_REVERSE_END_PATH_PROGRESS) {
+            if (!intakeReversedOnShootPath) {
+                reverseIntakeForShootTravel();
+                intakeReversedOnShootPath = true;
+            }
+            return;
+        }
+        if (intakeReversedOnShootPath && !intakeResumedOnShootPath) {
+            startPickupIntake();
+            intakeResumedOnShootPath = true;
+        }
+    }
+
+    protected void reverseIntakeForShootTravel() {
+        if (robot == null || robot.intake == null || robot.intake.spinner == null || robot.intake.clutch == null) {
+            return;
+        }
+        robot.intake.autoIntake = false;
+        robot.intake.spinner.autoSpin = false;
+        robot.intake.spinner.setMegaSpinOut();
         robot.intake.clutch.spinClutchOut();
-        intakeStoppedOnShootPath = true;
     }
 
     protected void startPickupIntake() {
@@ -1290,11 +1310,12 @@ public abstract class BaseAuto extends OpMode {
         goToShootFinalApproachBraked = true;
     }
 
-    protected void brakeCloseGoToShootAtShootPoint() {
+    protected void brakeGoToShootAtShootPoint() {
         boolean preloadGoToShoot = !preloadComplete && activeState == AutoStates.GO_TO_SHOOT;
         boolean closeGoToShoot = range == Range.CLOSE_RANGE && activeState == AutoStates.GO_TO_SHOOT;
+        boolean longRangeGoToShoot = range == Range.LONG_RANGE && isGoToShootPathState();
         if (goToShootFinalApproachBraked
-                || (!preloadGoToShoot && !closeGoToShoot)
+                || (!preloadGoToShoot && !closeGoToShoot && !longRangeGoToShoot)
                 || follower == null
                 || follower.getCurrentPath() == null
                 || !pathReadyForProgress(getPathAdvanceProgressForCurrentState())) {
@@ -1646,9 +1667,8 @@ public abstract class BaseAuto extends OpMode {
                 armAutoShootSequence();
                 shootSequenceStarted = true;
                 shootTimer.reset();
-            } else {
-                return false;
             }
+            return false;
         }
         StateMachine activeShootMachine = getAutoShootMachine();
         if (activeShootMachine == null) {

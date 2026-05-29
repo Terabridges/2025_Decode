@@ -22,7 +22,7 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
-@PsiKitFieldAutoLog
+//@PsiKitFieldAutoLog
 public class Spindex implements Subsystem {
 
     public static double encoderOffsetDeg = 0.0;
@@ -115,13 +115,13 @@ public class Spindex implements Subsystem {
 
     private double frontColorDistance = 0;
     private double backColorDistance = 0;
-    @PsiKitFieldAutoLog
+    //@PsiKitFieldAutoLog
     private double commandedServoPos = 0.0;
-    @PsiKitFieldAutoLog
+    //@PsiKitFieldAutoLog
     private double commandedLeftServoPos = 0.0;
-    @PsiKitFieldAutoLog
+    //@PsiKitFieldAutoLog
     private double commandedRightServoPos = 0.0;
-    @PsiKitFieldAutoLog
+    //@PsiKitFieldAutoLog
     private double commandedDegree = 0.0;
 
 

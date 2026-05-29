@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.config.subsystems.Robot;
 import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Disabled
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="FlywheelTuner", group="Test")
 public class FlywheelTuner extends OpMode {
 

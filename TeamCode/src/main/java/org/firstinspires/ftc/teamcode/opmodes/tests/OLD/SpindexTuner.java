@@ -18,7 +18,7 @@ import org.psilynx.psikit.ftc.autolog.PsiKitAutoLog;
 
 @Disabled
 //@Configurable
-@PsiKitAutoLog(rlogPort = 5802)
+//@PsiKitAutoLog(rlogPort = 5802)
 @TeleOp(name="SpindexTuner", group="Test")
 public class SpindexTuner extends OpMode {
 

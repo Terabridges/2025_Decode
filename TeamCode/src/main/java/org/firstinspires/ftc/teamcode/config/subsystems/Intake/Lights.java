@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.config.utility.GlobalVariables;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
-@PsiKitFieldAutoLog
+//@PsiKitFieldAutoLog
 public class Lights implements Subsystem {
 
     //---------------- Hardware ----------------

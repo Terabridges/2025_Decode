@@ -12,7 +12,7 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.ftc.autolog.PsiKitFieldAutoLog;
 
 @Configurable
-@PsiKitFieldAutoLog
+//@PsiKitFieldAutoLog
 public class Spinner implements Subsystem {
 
     //---------------- Hardware ----------------
@@ -43,7 +43,7 @@ public class Spinner implements Subsystem {
 
     public boolean autoSpin = true;
     public static double floodgateMaxCurrentAmps = 80.0;
-    @PsiKitFieldAutoLog
+    //@PsiKitFieldAutoLog
     private double floodgateCurrentAmps = Double.NaN;
 
     //---------------- Constructor ----------------
