@@ -106,7 +106,9 @@ public abstract class BaseAuto extends OpMode {
     private static final double READY_SHOOT_PATH_PROGRESS = 0.50;
     private static final double OUTTAKE_REVERSE_START_PATH_PROGRESS = 0.40;
     private static final double OUTTAKE_REVERSE_END_PATH_PROGRESS = 0.60;
-    private static final double GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.80;
+    private static final double CLOSE_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.80;
+    private static final double LONG_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.60;
+    private static final double GO_TO_SHOOT_FINAL_APPROACH_POWER = 0.55;
     private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_BLUE_LONG_PRELOAD_TRIM_OFFSET_DEG = 2.0;
     private static final double AUTO_RED_LONG_PRELOAD_TRIM_OFFSET_DEG = 5.0;
@@ -341,7 +343,7 @@ public abstract class BaseAuto extends OpMode {
             maybeStartShootAtPathProgress();
         }
         Outtake.turretAimTrimOffsetDeg = getAutoTurretTrimOffsetForState();
-        turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup());
+        turretAim.updateAim(activeState, shouldAimObeliskDuringRow1Pickup(), getPreAimGoalPoseForCurrentState());
         applyAutoStartupPowerGates();
         robot.update();
         maybeResolveMotifDuringFirstPickupAfterPreload();
@@ -1157,8 +1159,8 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void updateIntakeDirectionAtShootPathProgress() {
-        boolean shootPathState = activeState == AutoStates.GO_TO_SHOOT
-                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT;
+        boolean shootPathState = activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT;
         if (!shootPathState) {
             return;
         }
@@ -1289,7 +1291,8 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void maybeBrakeGoToShootFinalApproach() {
-        if (goToShootFinalApproachBraked || activeState != AutoStates.GO_TO_SHOOT) {
+        if (goToShootFinalApproachBraked
+                || activeState != AutoStates.GO_TO_SHOOT) {
             return;
         }
         if (follower == null || follower.getCurrentPath() == null || !follower.getFollowingPathChain()) {
@@ -1302,11 +1305,23 @@ public abstract class BaseAuto extends OpMode {
         }
 
         double pathT = follower.getCurrentPath().getClosestPointTValue();
-        if (!Double.isFinite(pathT) || pathT < GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+        if (!Double.isFinite(pathT)) {
             return;
         }
 
-        follower.breakFollowing();
+        if (range == Range.LONG_RANGE) {
+            if (pathT < LONG_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+                return;
+            }
+            Pose currentPose = follower.getPose();
+            PathChain finalApproachPath = buildLongRangeGoToShootPath(currentPose);
+            followPath(finalApproachPath, GO_TO_SHOOT_FINAL_APPROACH_POWER);
+        } else {
+            if (pathT < CLOSE_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+                return;
+            }
+            follower.breakFollowing();
+        }
         goToShootFinalApproachBraked = true;
     }
 
@@ -1628,6 +1643,13 @@ public abstract class BaseAuto extends OpMode {
 
     protected boolean shouldAimObeliskDuringRow1Pickup() {
         return isFirstCompletePickupAfterPreload();
+    }
+
+    protected Pose getPreAimGoalPoseForCurrentState() {
+        if (range != Range.CLOSE_RANGE || !isRow1PickupAfterPreload()) {
+            return null;
+        }
+        return getScorePoseForCurrentShot();
     }
 
     // ===== State/Timer Helpers =====

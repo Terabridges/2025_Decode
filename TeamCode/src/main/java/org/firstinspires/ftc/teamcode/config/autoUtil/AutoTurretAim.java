@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.autoUtil;
 
+import com.pedropathing.geometry.Pose;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Alliance;
 import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.AutoStates;
@@ -23,6 +25,10 @@ public class AutoTurretAim {
     }
 
     public void updateAim(AutoStates activeState, boolean forceObeliskAim) {
+        updateAim(activeState, forceObeliskAim, null);
+    }
+
+    public void updateAim(AutoStates activeState, boolean forceObeliskAim, Pose preAimGoalPose) {
         if (robot == null || robot.outtake == null || robot.outtake.turret == null || robot.outtake.vision == null) {
             return;
         }
@@ -33,12 +39,25 @@ public class AutoTurretAim {
         // Long-range autos allow wrap moves; close-range keeps no-wrap behavior.
         robot.outtake.setPreventTurretWrap(range == Range.CLOSE_RANGE);
 
+        if (preAimGoalPose != null) {
+            robot.outtake.setAimLockEnabled(false);
+            robot.outtake.commandGoalTurretFromPose(preAimGoalPose);
+            telemetry.addData("Auto Pre-Aim Goal Pose", true);
+            telemetry.addData("Auto Obelisk Aim", false);
+            telemetry.addData("Auto Aim Lock", robot.outtake.isAimLockEnabled());
+            telemetry.addData("Auto Aim Source", "PREAIM");
+            telemetry.addData("Auto Aim Target", robot.outtake.getAimTarget());
+            telemetry.addData("Required Goal Tag Id", requiredGoalTagId);
+            return;
+        }
+
         // Match teleop behavior: always use continuous goal tracking in auto.
         if (!robot.outtake.isAimLockEnabled()) {
             robot.outtake.setAimLockEnabled(true);
         }
         robot.outtake.setAimTargetGoal();
 
+        telemetry.addData("Auto Pre-Aim Goal Pose", false);
         telemetry.addData("Auto Obelisk Aim", false);
         telemetry.addData("Auto Aim Lock", robot.outtake.isAimLockEnabled());
         telemetry.addData("Auto Aim Source", robot.outtake.getActiveLockSource());

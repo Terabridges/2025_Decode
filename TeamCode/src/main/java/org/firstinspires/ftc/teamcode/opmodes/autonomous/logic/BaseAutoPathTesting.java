@@ -50,12 +50,23 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private static final double GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
     private static final double GO_TO_PICKUP_SLOWDOWN_POWER = 0.60;
     private static final int GO_TO_PICKUP_SLOWDOWN_MAX_ROW = 2;
+    private static final double BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T = 0.60;
+    private static final double BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER = 0.60;
+    private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_START_T = 0.60;
+    private static final double BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER = 0.75;
     private static final double PICKUP_POWER = 0.25;
     private static final double FAR_PICKUP_ZONE_POWER = 0.75;
+    private static final double SECOND_BACKROW_LOOP_Y_OFFSET_IN = 10.0;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 0.75;
     private static final double CLOSE_LOOP_COMPLETE_PICKUP_FIRST_HALF_POWER = 0.80;
+    private static final double BACKROW_COMPLETE_PICKUP_POWER = 1.0;
+    private static final double ROW4_COMPLETE_PICKUP_POWER = 0.60;
     private static final double RELEASE_COMPLETE_POWER = 0.75;
+    private static final double RED_CLOSE_PRELOAD_GO_TO_SHOOT_POWER = 0.75;
+    private static final double CLOSE_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.80;
+    private static final double LONG_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.60;
+    private static final double GO_TO_SHOOT_FINAL_APPROACH_POWER = 0.55;
 
     private final Alliance alliance;
     private Range range;
@@ -97,6 +108,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
     private boolean closeLoopGoToPickupPart2Started = false;
     private boolean closeLoopCompletePickupIdleSeen = false;
     private boolean closeLoopCycleActive = false;
+    private boolean goToShootFinalApproachBraked = false;
+    private boolean backRowCompletePickupSlowdownApplied = false;
+    private boolean backRowGoToPickupSlowdownApplied = false;
 
     protected BaseAutoPathTesting(Alliance alliance) {
         this.alliance = alliance;
@@ -154,6 +168,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
         follower.update();
         autoMachine.update();
         maybeStartGoToPickupSlowdown();
+        maybeStartBackRowGoToPickupSlowdown();
+        maybeStartBackRowCompletePickupSlowdown();
+        maybeBrakeGoToShootFinalApproach();
 
         Pose pose = (follower != null) ? follower.getPose() : null;
         telemetryM.debug("PathTest: " + this.getClass().getSimpleName() + " | State: " + activeState);
@@ -196,7 +213,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
                 .transition(() -> advanceApproved(pathReadyForNextAction()), AutoStates.COMPLETE_SHOOT)
 
                 .state(AutoStates.COMPLETE_SHOOT)
-                .onEnter(() -> setActiveState(AutoStates.COMPLETE_SHOOT))
+                .onEnter(this::onEnterCompleteShoot)
                 .onExit(this::onExitCompleteShoot)
                 .transition(() -> advanceApproved(followerIdle() && shouldContinueActiveCloseLoop()), AutoStates.CLOSE_LOOP_GO_TO_PICKUP)
                 .transition(() -> advanceApproved(followerIdle() && shouldExitActiveCloseLoopToPickup()), AutoStates.GO_TO_PICKUP)
@@ -245,7 +262,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
                 .onEnter(this::onEnterBackRowLoopGoToShoot)
-                .transition(() -> advanceApproved(followerIdle()), AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
+                .transition(() -> advanceApproved(pathReadyForNextAction()), AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
                 .onEnter(this::onEnterBackRowLoopCompleteShoot)
@@ -262,11 +279,22 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
         resetStateTimer();
+        goToShootFinalApproachBraked = false;
         if (!preloadComplete && !shouldShootPreload()) {
             return;
         }
         buildPath(PathRequest.GO_TO_SCORE);
+        if (!preloadComplete && alliance == Alliance.RED && range == Range.CLOSE_RANGE) {
+            followPath(goToScorePath, RED_CLOSE_PRELOAD_GO_TO_SHOOT_POWER);
+            return;
+        }
         followPath(goToScorePath);
+    }
+
+    protected void onEnterCompleteShoot() {
+        brakeGoToShootAtShootPoint();
+        setActiveState(AutoStates.COMPLETE_SHOOT);
+        resetStateTimer();
     }
 
     protected void onExitCompleteShoot() {
@@ -295,7 +323,11 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected void onEnterCompletePickup() {
         setActiveState(AutoStates.COMPLETE_PICKUP);
         buildPath(PathRequest.COMPLETE_PICKUP);
-        followPath(pickupPath, currentAbsoluteRow == 4 ? 0.60 : PICKUP_POWER);
+        if (currentAbsoluteRow == 4) {
+            followPath(pickupPath, ROW4_COMPLETE_PICKUP_POWER);
+        } else {
+            followPath(pickupPath, PICKUP_POWER);
+        }
     }
 
     protected void onEnterCompleteRelease() {
@@ -325,6 +357,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
         closeLoopGoToPickupIdleSeen = false;
         closeLoopGoToPickupIdleTimer.reset();
         closeLoopGoToPickupPart2Started = false;
+        backRowGoToPickupSlowdownApplied = false;
         buildPath(PathRequest.GO_TO_FAR_PICKUP_ZONE);
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             followPath(backRowLoopPickupPath, CLOSE_LOOP_PICKUP_ZONE_POWER);
@@ -342,6 +375,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected void onEnterBackRowLoopGoToShoot() {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_SHOOT);
         resetStateTimer();
+        goToShootFinalApproachBraked = false;
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
@@ -354,13 +388,15 @@ public abstract class BaseAutoPathTesting extends OpMode {
     protected void onEnterBackRowLoopCompletePickup() {
         setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP);
         resetStateTimer();
+        backRowCompletePickupSlowdownApplied = false;
         buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
-        followPath(backRowLoopCompletePickupPath, PICKUP_POWER);
+        followPath(backRowLoopCompletePickupPath, BACKROW_COMPLETE_PICKUP_POWER);
     }
 
     protected void onEnterCloseLoopCompletePickup() {
         setActiveState(AutoStates.CLOSE_LOOP_COMPLETE_PICKUP);
         resetStateTimer();
+        backRowCompletePickupSlowdownApplied = false;
         closeLoopCompletePickupIdleSeen = false;
         closeLoopCompletePickupIdleTimer.reset();
         Pose currentPose = (follower != null) ? follower.getPose() : null;
@@ -374,6 +410,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected void onEnterBackRowLoopCompleteShoot() {
+        brakeGoToShootAtShootPoint();
         setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT);
         resetStateTimer();
     }
@@ -516,11 +553,23 @@ public abstract class BaseAutoPathTesting extends OpMode {
         return pathLibrary.goToScore(currentPose, scorePose);
     }
 
+    protected PathChain buildFarPickupZonePath(Pose currentPose) {
+        double yOffset = getBackRowLoopYOffsetIn();
+        if (yOffset != 0.0) {
+            return pathLibrary.buildCurve(
+                    currentPose,
+                    offsetPoseY(poses.getFarPickupZoneControl(alliance), yOffset),
+                    offsetPoseY(poses.getFarPickupZone(alliance), yOffset)
+            );
+        }
+        return pathLibrary.farPickupZone(currentPose, alliance);
+    }
+
     protected PathChain buildBackRowLoopGoToPickupPath(Pose currentPose) {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             return pathLibrary.closeLoopPickup(currentPose, alliance);
         }
-        return pathLibrary.farPickupZone(currentPose, alliance);
+        return buildFarPickupZonePath(currentPose);
     }
 
     protected PathChain buildBackRowLoopGoToScorePath(Pose currentPose) {
@@ -549,6 +598,23 @@ public abstract class BaseAutoPathTesting extends OpMode {
             return new Pose(row2Pose.getX(), row2Pose.getY(), scorePose.getHeading());
         }
         return scorePose;
+    }
+
+    protected PathChain buildLongRangeGoToShootPath(Pose currentPose) {
+        if (currentPose == null) {
+            return null;
+        }
+        if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT) {
+            return buildBackRowLoopGoToScorePath(currentPose);
+        }
+        return buildGoToScorePath(currentPose);
+    }
+
+    protected boolean isGoToShootPathState() {
+        return activeState == AutoStates.GO_TO_SHOOT
+                || activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
+                || activeState == AutoStates.CLOSE_LOOP_GO_TO_SHOOT;
     }
 
     protected void followPath(PathChain path) {
@@ -621,6 +687,99 @@ public abstract class BaseAutoPathTesting extends OpMode {
         PathChain finalApproachPath = buildGoToPickupPath(currentPose);
         followPath(finalApproachPath, GO_TO_PICKUP_SLOWDOWN_POWER);
         goToPickupSlowdownApplied = true;
+    }
+
+    protected void maybeStartBackRowCompletePickupSlowdown() {
+        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP || backRowCompletePickupSlowdownApplied) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < BACKROW_COMPLETE_PICKUP_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        PathChain finalApproachPath = buildBackRowLoopCompletePickupPath(currentPose);
+        if (finalApproachPath == null) {
+            return;
+        }
+        followPath(finalApproachPath, BACKROW_COMPLETE_PICKUP_SLOWDOWN_POWER);
+        backRowCompletePickupSlowdownApplied = true;
+    }
+
+    protected void maybeStartBackRowGoToPickupSlowdown() {
+        if (activeState != AutoStates.BACKROW_LOOP_GO_TO_PICKUP
+                || (closeLoopEnabled && range == Range.CLOSE_RANGE)
+                || backRowGoToPickupSlowdownApplied) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT) || pathT < BACKROW_GO_TO_PICKUP_SLOWDOWN_START_T) {
+            return;
+        }
+
+        Pose currentPose = follower.getPose();
+        PathChain finalApproachPath = buildBackRowLoopGoToPickupPath(currentPose);
+        followPath(finalApproachPath, BACKROW_GO_TO_PICKUP_SLOWDOWN_POWER);
+        backRowGoToPickupSlowdownApplied = true;
+    }
+
+    protected void maybeBrakeGoToShootFinalApproach() {
+        if (goToShootFinalApproachBraked
+                || activeState != AutoStates.GO_TO_SHOOT) {
+            return;
+        }
+        if (follower == null || follower.getCurrentPath() == null || !follower.getFollowingPathChain()) {
+            return;
+        }
+        if (follower.getCurrentPathChain() == null
+                || follower.getCurrentPathChain().size() < 2
+                || follower.getChainIndex() < follower.getCurrentPathChain().size() - 1) {
+            return;
+        }
+
+        double pathT = follower.getCurrentPath().getClosestPointTValue();
+        if (!Double.isFinite(pathT)) {
+            return;
+        }
+
+        if (range == Range.LONG_RANGE) {
+            if (pathT < LONG_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+                return;
+            }
+            Pose currentPose = follower.getPose();
+            PathChain finalApproachPath = buildLongRangeGoToShootPath(currentPose);
+            followPath(finalApproachPath, GO_TO_SHOOT_FINAL_APPROACH_POWER);
+        } else {
+            if (pathT < CLOSE_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+                return;
+            }
+            follower.breakFollowing();
+        }
+        goToShootFinalApproachBraked = true;
+    }
+
+    protected void brakeGoToShootAtShootPoint() {
+        boolean preloadGoToShoot = !preloadComplete && activeState == AutoStates.GO_TO_SHOOT;
+        boolean closeGoToShoot = range == Range.CLOSE_RANGE && activeState == AutoStates.GO_TO_SHOOT;
+        boolean longRangeGoToShoot = range == Range.LONG_RANGE && isGoToShootPathState();
+        if (goToShootFinalApproachBraked
+                || (!preloadGoToShoot && !closeGoToShoot && !longRangeGoToShoot)
+                || follower == null
+                || follower.getCurrentPath() == null
+                || !pathReadyForProgress(getPathAdvanceProgressForCurrentState())) {
+            return;
+        }
+        follower.breakFollowing();
+        goToShootFinalApproachBraked = true;
     }
 
     protected boolean shouldShootPreload() {
@@ -721,6 +880,17 @@ public abstract class BaseAutoPathTesting extends OpMode {
             return true;
         }
         return (backRowLoopCyclesCompleted + 1) < backRowLoopCyclesTarget;
+    }
+
+    protected double getBackRowLoopYOffsetIn() {
+        return backRowLoopCyclesCompleted == 1 ? SECOND_BACKROW_LOOP_Y_OFFSET_IN : 0.0;
+    }
+
+    protected Pose offsetPoseY(Pose pose, double yOffset) {
+        if (pose == null || yOffset == 0.0) {
+            return pose;
+        }
+        return new Pose(pose.getX(), pose.getY() + yOffset, pose.getHeading());
     }
 
     protected boolean advanceApproved(boolean conditionReady) {
