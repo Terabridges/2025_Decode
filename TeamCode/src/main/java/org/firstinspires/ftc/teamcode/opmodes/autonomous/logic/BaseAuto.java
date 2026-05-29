@@ -1629,10 +1629,10 @@ public abstract class BaseAuto extends OpMode {
         }
     }
 
-    protected boolean isRow1PickupAfterPreload() {
+    protected boolean isRow2PickupAfterPreload() {
         boolean pickupState = activeState == AutoStates.GO_TO_PICKUP
                 || activeState == AutoStates.COMPLETE_PICKUP;
-        return pickupState && preloadComplete && rowsCompleted == 0 && currentAbsoluteRow == 1;
+        return pickupState && preloadComplete && currentAbsoluteRow == 2;
     }
 
     protected boolean isFirstCompletePickupAfterPreload() {
@@ -1646,7 +1646,9 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected Pose getPreAimGoalPoseForCurrentState() {
-        if (range != Range.CLOSE_RANGE || !isRow1PickupAfterPreload()) {
+        if (alliance != Alliance.RED
+                || range != Range.CLOSE_RANGE
+                || !isRow2PickupAfterPreload()) {
             return null;
         }
         return getScorePoseForCurrentShot();
