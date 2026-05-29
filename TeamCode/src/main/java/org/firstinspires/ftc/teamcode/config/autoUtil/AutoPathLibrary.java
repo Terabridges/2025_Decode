@@ -13,8 +13,8 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 public class AutoPathLibrary {
     private final AutoPoses poses;
     private static final double CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN = 11.0;
-    private static final double GO_TO_SCORE_FINAL_APPROACH_IN = 8.0;
-    private static final double GO_TO_SCORE_SEGMENT_END_T = 0.90;
+    private static final double SCORE_BRAKING_START = 1.25;
+    private static final double SCORE_BRAKING_STRENGTH = 0.65;
 
     public AutoPathLibrary(AutoPoses poses) {
         this.poses = poses;
@@ -100,45 +100,16 @@ public class AutoPathLibrary {
     }
 
     public PathChain goToScore(Pose currentPose, Pose scorePose) {
-        return buildLinear(currentPose, scorePose);
-    }
-
-    public PathChain goToScoreTwoPart(Pose currentPose, Pose scorePose) {
-        if (currentPose == null || scorePose == null) {
-            return null;
-        }
-
-        double dx = scorePose.getX() - currentPose.getX();
-        double dy = scorePose.getY() - currentPose.getY();
-        double distance = Math.hypot(dx, dy);
-        if (!Double.isFinite(distance) || distance <= GO_TO_SCORE_FINAL_APPROACH_IN + 0.5) {
-            return buildLinear(currentPose, scorePose);
-        }
-
-        double preScoreT = (distance - GO_TO_SCORE_FINAL_APPROACH_IN) / distance;
-        Pose preScorePose = new Pose(
-                currentPose.getX() + dx * preScoreT,
-                currentPose.getY() + dy * preScoreT,
-                scorePose.getHeading()
-        );
-
-        return follower.pathBuilder()
-                .addPath(new BezierLine(currentPose, preScorePose))
-                .setLinearHeadingInterpolation(currentPose.getHeading(), scorePose.getHeading())
-                .setTValueConstraint(GO_TO_SCORE_SEGMENT_END_T)
-                .addPath(new BezierLine(preScorePose, scorePose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), scorePose.getHeading())
-                .setTValueConstraint(GO_TO_SCORE_SEGMENT_END_T)
-                .build();
+        return buildScoreLinear(currentPose, scorePose);
     }
 
     public PathChain closeLoopGoToShoot(Pose currentPose, Alliance alliance, Pose shootPose, boolean useFinalShootControl) {
         // All close-loop go-to-shoot paths use the same control point.
-        return buildCurve(currentPose, poses.getCloseLoopGoToScoreControl(alliance), shootPose);
+        return buildScoreCurve(currentPose, poses.getCloseLoopGoToScoreControl(alliance), shootPose);
     }
 
     public PathChain row2GoToShoot(Pose currentPose, Alliance alliance, Pose shootPose) {
-        return buildCurve(currentPose, poses.getRow2GoToScoreControl(alliance), shootPose);
+        return buildScoreCurve(currentPose, poses.getRow2GoToScoreControl(alliance), shootPose);
     }
 
     public PathChain releaseGoTo(Pose currentPose, Alliance alliance, Range range) {
@@ -225,6 +196,32 @@ public class AutoPathLibrary {
         return follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    private PathChain buildScoreLinear(Pose start, Pose end) {
+        if (follower == null || start == null || end == null) {
+            return null;
+        }
+
+        return follower.pathBuilder()
+                .setGlobalDeceleration(SCORE_BRAKING_START)
+                .addPath(new BezierLine(start, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .setBrakingStrength(SCORE_BRAKING_STRENGTH)
+                .build();
+    }
+
+    private PathChain buildScoreCurve(Pose start, Pose control, Pose end) {
+        if (follower == null || start == null || control == null || end == null) {
+            return null;
+        }
+
+        return follower.pathBuilder()
+                .setGlobalDeceleration(SCORE_BRAKING_START)
+                .addPath(new BezierCurve(start, control, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .setBrakingStrength(SCORE_BRAKING_STRENGTH)
                 .build();
     }
 
