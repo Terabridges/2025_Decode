@@ -98,6 +98,7 @@ public abstract class BaseAuto extends OpMode {
     private static final boolean SHOOT_WHILE_MOVING_ENABLED = false;
     private static final double RED_CLOSE_PRELOAD_GO_TO_SHOOT_POWER = 0.75;
     private static final double PRELOAD_PATH_ADVANCE_PROGRESS = 0.90;
+    private static final double CLOSE_PRELOAD_PATH_ADVANCE_PROGRESS = 0.80;
     private static final double PRELOAD_SHOOT_START_PATH_PROGRESS = 0.90;
     private static final double SHOOT_START_PATH_PROGRESS = 0.90;
     private static final double CLOSE_BRAKE_PATH_PROGRESS = 0.875;
@@ -106,8 +107,8 @@ public abstract class BaseAuto extends OpMode {
     private static final double READY_SHOOT_PATH_PROGRESS = 0.50;
     private static final double OUTTAKE_REVERSE_START_PATH_PROGRESS = 0.40;
     private static final double OUTTAKE_REVERSE_END_PATH_PROGRESS = 0.60;
-    private static final double CLOSE_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.80;
-    private static final double LONG_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS = 0.60;
+    private static final double CLOSE_GO_TO_SHOOT_FINAL_APPROACH_SLOWDOWN_PROGRESS = 0.60;
+    private static final double LONG_GO_TO_SHOOT_FINAL_APPROACH_SLOWDOWN_PROGRESS = 0.60;
     private static final double GO_TO_SHOOT_FINAL_APPROACH_POWER = 0.55;
     private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_BLUE_LONG_PRELOAD_TRIM_OFFSET_DEG = 2.0;
@@ -187,6 +188,7 @@ public abstract class BaseAuto extends OpMode {
     private boolean delayIntakeUntilPostPreload = false;
     private boolean goToPickupIdleSeen = false;
     private boolean goToPickupSlowdownApplied = false;
+    private boolean goToShootFinalApproachSlowed = false;
     private boolean goToShootFinalApproachBraked = false;
     private boolean backRowCompletePickupSlowdownApplied = false;
     private boolean backRowGoToPickupSlowdownApplied = false;
@@ -605,6 +607,7 @@ public abstract class BaseAuto extends OpMode {
     protected void onEnterGoToShoot() {
         setActiveState(AutoStates.GO_TO_SHOOT);
         resetStateTimer();
+        goToShootFinalApproachSlowed = false;
         goToShootFinalApproachBraked = false;
 
         if (!preloadComplete && !shouldShootPreload()) {
@@ -786,6 +789,7 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_SHOOT);
 
         resetStateTimer();
+        goToShootFinalApproachSlowed = false;
         goToShootFinalApproachBraked = false;
         startPickupIntake();
         robot.outtake.shooter.useFlywheelPID = true;
@@ -1257,6 +1261,9 @@ public abstract class BaseAuto extends OpMode {
 
     protected double getPathAdvanceProgressForCurrentState() {
         if (!preloadComplete && activeState == AutoStates.GO_TO_SHOOT) {
+            if (range == Range.CLOSE_RANGE) {
+                return CLOSE_PRELOAD_PATH_ADVANCE_PROGRESS;
+            }
             return PRELOAD_PATH_ADVANCE_PROGRESS;
         }
         if (range == Range.CLOSE_RANGE && activeState == AutoStates.GO_TO_SHOOT) {
@@ -1291,8 +1298,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void maybeBrakeGoToShootFinalApproach() {
-        if (goToShootFinalApproachBraked
-                || activeState != AutoStates.GO_TO_SHOOT) {
+        if (goToShootFinalApproachBraked || activeState != AutoStates.GO_TO_SHOOT) {
             return;
         }
         if (follower == null || follower.getCurrentPath() == null || !follower.getFollowingPathChain()) {
@@ -1310,14 +1316,29 @@ public abstract class BaseAuto extends OpMode {
         }
 
         if (range == Range.LONG_RANGE) {
-            if (pathT < LONG_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+            if (goToShootFinalApproachSlowed) {
+                return;
+            }
+            if (pathT < LONG_GO_TO_SHOOT_FINAL_APPROACH_SLOWDOWN_PROGRESS) {
                 return;
             }
             Pose currentPose = follower.getPose();
             PathChain finalApproachPath = buildLongRangeGoToShootPath(currentPose);
             followPath(finalApproachPath, GO_TO_SHOOT_FINAL_APPROACH_POWER);
+            goToShootFinalApproachSlowed = true;
+            return;
         } else {
-            if (pathT < CLOSE_GO_TO_SHOOT_FINAL_APPROACH_BRAKE_PROGRESS) {
+            if (!goToShootFinalApproachSlowed) {
+                if (pathT < CLOSE_GO_TO_SHOOT_FINAL_APPROACH_SLOWDOWN_PROGRESS) {
+                    return;
+                }
+                Pose currentPose = follower.getPose();
+                PathChain finalApproachPath = buildGoToScorePath(currentPose);
+                followPath(finalApproachPath, GO_TO_SHOOT_FINAL_APPROACH_POWER);
+                goToShootFinalApproachSlowed = true;
+                return;
+            }
+            if (pathT < getPathAdvanceProgressForCurrentState()) {
                 return;
             }
             follower.breakFollowing();
