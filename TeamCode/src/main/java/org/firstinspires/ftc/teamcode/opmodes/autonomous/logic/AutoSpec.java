@@ -10,6 +10,8 @@ public class AutoSpec {
     public final boolean releaseAfterClosePickup;
     public final boolean backRowLoopEnabled;
     public final boolean closeLoopEnabled;
+    public final boolean forceLeaveAtOneSecond;
+    public final double backRowLoopPostIntakeHoldSeconds;
     public final int backRowLoopCycles;
     public final boolean shootPreload;
     public final int[] rowSequence;
@@ -21,7 +23,7 @@ public class AutoSpec {
             boolean shootPreload,
             int... rowSequence
     ) {
-        this(range, releaseAfterClosePickup, backRowLoopEnabled, false, 0, shootPreload, rowSequence);
+        this(range, releaseAfterClosePickup, backRowLoopEnabled, false, true, 0.0, 0, shootPreload, rowSequence);
     }
 
     private AutoSpec(
@@ -29,6 +31,8 @@ public class AutoSpec {
             boolean releaseAfterClosePickup,
             boolean backRowLoopEnabled,
             boolean closeLoopEnabled,
+            boolean forceLeaveAtOneSecond,
+            double backRowLoopPostIntakeHoldSeconds,
             int backRowLoopCycles,
             boolean shootPreload,
             int... rowSequence
@@ -37,6 +41,8 @@ public class AutoSpec {
         this.releaseAfterClosePickup = releaseAfterClosePickup;
         this.backRowLoopEnabled = backRowLoopEnabled;
         this.closeLoopEnabled = closeLoopEnabled;
+        this.forceLeaveAtOneSecond = forceLeaveAtOneSecond;
+        this.backRowLoopPostIntakeHoldSeconds = Math.max(0.0, backRowLoopPostIntakeHoldSeconds);
         this.backRowLoopCycles = Math.max(0, backRowLoopCycles);
         this.shootPreload = shootPreload;
         this.rowSequence = Arrays.copyOf(rowSequence, rowSequence.length);
@@ -49,7 +55,35 @@ public class AutoSpec {
             int backRowLoopCycles,
             int... rowSequence
     ) {
-        return new AutoSpec(range, releaseAfterClosePickup, true, false, backRowLoopCycles, shootPreload, rowSequence);
+        return withBackRowLoopCycles(
+                range,
+                releaseAfterClosePickup,
+                shootPreload,
+                true,
+                backRowLoopCycles,
+                rowSequence
+        );
+    }
+
+    public static AutoSpec withBackRowLoopCycles(
+            Range range,
+            boolean releaseAfterClosePickup,
+            boolean shootPreload,
+            boolean forceLeaveAtOneSecond,
+            int backRowLoopCycles,
+            int... rowSequence
+    ) {
+        return new AutoSpec(
+                range,
+                releaseAfterClosePickup,
+                true,
+                false,
+                forceLeaveAtOneSecond,
+                0.0,
+                backRowLoopCycles,
+                shootPreload,
+                rowSequence
+        );
     }
 
     public static AutoSpec withCloseLoopCycles(
@@ -59,6 +93,34 @@ public class AutoSpec {
             int closeLoopCycles,
             int... rowSequence
     ) {
-        return new AutoSpec(range, releaseAfterClosePickup, true, true, closeLoopCycles, shootPreload, rowSequence);
+        return new AutoSpec(range, releaseAfterClosePickup, true, true, true, 0.0, closeLoopCycles, shootPreload, rowSequence);
+    }
+
+    public AutoSpec withBackRowLoopPostIntakeHoldSeconds(double holdSeconds) {
+        return new AutoSpec(
+                range,
+                releaseAfterClosePickup,
+                backRowLoopEnabled,
+                closeLoopEnabled,
+                forceLeaveAtOneSecond,
+                holdSeconds,
+                backRowLoopCycles,
+                shootPreload,
+                rowSequence
+        );
+    }
+
+    public AutoSpec withForceLeaveAtOneSecond(boolean forceLeaveAtOneSecond) {
+        return new AutoSpec(
+                range,
+                releaseAfterClosePickup,
+                backRowLoopEnabled,
+                closeLoopEnabled,
+                forceLeaveAtOneSecond,
+                backRowLoopPostIntakeHoldSeconds,
+                backRowLoopCycles,
+                shootPreload,
+                rowSequence
+        );
     }
 }

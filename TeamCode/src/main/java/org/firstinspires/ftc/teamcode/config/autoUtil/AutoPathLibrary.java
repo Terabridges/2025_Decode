@@ -13,9 +13,6 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 public class AutoPathLibrary {
     private final AutoPoses poses;
     private static final double CLOSE_LOOP_PICKUP_STAGE_X_OFFSET_IN = 11.0;
-    private static final double SCORE_BRAKING_START = 1.25;
-    private static final double SCORE_BRAKING_STRENGTH = 0.65;
-
     public AutoPathLibrary(AutoPoses poses) {
         this.poses = poses;
     }
@@ -160,7 +157,7 @@ public class AutoPathLibrary {
                 .build();
     }
 
-    private PathChain buildLinearTwoStep(Pose start, Pose mid, Pose end) {
+    public PathChain buildLinearTwoStep(Pose start, Pose mid, Pose end) {
         if (follower == null || start == null || mid == null || end == null) {
             return null;
         }
@@ -205,10 +202,8 @@ public class AutoPathLibrary {
         }
 
         return follower.pathBuilder()
-                .setGlobalDeceleration(SCORE_BRAKING_START)
                 .addPath(new BezierLine(start, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .setBrakingStrength(SCORE_BRAKING_STRENGTH)
                 .build();
     }
 
@@ -218,10 +213,8 @@ public class AutoPathLibrary {
         }
 
         return follower.pathBuilder()
-                .setGlobalDeceleration(SCORE_BRAKING_START)
                 .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
-                .setBrakingStrength(SCORE_BRAKING_STRENGTH)
                 .build();
     }
 

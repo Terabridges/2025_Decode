@@ -5,12 +5,11 @@ import org.firstinspires.ftc.teamcode.config.autoUtil.Enums.Range;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.logic.AutoSpec;
 import org.firstinspires.ftc.teamcode.opmodes.autonomous.logic.SequenceAuto;
 
-public class FarBackRowPlus1RowAuto extends SequenceAuto {
-    private static final boolean LEAVE_AT_ONE_SECOND = true;
+public class FarMainBackRowNoLeaveAuto extends SequenceAuto {
     private static final AutoSpec SPEC = AutoSpec.withBackRowLoopCycles(
-            Range.LONG_RANGE, false, true, LEAVE_AT_ONE_SECOND, 1, 4, 3);
+            Range.LONG_RANGE, false, true, false, 1, 4, 3);
 
-    public FarBackRowPlus1RowAuto(Alliance alliance) {
+    public FarMainBackRowNoLeaveAuto(Alliance alliance) {
         super(alliance);
     }
 

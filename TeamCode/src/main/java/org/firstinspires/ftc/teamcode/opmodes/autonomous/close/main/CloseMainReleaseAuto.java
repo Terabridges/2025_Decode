@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.logic.SequenceAuto;
 
 @Configurable
 public class CloseMainReleaseAuto extends SequenceAuto {
-    public static int closeLoopCycles = 1;
+    public static int closeLoopCycles = 2;
 
     public CloseMainReleaseAuto(Alliance alliance) {
         super(alliance);

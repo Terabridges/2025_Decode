@@ -92,7 +92,7 @@ public class Turret implements Subsystem {
 
     /**
      * Commands turret angle, but if getting there would require a 0/360 wrap move,
-     * hold at the nearest physical limit instead.
+     * keep the current command instead.
      */
     public void setTurretDegreeNoWrap(double degree) {
         double normalized = normalizeDegrees(degree);
@@ -100,7 +100,6 @@ public class Turret implements Subsystem {
         double current = normalizeDegrees(getCurrentDegrees());
 
         if (Math.abs(clampedTarget - current) > 180.0) {
-            holdNearestTurretLimit(current);
             return;
         }
 

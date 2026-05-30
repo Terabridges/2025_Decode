@@ -46,5 +46,4 @@ public class Other implements Subsystem {
         drive.logPsiKitData();
         lift.logPsiKitData();
     }
-
 }
