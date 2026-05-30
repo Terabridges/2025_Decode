@@ -342,7 +342,7 @@ public class MainTeleOp extends OpMode {
         toggleSorting.update(gamepad1.start);
         nextMotif.update(gamepad2.y);
         flashLights.update(gamepad2.x);
-        startSortMachine.update(gamepad1.right_stick_button);
+        startSortMachine.update(gamepad1.a);
         //setSpindexCurrentDeg.update(gamepad1.a);
         updateManualFollowerPoseReset();
     }
@@ -486,8 +486,6 @@ public class MainTeleOp extends OpMode {
         TeleopShotRange activeShotRange = getActiveShotRange();
         double activeBankOffsetDeg = getActiveBankOffsetDeg(activeShotRange);
         if (activeShotRange != lastAppliedShotRange) {
-            Outtake.resetTurretAimVisionOffset();
-            Outtake.turretAimTrimOffsetDeg = activeBankOffsetDeg;
             lastAppliedShotRange = activeShotRange;
             lastAppliedBankOffsetDeg = activeBankOffsetDeg;
         } else if (Math.abs(activeBankOffsetDeg - lastAppliedBankOffsetDeg) > 1e-6) {

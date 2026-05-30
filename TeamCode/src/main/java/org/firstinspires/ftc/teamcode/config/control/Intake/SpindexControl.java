@@ -51,7 +51,7 @@ public class SpindexControl implements Control {
         switchDirection.update(gp1.dpad_up);
         //toggleShootMode.update(gp1.back);
         //goToForwardOne.update(gp1.dpad_up);
-        emptyBalls.update(gp2.right_stick_button);
+        emptyBalls.update(gp2.right_stick_button || gp1.right_stick_button);
         toggleForwardFront.update(gp2.back);
 
         boolean isFull = spindex.loadedBallCount() == 3;

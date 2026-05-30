@@ -1,5 +1,5 @@
 GAMEPAD1
-A:
+A: sort
 X: Shoot All Macro
 Y: Toggle Shooter
 B: Tap = Tx offset nudge, Hold 0.6s = Reset turret offset
@@ -16,7 +16,7 @@ LStY: Movement
 RStX: Movement
 RStY: Movement
 LStBut:
-RStBut: Sort Macro
+RStBut: empty balls
 Back: unjam
 Start: Toggle Sorting
 Touchpad:

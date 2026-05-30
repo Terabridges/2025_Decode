@@ -93,6 +93,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double AUTO_LONG_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_BLUE_LONG_PRELOAD_TRIM_OFFSET_DEG = 2.0;
     private static final double AUTO_RED_LONG_PRELOAD_TRIM_OFFSET_DEG = 5.0;
+    private static final double AUTO_RED_LONG_TRIM_DELTA_DEG = 1.0;
     private static final double AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG = 3.0;
     private static final double AUTO_CLOSE_FINAL_SHOOT_TRIM_DELTA_BLUE_DEG = 4.0;
     private static final double AUTO_CLOSE_FINAL_SHOOT_TRIM_DELTA_RED_DEG = -2.0;
@@ -1698,17 +1699,24 @@ public abstract class BaseAuto extends OpMode {
         }
         if (activeState == AutoStates.BACKROW_LOOP_GO_TO_SHOOT
                 || activeState == AutoStates.BACKROW_LOOP_COMPLETE_SHOOT) {
-            return AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG;
+            return AUTO_BACKROW_LOOP_SHOOT_TRIM_OFFSET_DEG + getRedLongTrimDeltaDeg();
         }
         if (range == Range.LONG_RANGE) {
             if (!preloadComplete) {
-                return alliance == Alliance.RED
+                double preloadTrim = alliance == Alliance.RED
                         ? AUTO_RED_LONG_PRELOAD_TRIM_OFFSET_DEG
                         : AUTO_BLUE_LONG_PRELOAD_TRIM_OFFSET_DEG;
+                return preloadTrim + getRedLongTrimDeltaDeg();
             }
-            return AUTO_LONG_TRIM_OFFSET_DEG;
+            return AUTO_LONG_TRIM_OFFSET_DEG + getRedLongTrimDeltaDeg();
         }
         return 0.0;
+    }
+
+    private double getRedLongTrimDeltaDeg() {
+        return range == Range.LONG_RANGE && alliance == Alliance.RED
+                ? AUTO_RED_LONG_TRIM_DELTA_DEG
+                : 0.0;
     }
 
     private boolean isFinalCloseShoot() {
