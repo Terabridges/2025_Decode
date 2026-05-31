@@ -66,6 +66,18 @@ public class AutoPathLibrary {
         return buildLinear(currentPose, poses.getFarPickupZone(alliance));
     }
 
+    public PathChain backRowLoopCompletePickup1(Pose currentPose, Alliance alliance) {
+        return buildTangentCurve(
+                currentPose,
+                poses.getBackRowLoopCompletePickup1Control(alliance),
+                poses.getBackRowLoopCompletePickup1(alliance)
+        );
+    }
+
+    public PathChain backRowLoopCompletePickup2(Pose currentPose, Alliance alliance) {
+        return buildLinear(currentPose, poses.getBackRowLoopCompletePickup2(alliance));
+    }
+
     public PathChain row4CompletePickup(Pose currentPose, Alliance alliance) {
         return buildLinear(currentPose, poses.getRow4CompletePickup(alliance));
     }
@@ -193,6 +205,17 @@ public class AutoPathLibrary {
         return follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+    }
+
+    public PathChain buildTangentCurve(Pose start, Pose control, Pose end) {
+        if (follower == null || start == null || control == null || end == null) {
+            return null;
+        }
+
+        return follower.pathBuilder()
+                .addPath(new BezierCurve(start, control, end))
+                .setTangentHeadingInterpolation()
                 .build();
     }
 

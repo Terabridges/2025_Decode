@@ -59,7 +59,7 @@ public abstract class BaseAuto extends OpMode {
     private static final double GO_TO_PICKUP_PATH_ADVANCE_PROGRESS = 0.75;
     private static final double ROW4_PICKUP_TIMEOUT_SECONDS = 1.75;
     private static final double ROW1_PICKUP_TIMEOUT_SECONDS = 2.5;
-    private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 2.0;
+    private static final double BACKROW_PICKUP_TIMEOUT_SECONDS = 2.5;
     private static final double FAR_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_ZONE_POWER = 1.0;
     private static final double CLOSE_LOOP_PICKUP_PART2_POWER = 1.0;
@@ -120,7 +120,8 @@ public abstract class BaseAuto extends OpMode {
         GO_TO_PICKUP,
         COMPLETE_PICKUP,
         GO_TO_FAR_PICKUP_ZONE,
-        BACKROW_COMPLETE_PICKUP,
+        BACKROW_COMPLETE_PICKUP_1,
+        BACKROW_COMPLETE_PICKUP_2,
         GO_TO_SCORE,
         COMPLETE_RELEASE,
         LEAVE
@@ -420,7 +421,7 @@ public abstract class BaseAuto extends OpMode {
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldExitActiveCloseLoopToLeave(), AutoStates.LEAVE)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldGoToCloseLoopAfterShot(), AutoStates.CLOSE_LOOP_GO_TO_PICKUP)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldStartNextCycle(), AutoStates.GO_TO_PICKUP)
-                .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && !shouldStartNextCycle() && shouldEnterFarBackRowLoop(), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && !shouldStartNextCycle() && shouldEnterFarBackRowLoop(), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldLeaveAfterShot(), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
@@ -465,23 +466,21 @@ public abstract class BaseAuto extends OpMode {
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldExitActiveCloseLoopToPickup(), AutoStates.GO_TO_PICKUP)
                 .transition(() -> shootAdvanceReady() && pathReadyForNextAction() && shouldExitActiveCloseLoopToLeave(), AutoStates.LEAVE)
 
-                .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
-                .onEnter(this::onEnterBackRowLoopGoToPickup)
-                .transition(this::backRowGoToPickupAdvanceReady, AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1)
+                .onEnter(this::onEnterBackRowLoopCompletePickup1)
+                .transition(this::backRowPickupHasThreeBallsAndPrepareShoot, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
+                .transition(this::backRowCompletePickup1PathDone, AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2)
 
-                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
-                .onEnter(this::onEnterBackRowLoopCompletePickup)
-                .transition(this::backRowCompletePickupAdvanceReady, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
+                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2)
+                .onEnter(this::onEnterBackRowLoopCompletePickup2)
+                .transition(this::backRowPickupHasThreeBallsAndPrepareShoot, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
+                .transition(this::backRowCompletePickup2Done, AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
                 .onEnter(this::onEnterBackRowLoopGoToShoot)
-                .transition(this::pathReadyForNextAction, AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
-
-                .state(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
-                .onEnter(this::onEnterBackRowLoopCompleteShoot)
                 .onExit(this::onExitBackRowLoopCompleteShoot)
                 .transition(this::shouldExitBackRowLoop, AutoStates.LEAVE)
-                .transition(this::shouldContinueBackRowLoop, AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .transition(this::shouldContinueBackRowLoop, AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -674,7 +673,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected void onEnterBackRowLoopGoToPickup() {
-        setActiveState(AutoStates.BACKROW_LOOP_GO_TO_PICKUP);
+        setActiveState(AutoStates.CLOSE_LOOP_GO_TO_PICKUP);
 
         resetStateTimer();
         refreshCurrentAbsoluteRow();
@@ -705,14 +704,10 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.BACKROW_LOOP_GO_TO_SHOOT);
 
         resetStateTimer();
+        stopIntakeForTravel();
         backRowCompletePickupHoldSeen = false;
         backRowCompletePickupHoldTimer.reset();
         skipCurrentShot = preloadComplete && getLoadedBallCount() <= 0;
-        if (!hasReachedPickupBallTarget()) {
-            startPickupIntake();
-        } else {
-            stopIntakeForTravel();
-        }
         robot.outtake.shooter.useFlywheelPID = true;
         readyShootCommandedOnPath = false;
         intakeReversedOnShootPath = false;
@@ -720,6 +715,10 @@ public abstract class BaseAuto extends OpMode {
         outtakePulseAllowedOnShootPath = !skipCurrentShot && hasReachedPickupBallTarget();
         intakeReversePulseTimer.reset();
         shootStartedInGoToShoot = false;
+        shootTimer.reset();
+        completeShootReadyTimer.reset();
+        shootSequenceStarted = false;
+        backRowLoopEntryBallCount = getLoadedBallCount();
         buildPath(PathRequest.GO_TO_SCORE);
         followPath(goToScorePath);
     }
@@ -729,17 +728,24 @@ public abstract class BaseAuto extends OpMode {
         setActiveState(AutoStates.CLOSE_LOOP_GO_TO_SHOOT);
     }
 
-    protected void onEnterBackRowLoopCompletePickup() {
-        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP);
+    protected void onEnterBackRowLoopCompletePickup1() {
+        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1);
 
         resetStateTimer();
-        if (!hasReachedPickupBallTarget()) {
-            startPickupIntake();
-        } else {
-            stopIntakeForTravel();
-        }
+        prepareSpindexForUpcomingPickup();
+        startPickupIntake();
 
-        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
+        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP_1);
+        followPath(backRowLoopCompletePickupPath, BACKROW_COMPLETE_PICKUP_POWER);
+    }
+
+    protected void onEnterBackRowLoopCompletePickup2() {
+        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2);
+
+        resetStateTimer();
+        startPickupIntake();
+
+        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP_2);
         followPath(backRowLoopCompletePickupPath, BACKROW_COMPLETE_PICKUP_POWER);
     }
 
@@ -816,8 +822,11 @@ public abstract class BaseAuto extends OpMode {
             case GO_TO_FAR_PICKUP_ZONE:
                 backRowLoopPickupPath = buildBackRowLoopGoToPickupPath(currentPose);
                 break;
-            case BACKROW_COMPLETE_PICKUP:
-                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickupPath(currentPose);
+            case BACKROW_COMPLETE_PICKUP_1:
+                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickup1Path(currentPose);
+                break;
+            case BACKROW_COMPLETE_PICKUP_2:
+                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickup2Path(currentPose);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
@@ -907,12 +916,18 @@ public abstract class BaseAuto extends OpMode {
         return buildFarPickupZonePath(currentPose);
     }
 
-    protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
+    protected PathChain buildBackRowLoopCompletePickup1Path(Pose currentPose) {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             return pathLibrary.closeLoopPickupPart2(currentPose, alliance);
         }
-        // Far back-row loop does movement in GO_TO_PICKUP + hold; no extra complete-pickup path.
-        return null;
+        return pathLibrary.backRowLoopCompletePickup1(currentPose, alliance);
+    }
+
+    protected PathChain buildBackRowLoopCompletePickup2Path(Pose currentPose) {
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            return pathLibrary.closeLoopPickupPart2(currentPose, alliance);
+        }
+        return pathLibrary.backRowLoopCompletePickup2(currentPose, alliance);
     }
 
     protected PathChain buildBackRowLoopGoToScorePath(Pose currentPose) {
@@ -1149,7 +1164,8 @@ public abstract class BaseAuto extends OpMode {
 
     protected boolean isGoToPickupSetupState() {
         return activeState == AutoStates.GO_TO_PICKUP
-                || activeState == AutoStates.BACKROW_LOOP_GO_TO_PICKUP
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2
                 || activeState == AutoStates.CLOSE_LOOP_GO_TO_PICKUP;
     }
 
@@ -1392,6 +1408,25 @@ public abstract class BaseAuto extends OpMode {
         return backRowCompletePickupHoldSatisfied(ready);
     }
 
+    protected boolean backRowPickupHasThreeBallsAndPrepareShoot() {
+        if (!hasReachedPickupBallTarget()) {
+            return false;
+        }
+        if (follower != null) {
+            follower.breakFollowing();
+        }
+        stopIntakeForTravel();
+        return true;
+    }
+
+    protected boolean backRowCompletePickup1PathDone() {
+        return pathReadyForNextAction() || backRowPickupTimedOut();
+    }
+
+    protected boolean backRowCompletePickup2Done() {
+        return pathReadyForNextAction() || backRowPickupTimedOut();
+    }
+
     protected boolean backRowCompletePickupHoldSatisfied(boolean ready) {
         if (!ready) {
             backRowCompletePickupHoldSeen = false;
@@ -1400,7 +1435,9 @@ public abstract class BaseAuto extends OpMode {
         if (backRowLoopPostIntakeHoldSeconds <= 0.0) {
             return true;
         }
-        if (activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP && currentAbsoluteRow == 4) {
+        if ((activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2)
+                && currentAbsoluteRow == 4) {
             return true;
         }
         if (!backRowCompletePickupHoldSeen) {
@@ -1418,7 +1455,8 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowPickupTimedOut() {
-        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP
+        if (activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1
+                && activeState != AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2
                 && activeState != AutoStates.CLOSE_LOOP_COMPLETE_PICKUP) {
             return false;
         }
@@ -1463,7 +1501,7 @@ public abstract class BaseAuto extends OpMode {
                 return AutoStates.CLOSE_LOOP_GO_TO_PICKUP;
             }
             if (shouldEnterFarBackRowLoop()) {
-                return AutoStates.BACKROW_LOOP_GO_TO_PICKUP;
+                return AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1;
             }
             return AutoStates.LEAVE;
         }
@@ -1483,7 +1521,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean shouldReturnToBackrowPickupAfterAcquire() {
-        return acquireMotifReturnState == AutoStates.BACKROW_LOOP_GO_TO_PICKUP;
+        return acquireMotifReturnState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1;
     }
 
     protected boolean shouldReturnToLeaveAfterAcquire() {
@@ -1759,7 +1797,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected boolean backRowLoopShootComplete() {
-        return shootAdvanceReady();
+        return pathReadyForNextAction() && shootAdvanceReady();
     }
 
     protected boolean shouldExitBackRowLoop() {
@@ -1861,12 +1899,12 @@ public abstract class BaseAuto extends OpMode {
                 return "Approach release spot";
             case COMPLETE_RELEASE:
                 return "Complete release";
-            case BACKROW_LOOP_GO_TO_PICKUP:
-                return "Back-row loop: go to far pickup zone";
-            case BACKROW_LOOP_COMPLETE_PICKUP:
-                return "Back-row loop: complete pickup";
+            case BACKROW_LOOP_COMPLETE_PICKUP_1:
+                return "Back-row loop: complete pickup 1";
+            case BACKROW_LOOP_COMPLETE_PICKUP_2:
+                return "Back-row loop: complete pickup 2";
             case BACKROW_LOOP_GO_TO_SHOOT:
-                return "Back-row loop: go to shoot spot";
+                return "Back-row loop: go to shoot spot / shoot";
             case BACKROW_LOOP_COMPLETE_SHOOT:
                 return "Back-row loop: shooting";
             case CLOSE_LOOP_GO_TO_PICKUP:

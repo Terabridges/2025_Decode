@@ -74,7 +74,8 @@ public abstract class BaseAutoPathTesting extends OpMode {
         GO_TO_PICKUP,
         COMPLETE_PICKUP,
         GO_TO_FAR_PICKUP_ZONE,
-        BACKROW_COMPLETE_PICKUP,
+        BACKROW_COMPLETE_PICKUP_1,
+        BACKROW_COMPLETE_PICKUP_2,
         GO_TO_SCORE,
         COMPLETE_RELEASE,
         LEAVE
@@ -204,7 +205,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
                 .transition(() -> advanceApproved(followerIdle() && shouldExitActiveCloseLoopToLeave()), AutoStates.LEAVE)
                 .transition(() -> advanceApproved(followerIdle() && shouldGoToCloseLoopAfterShot()), AutoStates.CLOSE_LOOP_GO_TO_PICKUP)
                 .transition(() -> advanceApproved(followerIdle() && shouldGoToPickupAfterShot()), AutoStates.GO_TO_PICKUP)
-                .transition(() -> advanceApproved(followerIdle() && shouldGoToBackRowLoopAfterShot()), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .transition(() -> advanceApproved(followerIdle() && shouldGoToBackRowLoopAfterShot()), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1)
                 .transition(() -> advanceApproved(followerIdle() && shouldLeaveAfterShot()), AutoStates.LEAVE)
 
                 .state(AutoStates.GO_TO_PICKUP)
@@ -247,23 +248,19 @@ public abstract class BaseAutoPathTesting extends OpMode {
                 .transition(() -> advanceApproved(followerIdle() && shouldExitActiveCloseLoopToPickup()), AutoStates.GO_TO_PICKUP)
                 .transition(() -> advanceApproved(followerIdle() && shouldExitActiveCloseLoopToLeave()), AutoStates.LEAVE)
 
-                .state(AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
-                .onEnter(this::onEnterBackRowLoopGoToPickup)
-                .transition(() -> advanceApproved(backRowGoToPickupAdvanceReady()), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
+                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1)
+                .onEnter(this::onEnterBackRowLoopCompletePickup1)
+                .transition(() -> advanceApproved(backRowCompletePickup1PathDone()), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2)
 
-                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP)
-                .onEnter(this::onEnterBackRowLoopCompletePickup)
-                .transition(() -> advanceApproved(backRowCompletePickupAdvanceReady()), AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
+                .state(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2)
+                .onEnter(this::onEnterBackRowLoopCompletePickup2)
+                .transition(() -> advanceApproved(backRowCompletePickup2Done()), AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
 
                 .state(AutoStates.BACKROW_LOOP_GO_TO_SHOOT)
                 .onEnter(this::onEnterBackRowLoopGoToShoot)
-                .transition(() -> advanceApproved(pathReadyForNextAction()), AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
-
-                .state(AutoStates.BACKROW_LOOP_COMPLETE_SHOOT)
-                .onEnter(this::onEnterBackRowLoopCompleteShoot)
                 .onExit(this::onExitBackRowLoopCompleteShoot)
                 .transition(() -> advanceApproved(shouldExitBackRowLoop()), AutoStates.LEAVE)
-                .transition(() -> advanceApproved(shouldContinueBackRowLoop()), AutoStates.BACKROW_LOOP_GO_TO_PICKUP)
+                .transition(() -> advanceApproved(shouldContinueBackRowLoop()), AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1)
 
                 .state(AutoStates.LEAVE)
                 .onEnter(this::onEnterLeave)
@@ -346,7 +343,7 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected void onEnterBackRowLoopGoToPickup() {
-        setActiveState(AutoStates.BACKROW_LOOP_GO_TO_PICKUP);
+        setActiveState(AutoStates.CLOSE_LOOP_GO_TO_PICKUP);
         resetStateTimer();
         closeLoopGoToPickupIdleSeen = false;
         closeLoopGoToPickupIdleTimer.reset();
@@ -377,12 +374,21 @@ public abstract class BaseAutoPathTesting extends OpMode {
         setActiveState(AutoStates.CLOSE_LOOP_GO_TO_SHOOT);
     }
 
-    protected void onEnterBackRowLoopCompletePickup() {
-        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP);
+    protected void onEnterBackRowLoopCompletePickup1() {
+        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1);
         resetStateTimer();
         backRowCompletePickupHoldSeen = false;
         backRowCompletePickupHoldTimer.reset();
-        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP);
+        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP_1);
+        followPath(backRowLoopCompletePickupPath, BACKROW_COMPLETE_PICKUP_POWER);
+    }
+
+    protected void onEnterBackRowLoopCompletePickup2() {
+        setActiveState(AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2);
+        resetStateTimer();
+        backRowCompletePickupHoldSeen = false;
+        backRowCompletePickupHoldTimer.reset();
+        buildPath(PathRequest.BACKROW_COMPLETE_PICKUP_2);
         followPath(backRowLoopCompletePickupPath, BACKROW_COMPLETE_PICKUP_POWER);
     }
 
@@ -437,8 +443,11 @@ public abstract class BaseAutoPathTesting extends OpMode {
             case GO_TO_FAR_PICKUP_ZONE:
                 backRowLoopPickupPath = buildBackRowLoopGoToPickupPath(currentPose);
                 break;
-            case BACKROW_COMPLETE_PICKUP:
-                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickupPath(currentPose);
+            case BACKROW_COMPLETE_PICKUP_1:
+                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickup1Path(currentPose);
+                break;
+            case BACKROW_COMPLETE_PICKUP_2:
+                backRowLoopCompletePickupPath = buildBackRowLoopCompletePickup2Path(currentPose);
                 break;
             case GO_TO_SCORE:
                 lastScoreRangeUsed = getScoreRangeForCurrentShot();
@@ -585,11 +594,18 @@ public abstract class BaseAutoPathTesting extends OpMode {
         return pathLibrary.goToScore(currentPose, scorePose);
     }
 
-    protected PathChain buildBackRowLoopCompletePickupPath(Pose currentPose) {
+    protected PathChain buildBackRowLoopCompletePickup1Path(Pose currentPose) {
         if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
             return pathLibrary.closeLoopPickupPart2(currentPose, alliance);
         }
-        return null;
+        return pathLibrary.backRowLoopCompletePickup1(currentPose, alliance);
+    }
+
+    protected PathChain buildBackRowLoopCompletePickup2Path(Pose currentPose) {
+        if (closeLoopEnabled && range == Range.CLOSE_RANGE) {
+            return pathLibrary.closeLoopPickupPart2(currentPose, alliance);
+        }
+        return pathLibrary.backRowLoopCompletePickup2(currentPose, alliance);
     }
 
     protected Pose getBackRowLoopScorePoseForCurrentShot() {
@@ -729,6 +745,14 @@ public abstract class BaseAutoPathTesting extends OpMode {
         return backRowCompletePickupHoldSatisfied(ready);
     }
 
+    protected boolean backRowCompletePickup1PathDone() {
+        return followerIdle() || stateTimedOut();
+    }
+
+    protected boolean backRowCompletePickup2Done() {
+        return followerIdle() || stateTimedOut();
+    }
+
     protected boolean backRowCompletePickupHoldSatisfied(boolean ready) {
         if (!ready) {
             backRowCompletePickupHoldSeen = false;
@@ -737,7 +761,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
         if (backRowLoopPostIntakeHoldSeconds <= 0.0) {
             return true;
         }
-        if (activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP && currentAbsoluteRow == 4) {
+        if ((activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_1
+                || activeState == AutoStates.BACKROW_LOOP_COMPLETE_PICKUP_2)
+                && currentAbsoluteRow == 4) {
             return true;
         }
         if (!backRowCompletePickupHoldSeen) {
@@ -761,6 +787,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected boolean shouldExitBackRowLoop() {
+        if (!pathReadyForNextAction()) {
+            return false;
+        }
         if (backRowLoopCyclesTarget <= 0) {
             return false;
         }
@@ -768,6 +797,9 @@ public abstract class BaseAutoPathTesting extends OpMode {
     }
 
     protected boolean shouldContinueBackRowLoop() {
+        if (!pathReadyForNextAction()) {
+            return false;
+        }
         if (backRowLoopCyclesTarget <= 0) {
             return true;
         }

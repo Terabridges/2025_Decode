@@ -82,6 +82,12 @@ public class AutoPoses {
     public Pose farPickupZoneR = poseDeg(FIELD_SIZE - farPickupZoneB.getX(), farPickupZoneB.getY(), 0.0);
     public Pose farPickupZoneControlB = poseDeg(36.0, 8.0, 355.0);
     public Pose farPickupZoneControlR = poseDeg(FIELD_SIZE - farPickupZoneControlB.getX(), farPickupZoneControlB.getY(), 5.0);
+    public Pose backRowLoopCompletePickup1B = poseDeg(10.0, 38.0, 0.0);
+    public Pose backRowLoopCompletePickup1R = mirrorBluePose(backRowLoopCompletePickup1B);
+    public Pose backRowLoopCompletePickup1ControlB = poseDeg(10.0, 4.0, 0.0);
+    public Pose backRowLoopCompletePickup1ControlR = mirrorBluePose(backRowLoopCompletePickup1ControlB);
+    public Pose backRowLoopCompletePickup2B = poseDeg(10.0, 10.0, 270.0);
+    public Pose backRowLoopCompletePickup2R = mirrorBluePose(backRowLoopCompletePickup2B);
     public Pose row4GoToPickupB = poseDeg(12.25, 16.0, 30.0);
     public Pose row4GoToPickupR = poseDeg(FIELD_SIZE - row4GoToPickupB.getX(), row4GoToPickupB.getY(), 330.0);
     public Pose row4IntermediatePickupB = poseDeg(12.25, 13.5, 30.0);
@@ -316,6 +322,18 @@ public class AutoPoses {
 
     public Pose getFarPickupZoneControl(Alliance a) {
         return (a == Alliance.BLUE) ? farPickupZoneControlB : farPickupZoneControlR;
+    }
+
+    public Pose getBackRowLoopCompletePickup1(Alliance a) {
+        return (a == Alliance.BLUE) ? backRowLoopCompletePickup1B : backRowLoopCompletePickup1R;
+    }
+
+    public Pose getBackRowLoopCompletePickup1Control(Alliance a) {
+        return (a == Alliance.BLUE) ? backRowLoopCompletePickup1ControlB : backRowLoopCompletePickup1ControlR;
+    }
+
+    public Pose getBackRowLoopCompletePickup2(Alliance a) {
+        return (a == Alliance.BLUE) ? backRowLoopCompletePickup2B : backRowLoopCompletePickup2R;
     }
 
     public Pose getRow4GoToPickup(Alliance a) {
