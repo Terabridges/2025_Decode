@@ -1815,16 +1815,7 @@ public abstract class BaseAuto extends OpMode {
     }
 
     protected double getBackRowLoopYOffsetIn() {
-        switch (backRowLoopCyclesCompleted % 4) {
-            case 1:
-                return 13.0;
-            case 2:
-                return 9.0;
-            case 0:
-            case 3:
-            default:
-                return 0.0;
-        }
+        return (backRowLoopCyclesCompleted % 2 == 0) ? 0.0 : 12.0;
     }
 
     protected Pose offsetPoseY(Pose pose, double yOffset) {
