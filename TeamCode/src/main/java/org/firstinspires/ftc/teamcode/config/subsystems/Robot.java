@@ -437,6 +437,94 @@ public class Robot {
 //                .build();
 //    }
 
+//    public StateMachine getSlowShootAllMachine(){
+//        return new StateMachineBuilder()
+//                .state(SlowShootAllStates.INIT)
+//                .transition(()-> initSlowShootAllMachine, SlowShootAllStates.GO_TO_FIRST)
+//                .onExit(()-> {
+//                    initSlowShootAllMachine = false;
+//                    outtake.setFastShootAllActive(false);
+//                    outtake.shooter.useFlywheelPID = true;
+//                    intake.clutch.setClutchUp();
+//                    intake.clutch.spinClutchIn();
+//                    outtake.shooter.setHoodTarget();
+//                    intake.autoIntake = false;
+//
+//                    intake.spindex.setSpindexShootOnePre();
+//                })
+//
+//                .state(SlowShootAllStates.GO_TO_FIRST)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT0)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//                .onExit(()-> {
+//                    intake.clutch.setClutchDown();
+//
+//                    intake.spindex.setSpindexShootOne();
+//                })
+//
+//                .state(SlowShootAllStates.WAIT0)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT1)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//
+//                .state(SlowShootAllStates.WAIT1)
+//                .transitionTimed(fastTime, SlowShootAllStates.GO_TO_SECOND)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//                .onExit(()-> {
+//
+//                    intake.spindex.setSpindexShootTwo();
+//                })
+//
+//                .state(SlowShootAllStates.GO_TO_SECOND)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT2)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//
+//                .state(SlowShootAllStates.WAIT2)
+//                .transitionTimed(fastTime, SlowShootAllStates.GO_TO_THIRD)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//                .onExit(()-> {
+//
+//                    intake.spindex.setSpindexShootThree();
+//                })
+//
+//                .state(SlowShootAllStates.GO_TO_THIRD)
+//                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.RESET)
+//                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
+//
+//
+//                .state(SlowShootAllStates.RESET)
+//                .transitionTimed(0.03, SlowShootAllStates.INIT)
+//                .onExit(()-> {
+//                    txLights = false;
+//                    intake.clutch.setClutchUp();
+//                    intake.spindex.emptyBalls();
+//                    intake.clutch.spinClutchStop();
+//                    intake.autoIntake = true;
+//                    if (intake.spindex.favorFront) {
+//                        intake.spindex.setSpindexForwardOne();
+//                    } else {
+//                        intake.spindex.setSpindexBackwardOne();
+//                    }
+//                })
+//
+//                .state(SlowShootAllStates.UNJAM)
+//                .onEnter(()->{
+//                    txLights = false;
+//                    outtake.setFastShootAllActive(false);
+//                    other.unJam = false;
+//                    intake.spindex.setSpindexDegree(intake.spindex.getAbsolutePos());
+//                    intake.spinner.setMegaSpinZero();
+//                    intake.clutch.spinClutchStop();
+//                    intake.clutch.setClutchUp();
+//                    intake.spindex.emptyBalls();
+//                    intake.autoIntake = true;
+//                    goToReset = true;
+//                })
+//                .transition(()-> goToReset, SlowShootAllStates.INIT)
+//                .onExit(()->goToReset = false)
+//
+//                .build();
+//    }
+
     public StateMachine getSlowShootAllMachine(){
         return new StateMachineBuilder()
                 .state(SlowShootAllStates.INIT)
@@ -463,23 +551,14 @@ public class Robot {
                 })
 
                 .state(SlowShootAllStates.WAIT0)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT1)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.GO_TO_SECOND)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
-
-                .state(SlowShootAllStates.WAIT1)
-                .transitionTimed(fastTime, SlowShootAllStates.GO_TO_SECOND)
-                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
-                .onExit(()-> {
-
+                .onExit(()->{
                     intake.spindex.setSpindexShootTwo();
                 })
 
                 .state(SlowShootAllStates.GO_TO_SECOND)
-                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.WAIT2)
-                .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
-
-                .state(SlowShootAllStates.WAIT2)
-                .transitionTimed(fastTime, SlowShootAllStates.GO_TO_THIRD)
+                .transition(()-> intake.spindex.isSpindexAtPos(), SlowShootAllStates.GO_TO_THIRD)
                 .transition(()-> other.unJam, SlowShootAllStates.UNJAM)
                 .onExit(()-> {
 
@@ -492,7 +571,7 @@ public class Robot {
 
 
                 .state(SlowShootAllStates.RESET)
-                .transitionTimed(0.03, SlowShootAllStates.INIT)
+                .transitionTimed(0.02, SlowShootAllStates.INIT)
                 .onExit(()-> {
                     txLights = false;
                     intake.clutch.setClutchUp();
