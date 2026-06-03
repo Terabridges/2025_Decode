@@ -57,9 +57,9 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
     private static final AutoSpec FAR_BACKROW_ONLY =
             AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 1, 4);
     private static final AutoSpec FAR_BACKROW_PLUS_ONE =
-            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 1, 4, 3);
+            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, 1, 3, 4);
     private static final AutoSpec FAR_MAIN_BACKROW_NO_LEAVE =
-            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, false, 1, 4, 3);
+            AutoSpec.withBackRowLoopCycles(Range.LONG_RANGE, false, true, false, 1, 3, 4);
 
     public SelectableAutoPathTesting() {
         super("Select Auto Path Test", c -> {
@@ -85,8 +85,8 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
                     });
                 });
                 p.folder("Far", m -> {
-                    m.add("Main Backrow (R: P, 4, 3, backrow loop)", () -> make(Alliance.BLUE, FAR_BACKROW_PLUS_ONE));
-                    m.add("Main Backrow No Leave (R: P, 4, 3, backrow loop)", () -> make(Alliance.BLUE, FAR_MAIN_BACKROW_NO_LEAVE));
+                    m.add("Main Backrow (R: P, 3, 4, backrow loop)", () -> make(Alliance.BLUE, FAR_BACKROW_PLUS_ONE));
+                    m.add("Main Backrow No Leave (R: P, 3, 4, backrow loop)", () -> make(Alliance.BLUE, FAR_MAIN_BACKROW_NO_LEAVE));
                     m.add("4 Row (R: P, 4, 3, 2, 1)", () -> make(Alliance.BLUE, FAR_4));
                     m.add("3 Row (R: P, 4, 3, 2)", () -> make(Alliance.BLUE, FAR_3));
                     m.folder("Other", s -> {
@@ -121,8 +121,8 @@ public class SelectableAutoPathTesting extends SelectableOpMode {
                     });
                 });
                 p.folder("Far", m -> {
-                    m.add("Main Backrow (R: P, 4, 3, backrow loop)", () -> make(Alliance.RED, FAR_BACKROW_PLUS_ONE));
-                    m.add("Main Backrow No Leave (R: P, 4, 3, backrow loop)", () -> make(Alliance.RED, FAR_MAIN_BACKROW_NO_LEAVE));
+                    m.add("Main Backrow (R: P, 3, 4, backrow loop)", () -> make(Alliance.RED, FAR_BACKROW_PLUS_ONE));
+                    m.add("Main Backrow No Leave (R: P, 3, 4, backrow loop)", () -> make(Alliance.RED, FAR_MAIN_BACKROW_NO_LEAVE));
                     m.add("4 Row (R: P, 4, 3, 2, 1)", () -> make(Alliance.RED, FAR_4));
                     m.add("3 Row (R: P, 4, 3, 2)", () -> make(Alliance.RED, FAR_3));
                     m.folder("Other", s -> {

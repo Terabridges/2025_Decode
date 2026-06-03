@@ -68,8 +68,8 @@ public class SelectableAuto extends SelectableOpMode {
                     });
                 });
                 p.folder("Far", m -> {
-                    m.add("Main Backrow (R: P, 4, 3, backrow loop)", () -> new FarBackRowPlus1RowAuto(Alliance.BLUE));
-                    m.add("Main Backrow No Leave (R: P, 4, 3, backrow loop)", () -> new FarMainBackRowNoLeaveAuto(Alliance.BLUE));
+                    m.add("Main Backrow (R: P, 3, 4, backrow loop)", () -> new FarBackRowPlus1RowAuto(Alliance.BLUE));
+                    m.add("Main Backrow No Leave (R: P, 3, 4, backrow loop)", () -> new FarMainBackRowNoLeaveAuto(Alliance.BLUE));
                     m.add("4 Row (R: P, 4, 3, 2, 1)", () -> new Far4RowAuto(Alliance.BLUE));
                     m.add("3 Row (R: P, 4, 3, 2)", () -> new Far3RowAuto(Alliance.BLUE));
                     m.folder("Other", s -> {
@@ -104,8 +104,8 @@ public class SelectableAuto extends SelectableOpMode {
                     });
                 });
                 p.folder("Far", m -> {
-                    m.add("Main Backrow (R: P, 4, 3, backrow loop)", () -> new FarBackRowPlus1RowAuto(Alliance.RED));
-                    m.add("Main Backrow No Leave (R: P, 4, 3, backrow loop)", () -> new FarMainBackRowNoLeaveAuto(Alliance.RED));
+                    m.add("Main Backrow (R: P, 3, 4, backrow loop)", () -> new FarBackRowPlus1RowAuto(Alliance.RED));
+                    m.add("Main Backrow No Leave (R: P, 3, 4, backrow loop)", () -> new FarMainBackRowNoLeaveAuto(Alliance.RED));
                     m.add("4 Row (R: P, 4, 3, 2, 1)", () -> new Far4RowAuto(Alliance.RED));
                     m.add("3 Row (R: P, 4, 3, 2)", () -> new Far3RowAuto(Alliance.RED));
                     m.folder("Other", s -> {

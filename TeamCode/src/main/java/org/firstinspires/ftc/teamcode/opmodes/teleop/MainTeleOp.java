@@ -219,6 +219,7 @@ public class MainTeleOp extends OpMode {
 
     @Override
     public void start() {
+        Outtake.enableMovingShotLead = true;
         robot.toInit();
         applyAllianceVisionLockConfig();
         boolean reuseAutoFollower = GlobalVariables.isAutoFollowerValid()

@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.opmodes.autonomous.logic.SequenceAuto;
 
 public class FarMainBackRowNoLeaveAuto extends SequenceAuto {
     private static final AutoSpec SPEC = AutoSpec.withBackRowLoopCycles(
-            Range.LONG_RANGE, false, true, false, 1, 4, 3);
+            Range.LONG_RANGE, false, true, false, 1, 3, 4);
 
     public FarMainBackRowNoLeaveAuto(Alliance alliance) {
         super(alliance);
