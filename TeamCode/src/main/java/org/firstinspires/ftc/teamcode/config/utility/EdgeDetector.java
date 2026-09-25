@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.config.utility;
 
+import java.util.Optional;
+
 public class EdgeDetector {
     public boolean isPressed = false;
     public FallingFunc func;
@@ -10,6 +12,10 @@ public class EdgeDetector {
     public EdgeDetector(FallingFunc f) {
         func = f;
         isFallingDetector = false;
+    }
+
+    public EdgeDetector(Optional<Runnable> rising, Optional<Runnable> falling) {
+
     }
 
     public EdgeDetector(FallingFunc f, boolean isFalling) {

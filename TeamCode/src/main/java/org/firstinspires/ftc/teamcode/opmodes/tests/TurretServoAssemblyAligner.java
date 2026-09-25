@@ -16,7 +16,7 @@ import org.firstinspires.ftc.teamcode.config.utility.AbsoluteAnalogEncoder;
 
 @Configurable
 //@PsiKitAutoLog(rlogPort = 5802)
-@TeleOp(name = "TurretServoAssemblyAligner", group = "Test")
+@TeleOp(name = "TurretServoAssemblyAligner")
 public class TurretServoAssemblyAligner extends OpMode {
 
     public enum Mode {
@@ -485,6 +485,7 @@ public class TurretServoAssemblyAligner extends OpMode {
 
         Logger.recordOutput("FloodgateAmps", floodgateCurrent);
         telemetry.addData("Selected Mode", selectedMode);
+        telemetry.addData("FloodgateAmps", floodgateCurrent);
         telemetry.addData("Mode Running", modeRunning);
         telemetry.addData("TargetPos", "%.4f", targetPos);
         telemetry.addData("LeftCmd", "%.4f", leftCmd);
