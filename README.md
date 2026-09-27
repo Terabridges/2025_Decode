@@ -11,6 +11,7 @@ To use this Android Studio project, you will need Android Studio Ladybug (2024.2
 ### Team Calibration Runbooks
 
 - Turret yaw calibration: [doc/turret-yaw-calibration-runbook.md](doc/turret-yaw-calibration-runbook.md)
+- Turret servo assembly aligner: [doc/turret-servo-assembly-aligner.md](doc/turret-servo-assembly-aligner.md)
 
 ### Local PsiKit + Android SDK setup (TeraBridges)
 
